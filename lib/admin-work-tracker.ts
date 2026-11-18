@@ -254,7 +254,7 @@ async function queryClient(userId: string): Promise<AdminWorkClient> {
         u.name as auth_name,
         u.email,
         ap.display_name,
-        ap.account_type
+        CASE WHEN ap.account_subtype IN ('equipment-middleman','middleman','machinery-middleman') THEN 'middleman' ELSE ap.account_type END AS account_type
       from "user" u
       left join public.account_profiles ap on ap.user_id = u.id
       where u.id = $1
@@ -287,7 +287,7 @@ export async function listAdminWorkClients(): Promise<AdminWorkClient[]> {
       u.name as auth_name,
       u.email,
       ap.display_name,
-      ap.account_type
+      CASE WHEN ap.account_subtype IN ('equipment-middleman','middleman','machinery-middleman') THEN 'middleman' ELSE ap.account_type END AS account_type
     from "user" u
     left join public.account_profiles ap on ap.user_id = u.id
     order by lower(coalesce(ap.display_name, u.name, u.email, '')) asc

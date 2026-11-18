@@ -95,12 +95,22 @@ const evidence=path.join(root,'.next/admin-review-validation');
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"],headless:true,pipe:true,ignoreDefaultArgs:["--hide-scrollbars"]});
  try{
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  let inviteAttempts=0;
   let verificationAccounts=[],verificationFailure=false; const verificationWrites=[];
   let failValues=false,failBusiness=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
   const queueRequests=[],workRequests=[],billingRequests=[];let billingIssued=false,previewFailure=false;
   await page.setRequestInterception(true);
   page.on('request',request=>{
    const url=request.url(),respond=(body,status=200)=>request.respond({status,contentType:'application/json',body:JSON.stringify(body)});
+   if (process.env.ADMIN_ACCOUNT_EDITOR_QA && url.endsWith('/api/admin/users/manage')) {
+     const input = JSON.parse(request.postData());
+     if (input.email === user.email) return respond({error:'Email already exists.',existing:user},409);
+     return respond({user:{...user,userId:'manual',name:'Manual client',email:'manual@example.test',accountType:input.type==='middleman'?'dealer':input.type,accountSubtype:input.subtype,sharingPlan:input.type==='business'?'free':'desktop'}});
+   }
+   if (process.env.ADMIN_ACCOUNT_EDITOR_QA && url.endsWith('/api/admin/users') && request.method()==='POST') {
+     assert.equal(JSON.parse(request.postData()).action,'send_setup');
+     return ++inviteAttempts === 1 ? respond({error:'Email delivery failed'},503) : respond({ok:true});
+   }
    if(url.includes('/api/billing/invoices/'))return previewFailure?respond({error:'Preview unavailable'},503):request.respond({contentType:'text/html',body:fs.existsSync(path.join(root,'.next/billing-validation/invoice.html'))?fs.readFileSync(path.join(root,'.next/billing-validation/invoice.html'),'utf8'):'<!doctype html><html><body><h1>Aim4price Invoice</h1><p>ABSA · No VAT applicable</p></body></html>'});
    if(url.endsWith('/brand/aim4price-mark-black.png')) return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});
    if(url.includes('/api/admin/asset-values') && failValues) return respond({error:'Value search unavailable'},503);
@@ -153,6 +163,49 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.waitForSelector('h1');
    await page.evaluate(()=>document.fonts.ready);
    assert.deepEqual(errors,[],section+' runtime');
+  }
+  if (process.env.ADMIN_ACCOUNT_EDITOR_QA) {
+    await open('accounts');
+    const form='form[aria-label="Add account"]';
+    const editor='form[aria-label="Change account type"]';
+    async function choose(form, label) {
+      await page.click(form+' [role=combobox]');
+      await page.waitForSelector('[role=option]',{visible:true});
+      await page.$$eval('[role=option]',(nodes,text)=>nodes.find(n=>n.textContent.includes(text)).click(),label);
+    }
+    await page.click('button::-p-text(Add account)');
+    await page.type(form+' input[name=name]','Manual client');
+    await page.type(form+' input[name=email]',user.email);
+    await page.click(form+' button::-p-text(Create account)');
+    await page.waitForSelector('button::-p-text(Open existing account)');
+    await page.click('button::-p-text(Open existing account)');
+    await page.waitForSelector('[role=dialog]');
+    assert.ok((await page.$eval('[role=dialog]',el=>el.innerText)).includes(user.email));
+    await page.keyboard.press('Escape');
+    await page.click('button::-p-text(Add account)');
+    await page.type(form+' input[name=name]','Manual client');
+    await page.type(form+' input[name=email]','manual@example.test');
+    await choose(form,'Business');
+    await page.click(form+' button::-p-text(Create account)');
+    await page.waitForSelector('button::-p-text(Send password setup email)');
+    await page.click('button::-p-text(Send password setup email)');
+    await page.waitForSelector('button::-p-text(Retry email)');
+    await page.click('button::-p-text(Retry email)');
+    await page.waitForFunction(()=>document.body.innerText.includes('Password setup email sent.'));
+    await page.click('button::-p-text(Done)');
+    await page.click('[aria-label="Manage Manual client"]');
+    await page.click('summary::-p-text(Change account type)');
+    await choose(editor,'Middleman');
+    assert.equal(await page.$$eval(editor+' [role=combobox]',els=>els.length),1);
+    const preview=await page.$eval('[aria-label="Account change preview"]',el=>el.innerText);
+    assert.match(preview,/Business/);
+    assert.match(preview,/Middleman/);
+    assert.match(preview,/Unavailable/);
+    await page.click(editor+' button::-p-text(Change to Middleman)');
+    await page.waitForFunction(()=>document.querySelector('[role=dialog] header')?.innerText.includes('Middleman'));
+    assert.deepEqual(errors,[]);
+    console.log('PASS duplicate recovery, invite retry, type preview and Middleman display');
+    return;
   }
   if (process.env.ADMIN_OWNER_STYLE_QA) {
    let count=0;

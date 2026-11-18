@@ -53,6 +53,8 @@ function formatAccountType(value: string): string {
   if (clean === "finance") return "Finance / Accounting";
   if (clean === "insurance") return "Insurance";
   if (clean === "licensing") return "Licensing";
+  if (clean === "business") return "Business";
+  if (clean === "middleman") return "Middleman";
   if (clean === "dealer") return "Dealer";
   return "Owner";
 }

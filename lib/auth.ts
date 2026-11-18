@@ -122,6 +122,8 @@ function createAuth() {
     sendResetPassword: async ({ user, url, token }) => {
       const resetUrl = buildAim4priceResetPasswordUrl(token, url);
 
+      const { captureSetupLink } = await import("./admin-setup-invitation");
+      if (captureSetupLink(user.email, resetUrl)) return;
       await sendAim4priceResetPasswordEmail({
         to: user.email,
         name: user.name,

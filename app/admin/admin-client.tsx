@@ -1,5 +1,8 @@
 "use client";
 
+import AccountInvitation from "./account-invitation";
+import { workspaceLabel } from "../../lib/account-type-options";
+import type { AdminUserRow } from "../../lib/admin-users";
 import AccountEditor from "./account-editor";
 import AdminSelect from "../../components/AdminSelect";
 import AssetPickerDetail from '../../components/AssetPickerDetail';
@@ -14,32 +17,6 @@ import { clearCachedHeaderSession } from "../../lib/header-session-cache";
 import styles from "./page.module.css";
 
 type AccountStatus = "pending_payment" | "active" | "suspended";
-
-type AdminUserRow = {
-  userId: string;
-  name: string;
-  email: string;
-  phone: string;
-  accountType: string;
-  accountSubtype: string;
-  province: string;
-  introducedBy: string;
-  introducedByOption: string;
-  introducedByName: string;
-  accountStatus: AccountStatus;
-  accountStatusLabel: string;
-  passwordStatus: "Set" | "Not set";
-  lastActiveAtIso: string | null;
-  createdAtIso: string | null;
-  storageBytes: number;
-  storageLabel: string;
-  storageGigabytesLabel: string;
-  storageFileCount: number;
-  postgresStorageBytes: number;
-  postgresStorageLabel: string;
-  bucketStorageBytes: number;
-  bucketStorageLabel: string;
-};
 
 type ApiResponse = {
   ok: boolean;
@@ -147,6 +124,7 @@ type AdminAction =
   | "activate"
   | "pending"
   | "suspend"
+  | "send_setup"
   | "send_reset"
   | "send_notification"
   | "open_account"
@@ -473,6 +451,7 @@ function getActionText(action: AdminAction, user: AdminUserRow): string {
   if (action === "activate") return `${user.email} activated.`;
   if (action === "pending") return `${user.email} set back to pending.`;
   if (action === "suspend") return `${user.email} suspended.`;
+  if (action === "send_setup") return `Password setup email sent to ${user.email}.`;
   if (action === "send_reset") return `Reset email sent to ${user.email}.`;
   if (action === "send_notification") return `Notification sent to ${user.email}.`;
   if (action === "open_account") return `Opening ${user.email}.`;
@@ -582,6 +561,7 @@ export default function AdminClient({
   initialAccountId?: string;
   canGetEstimate?: boolean;
 }) {
+  const [createdAccount, setCreatedAccount] = useState<AdminUserRow | null>(null);
   const [addingAccount, setAddingAccount] = useState(false);
   const [users, setUsers] = useState<AdminUserRow[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1545,7 +1525,7 @@ export default function AdminClient({
 
         <div className={styles.headerActions}>
           <AdminNavigation active="accounts" canGetEstimate={canGetEstimate} />
-          <button type="button" className={styles.groupNotificationButton} aria-expanded={addingAccount} onClick={() => setAddingAccount(true)}>Add account</button>
+          <button type="button" className={styles.groupNotificationButton} aria-expanded={addingAccount} onClick={() => {setCreatedAccount(null); setAddingAccount(true);}}>Add account</button>
           <button
             type="button"
             className={styles.groupNotificationButton}
@@ -1567,7 +1547,12 @@ export default function AdminClient({
         </div>
       </section>
 
-      {addingAccount && <AccountEditor onCancel={() => setAddingAccount(false)} onSaved={user => {
+      {createdAccount && <AccountInvitation key={createdAccount.userId} user={createdAccount} onDone={() => setCreatedAccount(null)}/>}
+      {addingAccount && <AccountEditor onExisting={user => {
+        setAddingAccount(false);
+        setUsers(current => [user,...current.filter(item => item.userId !== user.userId)]);
+        setAccountActionModal(user);
+      }} onCancel={() => setAddingAccount(false)} onSaved={user => {
         setUsers(current => [user, ...current.filter(item => item.userId !== user.userId)]);
         setAddingAccount(false);
         setSearchTerm(user.email);
@@ -1576,8 +1561,8 @@ export default function AdminClient({
         setProvinceFilter("all");
         setAccountIdFilter("");
         setCurrentPage(1);
-        setAccountActionModal(user);
-        setNotice({tone:"success",message:`Account created for ${user.email}.`});
+        setCreatedAccount(user);
+        setNotice(null);
       }}/>}
       <section className={styles.userSummary} aria-label="Account summary">
         <button type="button" aria-pressed={statusFilter === "all"} onClick={() => { setStatusFilter("all"); setAccountIdFilter(""); setSearchTerm(""); setSignupDateFilter("all"); setProvinceFilter("all"); }}>
@@ -1754,7 +1739,7 @@ export default function AdminClient({
                     </td>
                     <td>
                       <div className={styles.accountTypeCell}>
-                        <strong>{formatAccountValue(user.accountType)}</strong>
+                        <strong>{workspaceLabel(user.accountType,user.accountSubtype)}</strong>
                         <span>{formatAccountValue(user.accountSubtype)}</span>
                       </div>
                     </td>
@@ -2043,7 +2028,7 @@ export default function AdminClient({
                 <h2 id="admin-account-action-modal-title">
                   {accountActionModal.name || "Unnamed account"}
                 </h2>
-                <p className={styles.accountIdentity}>{formatAccountValue(accountActionModal.accountType)} · {accountActionModal.accountStatusLabel} · {accountActionModal.email || "No email saved"}</p>
+                <p className={styles.accountIdentity}>{workspaceLabel(accountActionModal.accountType,accountActionModal.accountSubtype)} · {accountActionModal.accountStatusLabel} · {accountActionModal.email || "No email saved"}</p>
               </div>
 
               <button
@@ -2278,7 +2263,7 @@ export default function AdminClient({
               <AccountEditor key={accountActionModal.userId} account={accountActionModal} onSaved={user => {
                 setUsers(current => current.map(item => item.userId === user.userId ? user : item));
                 setAccountActionModal(current => current?.userId === user.userId ? user : current);
-                setNotice({tone:"success",message:`Account type updated for ${user.email}.`});
+                setNotice({tone:"success",message:`${user.name} updated to ${workspaceLabel(user.accountType,user.accountSubtype)}.`});
               }}/>
             </details>}
             <details className={styles.accountDisclosure}>
@@ -2288,7 +2273,7 @@ export default function AdminClient({
                 <div>
                   <span>Account</span>
                   <strong>
-                    {formatAccountValue(accountActionModal.accountType)} ·{" "}
+                    {workspaceLabel(accountActionModal.accountType,accountActionModal.accountSubtype)} ·{" "}
                     {formatAccountValue(accountActionModal.accountSubtype)}
                   </strong>
                 </div>
@@ -2400,12 +2385,12 @@ export default function AdminClient({
                   <button
                     type="button"
                     className={styles.accountActionButton}
-                    onClick={() => runAction(accountActionModal, "send_reset")}
+                    onClick={() => runAction(accountActionModal, accountActionModal.passwordStatus === "Not set" && !selectedAccountIsProtected ? "send_setup" : "send_reset")}
                     disabled={busyUserAction !== null}
                   >
-                    {busyUserAction === `${accountActionModal.userId}:send_reset`
+                    {busyUserAction === `${accountActionModal.userId}:send_setup` ? "Sending…" : busyUserAction === `${accountActionModal.userId}:send_reset`
                       ? getBusyText("send_reset")
-                      : "Send password reset"}
+                      : accountActionModal.passwordStatus === "Not set" && !selectedAccountIsProtected ? "Send password setup email" : "Send password reset"}
                   </button>
 
                 </div>

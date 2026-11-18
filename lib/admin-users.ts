@@ -14,6 +14,7 @@ import {
   formatAdminStorageBytes,
   formatAdminStorageGigabytes,
 } from "./admin-storage-usage";
+import type { SharingPlan } from "./sharing-foundation";
 import { getDb } from "./db";
 
 export type AdminUserRow = {
@@ -29,6 +30,9 @@ export type AdminUserRow = {
   introducedByName: string;
   accountStatus: AccountStatus;
   accountStatusLabel: string;
+  sharingPlan: SharingPlan;
+  directoryEnabled: boolean;
+  directoryStatus: string;
   passwordStatus: "Set" | "Not set";
   lastActiveAtIso: string | null;
   createdAtIso: string | null;
@@ -54,6 +58,9 @@ type DbAdminUserRow = {
   account_status: string | null;
   introduced_by_option: string | null;
   introduced_by_name: string | null;
+  sharing_plan: SharingPlan | null;
+  partner_directory_enabled: boolean;
+  partner_directory_status: string;
   password_set: boolean | null;
   last_active_at: string | Date | null;
   auth_created_at: string | Date | null;
@@ -117,6 +124,9 @@ function mapAdminUserRow(row: DbAdminUserRow): AdminUserRow {
     introducedByName,
     accountStatus,
     accountStatusLabel: accountStatusLabel(accountStatus),
+    sharingPlan: row.sharing_plan ?? (row.account_type === "business" ? "free" : "desktop"),
+    directoryEnabled: Boolean(row.partner_directory_enabled),
+    directoryStatus: row.partner_directory_status,
     passwordStatus: row.password_set ? "Set" : "Not set",
     lastActiveAtIso: toIso(row.last_active_at),
     createdAtIso: toIso(row.auth_created_at) || toIso(row.profile_created_at),
@@ -156,6 +166,8 @@ export async function listAdminUsers(onlyUserId?: string): Promise<AdminUserRow[
   await ensureAccountProfileColumns();
 
   const db = getDb();
+  const { ensureSharingFoundation } = await import("./sharing-foundation");
+  await ensureSharingFoundation();
   const logicalStorageSelect = await buildLogicalClientStorageSelect();
   const result = await db.query<DbAdminUserRow>(
     `
@@ -183,6 +195,7 @@ export async function listAdminUsers(onlyUserId?: string): Promise<AdminUserRow[
         ap.account_type,
         ap.account_subtype,
         ap.province,
+        sa.plan as sharing_plan, ap.partner_directory_enabled, ap.partner_directory_status,
         ap.account_status,
         ap.introduced_by_option,
         ap.introduced_by_name,
@@ -203,6 +216,7 @@ export async function listAdminUsers(onlyUserId?: string): Promise<AdminUserRow[
         coalesce(storage.bucket_storage_bytes, 0)::bigint as bucket_storage_bytes
       from "user" u
       left join account_profiles ap on ap.user_id = u.id
+      left join sharing_account_access sa on sa.user_id = u.id
       left join storage_by_user storage on storage.user_id = u.id
       where ($1::text is null or u.id = $1)
       order by u."createdAt" desc nulls last, lower(u.email) asc
