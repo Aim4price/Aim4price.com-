@@ -21,28 +21,12 @@ import styles from "./page.module.css";
 import PricingModal from "../pricing/pricing-modal";
 
 import BusinessSignup from "../business/join/business-signup";
-import { BUSINESS_SERVICE_OPTIONS, isBusinessService, type BusinessService } from "../../lib/business-service-options";
+import { BUSINESS_SERVICE_OPTIONS, isBusinessService } from "../../lib/business-service-options";
+
+import { SIGNUP_ACCOUNT_TYPE_OPTIONS, SIGNUP_ACCOUNT_SUBTYPE_OPTIONS, type SignupAccountType, type SignupAccountSubtype } from "../../lib/account-type-options";
 
 type Mode = "signup" | "login" | "forgot";
 type SignupStep = 1 | 2 | 3;
-type SignupAccountType = "business" | "owner" | "middleman" | "dealer";
-type SignupAccountSubtype =
-  | BusinessService
-  | "contributor"
-  | "farmer"
-  | "contractor"
-  | "construction-company"
-  | "asset-owner"
-  | "bank"
-  | "finance-house"
-  | "accountant"
-  | "short-term-insurer"
-  | "machinery-dealer"
-  | "motor-dealer"
-  | "auctioneer"
-  | "equipment-middleman"
-  | "licence-renewal-expert"
-  | "fleet-licensing-service";
 type SignupIntroducedByOption = "" | "kuyler" | "andre" | "direct" | "other";
 type SignupProvince =
   | ""
@@ -132,34 +116,6 @@ type ForgotFormState = {
 const AUTH_BASE_PATH = "/api/auth";
 const POST_LOGIN_REDIRECT = "/asset-register";
 const ADMIN_EMAIL = "aim4price@gmail.com";
-
-const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
-  { value: "owner", label: "Owner" },
-  { value: "dealer", label: "Dealer" },
-  { value: "business", label: "Business" },
-  { value: "middleman", label: "Middleman" },
-];
-
-const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
-  SignupAccountType,
-  Array<SelectOption<SignupAccountSubtype>>
-> = {
-  business: [...BUSINESS_SERVICE_OPTIONS],
-  owner: [
-    { value: "farmer", label: "Farmer / farm owner" },
-    { value: "contractor", label: "Contractor / operator" },
-    { value: "construction-company", label: "Construction company" },
-    { value: "asset-owner", label: "Private / fleet asset owner" },
-  ],
-  middleman: [
-    { value: "equipment-middleman", label: "Equipment middleman" },
-  ],
-  dealer: [
-    { value: "machinery-dealer", label: "Machinery dealer" },
-    { value: "motor-dealer", label: "Motor dealer" },
-    { value: "auctioneer", label: "Auctioneer / broker" },
-  ],
-};
 
 const INTRODUCED_BY_OPTIONS: Array<SelectOption<SignupIntroducedByOption>> = [
   { value: "kuyler", label: "Kuyler Geldenhuys" },
