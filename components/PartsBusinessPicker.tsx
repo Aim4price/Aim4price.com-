@@ -31,6 +31,6 @@ export default function PartsBusinessPicker({name,count,network,api,selected,onS
  <footer className={directory.footer}><span>{selected?'1 business selected':'Select one company'}</span><button type="button" className={asset.primaryButton} disabled={!selected||busy} onClick={onContinue}>Continue</button></footer>
  </section></div>
  <div className={directory.invitation}><button type="button" className={styles.missing} aria-expanded={help} onClick={()=>setHelp(!help)}>Business not listed?<span aria-hidden="true">{help?'−':'+'}</span></button></div>
- {help?<p className={styles.help}>Only approved directory businesses with an active Aim4price account can receive an inside share. Ask the business to complete its directory listing, or go back and choose Share link.</p>:null}
+ {help?<p className={styles.help}>Only approved directory businesses with an active Aim4price account can receive an inside share. If you cannot find the business, go back and choose Share link.</p>:null}
  </div></ShareDisclosureDialog>;
 }
