@@ -271,10 +271,10 @@
   justify-content: center;
   gap: 0.52rem;
   padding: 0 clamp(1rem, calc(var(--website-design-vw) * 1.55), 1.32rem);
-  border: 1px solid #bfe2ce;
+  border: 1.5px solid var(--app-accent, #75c79a);
   border-radius: clamp(0.95rem, calc(var(--website-design-vw) * 1.35), 1.14rem);
-  background: linear-gradient(180deg, #fbfffd 0%, #f0fbf5 100%);
-  color: #0f5840;
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-surface-soft, #ecf9f1) 100%);
+  color: var(--app-text, #0d5a42);
   font: inherit;
   font-size: clamp(0.96rem, calc(var(--website-design-vw) * 1.08), 1.04rem);
   font-weight: 860;
@@ -296,8 +296,8 @@
 .filterControl:hover,
 .filterControl:focus-visible,
 .filterControlOpen {
-  border-color: #9fd1b4;
-  background: linear-gradient(180deg, #ffffff 0%, #e4f5ec 100%);
+  border-color: var(--app-accent, #4daf78);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-surface-soft, #ddf3e6) 100%);
   box-shadow:
     0 14px 28px rgba(15, 98, 72, 0.105),
     0 0 0 4px rgba(25, 116, 84, 0.07),
@@ -313,7 +313,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #0f3d31;
+  color: inherit;
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: inherit;
