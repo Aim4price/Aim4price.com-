@@ -1,5 +1,6 @@
 "use client";
 
+import AccountEditor from "./account-editor";
 import AdminSelect from "../../components/AdminSelect";
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 import ListPagination from '../../components/ListPagination';
@@ -581,6 +582,7 @@ export default function AdminClient({
   initialAccountId?: string;
   canGetEstimate?: boolean;
 }) {
+  const [addingAccount, setAddingAccount] = useState(false);
   const [users, setUsers] = useState<AdminUserRow[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<AdminAccountStatusFilter>(() => adminAccountStatusFilter(initialStatus));
@@ -1543,6 +1545,7 @@ export default function AdminClient({
 
         <div className={styles.headerActions}>
           <AdminNavigation active="accounts" canGetEstimate={canGetEstimate} />
+          <button type="button" className={styles.groupNotificationButton} aria-expanded={addingAccount} onClick={() => setAddingAccount(true)}>Add account</button>
           <button
             type="button"
             className={styles.groupNotificationButton}
@@ -1564,6 +1567,18 @@ export default function AdminClient({
         </div>
       </section>
 
+      {addingAccount && <AccountEditor onCancel={() => setAddingAccount(false)} onSaved={user => {
+        setUsers(current => [user, ...current.filter(item => item.userId !== user.userId)]);
+        setAddingAccount(false);
+        setSearchTerm(user.email);
+        setStatusFilter("all");
+        setSignupDateFilter("all");
+        setProvinceFilter("all");
+        setAccountIdFilter("");
+        setCurrentPage(1);
+        setAccountActionModal(user);
+        setNotice({tone:"success",message:`Account created for ${user.email}.`});
+      }}/>}
       <section className={styles.userSummary} aria-label="Account summary">
         <button type="button" aria-pressed={statusFilter === "all"} onClick={() => { setStatusFilter("all"); setAccountIdFilter(""); setSearchTerm(""); setSignupDateFilter("all"); setProvinceFilter("all"); }}>
           <span>All accounts</span>
@@ -2258,6 +2273,14 @@ export default function AdminClient({
 
               </section>
             </div>
+            {!isAim4priceAdminEmail(accountActionModal.email) && <details className={styles.accountDisclosure}>
+              <summary>Change account type <span>{formatAccountValue(accountActionModal.accountSubtype)}</span></summary>
+              <AccountEditor key={accountActionModal.userId} account={accountActionModal} onSaved={user => {
+                setUsers(current => current.map(item => item.userId === user.userId ? user : item));
+                setAccountActionModal(current => current?.userId === user.userId ? user : current);
+                setNotice({tone:"success",message:`Account type updated for ${user.email}.`});
+              }}/>
+            </details>}
             <details className={styles.accountDisclosure}>
               <summary>Account details <span>Contact, registration and storage</span></summary>
               <div className={styles.accountActionSummary}>

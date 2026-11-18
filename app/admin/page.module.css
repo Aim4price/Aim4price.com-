@@ -2342,3 +2342,17 @@
 .rowAccountButton, .nameCell { max-width: none; }
 .nameCell { overflow: visible; text-overflow: clip; }
 .searchField { width: 100%; }
+
+.accountEditor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  align-items: start;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #dce7e1;
+  border-radius: 1rem;
+  background: white;
+  color: #17362c;
+}
+.accountEditor > :is(h2, p, div) { grid-column: 1 / -1; margin: 0; }
+.accountEditor .notificationField { min-width: 0; }

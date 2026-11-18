@@ -35,8 +35,15 @@ export async function ensureBusinessWorkspace(userId: string) {
  const db = await getDb().connect();
  try {
   await db.query('BEGIN');
+  const membership = await ensureBusinessMembership(db, userId);
+  await db.query('COMMIT');
+  return membership;
+ } catch(error) { await db.query('ROLLBACK'); throw error; } finally { db.release(); }
+}
+
+export async function ensureBusinessMembership(db: import('pg').PoolClient, userId: string) {
   const profile = (await db.query("SELECT user_id FROM account_profiles WHERE user_id=$1 AND account_type='business' FOR UPDATE", [userId])).rows[0];
-  if (!profile) { await db.query('COMMIT'); return null; }
+  if (!profile) return null;
   await db.query(`INSERT INTO business_workspaces(id,owner_user_id)
    SELECT $2,$1 WHERE NOT EXISTS(SELECT 1 FROM business_workspace_members WHERE user_id=$1)
    ON CONFLICT(owner_user_id) DO NOTHING`, [userId,randomUUID()]);
@@ -50,9 +57,7 @@ export async function ensureBusinessWorkspace(userId: string) {
    ON CONFLICT(email) DO NOTHING`,[userId,member.business_id]);
   // A recycled email cannot claim another business's history or bypass its suspension.
   const conflict = member && (await db.query(`SELECT 1 FROM "user" u JOIN business_verified_identities i ON i.email=lower(u.email) WHERE u.id=$1 AND u."emailVerified"=true AND i.business_id<>$2`, [userId,member.business_id])).rows.length > 0;
-  await db.query('COMMIT');
   return conflict ? null : member ?? null;
- } catch(error) { await db.query('ROLLBACK'); throw error; } finally { db.release(); }
 }
 
 export async function businessWorkspaceSummary(userId: string) {

@@ -352,8 +352,9 @@ test('signup keeps Middleman distinct without a redundant access selector', asyn
     read('app/account/account-client.tsx'),
   ]);
 
-  assert.match(authClient, /value: "middleman", label: "Middleman"/);
-  assert.match(authClient, /value: "equipment-middleman"/);
+  const signupOptions = await read("lib/account-type-options.ts");
+  assert.match(signupOptions, /value: "middleman", label: "Middleman"/);
+  assert.match(signupOptions, /value: "equipment-middleman"/);
   assert.match(authClient, /accountType: signupForm\.accountType === "middleman" \? "dealer"/);
   assert.match(authClient, /name="accountType"[\s\S]*?options=\{SIGNUP_ACCOUNT_TYPE_OPTIONS\}/);
   assert.doesNotMatch(authClient, /name="accountAccess"|Free sharing account/);

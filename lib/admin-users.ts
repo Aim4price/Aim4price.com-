@@ -152,7 +152,7 @@ async function getAdminUserIdentity(userId: string): Promise<AdminUserIdentity> 
   return user;
 }
 
-export async function listAdminUsers(): Promise<AdminUserRow[]> {
+export async function listAdminUsers(onlyUserId?: string): Promise<AdminUserRow[]> {
   await ensureAccountProfileColumns();
 
   const db = getDb();
@@ -204,8 +204,10 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
       from "user" u
       left join account_profiles ap on ap.user_id = u.id
       left join storage_by_user storage on storage.user_id = u.id
+      where ($1::text is null or u.id = $1)
       order by u."createdAt" desc nulls last, lower(u.email) asc
     `,
+    [onlyUserId ?? null],
   );
 
   return result.rows.map(mapAdminUserRow);
