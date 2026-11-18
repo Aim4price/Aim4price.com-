@@ -236,6 +236,7 @@ export default function Validation(){
    assert.deepEqual(overflowingTitles,[], 'Permission titles fit one line without clipping');
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
    await click('Continue');
+   await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$('dialog input[type=email]'),null);
    assert.equal(await page.$('dialog input[type=file]'),null);
@@ -249,6 +250,7 @@ export default function Validation(){
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
    await click('Continue view only');
+   await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
