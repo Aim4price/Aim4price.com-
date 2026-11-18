@@ -295,3 +295,25 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
  :global(:where(html:not(:has([data-website-canvas])))) .setupPanel .pairingLayout { grid-template-columns:5.5rem minmax(0,1fr); gap:.8rem; }
  :global(:where(html:not(:has([data-website-canvas])))) .setupPanel .pairingCode { font-size:1rem; letter-spacing:0; }
 }
+
+.dashboard {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr));
+  gap:1rem;
+  align-items:start;
+}
+.dashboard .connectedSummary {
+  gap:.85rem;
+  padding:1.1rem;
+  background:var(--app-surface,#fff);
+  color:var(--app-text,#173e31);
+}
+.cardTitle { margin:0; font-size:1.15rem; line-height:1.35; font-weight:750; }
+.dashboard .connectionFacts dt { color:var(--app-text,#34584a); font-weight:650; font-size:.88rem; }
+.dashboard .connectionFacts dd { font-weight:750; font-size:.95rem; }
+.dashboard .connectionFacts div,.dashboard .trackingDiagnostics { background:var(--app-surface-soft,#edf5f0); }
+.dashboard .connectedActions button { margin:0; font-weight:700; }
+.setupHeading { flex-wrap:wrap; }
+.setupHeading .manageBack { color:white; background:transparent; border-color:#91b2a2; }
+.setupHeading .connectionStatus { color:#194934; }
+.setupHeading .connectionStatus[data-offline=true] { color:#754518; background:#fff0d6; }
