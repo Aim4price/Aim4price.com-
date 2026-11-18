@@ -415,7 +415,6 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
   const [ownerId, setOwnerId] = useState(initialOwnerId);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [hasNextPage, setHasNextPage] = useState(false);
   const [rows, setRows] = useState<CaptureRow[]>([]);
   const [queueError, setQueueError] = useState("");
   const [counts, setCounts] = useState<QueueCounts>(EMPTY_COUNTS);
@@ -620,7 +619,6 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
       const nextTotal = data.pagination?.total ?? nextRows.length;
       if (!nextRows.length && page > 1) { setPage(Math.max(1, Math.ceil(nextTotal / ADMIN_CAPTURE_PAGE_SIZE))); return; }
       setTotal(nextTotal);
-      setHasNextPage(data.pagination?.hasNextPage ?? false);
       setRows(nextRows);
       setCounts({ ...EMPTY_COUNTS, ...(data.counts ?? {}) });
       setSelectedId((current) =>
@@ -631,10 +629,6 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
     } catch (error) {
       if (generation !== queueLoadGenerationRef.current) return;
       setQueueError(error instanceof Error ? error.message : "Failed to load capture requests.");
-      setNotice({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Failed to load capture requests.",
-      });
     } finally {
       if (generation === queueLoadGenerationRef.current) setIsLoading(false);
     }
@@ -680,6 +674,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
   }, [applyDetailResponse]);
 
   useEffect(() => {
+    setIsLoading(true);
     const timeout = window.setTimeout(() => void loadQueue(), search.trim() ? 250 : 0);
     return () => {
       window.clearTimeout(timeout);
@@ -1030,8 +1025,9 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
 
   return (
     <>
-      <AdminCaptureAssistance />
-      <section className={styles.kpiGrid} aria-label="Capture queue summary">
+      <section className={styles.overview} aria-label="Capture queue summary">
+        <div className={styles.overviewHeading}><h2>Queue overview</h2><span>All accounts</span></div>
+        <div className={styles.kpiGrid}>
         {kpis.map((kpi) => (
           <button
             key={kpi.key}
@@ -1044,6 +1040,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
             <strong>{isLoading ? "Loading…" : queueError ? "Unavailable" : kpi.value}</strong>
           </button>
         ))}
+        </div>
       </section>
 
       {notice ? (
@@ -1056,11 +1053,11 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
       <section className={styles.queueCard}>
         <div className={styles.queueHeading}>
           <h2>Documents{!isLoading && !queueError ? ` · ${total}` : ""}</h2>
-          <button type="button" className={styles.clearButton} disabled={isLoading || Boolean(busyAction)} onClick={() => void loadQueue()}>Refresh queue</button>
+          <button type="button" className={styles.clearButton} disabled={isLoading || Boolean(busyAction)} onClick={() => void loadQueue()}>{isLoading ? "Refreshing…" : "Refresh queue"}</button>
         </div>
 
         {ownerId ? <div className={styles.accountScope}><span>Showing requests for this account</span><Link href={`/admin?account=${encodeURIComponent(ownerId)}`}>Account details</Link><button type="button" onClick={() => { setOwnerId(""); setPage(1); }}>Show all accounts</button></div> : null}
-        <p className={styles.queueHint}>Summary counts cover all accounts. Documents below follow your filters. Times are South African time.</p>
+        <p className={styles.queueHint}>Filtered requests · South African time</p>
         <div className={styles.filters} aria-label="Capture queue filters">
           <label className={styles.searchField}>
             <span>Search</span>
@@ -1094,7 +1091,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
           <label>
             <span>Document</span>
             <AdminSelect value={typeFilter} onChange={(event) => { setPage(1); setTypeFilter(event.target.value); }}>
-              <option value="all">Invoices and fuel slips</option>
+              <option value="all">All documents</option>
               <option value="invoice">Invoices</option>
               <option value="fuel_slip">Fuel slips</option>
             </AdminSelect>
@@ -1128,7 +1125,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
         </div>
 
         <div className={styles.queueTableWrap} tabIndex={0} role="region" aria-label="Scrollable results">
-          {queueError ? <div className={styles.emptyCell} role="alert"><p>{queueError}</p><button type="button" className={styles.clearButton} onClick={() => void loadQueue()}>Try again</button></div> : isLoading || rows.length || hasActiveFilters ? <table className={styles.queueTable}>
+          {queueError ? <div className={styles.emptyCell} role="alert"><p>{queueError}</p><button type="button" className={styles.clearButton} onClick={() => void loadQueue()}>Try again</button></div> : isLoading ? <div className={styles.emptyCell} role="status">Loading capture requests…</div> : rows.length ? <table className={styles.queueTable}>
             <thead>
               <tr>
                 <th>Request</th>
@@ -1140,9 +1137,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
               </tr>
             </thead>
             <tbody>
-              {isLoading && !rows.length ? (
-                <tr><td colSpan={6} className={styles.emptyCell}>Loading capture requests…</td></tr>
-              ) : rows.length ? rows.map((row) => {
+              {rows.map((row) => {
                 const timing = dueState(row);
                 return (
                   <tr key={row.id} className={selectedId === row.id ? styles.selectedRow : ""}>
@@ -1164,17 +1159,17 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
                     <td><strong>{row.assignedAdminDisplayName || "Unclaimed"}</strong></td>
                   </tr>
                 );
-              }) : (
-                <tr><td colSpan={6} className={styles.emptyCell}>{hasActiveFilters ? "No matches." : "No documents waiting."}</td></tr>
-              )}
+              })}
             </tbody>
-          </table> : <div className={styles.emptyCell}>No documents to capture.</div>}
+          </table> : <div className={styles.emptyCell} role="status">{hasActiveFilters ? "No documents match these filters." : "No documents to capture."}</div>}
         </div>
       </section>
 
-      {!queueError ? <ListPagination label="Capture queue pages" page={page} pageCount={Math.max(1, Math.ceil(total / ADMIN_CAPTURE_PAGE_SIZE))}
+      {!queueError && total > ADMIN_CAPTURE_PAGE_SIZE ? <ListPagination label="Capture queue pages" page={page} pageCount={Math.max(1, Math.ceil(total / ADMIN_CAPTURE_PAGE_SIZE))}
         onPageChange={setPage} disabled={isLoading}
         summary={isLoading ? 'Loading documents…' : `${total} documents`} /> : null}
+
+      <AdminCaptureAssistance />
 
       {selectedId && isDetailLoading ? (
         <section
