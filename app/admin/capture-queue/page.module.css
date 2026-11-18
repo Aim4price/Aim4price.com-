@@ -1389,3 +1389,19 @@ fieldset.formGrid {
 .completionDialog h3, .completionDialog p { margin: 0; }
 .completionDialog textarea { font: inherit; padding: .7rem; min-height: 5rem; }
 .completionDialog footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .6rem; }
+
+.overview { padding: 1rem 1.2rem; background: #f0f6f2; border: 1px solid #d8e5dc; border-radius: .85rem; }
+.overviewHeading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
+.overviewHeading h2 { margin: 0; font-size: 1.2rem; }
+.overviewHeading span { color: #486353; }
+.overview .kpiGrid { grid-template-columns: repeat(auto-fit,minmax(min(100%,13rem),1fr)); gap: .5rem; }
+.overview .kpiCard { padding: .55rem .75rem; }
+.overview .kpiSelected { background: #e2efe6; border-color: #8fb49c; box-shadow: inset 3px 0 #387654; }
+.overview .kpiOverdue { border-color: #daaa92; background: #fff3e9; }
+.kpiCard:focus-visible { outline: 2px solid #438262; outline-offset: 2px; }
+.queueCard .filters { grid-template-columns: repeat(auto-fit,minmax(min(100%,13rem),1fr)); gap: .8rem; align-items: end; }
+.queueCard .filters .searchField { grid-column: auto; }
+.queueCard .filters :is(input,[role="combobox"]) { min-height: 2.95rem; border-radius: .7rem; }
+.queueHeading { padding-bottom: .55rem; }
+.queueHint { margin: 0 1.2rem .8rem; }
+.queueCard .emptyCell { padding: 2rem 1rem; text-align: center; }
