@@ -21,7 +21,35 @@ export async function ownerValueApi(request:NextRequest,assetId?:string,admin=fa
  if(!admin&&isOwnerAppSession(session)){const access=await getOwnerAppAccess();if(!access||!ownerAppCan(access,'manage_assets')||(assetId&&!ownerAppCanAccessAsset(access,assetId)))return businessJson({error:'Owner access required.'},403);}
  const ownerId=admin?request.nextUrl.searchParams.get('ownerId')||'':session.user.id;
  if(!assetId){
-  if(admin){await ensureValueRequests();const q=(request.nextUrl.searchParams.get('search')||'').slice(0,120);return businessJson({items:(await getDb().query(`SELECT a.id,a.user_id,a.title,a.value,u.email,((SELECT count(*)::int FROM asset_value_requests r WHERE r.owner_id=a.user_id AND r.asset_id=a.id AND r.status='pending')+(SELECT count(*)::int FROM dealer_asset_correction_requests c WHERE c.owner_user_id=a.user_id AND c.asset_register_item_id=a.id AND c.status='pending' AND c.replacement_price_changed=true)) AS pending FROM asset_register_items a JOIN "user" u ON u.id=a.user_id WHERE ($1='' OR a.title ILIKE '%'||$1||'%' OR u.email ILIKE '%'||$1||'%') ORDER BY a.updated_at DESC LIMIT 50`,[q])).rows});}
+  if(admin) {
+    await ensureValueRequests();
+    const search = (request.nextUrl.searchParams.get('search') ?? '').trim().slice(0,120);
+    const requested = Number(request.nextUrl.searchParams.get('page') ?? 1);
+    const page = Number.isSafeInteger(requested) && requested > 0 ? Math.min(requested, 2147483647) : 1;
+    const pendingOnly = request.nextUrl.searchParams.get('pending') === '1';
+    const {rows} = await getDb().query(`
+      WITH pending_requests AS (
+        SELECT owner_id, asset_id FROM asset_value_requests WHERE status='pending'
+        UNION ALL
+        SELECT owner_user_id, asset_register_item_id FROM dealer_asset_correction_requests
+        WHERE status='pending' AND replacement_price_changed=true
+      ), counts AS (
+        SELECT owner_id, asset_id, count(*)::int AS pending FROM pending_requests GROUP BY owner_id,asset_id
+      ), matches AS (
+        SELECT a.id,a.user_id,a.title,a.value,u.email,a.updated_at,coalesce(c.pending,0) AS pending
+        FROM asset_register_items a JOIN "user" u ON u.id=a.user_id
+        LEFT JOIN counts c ON c.owner_id=a.user_id AND c.asset_id=a.id
+        WHERE ($1='' OR a.title ILIKE '%'||$1||'%' OR u.email ILIKE '%'||$1||'%')
+          AND (NOT $2::boolean OR c.pending > 0)
+      ), totals AS (SELECT count(*)::int AS total FROM matches),
+      bounds AS (SELECT total,least($3::int,1+greatest(total-1,0)/50) AS page FROM totals),
+      page_rows AS (
+        SELECT * FROM matches ORDER BY updated_at DESC,id LIMIT 50 OFFSET (SELECT (page-1)*50 FROM bounds)
+      )
+      SELECT total,page,(SELECT coalesce(json_agg(page_rows ORDER BY updated_at DESC,id),'[]') FROM page_rows) AS items FROM bounds
+    `,[search,pendingOnly,page]);
+    return businessJson(rows[0]);
+  }
   return businessJson({requests:await listValueRequests(ownerId)});
  }
  if(request.method==='GET')return businessJson(await readAssetValueReview(ownerId,assetId,request.nextUrl.searchParams.get('valueRequest')||undefined));

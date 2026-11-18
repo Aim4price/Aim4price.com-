@@ -74,7 +74,7 @@ type OptionRow = {
   count: DatabaseValue;
 };
 
-const EMPTY_OPTIONS: AdminValuationOptions = { sectors: [], years: [] };
+
 const ADMIN_VALUATION_HISTORY_START_SQL = `timestamptz '${ADMIN_VALUATION_HISTORY_START_ISO}'`;
 
 function safeNumericSql(source: string): string {
@@ -455,7 +455,7 @@ const ADMIN_VALUATION_CTE = `
       end as output_json
     from public.valuation_runs valuation
     cross join lateral (
-      select to_jsonb(valuation) as row_json
+      select to_jsonb(valuation) as row_json offset 0
     ) valuation_document
     cross join lateral (
       select case
@@ -687,7 +687,7 @@ export function normalizeAdminValuationFilters(
     sector: text(input.sector).toLowerCase().slice(0, 100),
     period: normalizePeriod(input.period),
     sort: normalizeSort(input.sort),
-    page: clampPositiveInteger(input.page, 1),
+    page: Math.min(2147483647, clampPositiveInteger(input.page, 1)),
     pageSize: ADMIN_VALUATION_PAGE_SIZES.includes(requestedPageSize as 25 | 50 | 100)
       ? requestedPageSize
       : 50,
@@ -745,23 +745,6 @@ function sortSql(sort: AdminValuationSort): string {
   if (sort === 'account') return 'lower(account_label) asc, created_at desc';
   if (sort === 'asset') return 'lower(brand_name) asc, lower(model_name) asc, created_at desc';
   return 'created_at desc, valuation_id desc';
-}
-
-async function getOptions(): Promise<AdminValuationOptions> {
-  const result = await getDb().query<OptionRow>(`
-    ${ADMIN_VALUATION_CTE}
-    select 'sector'::text as option_group, sector_key as value,
-      max(sector_label) as label, count(*)::bigint as count
-    from admin_valuations
-    group by sector_key
-    union all
-    select 'year', valuation_year::text, valuation_year::text, count(*)::bigint
-    from admin_valuations
-    where valuation_year is not null
-    group by valuation_year
-    order by option_group, label desc
-  `);
-  return mapOptions(result.rows);
 }
 
 type ValuationRunReference = {
@@ -928,11 +911,17 @@ export async function getAdminValuationReport(
   await Promise.all([ensureAdminUsageTrackingSchema(), ensureAccountProfileColumns()]);
   const filters = normalizeAdminValuationFilters(input);
   const { whereSql, params } = buildWhere(filters);
-  const [summaryResult, options] = await Promise.all([
-    getDb().query<SummaryRow>(
-      `
-        ${ADMIN_VALUATION_CTE}
-        select
+  const limitParameter = `$${params.length + 1}`;
+  const requestedPage = `$${params.length + 2}`;
+  const offsetParameter = `(select least((${requestedPage}::bigint - 1) * ${limitParameter}::bigint,
+    greatest(total_valuations - 1, 0) / ${limitParameter} * ${limitParameter}) from totals)`;
+  const result = await getDb().query<{
+    summary: SummaryRow; options: OptionRow[]; records: AdminValuationRow[];
+  }>(`
+    ${ADMIN_VALUATION_CTE},
+    filtered as (select * from admin_valuations ${whereSql}),
+    totals as (
+      select
           count(*)::bigint as total_valuations,
           count(*) filter (where record_type = 'estimate')::bigint as estimate_events,
           count(*) filter (where record_type = 'saved')::bigint as saved_valuations,
@@ -940,39 +929,37 @@ export async function getAdminValuationReport(
           count(*) filter (where not has_account)::bigint as unknown_account_valuations,
           count(distinct account_user_id)::bigint as unique_accounts,
           count(*) filter (where selected_value_ex_vat is not null)::bigint as valued_valuations
-        from admin_valuations
-        ${whereSql}
-      `,
-      params,
+        from filtered
     ),
-    getOptions(),
-  ]);
-
-  const summary = mapSummary(summaryResult.rows[0]);
+    options as (
+      select 'sector'::text as option_group, sector_key as value,
+      max(sector_label) as label, count(*)::bigint as count
+    from admin_valuations
+    group by sector_key
+    union all
+    select 'year', valuation_year::text, valuation_year::text, count(*)::bigint
+    from admin_valuations
+    where valuation_year is not null
+    group by valuation_year
+    order by option_group, label desc
+    ),
+    page_rows as (
+      select * from filtered order by ${sortSql(filters.sort)}, valuation_id
+      limit ${limitParameter} offset ${offsetParameter}
+    )
+    select (select row_to_json(totals) from totals) as summary,
+      (select coalesce(json_agg(options order by option_group, label desc), '[]') from options) as options,
+      (select coalesce(json_agg(page_rows order by ${sortSql(filters.sort)}, valuation_id), '[]') from page_rows) as records
+  `, [...params, filters.pageSize, filters.page]);
+  const row = result.rows[0];
+  const summary = mapSummary(row.summary);
   const totalPages = Math.max(1, Math.ceil(summary.totalValuations / filters.pageSize));
   const page = Math.min(filters.page, totalPages);
-  const offset = (page - 1) * filters.pageSize;
-  const listParams = [...params, filters.pageSize, offset];
-  const limitParameter = `$${listParams.length - 1}`;
-  const offsetParameter = `$${listParams.length}`;
-  const listResult = await getDb().query<AdminValuationRow>(
-    `
-      ${ADMIN_VALUATION_CTE}
-      select *
-      from admin_valuations
-      ${whereSql}
-      order by ${sortSql(filters.sort)}
-      limit ${limitParameter}
-      offset ${offsetParameter}
-    `,
-    listParams,
-  );
-
   return {
     generatedAtIso: new Date().toISOString(),
-    valuations: listResult.rows.map(mapValuation),
+    valuations: row.records.map(mapValuation),
     summary,
-    options: options ?? EMPTY_OPTIONS,
+    options: mapOptions(row.options),
     filters: { ...filters, page },
     pagination: {
       page,

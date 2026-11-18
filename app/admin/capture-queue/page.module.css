@@ -1381,3 +1381,11 @@ fieldset.formGrid {
 .queueHint { font-size: 0.95rem; color: #52665d; }
 .documentPanel, .capturePanel { border-radius: .7rem; border-color: #e2e9e5; }
 .emptyCell { padding: 3rem 1rem; color: #52665d; }
+
+.completionDialog { width: min(34rem, calc(var(--website-design-vw, 1vw) * 92)); max-height: calc(var(--website-design-vh, 1dvh) * 85); overflow: auto; padding: 1.5rem; border: 1px solid #d4dfd9; border-radius: 1rem; color: #18392d; background: white; }
+.completionDialog::backdrop { background: rgba(16, 37, 28, .48); }
+.completionDialog form, .completionDialog label { display: grid; gap: .85rem; }
+.completionDialog header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.completionDialog h3, .completionDialog p { margin: 0; }
+.completionDialog textarea { font: inherit; padding: .7rem; min-height: 5rem; }
+.completionDialog footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .6rem; }

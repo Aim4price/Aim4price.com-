@@ -91,14 +91,21 @@ function buildQuery(filters: ValuationFilterState): string {
 }
 
 export default function AdminValuationsClient({
-  initialReport,
+  initialReport, initialFilters,
 }: {
-  initialReport: AdminValuationReport;
+  initialReport?: AdminValuationReport;
+  initialFilters?: AdminValuationReport["filters"];
 }) {
-  const [report, setReport] = useState(initialReport);
-  const [filters, setFilters] = useState<ValuationFilterState>(initialReport.filters);
-  const [searchDraft, setSearchDraft] = useState(initialReport.filters.search);
-  const [loading, setLoading] = useState(false);
+  const start = initialReport?.filters ?? initialFilters!;
+  const [report, setReport] = useState<AdminValuationReport>(() => initialReport ?? {
+    filters:start, generatedAtIso:"", valuations:[], options:{sectors:[],years:[]},
+    summary:{totalValuations:0,estimateEvents:0,savedValuations:0,knownAccountValuations:0,unknownAccountValuations:0,uniqueAccounts:0,valuedValuations:0},
+    pagination:{page:start.page,pageSize:start.pageSize,totalItems:0,totalPages:1,hasPreviousPage:false,hasNextPage:false},
+  });
+  const hasReport = Boolean(report.generatedAtIso || initialReport);
+  const [filters, setFilters] = useState<ValuationFilterState>(start);
+  const [searchDraft, setSearchDraft] = useState(start.search);
+  const [loading, setLoading] = useState(!initialReport);
   const [error, setError] = useState('');
   const [selectedValuation, setSelectedValuation] = useState<AdminValuationRecord | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
@@ -287,6 +294,13 @@ export default function AdminValuationsClient({
     }
   }
 
+  useEffect(() => {
+    if (!initialReport) void loadReport(start);
+    return () => { requestSequenceRef.current++; };
+    // The server keys this component by the initial URL filters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function updateFilter<K extends keyof ValuationFilterState>(
     key: K,
     value: ValuationFilterState[K],
@@ -443,23 +457,23 @@ export default function AdminValuationsClient({
       <section className={styles.metrics} aria-label="Valuation summary">
         <article>
           <span>Records</span>
-          <strong>{summary.totalValuations.toLocaleString('en-ZA')}</strong>
+          <strong>{hasReport ? summary.totalValuations.toLocaleString('en-ZA') : "—"}</strong>
         </article>
         <article>
           <span>Estimates</span>
-          <strong>{summary.estimateEvents.toLocaleString('en-ZA')}</strong>
+          <strong>{hasReport ? summary.estimateEvents.toLocaleString('en-ZA') : "—"}</strong>
         </article>
         <article>
           <span>Saved</span>
-          <strong>{summary.savedValuations.toLocaleString('en-ZA')}</strong>
+          <strong>{hasReport ? summary.savedValuations.toLocaleString('en-ZA') : "—"}</strong>
         </article>
         <article>
           <span>Account records</span>
-          <strong>{summary.knownAccountValuations.toLocaleString('en-ZA')}</strong>
+          <strong>{hasReport ? summary.knownAccountValuations.toLocaleString('en-ZA') : "—"}</strong>
         </article>
         <article>
           <span>Guest records</span>
-          <strong>{summary.unknownAccountValuations.toLocaleString('en-ZA')}</strong>
+          <strong>{hasReport ? summary.unknownAccountValuations.toLocaleString('en-ZA') : "—"}</strong>
         </article>
       </section>
 
@@ -544,7 +558,7 @@ export default function AdminValuationsClient({
           </div>
         </header>
 
-        {error ? <p className={styles.errorNotice} role="alert">{error}</p> : null}
+        {error ? <p className={styles.errorNotice} role="alert">{error} <button type="button" onClick={() => void loadReport(filters)}>Try again</button></p> : null}
         {loading ? <div className={styles.loadingBar} aria-label="Loading valuations" /> : null}
 
         <div className={styles.recordsToolbar}>
@@ -553,7 +567,7 @@ export default function AdminValuationsClient({
               ? `${selectedOnPageCount.toLocaleString('en-ZA')} selected`
               : report.pagination.totalItems
                 ? `${firstItem}-${lastItem} of ${report.pagination.totalItems.toLocaleString('en-ZA')}`
-                : 'No results'}
+                : !hasReport ? loading ? 'Loading valuations…' : 'Report unavailable' : 'No results'}
           </strong>
           {selectedOnPageCount ? (
             <button
@@ -638,17 +652,17 @@ export default function AdminValuationsClient({
               ))}
             </tbody>
           </table>
-          {!report.valuations.length ? (
+          {hasReport && !loading && !report.valuations.length ? (
             <div className={styles.emptyState}>
               <strong>No valuations found</strong>
             </div>
           ) : null}
         </div>
 
-        <ListPagination label="Admin valuation pages" page={report.pagination.page} pageCount={report.pagination.totalPages}
+        {hasReport && <ListPagination label="Admin valuation pages" page={report.pagination.page} pageCount={report.pagination.totalPages}
           disabled={loading} pageSize={filters.pageSize} pageSizeOptions={ADMIN_VALUATION_PAGE_SIZES}
           onPageSizeChange={(pageSize) => void loadReport({ ...filters, pageSize, page: 1 })}
-          onPageChange={(page) => void loadReport({ ...filters, page })} />
+          onPageChange={(page) => void loadReport({ ...filters, page })} />}
       </section>
 
       {selectedValuation ? (

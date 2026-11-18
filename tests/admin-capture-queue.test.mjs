@@ -257,7 +257,8 @@ test("admin workflow exposes guarded claim, draft, information, duplicate, compl
     assert.match(client, new RegExp(`runAction\\(\\\"${action}\\\"\\)`));
     assert.match(itemRoute, new RegExp(`case \\\"${action}\\\"`));
   }
-  assert.match(client, /window\.confirm\("Use these verified details to create the ledger record/);
+  assert.match(client, /needsOwnerApproval \? "Send to owner for approval" : "Save to owner’s ledger"/);
+  assert.match(client, /runAction\(completion,true\)/);
   assert.match(client, /Add a short reason before using this action/);
 });
 
