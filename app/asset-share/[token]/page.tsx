@@ -17,10 +17,11 @@ export const metadata: Metadata = {
   referrer: 'no-referrer',
 };
 export default async function AssetSharePage({ params, searchParams }: { params: { token: string }; searchParams?: { from?: string | string[]; open?: string | string[] } }) {
+  const header = <Suspense fallback={null}><AppHeader active="none" /></Suspense>;
+  if (!/^[A-Za-z0-9_-]{43}$/.test(params.token)) return <>{header}<SharedAssetCards share={null}/></>;
   const passwordState = await getAssetSharePasswordState(params.token);
   if (passwordState.exists && passwordState.protected && !passwordState.unlocked) return <><Suspense fallback={null}><AppHeader active="none" /></Suspense><SharedAssetPasswordGate token={params.token}/></>;
   const lead = await readLeadPage(params.token);
-  const header = <Suspense fallback={null}><AppHeader active="none" /></Suspense>;
   if (!lead) return <>{header}<SharedAssetCards share={null}/></>;
   const {share,details,reports}=lead;
   const {access}=await externalLeadAccess(lead);

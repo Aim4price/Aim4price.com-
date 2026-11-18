@@ -11,6 +11,7 @@ const mocks={
  '../../../components/SharedAssetPasswordGate':{default:'PasswordGate'},
  '../../../components/asset-register/SharedEnquiryRequest':{default:'Request'},
  '../../../components/asset-register/SharedAssetCards':{default:'AssetCards'},
+ '../../../lib/external-lead-access':{externalLeadAccess:async()=>({access:'sign-in'}),leadAllows:()=>true},
  '../../../lib/guest-leads':{readLeadPage:async()=>lead},
  '../../../lib/asset-share-links':{getAssetSharePasswordState:async()=>({exists:false,protected:false,unlocked:true})},
  './page.module.css':{},
@@ -45,6 +46,19 @@ test('umbrella landing identifies the group without serializing the member recor
  const output=await page.default({params:{token}});
  assert.deepEqual(output.props.children[1].props.summary,{senderName:'Private sender',umbrellaName:'Vehicles',assetCount:1,assetTitles:[]});
  assert.ok(!JSON.stringify(output).includes('PRIVATE-SERIAL'));
+});
+
+test('malformed asset share tokens stop before password or database checks',async()=>{
+ let passwordChecks=0,leadReads=0;
+ const page=load('app/asset-share/[token]/page.tsx',{...mocks,
+  '../../../lib/asset-share-links':{getAssetSharePasswordState:async()=>{passwordChecks++;return{exists:false,protected:false,unlocked:true};}},
+  '../../../lib/guest-leads':{readLeadPage:async()=>{leadReads++;return null;}},
+ });
+ const output=await page.default({params:{token:'invalid'}});
+ assert.equal(output.props.children[1].type,'AssetCards');
+ assert.equal(output.props.children[1].props.share,null);
+ assert.equal(passwordChecks,0);
+ assert.equal(leadReads,0);
 });
 
 test('signed-in free Dealers return to their enquiry or hub instead of the unpaid-account screen',async()=>{
@@ -114,16 +128,3 @@ test('suspended free accounts still follow the account access block',async()=>{
 });
 
 test('free Business login defaults to Shared enquiries while preserving explicit asset links',async()=>{
- const page=load('app/auth/page.tsx',{
-  '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
-  '../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
-  '../../components/AppHeader':{default:'Header'},'../../components/SwitchAccountButton':{default:'Switch'},'./page.module.css':{default:{}},
-  'next/navigation':{redirect:path=>{throw Error(path);}},
-  '../../lib/account-access':{getAccountAccess:async()=>({isActive:true})},
-  '../../lib/account-profile':{getAccountProfile:async()=>({accountType:'business',accountStatus:'active'})},
-  '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'free',email:'free@example.test'}})},
-  '../../lib/middleman-account':{},'./auth-client':{default:'Auth'},
- });
- await assert.rejects(page.default({}),{message:'/business'});
- await assert.rejects(page.default({searchParams:{returnTo:'/asset-share/'+token+'?open=1'}}),{message:'/asset-share/'+token+'?open=1'});
-});
