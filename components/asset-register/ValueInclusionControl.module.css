@@ -10,3 +10,14 @@
 
 /* Match the asset management modal subtitle. */
 .control small.assetHelper { font-family:inherit; font-size:.88rem; font-weight:650; line-height:1.5; color:var(--app-muted, #64746a); }
+
+.control[data-combined] {
+  margin: 0;
+  padding: 1rem 1.15rem;
+  gap: 1rem;
+}
+.control[data-combined]:has(input:checked) {
+  background: var(--app-success-soft, #edf6f1);
+  border-color: var(--app-success-line, #bdd8ca);
+}
+.control[data-combined] input:checked { background: #17563f; }

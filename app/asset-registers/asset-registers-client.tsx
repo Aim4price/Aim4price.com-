@@ -1089,7 +1089,7 @@ function RegisterLogoBlock({
     <label
       className={`${styles.registerLogoPanel} ${isUploading ? styles.registerLogoPanelUploading : ""} ${uploadDisabled ? styles.registerLogoPanelDisabled : ""}`}
       aria-label={`${uploadLabel} for ${register.businessName}`}
-      title={uploadDisabled ? "Logo upload is temporarily unavailable" : uploadLabel}
+      data-tooltip={uploadDisabled ? "Logo upload is temporarily unavailable" : uploadLabel}
     >
       <input
         className={styles.cardLogoUploadInput}
@@ -2738,6 +2738,8 @@ export default function AssetRegistersClient({
                   <SearchIcon className={styles.searchIcon} />
                   <input
                     className={styles.searchInput}
+                    data-tooltip="Find a register by business name, email, phone number or address."
+                    data-tooltip-style="description"
                     value={registerSearchTerm}
                     onChange={(event) =>
                       setRegisterSearchTerm(event.target.value)
@@ -2748,6 +2750,8 @@ export default function AssetRegistersClient({
                     <button
                       type="button"
                       className={styles.clearSearchButton}
+                      data-tooltip="Clear the filter and show all registers."
+                      data-tooltip-style="description"
                       onClick={() => setRegisterSearchTerm("")}
                       aria-label="Clear search"
                     >
@@ -2759,6 +2763,8 @@ export default function AssetRegistersClient({
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${styles.toolbarPrimaryButton} ${styles.topAddButton}`}
+                  data-tooltip="Create a separate register for a farm, business or site."
+                  data-tooltip-style="description"
                   onClick={openCreateModal}
                 >
                   <PlusIcon className={styles.buttonIcon} />
@@ -2768,6 +2774,8 @@ export default function AssetRegistersClient({
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${styles.toolbarPrimaryButton} ${styles.topSummaryButton}`}
+                  data-tooltip="Choose which registers to summarise in a PDF."
+                  data-tooltip-style="description"
                   onClick={() => openExportChoiceModal("summary")}
                   disabled={isLoading || !registers.length}
                 >
@@ -2778,6 +2786,8 @@ export default function AssetRegistersClient({
                 <button
                   type="button"
                   className={`${styles.primaryButton} ${styles.toolbarPrimaryButton} ${styles.topDownloadButton}`}
+                  data-tooltip="Choose which registers to export as PDF or Excel."
+                  data-tooltip-style="description"
                   onClick={() => openExportChoiceModal("download")}
                   disabled={isLoading || !registers.length}
                 >
@@ -2798,6 +2808,8 @@ export default function AssetRegistersClient({
                 <button
                   type="button"
                   className={styles.primaryButton}
+                  data-tooltip="Create a separate register for a farm, business or site."
+                  data-tooltip-style="description"
                   onClick={openCreateModal}
                 >
                   <PlusIcon className={styles.buttonIcon} />
@@ -2821,15 +2833,15 @@ export default function AssetRegistersClient({
                       </div>
 
                       <div className={styles.statGrid}>
-                        <div>
+                        <div data-tooltip="Number of assets across all registers, including registers excluded from value totals." data-tooltip-style="description">
                           <span>Assets</span>
                           <strong>{combinedRegister.assetCount}</strong>
                         </div>
-                        <div>
+                        <div data-tooltip="Current value of assets that count towards combined totals." data-tooltip-style="description">
                           <span>Register value</span>
                           <strong>{money(combinedRegister.totalValue)}</strong>
                         </div>
-                        <div>
+                        <div data-tooltip="Replacement cost of assets that count towards combined totals." data-tooltip-style="description">
                           <span>Replacement value</span>
                           <strong>{money(combinedRegister.totalReplacementPrice)}</strong>
                         </div>
@@ -2838,12 +2850,14 @@ export default function AssetRegistersClient({
 
                     <div className={styles.registerAside}>
                       <div className={styles.badgeStack}>
-                        <span className={styles.combinedBadge}>All registers</span>
+                        <span className={styles.combinedBadge} data-tooltip="Includes assets from every register on this account.">All registers</span>
                       </div>
                       <div className={styles.unitActions}>
                         <button
                           type="button"
                           className={`${styles.unitButton} ${styles.openRegisterButton}`}
+                          data-tooltip="View assets from every register together."
+                          data-tooltip-style="description"
                           onClick={openCombinedRegister}
                         >
                           <OpenIcon className={styles.buttonIcon} />
@@ -2852,6 +2866,8 @@ export default function AssetRegistersClient({
                         <button
                           type="button"
                           className={`${styles.unitButton} ${styles.manageUnitButton}`}
+                          data-tooltip="Move assets between registers or create QR labels across registers."
+                          data-tooltip-style="description"
                           onClick={() => openManagePanel(combinedRegister)}
                           disabled={isLoadingManagedAssets}
                         >
@@ -2861,6 +2877,8 @@ export default function AssetRegistersClient({
                         <button
                           type="button"
                           className={`${styles.unitButton} ${styles.combinedDownloadButton}`}
+                          data-tooltip="Export all registers together as PDF or Excel."
+                          data-tooltip-style="description"
                           onClick={openCombinedDownload}
                           disabled={isExporting}
                         >
@@ -2893,22 +2911,22 @@ export default function AssetRegistersClient({
 
                       <div className={styles.registerInfo}>
                         <div className={styles.registerTitleBlock}>
-                          <h2>{register.businessName}</h2>{register.includeInCombinedTotals === false ? <small>Excluded from combined totals</small> : null}
+                          <h2>{register.businessName}</h2>{register.includeInCombinedTotals === false ? <small data-tooltip="This register keeps its own totals. Change this setting under Manage → Edit register.">Excluded from combined totals</small> : null}
                           <div className={styles.registerDetails}>
                             <RegisterContactDetails register={register} />
                           </div>
                         </div>
 
                         <div className={styles.statGrid}>
-                          <div>
+                          <div data-tooltip="Number of assets in this register." data-tooltip-style="description">
                             <span>Assets</span>
                             <strong>{register.assetCount}</strong>
                           </div>
-                          <div>
+                          <div data-tooltip="Current value of assets that count towards this register’s total." data-tooltip-style="description">
                             <span>Register value</span>
                             <strong>{money(register.totalValue)}</strong>
                           </div>
-                          <div>
+                          <div data-tooltip="Replacement cost of assets that count towards this register’s total." data-tooltip-style="description">
                             <span>Replacement value</span>
                             <strong>
                               {money(register.totalReplacementPrice)}
@@ -2920,12 +2938,12 @@ export default function AssetRegistersClient({
                       <div className={styles.registerAside}>
                         <div className={styles.badgeStack}>
                           {register.isSelected ? (
-                            <span className={styles.selectedBadge}>
+                            <span className={styles.selectedBadge} data-tooltip="The register currently selected on this account.">
                               Selected
                             </span>
                           ) : null}
                           {register.isPrimary ? (
-                            <span className={styles.primaryBadge}>Primary</span>
+                            <span className={styles.primaryBadge} data-tooltip="The primary asset register for this account.">Primary</span>
                           ) : null}
                         </div>
 
@@ -2933,6 +2951,8 @@ export default function AssetRegistersClient({
                           <button
                             type="button"
                             className={`${styles.unitButton} ${styles.openRegisterButton}`}
+                            data-tooltip="Open the assets in this register."
+                            data-tooltip-style="description"
                             onClick={() => openRegister(register)}
                             disabled={isBusySelecting}
                           >
@@ -2944,6 +2964,8 @@ export default function AssetRegistersClient({
                           <button
                             type="button"
                             className={`${styles.unitButton} ${styles.manageUnitButton}`}
+                            data-tooltip="Edit register details, move assets, create QR labels or export records."
+                            data-tooltip-style="description"
                             onClick={() => openManagePanel(register)}
                             disabled={isLoadingManagedAssets}
                           >
@@ -2953,6 +2975,8 @@ export default function AssetRegistersClient({
                           <button
                             type="button"
                             className={`${styles.unitButton} ${styles.deleteUnitButton}`}
+                            data-tooltip="Review this register and choose where its assets go before deletion."
+                            data-tooltip-style="description"
                             onClick={() => openDeleteRegisterDialog(register)}
                             disabled={registers.length <= 1 || isBusyRemoving}
                           >
@@ -2973,6 +2997,8 @@ export default function AssetRegistersClient({
                     <button
                       type="button"
                       className={styles.secondaryButton}
+                      data-tooltip="Clear the filter and show all registers."
+                      data-tooltip-style="description"
                       onClick={() => setRegisterSearchTerm("")}
                     >
                       Clear search
@@ -3358,7 +3384,7 @@ export default function AssetRegistersClient({
           aria-modal="true"
           aria-labelledby="manage-register-title"
         >
-          <section className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.manageModalCard}`}>
+          <section data-tooltip-boundary className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.manageModalCard}`}>
             <div className={styles.modalHeader}>
               <div>
                 <h2 id="manage-register-title">
@@ -3387,7 +3413,7 @@ export default function AssetRegistersClient({
                     <button
                       type="button"
                       className={`${styles.manageActionButton} ${styles.manageEditAction}`}
-                      title="Edit register details and inclusion in combined totals"
+                      data-tooltip-style="description" data-tooltip="Change contact details or choose whether this register counts towards combined totals."
                       onClick={openManagedEditModal}
                       disabled={isSavingDetails || isMoving}
                     >
@@ -3398,7 +3424,7 @@ export default function AssetRegistersClient({
 
                   <button
                     type="button"
-                    title="Open the register summary as a PDF"
+                    data-tooltip-style="description" data-tooltip="Open the register summary as a PDF"
                     className={`${styles.manageActionButton} ${styles.manageSummaryAction}`}
                     onClick={() => isManagingCombined
                       ? void handleSummaryPdfExport("all", registers, { closeFlowOnSuccess: false })
@@ -3412,7 +3438,7 @@ export default function AssetRegistersClient({
                   <button
                     type="button"
                     className={`${styles.manageActionButton} ${styles.manageQrAction}`}
-                    title="Create printable QR labels for assets"
+                    data-tooltip-style="description" data-tooltip="Create printable QR labels for assets"
                     onClick={() => void openQrModal()}
                     disabled={isLoadingQrAssets || isLoadingManagedAssets}
                   >
@@ -3422,7 +3448,7 @@ export default function AssetRegistersClient({
 
                   <button
                     type="button"
-                    title="Export register data as PDF or Excel"
+                    data-tooltip-style="description" data-tooltip="Export register data as PDF or Excel"
                     className={`${styles.manageActionButton} ${styles.manageDownloadAction}`}
                     onClick={() => isManagingCombined
                       ? openCombinedDownload()
@@ -3840,9 +3866,13 @@ export default function AssetRegistersClient({
                   />
                 </span>
               </label>
+              <ValueInclusionControl
+                combined
+                checked={editDraft.includeInCombinedTotals !== false}
+                onChange={checked => applyEditDraftChange(current => ({ ...current, includeInCombinedTotals: checked }))}
+                disabled={isSavingDetails}
+              />
             </div>
-
-            <ValueInclusionControl combined checked={editDraft.includeInCombinedTotals !== false} onChange={checked => applyEditDraftChange(current => ({ ...current, includeInCombinedTotals: checked }))} disabled={isSavingDetails} />
             <div className={styles.modalFooter}>
               <button
                 type="button"

@@ -75,12 +75,20 @@ export default function HoverLabels() {
     const highlight = control && !control.matches(':disabled, [aria-disabled="true"]') ? control : null;
     highlight?.classList.add(styles.activeControl);
     const anchor = (control ?? target).getBoundingClientRect();
-    const box = labelRef.current.getBoundingClientRect();
     const viewport = window.visualViewport;
-    const leftEdge = (viewport?.offsetLeft ?? 0) + 12;
-    const topEdge = (viewport?.offsetTop ?? 0) + 12;
-    const rightEdge = leftEdge + (viewport?.width ?? window.innerWidth) - 24;
-    const bottomEdge = topEdge + (viewport?.height ?? window.innerHeight) - 24;
+    const boundary = target.closest('[data-tooltip-boundary]')?.getBoundingClientRect();
+    const viewportLeft = viewport?.offsetLeft ?? 0;
+    const viewportTop = viewport?.offsetTop ?? 0;
+    const leftEdge = Math.max(viewportLeft, boundary?.left ?? viewportLeft) + 12;
+    const topEdge = Math.max(viewportTop, boundary?.top ?? viewportTop) + 12;
+    const rightEdge = Math.min(viewportLeft + (viewport?.width ?? window.innerWidth), boundary?.right ?? Infinity) - 12;
+    const bottomEdge = Math.min(viewportTop + (viewport?.height ?? window.innerHeight), boundary?.bottom ?? Infinity) - 12;
+    const label = labelRef.current;
+    if (boundary) {
+      // Constrain wrapping before measuring the final height and choosing a side.
+      label.style.maxWidth = `min(${getComputedStyle(label).maxWidth}, ${Math.max(1, rightEdge - leftEdge)}px)`;
+    }
+    const box = label.getBoundingClientRect();
     const left = Math.max(leftEdge, Math.min(anchor.left + anchor.width / 2 - box.width / 2, rightEdge - box.width));
     const above = anchor.top - box.height - 10;
     const top = Math.max(topEdge, Math.min(above >= topEdge ? above : anchor.bottom + 10, bottomEdge - box.height));
@@ -93,6 +101,7 @@ export default function HoverLabels() {
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-tooltip'] });
     return () => {
       observer.disconnect();
+      if (boundary) label.style.removeProperty('max-width');
       highlight?.classList.remove(styles.activeControl);
       if (previous === null) target.removeAttribute('aria-describedby');
       else target.setAttribute('aria-describedby', previous);
