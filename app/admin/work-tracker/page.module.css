@@ -844,3 +844,36 @@
 .periodToggle { background: #f3f6f4; border-color: #e3eae5; }
 .emptyState { background: #fafcfb; border: 1px dashed #d8e4db; border-radius: .7rem; padding: 2.5rem 1.5rem; color: #52665d; font-size: 0.95rem; }
 @media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .startRow, :global(:where(html:not(:has([data-website-canvas])))) .activeDetails, :global(:where(html:not(:has([data-website-canvas])))) .reportBar, :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid { grid-template-columns: minmax(0, 1fr); } :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading { flex-wrap: wrap; } }
+
+.timerHint {
+  color: #52665d;
+  margin-top: .25rem;
+  font-size: .95rem;
+}
+
+.sectionHeading h2 { font-size: 1.2rem; }
+.historyToolbar { flex-wrap: wrap; align-items: center; }
+.historyToolbar > div:first-child { gap: .3rem; }
+.historyToolbar > div:first-child > span { font-weight: 550; }
+.startRow .startButton { min-height: 3.15rem; }
+
+.reportActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+}
+
+.reportActions > a, .reportActions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 3.15rem;
+  text-decoration: none;
+}
+
+.reportActions > a:hover { background: #eef5f1; }
+.reportBar > small { grid-column: 1 / -1; font-weight: 500; }
+.summaryGrid article > span { text-transform: none; letter-spacing: normal; }
+.summaryGrid article > strong { font-size: 1.35rem; font-variant-numeric: tabular-nums; }

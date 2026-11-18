@@ -85,11 +85,16 @@ function formatDateTime(value: string | null): string {
   }).format(parsed);
 }
 
-function periodRangeLabel(history: AdminWorkHistory | null): string {
-  if (!history) return "Loading period…";
-  return `${formatDate(history.startIso)} – ${formatDate(
-    new Date(new Date(history.endIso).getTime() - 1_000).toISOString(),
-  )}`;
+function periodRangeLabel(period: AdminWorkPeriod, anchor: string): string {
+  const { startIso, endIso } = getAdminWorkPeriodRange(period, anchor);
+  const formatter = new Intl.DateTimeFormat("en-ZA", {
+    timeZone: REPORT_TIME_ZONE,
+    year: "numeric",
+    month: period === "month" ? "long" : "short",
+    ...(period === "week" && { day: "numeric" }),
+  });
+  const start = new Date(startIso);
+  return period === "month" ? formatter.format(start) : formatter.formatRange(start, new Date(Date.parse(endIso) - 1));
 }
 
 function sortClients(clients: WorkClient[]): WorkClient[] {
@@ -264,7 +269,7 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
       setNotice({ tone: "error", message: "Choose an account before starting work." });
       return;
     }
-    if (isStarting || deleteInFlightRef.current) return;
+    if (isStarting || isLoading || loadError || activeSession || deleteInFlightRef.current) return;
 
     setIsStarting(true);
     setNotice(null);
@@ -464,6 +469,7 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
   }
 
   function openReport() {
+    if (isLoading || loadError || !history) return;
     if (!clientUserId) {
       setNotice({ tone: "error", message: "Choose one account before opening a report." });
       return;
@@ -534,6 +540,7 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
         <div className={styles.sectionHeading}>
           <div>
             <h2>{activeSession ? activeSession.clientName : "Start work"}</h2>
+            {!activeSession && <span className={styles.timerHint}>Start the timer to open the selected account.</span>}
           </div>
           {activeSession ? <strong className={styles.liveTime}>{formatAdminWorkDuration(activeLiveSeconds)}</strong> : null}
         </div>
@@ -581,7 +588,7 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
         ) : (
           <div className={styles.startRow}>
             <AccountPicker
-              label="Account"
+              label="Account to track"
               value={startClientUserId}
               options={clientOptions}
               recentValues={recentClientIds}
@@ -589,7 +596,7 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
               placeholder="Choose an account"
             />
             <div className={styles.startAction}>
-              <button type="button" className={styles.startButton} onClick={() => void startWork()} disabled={isStarting || deletingSessionId !== null || !startClientUserId}>
+              <button type="button" className={styles.startButton} onClick={() => void startWork()} disabled={isStarting || isLoading || Boolean(loadError) || deletingSessionId !== null || !startClientUserId}>
                 {isStarting ? "Starting…" : "Start timer"}
               </button>
             </div>
@@ -600,7 +607,8 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
       <section className={styles.historyCard} aria-label="Weekly and monthly work history">
         <div className={styles.historyToolbar}>
           <div>
-            <h2>Work history · {periodRangeLabel(history)}</h2>
+            <h2>Work history</h2>
+            <span>{periodRangeLabel(period, anchor)}</span>
           </div>
           <div className={styles.periodControls}>
             <div className={styles.periodToggle} role="group" aria-label="Tracker period">
@@ -617,7 +625,7 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
 
         <div className={styles.reportBar}>
           <AccountPicker
-            label="View account"
+            label="History account"
             value={clientUserId}
             options={clientOptions}
             recentValues={recentClientIds}
@@ -625,16 +633,18 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
             placeholder="All accounts"
             emptyOption={ALL_ACCOUNTS_OPTION}
           />
-          <Link className={styles.reportButton} href={clientUserId ? `/admin/billing?account=${encodeURIComponent(clientUserId)}` : "/admin/billing"}>Billing & invoices</Link>
-          <button type="button" className={styles.reportButton} onClick={openReport} disabled={!clientUserId || isLoading || savingSessionId !== null || deletingSessionId !== null || hasDirtyReportNotes}>
-            Print report
-          </button>
-          {!clientUserId ? <small>Choose an account to print its report.</small> : hasDirtyReportNotes ? <small>Save notes first.</small> : null}
+          <div className={styles.reportActions}>
+            <Link className={styles.secondaryButton} href={clientUserId ? `/admin/billing?account=${encodeURIComponent(clientUserId)}` : "/admin/billing"}>Billing &amp; invoices</Link>
+            <button type="button" className={styles.reportButton} onClick={openReport} aria-describedby={!clientUserId || hasDirtyReportNotes ? "work-report-hint" : undefined} disabled={!clientUserId || !history || isLoading || Boolean(loadError) || savingSessionId !== null || deletingSessionId !== null || hasDirtyReportNotes}>
+              Print report
+            </button>
+          </div>
+          {!clientUserId || hasDirtyReportNotes ? <small id="work-report-hint">{!clientUserId ? "Select a history account to print its report." : "Save edited notes before printing."}</small> : null}
         </div>
 
         <section className={styles.summaryGrid} aria-label="Work period summary">
-          {isLoading || loadError || !history ? <p role="status">{isLoading ? "Loading work totals…" : "Work totals unavailable."}</p> : <><article><span>Tracked</span><strong>{formatAdminWorkDuration(displaySummary.trackedSeconds)}</strong></article>
-          <article className={styles.reportableSummary}><span>Reportable</span><strong>{formatAdminWorkDuration(displaySummary.reportableSeconds)}</strong></article>
+          {isLoading || loadError || !history ? <p role="status">{isLoading ? "Loading work totals…" : "Work totals unavailable."}</p> : <><article><span>Time tracked</span><strong>{formatAdminWorkDuration(displaySummary.trackedSeconds)}</strong></article>
+          <article className={styles.reportableSummary}><span>Time in reports</span><strong>{formatAdminWorkDuration(displaySummary.reportableSeconds)}</strong></article>
           <div className={styles.summaryFacts}>
             <span><strong>{displaySummary.includedSessionCount} / {displaySummary.sessionCount}</strong> sessions included</span>
             <span><strong>{displaySummary.pageCount}</strong> platform areas</span>
@@ -644,7 +654,7 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
         <div className={styles.sessionList} aria-live="polite">
           {isLoading ? <p className={styles.emptyState}>Loading work sessions…</p> : null}
           {loadError ? <div className={styles.emptyState} role="alert"><p>{loadError}</p><button type="button" className={styles.reportButton} onClick={() => void loadTracker()}>Try again</button></div> : null}
-          {!isLoading && !loadError && !history?.sessions.length ? <p className={styles.emptyState}>No work recorded for this period.</p> : null}
+          {!isLoading && !loadError && !history?.sessions.length ? <p className={styles.emptyState}>No completed sessions for this period.</p> : null}
           {!isLoading ? history?.sessions.map((session) => (
             <article key={session.id} className={`${styles.sessionCard} ${!session.includeInReport ? styles.sessionExcluded : ""}`} aria-busy={deletingSessionId === session.id}>
               <header className={styles.sessionHeader}>
