@@ -101,6 +101,25 @@ return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTit
     await page.waitForSelector('[data-tracker-connected] form, [data-tracker-connected] section h4');
     await assertFits('connected phone and automatic kilometres',[{width:1920,height:870},{width:1366,height:768}]);
     await page.screenshot({path:path.join(output,'connected-desktop.png')});
+    await page.setViewport({width:1366,height:500});
+    await click('Set up automatic updates');
+    await page.waitForSelector('[data-tracking-usage-editor]');
+    const meterEditor = await page.$eval('[data-tracking-usage-editor]', form => {
+      let body = form.parentElement;
+      while (body && getComputedStyle(body).overflowY !== 'auto') body = body.parentElement;
+      if (!body) throw new Error('Missing scrollable dialog body');
+      const scrollbar = getComputedStyle(body, '::-webkit-scrollbar');
+      body.scrollTop = body.scrollHeight;
+      return {
+        scrolled: body.scrollTop > 0,
+        visible: scrollbar.display !== 'none' && getComputedStyle(body).scrollbarWidth !== 'none',
+        hasTrack: parseFloat(scrollbar.width) > 0,
+        submitInView: form.querySelector('[type="submit"]').getBoundingClientRect().bottom <= body.getBoundingClientRect().bottom + 1
+      };
+    });
+    assert.deepEqual(meterEditor, {scrolled:true, visible:true, hasTrack:true, submitInView:true});
+    await click('Cancel');
+    await page.setViewport({width:1440,height:1000});
     await click('Tracking options');await assertSingleLine('[data-tracking-options="choice"] h4, [data-tracking-options="choice"] strong, [data-tracking-options="choice"] small');await click('View connected phone');await page.waitForSelector('[data-tracker-connected]');
     await click('Manage device');await click('Replace phone');await page.waitForSelector('[aria-label="Tracking phone requirements"]');assert.deepEqual(mutations,['POST'],'Replacement is not paired automatically');
     await click('Back');await click('Manage device');await click('Disconnect phone');await page.waitForSelector('[aria-label="Close Disconnect phone?"]');await assertSingleLine('[role="dialog"]:has([aria-label="Close Disconnect phone?"]) p');assert.deepEqual(mutations,['POST'],'Disconnect requires its confirmation');await click('Cancel');assert.deepEqual(mutations,['POST']);
