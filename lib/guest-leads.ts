@@ -7,7 +7,7 @@ import { ensureGuestLeadSchema } from './guest-lead-schema';
 import { businessEmail,businessText } from './business-network-shared';
 import { getAssetRegisterItemsByRefs } from './asset-register-db';
 import { assetShareSnapshot,parseShareAssetIds } from './asset-share-snapshot';
-import { readPublicAssetShare, liveShareOwnershipSql } from './asset-share-links';
+import { readPublicAssetShare, liveShareOwnershipSql, hashAssetSharePassword, assetSharePasswordIsUnlocked } from './asset-share-links';
 import { getServerSession } from './auth-session';
 import { getAssetRegisterAccountAccess } from './asset-register-account-access';
 export type LeadDetails={accessMode?:'owner-approval'|'signed-in';recipientUserId?:string;permissions?:ExternalSharePermissions;recipientName:string;recipientEmail:string;recipientWhatsApp?:string;allowSubmissions?:boolean;request:string;replyName:string;replyEmail:string;replyPhone:string;allowReply:boolean};
@@ -35,7 +35,7 @@ export function sharedReportContentType(report:LeadPdf) {
  if(!pdf&&!xlsx)throw new Error('Choose valid PDF or Excel reports.');
  return pdf?'application/pdf':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 }
-export async function createGuestLead(ownerId:string,idsInput:unknown,includePhotos:boolean,details:LeadDetails,reports:LeadPdf[],umbrella?:{id:string;name:string},displayOptions?:{valuation:boolean;replacementPrice:boolean;mainPhotoOnly:boolean}){
+export async function createGuestLead(ownerId:string,idsInput:unknown,includePhotos:boolean,details:LeadDetails,reports:LeadPdf[],umbrella?:{id:string;name:string},displayOptions?:{valuation:boolean;replacementPrice:boolean;mainPhotoOnly:boolean},password?:unknown){
  const ids=parseShareAssetIds(idsInput),safe=validateLeadDetails(details);
  if(safe.permissions?.allReports) includePhotos=true;
  if(safe.permissions && reports.length && !safe.permissions.reports)throw new Error('Enable Reports before attaching reports.');
@@ -45,9 +45,9 @@ export async function createGuestLead(ownerId:string,idsInput:unknown,includePho
  reports.forEach(sharedReportContentType);
  const assets=await getAssetRegisterItemsByRefs(ids.map(assetId=>({userId:ownerId,assetId})));
  if(assets.length!==ids.length)throw new Error('This account does not own all the selected assets.');
- await ensureGuestLeadSchema();await ensureSharingFoundation();const db=await getDb().connect(),token=randomBytes(32).toString('base64url');
+ await ensureGuestLeadSchema();await ensureSharingFoundation();const passwordHash=password===undefined?null:await hashAssetSharePassword(password);const db=await getDb().connect(),token=randomBytes(32).toString('base64url');
  try{await db.query('BEGIN');
- await db.query(`INSERT INTO asset_share_links(token,user_id,selection_key,asset_ids,snapshot,lead_details,umbrella_name,umbrella_id,include_photos,display_options) VALUES($1,$2,$3,$4::uuid[],$5::jsonb,$6::jsonb,$7,$8::uuid,$9,$10::jsonb)`,[token,ownerId,`lead:${randomUUID()}`,ids,JSON.stringify(ids.map(id=>assetShareSnapshot(assets.find(a=>a.id===id)!,includePhotos))),JSON.stringify(safe),umbrella?.name||null,umbrella?.id||null,includePhotos,displayOptions?JSON.stringify(displayOptions):null]);
+ await db.query(`INSERT INTO asset_share_links(token,user_id,selection_key,asset_ids,snapshot,lead_details,umbrella_name,umbrella_id,include_photos,display_options,password_hash) VALUES($1,$2,$3,$4::uuid[],$5::jsonb,$6::jsonb,$7,$8::uuid,$9,$10::jsonb,$11)`,[token,ownerId,`lead:${randomUUID()}`,ids,JSON.stringify(ids.map(id=>assetShareSnapshot(assets.find(a=>a.id===id)!,includePhotos))),JSON.stringify(safe),umbrella?.name||null,umbrella?.id||null,includePhotos,displayOptions?JSON.stringify(displayOptions):null,passwordHash]);
  for(const report of reports)await db.query('INSERT INTO asset_share_reports(id,token,label,file_name,pdf,content_type) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),token,report.label,report.fileName,report.data,sharedReportContentType(report)]);
  if(safe.recipientEmail)await recordDeliveredAssets(safe.recipientEmail,token,ids,db);
  await db.query('COMMIT');return{token,created_at:new Date().toISOString()};
@@ -58,8 +58,9 @@ export async function listOwnerGuestLeads(ownerId:string,idsInput:unknown){
  return(await getDb().query(`SELECT token,created_at,revoked_at,lead_details->>'recipientName' as recipient_name,lead_details->>'recipientEmail' as recipient_email ,(SELECT count(*)::int FROM asset_share_submissions d WHERE d.token=asset_share_links.token AND d.status='pending') AS pending_documents,(SELECT count(*)::int FROM asset_share_access_requests r WHERE r.token=asset_share_links.token AND r.status='pending') AS pending_access FROM asset_share_links WHERE user_id=$1 AND asset_ids=$2::uuid[] AND lead_details IS NOT NULL ORDER BY created_at DESC LIMIT 50`,[ownerId,ids])).rows;
 }
 export async function readLeadPage(token:string){
+ await ensureGuestLeadSchema();const row=(await getDb().query('SELECT user_id,lead_details,password_hash FROM asset_share_links WHERE token=$1 AND revoked_at IS NULL',[token])).rows[0];
+ if(!row||row.password_hash&&!await assetSharePasswordIsUnlocked(token,row.user_id,row.password_hash))return null;
  const share=await readPublicAssetShare(token);if(!share)return null;
- await ensureGuestLeadSchema();const row=(await getDb().query('SELECT user_id,lead_details FROM asset_share_links WHERE token=$1 AND revoked_at IS NULL',[token])).rows[0];
  if(!row?.lead_details)return{token,share,details:null,reports:[] as LeadReport[],ownerId:row?.user_id||''};
  const reports=(await getDb().query<LeadReport>('SELECT id,label FROM asset_share_reports WHERE token=$1 ORDER BY label,id',[token])).rows;
  return{token,share,details:row.lead_details as LeadDetails,reports,ownerId:row.user_id as string};

@@ -1,0 +1,12 @@
+.passwordSettings { display:grid; gap:12px; margin:0 0 20px; padding:18px; border:1px solid var(--app-line,#d6e5dc); border-radius:14px; background:var(--app-surface-soft,#f3f8f5); color:var(--app-text,#173c30); }
+.passwordSettings > div:first-child strong { font-size:15px; }
+.passwordSettings p { margin:5px 0 0; color:var(--app-muted,#62756b); font-size:13px; line-height:1.5; }
+.passwordSettings > label { display:flex; align-items:center; gap:10px; font-weight:700; cursor:pointer; }
+.passwordSettings > label input { width:19px; height:19px; accent-color:#146b50; }
+.passwordEntry { display:grid; gap:8px; }
+.passwordEntry > label { font-size:14px; font-weight:700; }
+.passwordEntry > div { display:flex; min-height:48px; border:1px solid var(--app-line,#c9ddd3); border-radius:10px; overflow:hidden; background:var(--app-surface,#fff); }
+.passwordEntry input { flex:1; min-width:0; border:0; outline:0; padding:12px; color:inherit; background:transparent; font:inherit; }
+.passwordEntry button { display:grid; place-items:center; width:48px; flex:none; border:0; border-left:1px solid var(--app-line,#c9ddd3); background:#fff; color:inherit; cursor:pointer; }
+.passwordEntry svg { width:22px; height:22px; }
+.passwordEntry small { color:var(--app-muted,#62756b); font-size:12px; }

@@ -28,7 +28,7 @@ export async function POST(request:NextRequest){
  const umbrella=umbrellaId?await getAssetGroupById(user.id,umbrellaId):undefined;
  if(umbrellaId&&(!umbrella||parseShareAssetIds(ids).some(id=>!umbrella.members.some(m=>m.assetId===id))))return businessJson({error:'The selected assets do not belong to this umbrella.'},403);
  const profile=await getAccountProfile(user);
- const share=await createGuestLead(user.id,ids,form.get('includePhotos')==='true',{...details,replyName:profile.businessName||user.name||details.replyName},reports,umbrella?{id:umbrella.id,name:umbrella.name}:undefined);
+ const share=await createGuestLead(user.id,ids,form.get('includePhotos')==='true',{...details,replyName:profile.businessName||user.name||details.replyName},reports,umbrella?{id:umbrella.id,name:umbrella.name}:undefined,undefined,String(form.get('password')??''));
  return businessJson({share:{...share,sender_name:profile.businessName||user.name||''}});
  }catch(e){return businessError(e);}
 }

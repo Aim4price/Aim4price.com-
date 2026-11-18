@@ -1,5 +1,24 @@
 /* The global Aim4price photo background remains visible at every canvas zoom. */
 .page { background:transparent; color:var(--app-text,#123b2e); }
+.passwordPage { min-height:calc(100vh - 7rem); display:grid; align-content:center; }
+.dialog.dialog { width:min(45rem,calc(var(--website-design-vw,1vw) * 100 - 2rem)); }
+.passwordBody { display:grid; gap:1rem; padding-top:.5rem; color:var(--app-text,#123b2e); }
+.passwordSummary { display:flex; align-items:center; gap:1rem; padding:1rem; border:1px solid var(--app-line,#c8ddd1); border-radius:1rem; background:var(--app-surface-soft,#f3f8f5); }
+.passwordSummary > div { display:grid; gap:.3rem; }
+.passwordSummary strong { font-size:1rem; }
+.passwordSummary span:not(.passwordLock) { color:var(--app-muted,#62756b); line-height:1.45; }
+.passwordLock { display:grid; place-items:center; width:3rem; height:3rem; flex:none; border:1px solid var(--app-line,#c8ddd1); border-radius:.8rem; background:#fff; color:#087f5b; }
+.passwordLock svg { width:1.5rem; height:1.5rem; }
+.passwordLabel { font-weight:700; }
+.passwordControl { display:flex; min-height:3.5rem; border:1px solid var(--app-line,#c8ddd1); border-radius:.9rem; overflow:hidden; background:var(--app-surface-soft,#f3f8f5); }
+.passwordControl input { flex:1; min-width:0; border:0; outline:0; background:transparent; color:inherit; padding:.85rem 1rem; font:inherit; }
+.passwordControl button { display:grid; place-items:center; width:3.5rem; border:0; border-left:1px solid var(--app-line,#c8ddd1); background:#fff; color:inherit; cursor:pointer; }
+.passwordControl svg { width:1.5rem; height:1.5rem; }
+.passwordBody > small { color:var(--app-muted,#62756b); }
+.passwordError { margin:0; color:#a32929; }
+.passwordSubmit { min-height:3.25rem; margin-top:.5rem; border:0; border-radius:.85rem; background:#087f5b; color:#fff; font:inherit; font-weight:800; cursor:pointer; }
+.passwordSubmit:disabled { opacity:.6; cursor:wait; }
+.passwordBody :focus-visible { outline:3px solid #74ac92; outline-offset:3px; }
 .openButton { font:inherit; cursor:pointer; box-sizing:border-box; }
 .dialog.dialog { width:min(72rem,calc(var(--website-design-vw,1vw) * 100 - 3rem)); padding:clamp(1.25rem,calc(var(--website-design-vw,1vw) * 3),3rem); border-radius:1.75rem; }
 
