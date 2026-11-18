@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 public class MainActivity extends Activity {
  String scannedCode="", connectionError=""; boolean pairedScreen=false;
- static final int GREEN=0xff254733, INK=0xff12352d, MUTED=0xff64746a, SOFT=0xffeef5f0;
+ static final int GREEN=0xff254733, INK=0xff12352d, MUTED=0xff405d50, SOFT=0xffeef5f0;
  TextView status,gpsStatus,syncStatus,queueStatus,issueStatus;Button trackingButton;final Handler handler=new Handler(Looper.getMainLooper());
  final Runnable refresh=new Runnable(){public void run(){
   if(status!=null){var p=TrackerApi.prefs(MainActivity.this);boolean paired=!p.getString("token","").isEmpty()&&scannedCode.isEmpty();
@@ -44,8 +44,12 @@ public class MainActivity extends Activity {
  }
  int dp(int n){return (int)(n*getResources().getDisplayMetrics().density+.5f);}
  android.graphics.drawable.GradientDrawable surface(int color,int radius){var d=new android.graphics.drawable.GradientDrawable();d.setColor(color);d.setCornerRadius(dp(radius));return d;}
- TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setTypeface(getResources().getFont(R.font.montserrat));t.setPadding(0,dp(8),0,dp(8));return t;}
- void styleButton(Button b,boolean primary){b.setTypeface(getResources().getFont(R.font.montserrat),android.graphics.Typeface.BOLD);b.setAllCaps(false);b.setTextSize(17);b.setTextColor(primary?Color.WHITE:GREEN);b.setBackground(surface(primary?GREEN:SOFT,14));var lp=new LinearLayout.LayoutParams(-1,dp(56));lp.setMargins(0,dp(12),0,0);b.setLayoutParams(lp);}
+ void applyFont(TextView view,int weight){
+  view.setTypeface(getResources().getFont(R.font.montserrat));
+  view.setFontVariationSettings("'wght' "+weight);
+ }
+ TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);applyFont(t,550);t.setPadding(0,dp(8),0,dp(8));return t;}
+ void styleButton(Button b,boolean primary){applyFont(b,700);b.setAllCaps(false);b.setTextSize(17);b.setTextColor(primary?Color.WHITE:GREEN);b.setBackground(surface(primary?GREEN:SOFT,14));var lp=new LinearLayout.LayoutParams(-1,dp(56));lp.setMargins(0,dp(12),0,0);b.setLayoutParams(lp);}
  void draw(){
   ScrollView scroll=new ScrollView(this);scroll.setFillViewport(true);scroll.setVerticalScrollBarEnabled(false);scroll.setBackgroundColor(SOFT);
   LinearLayout page=new LinearLayout(this);page.setOrientation(LinearLayout.VERTICAL);page.setPadding(dp(20),dp(24),dp(20),dp(28));scroll.addView(page);setContentView(scroll);
@@ -54,17 +58,17 @@ public class MainActivity extends Activity {
   LinearLayout brand=new LinearLayout(this);brand.setGravity(Gravity.CENTER_VERTICAL);brand.setPadding(0,0,0,dp(24));
   ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.aim4price_logo);logo.setContentDescription("Aim4price logo");logo.setScaleType(ImageView.ScaleType.FIT_CENTER);brand.addView(logo,new LinearLayout.LayoutParams(dp(62),dp(62)));
   LinearLayout wordmark=new LinearLayout(this);wordmark.setOrientation(LinearLayout.VERTICAL);wordmark.setPadding(dp(14),0,0,0);
-  TextView name=text("Aim4price",25,INK);name.setTypeface(name.getTypeface(),android.graphics.Typeface.BOLD);name.setPadding(0,0,0,0);wordmark.addView(name);TextView caption=text("Equipment tracker",13,MUTED);caption.setPadding(0,dp(4),0,0);wordmark.addView(caption);brand.addView(wordmark);page.addView(brand);
+  TextView name=text("Aim4price",25,INK);applyFont(name,750);name.setPadding(0,0,0,0);wordmark.addView(name);TextView caption=text("Equipment tracker",14,MUTED);caption.setPadding(0,dp(4),0,0);wordmark.addView(caption);brand.addView(wordmark);page.addView(brand);
   var p=TrackerApi.prefs(this);pairedScreen=!p.getString("token","").isEmpty()&&scannedCode.isEmpty();
   LinearLayout hero=new LinearLayout(this);hero.setOrientation(LinearLayout.VERTICAL);hero.setPadding(dp(20),dp(18),dp(20),dp(18));hero.setBackground(surface(GREEN,22));
-  hero.addView(text(pairedScreen?"CONNECTED ASSET":"PHONE SETUP",11,0xffd9e9df));
-  TextView title=text(pairedScreen?p.getString("title","Your equipment"):"Connect your phone",24,Color.WHITE);title.setTypeface(title.getTypeface(),android.graphics.Typeface.BOLD);hero.addView(title);
-  if(!pairedScreen)hero.addView(text("Keep this phone on the equipment.",14,0xffe0eee5));page.addView(hero);
+  hero.addView(text(pairedScreen?"CONNECTED ASSET":"PHONE SETUP",12,Color.WHITE));
+  TextView title=text(pairedScreen?p.getString("title","Your equipment"):"Connect your phone",24,Color.WHITE);applyFont(title,750);hero.addView(title);
+  if(!pairedScreen)hero.addView(text("Keep this phone on the equipment.",15,Color.WHITE));page.addView(hero);
   LinearLayout box=new LinearLayout(this);box.setOrientation(LinearLayout.VERTICAL);box.setPadding(dp(20),dp(20),dp(20),dp(20));var card=surface(Color.WHITE,22);card.setStroke(dp(1),0xffd7e4dc);box.setBackground(card);LinearLayout.LayoutParams cardParams=new LinearLayout.LayoutParams(-1,-2);cardParams.setMargins(0,dp(20),0,0);page.addView(box,cardParams);
-  status=text("",15,INK);status.setPadding(dp(14),dp(14),dp(14),dp(14));status.setBackground(surface(SOFT,12));box.addView(status);
+  status=text("",15,INK);applyFont(status,650);status.setPadding(dp(14),dp(14),dp(14),dp(14));status.setBackground(surface(SOFT,12));box.addView(status);
   if(!pairedScreen){
-   EditText code=new EditText(this);code.setHint("XXXX-XXXX-XXXX-XXXX");code.setTypeface(android.graphics.Typeface.MONOSPACE);code.setTextSize(19);code.setPadding(dp(16),dp(14),dp(16),dp(14));var input=surface(SOFT,12);input.setStroke(dp(1),0xffb9d1c2);code.setBackground(input);code.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);TextView label=text("Pairing code",15,INK);label.setPadding(0,dp(24),0,dp(10));box.addView(label);code.setSingleLine(true);code.setText(scannedCode);box.addView(code);
-   TextView help=text("Scan the QR code on Aim4price, or enter your pairing code above.",13,MUTED);help.setPadding(0,dp(12),0,dp(8));box.addView(help);
+   EditText code=new EditText(this);code.setHint("XXXX-XXXX-XXXX-XXXX");code.setTypeface(android.graphics.Typeface.MONOSPACE);code.setTextSize(19);code.setPadding(dp(16),dp(14),dp(16),dp(14));var input=surface(SOFT,12);input.setStroke(dp(1),0xffb9d1c2);code.setBackground(input);code.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);TextView label=text("Pairing code",15,INK);applyFont(label,650);label.setPadding(0,dp(24),0,dp(10));box.addView(label);code.setTextColor(INK);code.setHintTextColor(MUTED);code.setSingleLine(true);code.setText(scannedCode);box.addView(code);
+   TextView help=text("Scan the QR code on Aim4price, or enter your pairing code above.",14,MUTED);help.setPadding(0,dp(12),0,dp(8));box.addView(help);
    Button pair=new Button(this);pair.setText("Connect phone");box.addView(pair);styleButton(pair,true);pair.setOnClickListener(v->{String value=code.getText().toString().trim().replace("-","").toUpperCase(java.util.Locale.ROOT);if(!value.matches("[A-F0-9]{16}")){connectionError="Enter the full pairing code shown on Aim4price.";status.setText(connectionError);return;}p.edit().putBoolean("active",false).apply();stopService(new Intent(this,TrackingService.class));pair.setEnabled(false);pair.setText("Connecting…");connectionError="Connecting…";var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{TrackerStore saved=new TrackerStore(this);saved.getWritableDatabase();JSONObject r=TrackerApi.post("/api/tracking/pair",new JSONObject().put("code",value).put("name",Build.MANUFACTURER+" "+Build.MODEL),null);saved.rememberConnection(r.getString("token"),r.getString("assetId"),r.getString("assetTitle"));saved.retryConnections();p.edit().putString("assetId",r.getString("assetId")).putString("token",r.getString("token")).putString("title",r.getString("assetTitle")).putBoolean("active",false).remove("session").remove("issue").remove("gpsIssue").remove("sync").remove("lastGpsAt").remove("lastUploadAt").apply();UploadJobService.schedule(this);runOnUiThread(()->{scannedCode="";connectionError="";draw();});}catch(Exception e){runOnUiThread(()->{connectionError=e.getMessage();status.setText(connectionError);pair.setText("Try again");pair.setEnabled(true);});}finally{executor.shutdown();}});});
   }else{
    gpsStatus=text("",14,MUTED);syncStatus=text("",14,MUTED);queueStatus=text("",14,MUTED);issueStatus=text("",14,0xff9b4d2d);
@@ -75,13 +79,13 @@ public class MainActivity extends Activity {
     var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{TrackerApi.flush(this,new TrackerStore(this));}catch(Exception e){p.edit().putString("issue",e.getMessage()).apply();}finally{executor.shutdown();}});
    });
    Button settings=new Button(this);settings.setText("Phone settings");box.addView(settings);styleButton(settings,false);settings.setOnClickListener(v->new AlertDialog.Builder(this).setTitle("Phone settings").setItems(new String[]{"Sync saved readings","Restart recovery","Battery & permissions","Back up saved readings"},(dialog,which)->{if(which==0)syncSaved();else if(which==1)restartSettings();else if(which==2)openSettings();else backupSaved();}).setNegativeButton("Close",null).show());
-   box.addView(text("Records every 10 seconds while moving. Uploads in batches every minute.",13,MUTED));
-   TextView note=text("Keep this phone on the equipment. In Phone settings, allow unrestricted battery use. Allow location all the time for restart recovery. If Android blocks recovery, open Tracker to resume.",13,MUTED);note.setPadding(0,dp(20),0,0);box.addView(note);
+   box.addView(text("Records every 10 seconds while moving. Uploads in batches every minute.",14,MUTED));
+   TextView note=text("Keep this phone on the equipment. In Phone settings, allow unrestricted battery use. Allow location all the time for restart recovery. If Android blocks recovery, open Tracker to resume.",14,MUTED);note.setPadding(0,dp(20),0,0);box.addView(note);
   }
   try(TrackerStore store=new TrackerStore(this)){if(!pairedScreen&&store.pending()>0){Button backup=new Button(this);backup.setText("Back up saved readings");page.addView(backup);styleButton(backup,false);backup.setOnClickListener(v->backupSaved());}}
   String installedVersion="";try{installedVersion=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}catch(Exception ignored){}
   TextView version=text("Aim4price Tracker · "+installedVersion,12,MUTED);version.setGravity(Gravity.CENTER);version.setPadding(0,dp(24),0,dp(4));page.addView(version);
-  page.addView(text("While activated, this phone shares its location with the asset owner, even with the screen locked.",13,Color.rgb(85,109,96)));
+  page.addView(text("While activated, this phone shares its location with the asset owner, even with the screen locked.",14,MUTED));
   handler.removeCallbacks(refresh);refresh.run();
  }
  void openSettings(){startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,android.net.Uri.parse("package:"+getPackageName())));}
