@@ -96,7 +96,9 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     return observePhoneGeometry(coarsePointer, syncLandscapeEntry);
   }, [native]);
 
-  useEffect(() => {
+  // Restore interaction in the same commit that removes the rotation prompt.
+  // A passive cleanup can leave a visible canvas inert for an extra frame.
+  useLayoutEffect(() => {
     if (!showLandscapeEntry || native) return;
     const html = document.documentElement;
     const body = document.body;
