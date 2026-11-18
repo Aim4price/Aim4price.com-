@@ -131,7 +131,7 @@ test("the dashboard prioritises headline metrics and collapses optional detail",
   assert.match(dashboard, /More activity/);
   assert.match(dashboard, /<AdminNavigation active="dashboard" \/>/);
   assert.doesNotMatch(dashboard, /className=\{styles\.dashboardHero\}/);
-  assert.match(dashboardStyles, /\.featuredCard/);
+  assert.match(dashboard, /<PeriodTable cards=/);
   assert.match(dashboardStyles, /\.detailsSection\[open\]/);
 });
 
