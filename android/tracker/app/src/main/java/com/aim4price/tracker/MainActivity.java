@@ -12,6 +12,8 @@ import org.json.*;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 public class MainActivity extends Activity {
+ private boolean refreshing;
+ private Button refreshButton;
  String scannedCode="", connectionError=""; boolean pairedScreen=false;
  static final int GREEN=0xff254733, INK=0xff12352d, MUTED=0xff405d50, SOFT=0xffeef5f0;
  TextView status,gpsStatus,syncStatus,queueStatus,issueStatus;Button trackingButton;final Handler handler=new Handler(Looper.getMainLooper());
@@ -77,6 +79,11 @@ public class MainActivity extends Activity {
     p.edit().putBoolean("active",false).apply();UploadJobService.schedule(this);stopService(new Intent(this,TrackingService.class));
     var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try{TrackerApi.flush(this,new TrackerStore(this));}catch(Exception e){p.edit().putString("issue",e.getMessage()).apply();}finally{executor.shutdown();}});
    });
+   refreshButton = new Button(this);
+   box.addView(refreshButton);
+   styleButton(refreshButton, false);
+   updateRefreshButton();
+   refreshButton.setOnClickListener(v -> refreshPhone());
    Button settings=new Button(this);settings.setText("Phone settings");box.addView(settings);styleButton(settings,false);settings.setOnClickListener(v -> showPhoneSettings());
    box.addView(text("Records every 10 seconds while moving. Uploads in batches every minute.",14,MUTED));
    TextView note=text("Keep this phone on the equipment. Open Phone settings and choose Allow all permissions for guided setup. If Android blocks recovery, open Tracker to resume.",14,MUTED);note.setPadding(0,dp(20),0,0);box.addView(note);
@@ -99,7 +106,6 @@ public class MainActivity extends Activity {
   AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Phone settings")
     .setView(scroll).setNegativeButton("Close", null).create();
   settingsButton(menu, dialog, "Allow all permissions", true, this::continuePermissionSetup);
-  settingsButton(menu, dialog, "Sync saved readings", false, this::syncSaved);
   settingsButton(menu, dialog, "Android app settings", false, this::openSettings);
   settingsButton(menu, dialog, "Back up saved readings", false, this::backupSaved);
   dialog.show();
@@ -194,7 +200,47 @@ public class MainActivity extends Activity {
   return true;
  }
  void backupSaved(){Intent save=new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,"aim4price-tracking-backup.json");startActivityForResult(save,8);}
- void syncSaved(){Toast.makeText(this,"Syncing saved readings…",Toast.LENGTH_SHORT).show();var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try(TrackerStore store=new TrackerStore(this)){store.retryConnections();TrackerApi.flush(this,store);TrackerApi.prefs(this).edit().putString("issue","").apply();}catch(SecurityException e){TrackerApi.prefs(this).edit().putBoolean("active",false).remove("token").putString("issue",e.getMessage()).apply();}catch(Exception e){TrackerApi.prefs(this).edit().putString("issue","Upload pending. Your readings remain saved.").apply();UploadJobService.schedule(this);}finally{executor.shutdown();}});}
+ private void updateRefreshButton() {
+  refreshButton.setText(refreshing ? "Refreshing…" : "Refresh");
+  refreshButton.setEnabled(!refreshing);
+ }
+
+ private void refreshPhone() {
+  if (refreshing) return;
+  refreshing = true;
+  updateRefreshButton();
+  var prefs = TrackerApi.prefs(this);
+  var executor = Executors.newSingleThreadExecutor();
+  executor.execute(() -> {
+   String message;
+   try (TrackerStore store = new TrackerStore(this)) {
+    store.retryConnections();
+    TrackerApi.flush(this, store);
+    prefs.edit().putString("issue", "").apply();
+    message = "Status refreshed.";
+   } catch (SecurityException e) {
+    prefs.edit().putBoolean("active", false).remove("token").putString("issue", e.getMessage()).apply();
+    message = "Phone disconnected. Pair again.";
+   } catch (Exception e) {
+    message = "Upload pending. Your readings remain saved.";
+    prefs.edit().putString("issue", message).apply();
+    UploadJobService.schedule(this);
+   } finally {
+    executor.shutdown();
+   }
+   String feedback = message;
+   runOnUiThread(() -> {
+    refreshing = false;
+    if (isFinishing() || isDestroyed()) return;
+    updateRefreshButton();
+    if (hasWindowFocus()) {
+     handler.removeCallbacks(refresh);
+     refresh.run();
+     Toast.makeText(this, feedback, Toast.LENGTH_SHORT).show();
+    }
+   });
+  });
+ }
  public void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(handleSetupSettingsReturn(request))return;if(request!=8||result!=RESULT_OK||data==null||data.getData()==null)return;var uri=data.getData();var executor=Executors.newSingleThreadExecutor();executor.execute(()->{try(TrackerStore store=new TrackerStore(this);var output=getContentResolver().openOutputStream(uri)){if(output==null)throw new java.io.IOException();store.export(output);runOnUiThread(()->Toast.makeText(this,"Backup saved. Original readings remain on this phone.",Toast.LENGTH_LONG).show());}catch(Exception e){runOnUiThread(()->Toast.makeText(this,"Could not save backup. Please try again.",Toast.LENGTH_LONG).show());}finally{executor.shutdown();}});}
  void activate(){
   if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED){requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.ACCESS_COARSE_LOCATION},1);return;}
