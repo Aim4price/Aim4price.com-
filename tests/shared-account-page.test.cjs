@@ -128,3 +128,16 @@ test('suspended free accounts still follow the account access block',async()=>{
 });
 
 test('free Business login defaults to Shared enquiries while preserving explicit asset links',async()=>{
+ const page=load('app/auth/page.tsx',{
+  '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
+  '../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
+  '../../components/AppHeader':{default:'Header'},'../../components/SwitchAccountButton':{default:'Switch'},'./page.module.css':{default:{}},
+  'next/navigation':{redirect:path=>{throw Error(path);}},
+  '../../lib/account-access':{getAccountAccess:async()=>({isActive:true})},
+  '../../lib/account-profile':{getAccountProfile:async()=>({accountType:'business',accountStatus:'active'})},
+  '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'free',email:'free@example.test'}})},
+  '../../lib/middleman-account':{},'./auth-client':{default:'Auth'},
+ });
+ await assert.rejects(page.default({}),{message:'/business'});
+ await assert.rejects(page.default({searchParams:{returnTo:'/asset-share/'+token+'?open=1'}}),{message:'/asset-share/'+token+'?open=1'});
+});
