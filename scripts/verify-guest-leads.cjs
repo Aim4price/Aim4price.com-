@@ -404,7 +404,7 @@ export default function Validation(){
    await page.keyboard.press('Escape');await page.waitForSelector('dialog[open]',{hidden:true});
   }
   assert.equal(requests.filter(r=>r.path.startsWith('/api/asset-share-links')).length,linkRequestsBefore,'Standard sharing never calls snapshot or lead APIs');
-  assert.equal(requests.filter(r=>r.path==='/api/business-network/accept'&&r.method==='POST').length,2);
+  assert.equal(requests.filter(r=>r.path==='/api/business-network/accept'&&r.method==='POST').length,0);
   assert.equal(requests.filter(r=>r.path==='/api/guest-access'&&r.method==='POST').length,0);
   assert.equal(requests.filter(r=>r.path.endsWith('/submissions')&&r.method==='POST').length,2);
   assert.deepEqual(errors,[]);
