@@ -38,9 +38,9 @@ export default function Page(){const [mounted,setMounted]=useState(false);useEff
       if(u.hostname!=='127.0.0.1')return r.abort();
       return r.continue();
     });
-    async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim().replace(/\s*→$/, '')===text||b.querySelector('strong')?.textContent===text),{},text);await page.$$eval('button',(buttons,text)=>buttons.find(b=>b.textContent.trim().replace(/\s*→$/, '')===text||b.querySelector('strong')?.textContent===text).click(),text);}
+    async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text),{},text);await page.$$eval('button',(buttons,text)=>buttons.find(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text).click(),text);}
     async function assertFits(name){
-      for(const viewport of [{width:1440,height:900},{width:1366,height:768},{width:390,height:844}]) {
+      for(const viewport of [{width:1891,height:859},{width:1440,height:900},{width:1366,height:768},{width:390,height:844}]) {
         await page.setViewport(viewport);await new Promise(r=>setTimeout(r,200));
         const overflow=await page.$eval('[role="dialog"]',e=>({horizontal:e.scrollWidth-e.clientWidth,vertical:Math.max(0,...[e,...e.querySelectorAll('div')].filter(n=>['auto','scroll'].includes(getComputedStyle(n).overflowY)).map(n=>n.scrollHeight-n.clientHeight))}));
         assert(overflow.horizontal<=2 && overflow.vertical<=2,name+' fits '+JSON.stringify({viewport,overflow}));

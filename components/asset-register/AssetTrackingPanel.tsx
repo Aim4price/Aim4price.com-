@@ -137,7 +137,7 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
       <div className={styles.wizardHeading} data-tracker-step={phoneStep + 1}>
         <span className={styles.wizardStep}>Step {phoneStep + 1} of 3</span>
         <h4 ref={phoneHeading} tabIndex={-1}>{['Prepare your phone', 'Install Aim4price Tracker', 'Connect to this asset'][phoneStep]}</h4>
-        <p>{['A simple Android phone stays with the asset. Here’s what it needs.', 'Send the app link to the phone you’ll keep with this asset.', 'Open Tracker on the phone and scan or enter your pairing code.'][phoneStep]}</p>
+        {(phoneStep !== 2 || !code) && <p>{['A simple Android phone stays with the asset. Here’s what it needs.', 'Send the app link to the phone you’ll keep with this asset.', 'Open Tracker on the phone and scan or enter your pairing code.'][phoneStep]}</p>}
       </div>
       {phoneStep === 0 && <PhoneTrackingRequirements/>}
       {phoneStep === 1 && <div className={styles.installCard}>
@@ -163,7 +163,7 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
           else if (replace) setReplace(false);
           else setView('options');
         }}>Back</button>
-        {phoneStep < 2 ? <button type="button" className={styles.primaryAction} onClick={() => setPhoneStep(phoneStep + 1)}>Next <span aria-hidden="true">→</span></button>
+        {phoneStep < 2 ? <button type="button" className={styles.primaryAction} onClick={() => setPhoneStep(phoneStep + 1)}>Next</button>
           : <button type="button" className={styles.primaryAction} disabled={busy} onClick={() => void action('POST')}>{busy ? 'Creating code…' : code ? 'Create new code' : device ? 'Pair replacement phone' : 'Create pairing code'}</button>}
       </div>
       </>}
