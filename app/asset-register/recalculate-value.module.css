@@ -39,7 +39,9 @@
 }
 .dialog .body {
   min-height: 0;
-  padding: 1rem 0;
+  /* Keep hover shadows and focus rings inside the scroll area, beyond the content edges. */
+  margin: -1rem -1.5rem;
+  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
