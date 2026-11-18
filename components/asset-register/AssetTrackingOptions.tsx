@@ -49,15 +49,14 @@ export default function AssetTrackingOptions({ assetTitle, connected, onPhone, o
       <p className={styles.note}>WhatsApp and Email prepare this message for you to review and send.</p>
     </> : <>
       <div className={styles.intro}>
-        <h4 ref={heading} tabIndex={-1}>How would you like to track it?</h4>
-        <p>Connect a compatible tracker or use a dedicated Android phone.</p>
+        <h4 ref={heading} tabIndex={-1}>Choose a tracking method</h4>
       </div>
       <div className={styles.choices}>
         <button type="button" className={`${styles.choice} ${styles.purple}`} onClick={() => setExisting(true)}>
-          <span className={styles.icon}><TrackingIcon kind="tracker"/></span><span><strong>Connect an existing tracker</strong><small>Let us check if it can connect.</small></span>
+          <span className={styles.icon}><TrackingIcon kind="tracker"/></span><span><strong>Connect an existing tracker</strong><small>Check compatibility.</small></span>
         </button>
         <button type="button" className={`${styles.choice} ${styles.green}`} onClick={onPhone}>
-          <span className={styles.icon}><TrackingIcon kind="phone"/></span><span><strong>{connected ? 'View connected phone' : 'Use a tracking phone'}</strong><small>{connected ? 'Open your phone’s tracking status and controls.' : 'Track with the Aim4price app.'}</small></span>
+          <span className={styles.icon}><TrackingIcon kind="phone"/></span><span><strong>{connected ? 'View connected phone' : 'Use a tracking phone'}</strong><small>{connected ? 'View status and controls.' : 'Use a dedicated Android phone.'}</small></span>
         </button>
       </div>
     </>}
