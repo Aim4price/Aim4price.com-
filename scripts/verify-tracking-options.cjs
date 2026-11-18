@@ -16,7 +16,7 @@ import AssetTrackingPanel from '../../components/asset-register/AssetTrackingPan
 import AssetLocationEditor from '../../components/AssetLocationEditor';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
 export default function Page(){const [mounted,setMounted]=useState(false),[fixed,setFixed]=useState(false);useEffect(()=>setMounted(true),[]);if(!mounted)return null;
-if(window.location.search==='?editor')return <AssetAccessSettingsDialog locationLayout title="Update location" assetTitle="Solar panels" onClose={()=>{}}><AssetLocationEditor location={{latitude:-34,longitude:22,locationText:null}} fixedLocation={fixed} modeAssetId="fixture" onModeChange={item=>setFixed(item.fixedLocation)} onTracking={()=>{}} onSave={async()=>{}}/></AssetAccessSettingsDialog>;
+if(window.location.search==='?editor')return <AssetAccessSettingsDialog locationLayout title="Update location" assetTitle="Solar panels" onClose={()=>{}}><AssetLocationEditor showLocationSummary={false} location={{latitude:-34,longitude:22,locationText:null}} fixedLocation={fixed} modeAssetId="fixture" onModeChange={item=>setFixed(item.fixedLocation)} onTracking={()=>{}} onSave={async()=>{}}/></AssetAccessSettingsDialog>;
 return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTitle="Trailer & tank / #12 – 50%" onClose={()=>{}}><AssetTrackingPanel assetId="fixture" assetTitle="Trailer & tank / #12 – 50%"/></AssetAccessSettingsDialog>;}`);
     server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3048'], {cwd:root, env:{...process.env, PGHOST:'127.0.0.1', PGPORT:'5432', PGUSER:'fixture', PGPASSWORD:'fixture-only', PGDATABASE:'fixture'}, stdio:['ignore','pipe','pipe']});
     await new Promise((resolve,reject) => {const timer=setTimeout(()=>reject(Error('Startup timeout')),90000); server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));server.once('exit',()=>{clearTimeout(timer);reject(Error('Server exited'));});});
@@ -47,8 +47,8 @@ return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTit
       return r.continue();
     });
     async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text),{},text);await page.$$eval('button',(buttons,text)=>buttons.find(b=>b.textContent.trim()===text||b.querySelector('strong')?.textContent===text).click(),text);}
-    async function assertFits(name){
-      for(const viewport of [{width:1891,height:859},{width:1440,height:900},{width:1366,height:768},{width:390,height:844}]) {
+    async function assertFits(name,viewports=[{width:1891,height:859},{width:1440,height:900},{width:1366,height:768},{width:390,height:844}]){
+      for(const viewport of viewports) {
         await page.setViewport(viewport);await new Promise(r=>setTimeout(r,200));
         const overflow=await page.$eval('[role="dialog"]',e=>({horizontal:e.scrollWidth-e.clientWidth,vertical:Math.max(0,...[e,...e.querySelectorAll('div')].filter(n=>['auto','scroll'].includes(getComputedStyle(n).overflowY)).map(n=>n.scrollHeight-n.clientHeight))}));
         assert(overflow.horizontal<=2 && overflow.vertical<=2,name+' fits '+JSON.stringify({viewport,overflow}));
@@ -94,6 +94,9 @@ return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTit
     await page.goto('http://127.0.0.1:3048/tracking-options-validation?editor',{waitUntil:'networkidle0'});
     const mode='button[role="switch"][aria-label="Fixed location"]';
     await page.waitForSelector(mode);
+    assert.equal(await page.$('[data-location-view="choice"] a'),null);
+    assert.equal((await page.$$('[data-location-action]')).length,4);
+    await assertFits('map location editor',[{width:1920,height:870},{width:1366,height:768}]);
     await page.click(mode);await page.waitForSelector('[aria-label="Confirm stopping tracking"]');
     await click('Cancel');assert(await page.$('[data-location-action="tracking"]'));
     await page.click(mode);await click('Stop tracking and use fixed location');
