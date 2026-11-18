@@ -7,7 +7,7 @@ import { ensureTrackingTables } from "../../../../../../lib/asset-tracking";
 import { summarizeTracking, visibleTrackingPoints } from "../../../../../../lib/asset-tracking-math";
 import { getDb } from "../../../../../../lib/db";
 import {buildMovementHtml,buildMovementWorkbook} from "../../../../../../lib/asset-movement-report";
-import {validTrackingDay,validTrackingSnapshot,validTrackingCapture,TRACKING_HISTORY_DAYS_SQL,DELETE_TRACKING_DAY_SQL,TRACKING_HISTORY_SESSIONS_SQL,DELETE_TRACKING_SESSION_SQL,validTrackingId,validSessionCursor,DELETE_ALL_TRACKING_HISTORY_SQL} from "../../../../../../lib/asset-tracking-history";
+import {validTrackingDay,validTrackingSnapshot,validTrackingCapture,PREVIOUS_TRACKING_DAY_SQL,TRACKING_HISTORY_DAYS_SQL,DELETE_TRACKING_DAY_SQL,TRACKING_HISTORY_SESSIONS_SQL,DELETE_TRACKING_SESSION_SQL,validTrackingId,validSessionCursor,DELETE_ALL_TRACKING_HISTORY_SQL} from "../../../../../../lib/asset-tracking-history";
 import {trackingJourneys} from '../../../../../../lib/asset-tracking-journeys';
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,7 +42,8 @@ export async function GET(
       const index=before?all.findIndex(e=>e.id===before):-1;
       if(before&&index<0)return trackingJson({error:'History has changed. Refresh before loading more.'},409);
       const items=all.slice(index+1,index+31);
-      return trackingJson({items,nextBefore:all.length>index+31?items.at(-1)!.id:null,snapshotAt:snapshot});
+      const previous = await getDb().query(PREVIOUS_TRACKING_DAY_SQL,[access.ownerId,params.assetId,from,snapshot]);
+      return trackingJson({items,previousDay:previous.rows[0]?.day ?? null,nextBefore:all.length>index+31?items.at(-1)!.id:null,snapshotAt:snapshot});
     }
 
     if((deviceId||sessionId)&&(!validTrackingId(deviceId)||!validTrackingId(sessionId)))return trackingJson({error:'Choose a valid recording session.'},400);
