@@ -18,6 +18,14 @@
 .choice:hover,.contact:hover { border-color:var(--tracking-ink); box-shadow:0 12px 24px rgba(16,31,28,.1); }
 .choice:focus-visible,.contact:focus-visible,.back:focus-visible { outline:3px solid var(--tracking-ink,#287856); outline-offset:3px; }
 .back { justify-self:start; min-height:2.8rem; padding:.6rem 1rem; border:1px solid var(--app-border,#b5cfc3); border-radius:.8rem; background:var(--app-surface,#fff); color:var(--app-text,#174c38); font:inherit; font-weight:700; cursor:pointer; }
+.footer .back {
+  border: 1.5px solid #89b5a1;
+  background: linear-gradient(135deg, white, #e3f0e9);
+  color: #154e39;
+  font-weight: 750;
+  box-shadow: 0 4px 12px rgba(16, 42, 34, .09);
+}
+.footer .back:hover { background: #dbece3; }
 .message { display:grid; gap:.6rem; padding:1.25rem; border:1px solid var(--app-border,#c8dcd3); border-radius:1rem; background:var(--app-surface-soft,#edf5f1); }
 .message strong { font-size:1rem; font-weight:750; color:var(--app-text,#174c38); }
 .message p { overflow-wrap:anywhere; }

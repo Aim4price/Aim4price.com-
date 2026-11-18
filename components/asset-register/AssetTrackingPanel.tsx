@@ -107,19 +107,19 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
           </div>
         </div>
       </AssetAccessSettingsDialog>}
-      {device && !replace && <button type="button" className={styles.manageBack} disabled={busy} onClick={() => {setView('options');setShowManage(false);setReplace(false);}}>Tracking options</button>}
+
       {device && !replace && <div className={styles.setupHeading}>
         <span className={styles.phoneIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10 5h4M10 18.5h4"/></svg></span>
         <div><h3 ref={phoneHeading} tabIndex={-1}>{device ? "Equipment phone" : "Connect your phone"}</h3>
           <p>{device ? device.name : "Use the Android phone kept on this asset."}</p>
         </div>
-        {device && <span className={styles.connectionStatus}>{device.status}</span>}
+        <span className={styles.connectionStatus} data-offline={device.status==='Offline'}>{device.status}</span>
+        <button type="button" className={styles.manageBack} disabled={busy} onClick={() => {setView('options');setShowManage(false);setReplace(false);}}>Tracking options</button>
       </div>}
-      {device && !replace && !showManage && <div className={styles.connectedSummary}>
-        <div className={styles.connectedIntro}>
-          <span className={styles.successIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 12 4 4 8-8"/></svg></span>
-          <div><strong>Phone connected</strong><p>{device.lastCapturedAt?'Location received. View your route below.':'On the phone: allow precise location, then tap Activate outdoors.'}</p></div>
-        </div>
+      {device && !replace && !showManage && <div className={styles.dashboard}>
+        <div className={styles.connectedSummary}>
+        <h4 className={styles.cardTitle}>Phone activity</h4>
+        {!device.lastCapturedAt && <p>Allow precise location on the phone, then tap Activate outdoors.</p>}
         <dl className={styles.connectionFacts}>
           <div><dt>Last contact</dt><dd>{device.lastSeenAt?new Date(device.lastSeenAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Awaiting upload'}</dd></div>
           <div><dt>Latest GPS reading</dt><dd>{device.lastCapturedAt?new Date(device.lastCapturedAt).toLocaleString('en-ZA',{timeZone:'Africa/Johannesburg',dateStyle:'medium',timeStyle:'short'}):'Waiting for first location'}</dd></div>
@@ -131,8 +131,9 @@ export default function AssetTrackingPanel({ assetId, assetTitle, onBack }: { as
         </details>
         <div className={styles.connectedActions}><button type="button" className={styles.primaryAction} onClick={()=>setShowMovement(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h8a4 4 0 0 1 0 8H9a3 3 0 0 0 0 6h8"/></svg>Routes &amp; reports</button>
         <button ref={manageButtonRef} type="button" className={styles.secondaryAction} onClick={()=>setShowManage(true)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor"/><circle cx="15" cy="17" r="3" fill="currentColor"/></svg>Manage device</button></div>
+        </div>
+        <AssetTrackingUsage assetId={assetId}/>
       </div>}
-      {device && !replace && !showManage && <AssetTrackingUsage assetId={assetId}/>}
       {(!device||replace)&&<>
       <div className={styles.wizardHeading} data-tracker-step={phoneStep + 1}>
         <span className={styles.wizardStep}>Step {phoneStep + 1} of 3</span>

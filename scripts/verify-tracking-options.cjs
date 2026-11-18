@@ -41,7 +41,7 @@ return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTit
         if(r.method()==='DELETE'){mutations.push('DELETE');device=null;body={ok:true};}
         return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
       }
-      if(u.pathname.endsWith('/tracking/usage'))return r.respond({status:200,contentType:'application/json',body:JSON.stringify({metric:'not_applicable',enabled:false})});
+      if(u.pathname.endsWith('/tracking/usage'))return r.respond({status:200,contentType:'application/json',body:JSON.stringify({metric:'km',enabled:false,reading:123000})});
       if(u.pathname.startsWith('/api/'))return r.respond({status:200,contentType:'application/json',body:'{}'});
       if(u.hostname!=='127.0.0.1')return r.abort();
       return r.continue();
@@ -85,6 +85,9 @@ return <AssetAccessSettingsDialog locationLayout title="Asset tracking" assetTit
     await assertFits('pairing code');await page.screenshot({path:path.join(output,'pair-desktop.png')});await click('Back');await click('Back');await click('Back');await click('Use a tracking phone');await click('Next');await click('Next');assert(await page.$('[data-tracker-pairing]'),'Back navigation retains the pending pairing code');assert.deepEqual(mutations,['POST']);
     device={id:'paired-phone',name:'Equipment phone',status:'Connected',lastSeenAt:'2026-11-17T12:00:00Z',lastCapturedAt:'2026-11-17T11:59:00Z'};
     await page.reload({waitUntil:'networkidle0'});await page.waitForSelector('[data-tracker-connected]');assert.equal(await page.$('[data-tracking-options]'),null,'Connected phones open their controls directly');
+    await page.waitForSelector('[data-tracker-connected] form, [data-tracker-connected] section h4');
+    await assertFits('connected phone and automatic kilometres',[{width:1920,height:870},{width:1366,height:768}]);
+    await page.screenshot({path:path.join(output,'connected-desktop.png')});
     await click('Tracking options');await click('View connected phone');await page.waitForSelector('[data-tracker-connected]');
     await click('Manage device');await click('Replace phone');await page.waitForSelector('[aria-label="Tracking phone requirements"]');assert.deepEqual(mutations,['POST'],'Replacement is not paired automatically');
     await click('Back');await click('Manage device');await click('Disconnect phone');await page.waitForSelector('[aria-label="Close Disconnect phone?"]');assert.deepEqual(mutations,['POST'],'Disconnect requires its confirmation');await click('Cancel');assert.deepEqual(mutations,['POST']);

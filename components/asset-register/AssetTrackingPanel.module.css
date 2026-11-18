@@ -295,3 +295,63 @@ section .locationChoices { grid-template-columns: repeat(2, minmax(0, 1fr)) !imp
  :global(:where(html:not(:has([data-website-canvas])))) .setupPanel .pairingLayout { grid-template-columns:5.5rem minmax(0,1fr); gap:.8rem; }
  :global(:where(html:not(:has([data-website-canvas])))) .setupPanel .pairingCode { font-size:1rem; letter-spacing:0; }
 }
+
+.dashboard {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,22rem),1fr));
+  gap:1rem;
+  align-items:start;
+}
+.dashboard .connectedSummary {
+  gap:.85rem;
+  padding:1.1rem;
+  background:var(--app-surface,#fff);
+  color:var(--app-text,#173e31);
+}
+.cardTitle { margin:0; font-size:1.15rem; line-height:1.35; font-weight:750; }
+.dashboard .connectionFacts dt { color:var(--app-text,#34584a); font-weight:650; font-size:.88rem; }
+.dashboard .connectionFacts dd { font-weight:750; font-size:.95rem; }
+.dashboard .connectionFacts div,.dashboard .trackingDiagnostics { background:var(--app-surface-soft,#edf5f0); }
+.dashboard .connectedActions button { margin:0; }
+.setupHeading { flex-wrap:wrap; }
+
+.setupHeading .connectionStatus { color:#194934; }
+.setupHeading .connectionStatus[data-offline=true] { color:#754518; background:#fff0d6; }
+
+/* Use the Asset Map action palette throughout phone setup and management. */
+.setupPanel :is(.primaryAction, .secondaryAction, .manageBack, .disconnectAction),
+.confirmActions button {
+  min-height: 2.85rem;
+  border-width: 1.5px;
+  border-style: solid;
+  border-radius: .85rem;
+  font-family: var(--font-heading, "Montserrat"), sans-serif;
+  font-size: 1rem;
+  font-weight: 750;
+  line-height: 1.35;
+  box-shadow: 0 4px 12px rgba(16, 42, 34, .09);
+}
+.setupPanel .primaryAction {
+  background: linear-gradient(135deg, #1c7659, #11553f);
+  border-color: #11553f;
+}
+.setupPanel .secondaryAction, .setupPanel .manageBack, .confirmActions .secondaryAction {
+  color: #154e39;
+  border-color: #89b5a1;
+  background: linear-gradient(135deg, white, #e3f0e9);
+}
+.connectedActions .secondaryAction, .manageOptions .secondaryAction {
+  color: #59387c;
+  border-color: #ad91cb;
+  background: linear-gradient(135deg, white, #eae0f4);
+}
+.setupPanel .disconnectAction {
+  color: #842f26;
+  border-color: #ce8e85;
+  background: linear-gradient(135deg, #fffaf8, #fae2dd);
+}
+.setupPanel :is(.primaryAction, .secondaryAction, .manageBack, .disconnectAction):hover:not(:disabled),
+.confirmActions button:hover:not(:disabled) {
+  filter: brightness(.94);
+  box-shadow: 0 6px 16px rgba(16, 42, 34, .16);
+}
