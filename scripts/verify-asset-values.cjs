@@ -74,7 +74,21 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  }
  async function fill(selector,value){await page.waitForSelector(selector);await page.$eval(selector,(n,v)=>{Object.getOwnPropertyDescriptor(n.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(n,v);n.dispatchEvent(new Event('input',{bubbles:true}));},value);}
  await click('Review suggestion');await page.waitForSelector('textarea');assert(await page.evaluate(()=>document.body.textContent.includes('Example Dealer')));await fill('textarea','Accept inspected value');await page.screenshot({path:'/tmp/value-approval.png'});await click('Approve value');await page.waitForFunction(()=>document.body.textContent.includes('Saved.'));assert.equal(await page.evaluate(()=>window.writes[0].proposalId),'proposal');
- await click('Change current value');await fill('input[type=number]','750000');await fill('textarea','Owner inspection');await click('Confirm value change');await page.waitForFunction(()=>window.data.asset.value===750000);
+ await click('Change current value');
+ assert(await page.$eval('[role="dialog"] > footer',footer=>[...footer.querySelectorAll('button')].some(b=>b.textContent==='Back')),'Back stays in the bottom action bar');
+ await click('Incl. VAT');assert.equal(await page.$eval('#current-value-input',n=>n.value),'','VAT toggle preserves an empty amount');
+ await click('Excl. VAT');await fill('#current-value-input','750000.25');
+ for(let i=0;i<3;i++){await click('Incl. VAT');await click('Excl. VAT');}
+ assert.equal(await page.$eval('#current-value-input',n=>n.value),'750000.25','Repeated VAT switches preserve the canonical amount');
+ await click('Incl. VAT');await fill('#current-value-input','');await fill('#current-value-input','862500');await fill('textarea','Owner inspection');
+ const writesBeforeBack=await page.evaluate(()=>window.writes.length);
+ await click('Back');await click('Change current value');
+ assert.equal(await page.$eval('#current-value-input',n=>n.value),'862500','Back preserves the displayed draft');
+ assert.equal(await page.$eval('textarea',n=>n.value),'Owner inspection','Back preserves the reason');
+ assert.equal(await page.evaluate(()=>window.writes.length),writesBeforeBack,'Navigation and VAT switches do not save');
+ await click('Confirm value change');await page.waitForFunction(()=>window.data.asset.value===750000);
+ assert.equal(await page.evaluate(()=>window.writes.at(-1).amount),750000,'VAT-inclusive current value saves excluding VAT');
+
  await click('Change replacement price');
  await click('Preview change');
  await page.waitForSelector('textarea[aria-invalid="true"]');
@@ -87,7 +101,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForFunction(()=>document.querySelector('#replacement-price-input')?.value==='1200000');
  await click('Incl. VAT');
  await page.waitForFunction(()=>document.querySelector('#replacement-price-input')?.value==='1380000');
-await fill('textarea','Updated replacement quotation');await click('Preview change');await page.waitForFunction(()=>document.body.textContent.includes('960'));await page.waitForFunction(()=>document.querySelector('h2')?.textContent.includes('Review replacement change'));
+await fill('textarea','Updated replacement quotation');await click('Preview change');await page.waitForFunction(()=>document.body.textContent.includes('1 104 000'));await page.waitForFunction(()=>document.querySelector('h2')?.textContent.includes('Review replacement change'));
  assert.equal(await page.$('textarea'),null);
  await click('Back');
  await page.waitForSelector('#replacement-price-input');
