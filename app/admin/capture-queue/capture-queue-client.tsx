@@ -1516,7 +1516,10 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
               {completion && <dialog className={styles.completionDialog} ref={confirmationDialog}
                 aria-labelledby="capture-completion-heading" onCancel={() => setCompletion(null)}>
                 <form onSubmit={event => { event.preventDefault(); void runAction(completion,true); }}>
-                  <h3 id="capture-completion-heading">{completion === "complete_direct" ? "Save to owner’s ledger" : completionLabel}</h3>
+                  <header>
+                    <h3 id="capture-completion-heading">{completion === "complete_direct" ? "Save to owner’s ledger" : completionLabel}</h3>
+                    <button type="button" data-modal-close="true" aria-label="Close capture confirmation" onClick={() => setCompletion(null)}>×</button>
+                  </header>
                   <p>{completionTarget}</p>
                   {completion === "complete_direct" ? <label>How was the owner's approval confirmed?
                     <textarea required maxLength={1000} value={approvalNote} onChange={event => setApprovalNote(event.target.value)}/>
