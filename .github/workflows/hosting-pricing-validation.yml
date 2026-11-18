@@ -1,0 +1,29 @@
+name: Hosting pricing validation
+on:
+  pull_request:
+    paths:
+      - 'app/pricing/**'
+      - 'lib/hosting-pricing.ts'
+      - 'tests/hosting-pricing.test.mjs'
+      - '.github/workflows/hosting-pricing-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'app/pricing/**'
+      - 'lib/hosting-pricing.ts'
+      - 'tests/hosting-pricing.test.mjs'
+      - '.github/workflows/hosting-pricing-validation.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: node --experimental-strip-types --test tests/hosting-pricing.test.mjs
+      - run: npm run typecheck

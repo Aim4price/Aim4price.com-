@@ -2542,7 +2542,7 @@ export default function AppHeader({
                                       { href: '/valuation', label: 'Value Asset' },
                                       { href: '/account', label: 'Account' },
                                       { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared enquiries' },
-                                      { href: '/pricing', label: 'Explore plans' },
+                                      { href: '/pricing', label: 'Hosting Fees' },
                                       ...(partsAccess ? [{ href: '/parts', label: 'Parts Stock' }] : []),
                                     ]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
