@@ -193,3 +193,31 @@
 .pathCard { white-space: nowrap; min-width: 0; }
 .pathCard strong { font-size: 1.15rem; }
 .pathCard > span:last-child { font-size: 0.95rem; }
+
+.accountControls { background: #f1f6f2; border-color: #d4e2d8; box-shadow: none; }
+.accountControls .toolbar { gap: .65rem; }
+.accountControls .picker { flex: 1 1 18rem; max-width: none; }
+.accountControls .pickerTrigger, .accountControls .toolbar > :is(button,a) { min-height: 2.85rem; }
+.accountControls .pickerTrigger { padding: .45rem .8rem; }
+.billingPaths { margin: 0; gap: .75rem; }
+.billingPaths .pathCard { padding: .8rem 1rem; gap: .15rem; border: 1px solid #d9e5de; border-radius: .8rem; }
+.billingPaths .pathCard:hover { background: #f4f8f5; border-color: #9bbba6; }
+.billingPaths .pathSelected { border-color: #91b49b; background: #eaf4ed; box-shadow: inset 3px 0 #347452; }
+.billingPaths .pathCard > span:last-child { white-space: normal; text-wrap: wrap; }
+.invoiceTable { min-width: 0; }
+.invoiceTable :is(th,td) { padding: .75rem .85rem; }
+.invoiceTable :is(th,td):nth-child(3), .invoiceTable :is(th,td):nth-child(4) { text-align: right; font-variant-numeric: tabular-nums; }
+.invoiceTable tbody tr:first-child td { border-bottom: 0; }
+.invoiceTable tbody tr:last-child td { padding-top: .15rem; padding-bottom: .85rem; }
+.invoiceTable tbody:hover { background: #fafcfb; }
+.invoiceTable .actions { gap: .4rem; }
+.invoiceTable .actions :is(button,a) { min-height: 2.5rem; border-radius: .6rem; padding: .35rem .75rem; }
+.invoiceTable .actions button:hover:enabled { background: #f0f6f2; border-color: #9ebba7; }
+.invoiceTable .actions .danger:hover:enabled { background: #fff2ef; border-color: #d99c91; }
+.invoiceTable td small { white-space: normal; overflow-wrap: anywhere; }
+.signupSettings > summary { display: flex; justify-content: space-between; gap: .75rem; align-items: center; list-style: none; padding-right: 0 !important; }
+.signupSettings > summary::after, .signupSettings summary::-webkit-details-marker { display: none !important; }
+.signupSettings summary span { color: #205a40; border: 1px solid #ccdcd2; background: white; border-radius: .6rem; padding: .4rem .8rem; }
+.whenOpen, .signupSettings[open] .whenClosed { display: none; }
+.signupSettings[open] .whenOpen { display: inline; }
+.signupSettings .muted { white-space: normal; text-wrap: wrap; }
