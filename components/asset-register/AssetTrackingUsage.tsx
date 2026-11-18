@@ -40,7 +40,7 @@ export default function AssetTrackingUsage({assetId}: {assetId: string}) {
     <div className={styles.reading}><strong>{number(usage.reading)} <small>{usage.metric}</small></strong><span>{usage.estimated ? 'Estimated from tracking' : 'Meter reading'}</span></div>
     {usage.baselineAt && <p className={styles.note}>Last confirmed: {number(usage.baselineValue)} {usage.metric} · {date(usage.baselineAt)}</p>}
     {usage.lastTrackedAt && <p className={styles.note}>Latest recorded location: {date(usage.lastTrackedAt)}</p>}
-    {editing ? <form className={styles.form} onSubmit={event => {event.preventDefault(); if (valid) void save(usage.enabled ? 'confirm' : 'enable');}}>
+    {editing ? <form data-tracking-usage-editor className={styles.form} onSubmit={event => {event.preventDefault(); if (valid) void save(usage.enabled ? 'confirm' : 'enable');}}>
       <label htmlFor={`${id}-reading`}>Current meter reading ({usage.metric})</label>
       <input id={`${id}-reading`} type="number" inputMode="decimal" min="0" step="0.01" required autoFocus value={reading} onChange={event => setReading(event.target.value)} placeholder="Read the machine’s meter" disabled={busy}/>
       <p className={styles.note}>This becomes your starting reading from now. Previous history stays saved.{usage.metric === 'hours' ? ' Moving time is an estimate, not engine-meter hours.' : ''}</p>
