@@ -1424,6 +1424,9 @@ export default function AssetMapClient() {
     registerFilters,
     selectedRegisterId,
   );
+  const filterButtonLabel = selectedRegisterId !== ALL_REGISTER_FILTER_ID || search.trim()
+    ? `${visibleAssets.length} filtered`
+    : 'Filter';
   const exportFilterLabel = findRegisterFilterLabel(
     registerFilters,
     exportRegisterId,
@@ -1653,7 +1656,7 @@ export default function AssetMapClient() {
       </AssetAccessSettingsDialog>}
       {locationDialog?.view==='history' &&<AssetLocationHistoryDialog savedPinsOnly={locationDialog.asset.fixedLocation && !locationDialog.asset.hasPastRoutes} initialTab={locationDialog.asset.fixedLocation ? (locationDialog.asset.hasSavedPins ? 'observations' : 'movement') : undefined} assetId={locationDialog.asset.id} title={locationDialog.asset.title} onClose={closeLocationDialog}/>}
       {locationDialog?.view==='update'&&<AssetAccessSettingsDialog locationLayout title={hasCoordinates(locationDialog.asset) ? "Update location" : "Set location"} assetTitle={locationDialog.asset.title} onClose={closeLocationDialog}>
-        <AssetLocationEditor modeAssetId={desktop.workspace ? undefined : locationDialog.asset.id} fixedLocation={locationDialog.asset.fixedLocation} onModeChange={item=>{
+        <AssetLocationEditor showLocationSummary={false} modeAssetId={desktop.workspace ? undefined : locationDialog.asset.id} fixedLocation={locationDialog.asset.fixedLocation} onModeChange={item=>{
           const id=locationDialog.asset.id;
           const update=(asset:AssetMapItem)=>({...asset,...item,trackingStatus:undefined,lastTrackedAtIso:undefined,lastTrackingContactAtIso:null});
           setAssets(current=>current.map(asset=>asset.id===id?update(asset):asset));
@@ -1696,10 +1699,10 @@ export default function AssetMapClient() {
                     aria-haspopup="dialog"
                     aria-expanded={isFilterMenuOpen}
                     aria-controls={isFilterMenuOpen ? "asset-map-register-dialog" : undefined}
-                    aria-label={`Filter: ${selectedFilterLabel}`}
+                    aria-label={`${filterButtonLabel}: ${selectedFilterLabel}`}
                    data-tooltip="Choose which asset register to show on the map." data-tooltip-style="description">
                     <FilterIcon className={styles.buttonIcon} />
-                    <span className={styles.filterControlLabel}>Filter</span>
+                    <span className={styles.filterControlLabel}>{filterButtonLabel}</span>
                   </button>
                   {isFilterMenuOpen ? (
                     <AssetMapRegisterDialog
