@@ -66,10 +66,10 @@ test('public enquiry renders an expandable Leads card for every selected asset',
     '../business-network/BusinessAcceptanceForm':()=>React.createElement('div',null,'Business lookup'),
     '../WebsitePortal':{createPortal:()=>{throw new Error('No modal should be mounted before Manage is clicked');}},
   }).default;
-  const html=renderToStaticMarkup(React.createElement(Cards,{share,senderName:'Farm'}));
+  const html=renderToStaticMarkup(React.createElement(Cards,{share,senderName:'Farm',allowBusinessDetails:true}));
   assert.equal((html.match(/<article/g)||[]).length,3);
   for(const asset of share.assets)assert.ok(html.includes(`aria-label="Open ${asset.title}"`));
-  assert.ok(!html.includes('Add your business details'));
+  assert.ok(html.includes('Add your business details'));
   assert.doesNotMatch(html,/[—–]/);
 });
 

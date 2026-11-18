@@ -565,6 +565,113 @@ test("admin drafts require explicit publication before appearing in the director
   }
 });
 
+test("manual business API refuses non-admin callers and cross-origin writes", async () => {
+  let session = null,
+    writes = 0;
+  const route = load("app/api/admin/business-network/route.ts", {
+    "../../../../lib/trusted-request-origin": load("lib/trusted-request-origin.ts"),
+    "next/server": {},
+    "../../../../lib/auth-session": {
+      getAnyServerSession: async () => session,
+    },
+    "../../../../lib/account-constants": {
+      isAim4priceAdminEmail: (email) => email === "admin@example.com",
+    },
+    "../../../../lib/admin-business-network": {
+      listAdminBusinesses: async () => [],
+      saveAdminBusiness: async () => {
+        writes++;
+        return "id";
+      },
+    },
+    "../../../../lib/business-network-api": {
+      businessJson: (body, status = 200) => ({ body, status }),
+      businessError: () => ({ status: 400 }),
+      businessBody: async () => ({}),
+      requireBusinessOrigin: (r) => {
+        if (r.headers.get("origin") !== "https://aim4price.test")
+          throw Error("origin");
+      },
+    },
+  });
+  const request = {
+    url: "http://internal:3000/api/admin/business-network",
+    headers: new Headers({ origin: "https://aim4price.com" }),
+  };
+  assert.equal((await route.POST(request)).status, 403);
+  session = { user: { id: "owner", email: "owner@example.com" } };
+  assert.equal((await route.GET()).status, 403);
+  assert.equal((await route.POST(request)).status, 403);
+  session = { user: { id: "admin", email: "admin@example.com" } };
+  assert.equal(
+    (
+      await route.POST({
+        url: "http://internal:3000/api/admin/business-network",
+        headers: new Headers({ origin: "https://other.test" }),
+      })
+    ).status,
+    403,
+  );
+  assert.equal(writes, 0);
+  assert.equal((await route.POST(request)).status, 200);
+  assert.equal(writes, 1);
+});
+
+
+test('Google lookup accepts public origins through a proxy, searches real endpoint and rejects foreign origins', async () => {
+  const oldEnv = process.env.NODE_ENV, oldKey = process.env.GOOGLE_PLACES_API_KEY, originalFetch = globalThis.fetch;
+  process.env.NODE_ENV = 'production'; process.env.GOOGLE_PLACES_API_KEY = 'test-key';
+  let session = {user:{id:'admin',email:'admin@example.com'}}, calls = 0;
+  const api = load('lib/business-network-api.ts', {
+    './trusted-request-origin':load('lib/trusted-request-origin.ts'), './auth-session':{getServerSession:async()=>session}, './account-profile':{getAccountProfile:async()=>({accountType:'owner',accountStatus:'active'})}, './account-constants':{isAim4priceAdminEmail:e=>e==='admin@example.com'},
+  });
+  const route = load('app/api/business-network/google/route.ts', {
+    '../../../../lib/auth-session':{getAnyServerSession:async()=>session},
+    '../../../../lib/account-constants':{isAim4priceAdminEmail:e=>e==='admin@example.com'},
+    '../../../../lib/business-network':{limitBusinessAction:async()=>{},getBusinessByToken:async()=>{throw new Error('This token is invalid.')}},
+    '../../../../lib/business-network-api':api, '../../../../lib/business-network-shared':shared,
+  });
+  const {NextRequest}=require('next/server');
+  const request = (origin, body={query:'S Haddad George'}) => new NextRequest('http://internal.railway:3000/api/business-network/google',{method:'POST',headers:{...(origin?{origin}:{}),'content-type':'application/json','x-forwarded-host':'evil.test'},body:JSON.stringify(body)});
+  globalThis.fetch=async(url,options)=>{
+    calls++;assert.equal(url,'https://places.googleapis.com/v1/places:searchText');
+    assert.equal(JSON.parse(options.body).textQuery,'S Haddad George');assert.equal(options.headers['X-Goog-Api-Key'],'test-key');
+    return Response.json({places:[{id:'place-1',displayName:{text:'S Haddad'},formattedAddress:'George'}]});
+  };
+  try {
+    for(const origin of ['https://aim4price.com','https://www.aim4price.com']) {
+      const response=await route.POST(request(origin)); assert.equal(response.status,200); assert.equal((await response.json()).places[0].id,'place-1');
+    }
+    for(const origin of ['https://evil.test','null',undefined,'https://aim4price.com.evil.test'])assert.notEqual((await route.POST(request(origin))).status,200);
+    assert.equal(calls,2,'untrusted origins never reach Google');
+    globalThis.fetch=async(url,options)=>{
+      calls++;assert.equal(url,'https://places.googleapis.com/v1/places/place-1');
+      assert.equal(options.cache,'no-store');assert.match(options.headers['X-Goog-FieldMask'],/nationalPhoneNumber/);
+      assert.ok(!options.headers['X-Goog-FieldMask'].includes('photos'));
+      return Response.json({id:'place-1',displayName:{text:'Workshop'},location:{latitude:-33.9,longitude:22.4}});
+    };
+    const detail=await route.POST(request('https://aim4price.com',{placeId:'place-1'}));
+    assert.equal(detail.status,200);assert.match(detail.headers.get('cache-control'),/no-store/);
+    assert.equal((await detail.json()).place.displayName.text,'Workshop');
+    for(const placeId of ['../secrets','https://evil.test','', 'place-1?key=bad']) assert.equal((await route.POST(request('https://aim4price.com',{placeId}))).status,400);
+    assert.equal(calls,3);
+    globalThis.fetch=async()=>new Response('',{status:503});
+    const failed=await route.POST(request('https://aim4price.com',{placeId:'place-1'}));
+    assert.equal(failed.status,400);assert.match((await failed.json()).error,/manually/);
+    session={user:{id:'owner',email:'owner@example.com'}};
+    globalThis.fetch=async()=>Response.json({places:[]});
+    assert.equal((await route.POST(request('https://aim4price.com'))).status,200,'active owners can search for a recipient');
+    session=null; assert.equal((await route.POST(request('https://aim4price.com'))).status,403);assert.equal(calls,3);
+    session={user:{id:'admin',email:'admin@example.com'}};delete process.env.GOOGLE_PLACES_API_KEY;
+    const unavailable=await route.POST(request('https://aim4price.com'));assert.equal(unavailable.status,503);assert.match((await unavailable.json()).error,/not configured/);
+  } finally {
+    globalThis.fetch=originalFetch;
+    if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
+    if(oldKey===undefined)delete process.env.GOOGLE_PLACES_API_KEY;else process.env.GOOGLE_PLACES_API_KEY=oldKey;
+  }
+});
+
+
 test('Google suggestions require independent confirmation before saving', () => {
   assert.throws(() => shared.validateBusinessDetails({googleDetailsUsed:true,detailsVerified:false}, 'business@example.com'), /Confirm the listing details/);
 });

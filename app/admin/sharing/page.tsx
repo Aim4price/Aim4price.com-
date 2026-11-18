@@ -1,4 +1,4 @@
-import GuestReportAccess from '../../../components/business-network/GuestReportAccess';
+import Link from 'next/link';
 import { requireAdminPageAccess } from '../../../lib/account-access';
 import { sharingAdminAccounts } from '../../../lib/sharing-admin';
 import SharingUsage from './usage';
@@ -9,9 +9,9 @@ export default async function SharingAdmin({searchParams}:{searchParams?:{period
  const period=searchParams?.period==='all'?'all':'month';
  const accounts=await sharingAdminAccounts(period);
  return <main className={styles.page}>
+  <Link className={styles.back} href="/admin/businesses">← Back to businesses</Link>
   <header className={styles.heading}><div><h1>Sharing usage</h1><p>See how accounts use shared assets before setting free limits.</p></div><span className={styles.badge}>Measuring only · no limits enforced</span></header>
   <SharingUsage accounts={accounts} period={period} adminId={admin.user.id}/>
-  <GuestReportAccess />
   <details className={styles.explanation}><summary>What do these numbers mean?</summary>
    <p><strong>Assets received:</strong> each asset counts once per account, even across different links. This month shows assets first received this month.</p>
    <p><strong>Uploads:</strong> saved files and their uploaded size. Failed saves do not count. This is upload volume, not current storage.</p>

@@ -1153,7 +1153,8 @@ export default function AccountClient({
     if (sharedAccount) {
       const section = document.getElementById('account-details');
       if (section instanceof HTMLDetailsElement) section.open = true;
-      section?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const target = section || document.getElementById('directory-listing-title');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       const input = section?.querySelector<HTMLInputElement>(progress && profile?.businessName?.trim() ? 'input[name="phone"]' : progress ? 'input[name="businessName"]' : 'input[name="phone"]');
       input?.focus({ preventScroll: true });
       return;
@@ -1693,6 +1694,7 @@ export default function AccountClient({
                       </button>
                     ) : null}
 
+                    {sharedAccount ? <Link href="#directory-listing-title" data-tooltip="View and update your business directory listing." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="directory" /><strong>Directory listing</strong></Link> : null}
                     {showPartnerDirectory ? (
                       <button
                         type="button"

@@ -1,4 +1,5 @@
 import { canManageTeamAccess } from '../../lib/team-access';
+import AccountDirectoryListing from '../../components/AccountDirectoryListing';
 import BusinessDetails from '../business/business-client';
 import { readBusinessAccount } from '../../lib/business-accounts';
 import sharedStyles from '../business/page.module.css';
@@ -24,6 +25,7 @@ export default async function AccountPage() {
       const business = profile.accountType === 'business' ? await readBusinessAccount(signedIn.user) : null;
       const settings = <div className={sharedStyles.accountContent}>
         {<details id="account-details" className={`${sharedStyles.panel} ${sharedStyles.details}`} open><summary>Business details</summary><BusinessDetails businessName={profile.businessName || ''} phone={profile.phone || ''} website={business?.review.website || profile.websiteUrl || ''} evidence={business?.review.evidence || ''} email={signedIn.user.email} emailVerified={signedIn.user.emailVerified === true}/></details>}
+        <AccountDirectoryListing name={profile.businessName || ''} phone={profile.phone || ''} emailVerified={signedIn.user.emailVerified === true}/>
       </div>;
       return <AccountClient canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} sharedAccount sharedSettings={settings} />;
     }
