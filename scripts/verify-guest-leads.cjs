@@ -200,7 +200,7 @@ export default function Validation(){
    assert.ok(links.some(href=>href.startsWith('mailto:?')),'Email lets the owner choose a recipient');
    assert.ok(links.some(href=>href.startsWith('https://wa.me/?')),'WhatsApp lets the owner choose a recipient');
    await page.evaluate(()=>{window.__invitationCopied='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__invitationCopied=text;}}});});
-   await click('Copy link');await page.waitForFunction(()=>document.body.textContent.includes('Invitation link copied.'));
+   await click('Copy link');await page.waitForFunction(()=>document.body.textContent.includes('Asset link copied.'));
    assert.equal(await page.evaluate(()=>window.__invitationCopied),'http://127.0.0.1:3033/business-network/accept?share='+token);
    assert.ok(await page.$eval('dialog',e=>e.scrollWidth<=e.clientWidth+1),'Invitation fits without horizontal scrolling');
    await page.screenshot({path:path.join(output,`invitation-${width}.png`),fullPage:true});
