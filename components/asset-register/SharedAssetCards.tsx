@@ -6,7 +6,6 @@ import SharedCardValue from "../leads/SharedCardValue";
 import SharedProblems from "../leads/SharedProblems";
 import ExternalLeadActions, { type ExternalLeadActionData } from "./ExternalLeadActions";
 import LeadManageDialog from "../leads/LeadManageDialog";
-import BusinessAcceptanceForm from "../business-network/BusinessAcceptanceForm";
 import { createPortal } from "../WebsitePortal";
 import LeadCardSummary from "../leads/LeadCardSummary";
 import SharedAssetExport from "../leads/SharedAssetExport";
@@ -34,7 +33,6 @@ export default function SharedAssetCards({
   enquiry,
   example = false,
   senderName = "",
-  allowBusinessDetails = false,
 }: {
   example?: boolean;
   share: PublicAssetShare | null;
@@ -42,7 +40,6 @@ export default function SharedAssetCards({
   actions?: ReactNode;
   enquiry?: ExternalLeadActionData;
   senderName?: string;
-  allowBusinessDetails?: boolean;
 }) {
   const router=useRouter();
   const [manageSuspended, setManageSuspended] = useState(false);
@@ -234,12 +231,6 @@ export default function SharedAssetCards({
               );
             })}
           </div>
-          {allowBusinessDetails && (
-            <details className={styles.businessDetails}>
-              <summary>Add your business details</summary>
-              <BusinessAcceptanceForm embedded />
-            </details>
-          )}
           <p className={styles.note}>
             Only the details selected by the sender are shared. Values are saved
             estimates and remain subject to inspection.

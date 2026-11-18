@@ -43,5 +43,5 @@ test('account directory combines parameterized area matching with business name 
  const list=new Function(...Object.keys(mocks),code+';return listPartnerDirectory;')(...Object.values(mocks));
  await list({currentUserId:'owner',search:'Workshop',area:'George, Western Cape'});
  assert.ok(params.includes('%workshop%'));assert.ok(params.includes('%george%'));assert.ok(params.includes('%western cape%'));
- assert.match(sql,/concat_ws\(' ', town_city, province, address_line_1\)/);assert.equal(externalInput.area,'George, Western Cape');
+ assert.match(sql,/concat_ws\(' ', town_city, province, address_line_1\)/);assert.equal(externalInput,undefined,'retired external listings are excluded');
 });

@@ -48,7 +48,7 @@ function add(file){
  });
 }
 const entries={
- billing:'app/admin/billing/billing-client', accounts:'app/admin/admin-client', businesses:'app/admin/businesses/businesses-client', dashboard:'app/admin/dashboard/page',
+ billing:'app/admin/billing/billing-client', accounts:'app/admin/admin-client', dashboard:'app/admin/dashboard/page',
  valuations:'app/admin/valuations/admin-valuations-client', marketplace:'app/admin/marketplace/admin-marketplace-client',
  'asset-map':'app/admin/asset-map/admin-asset-map-client', discovery:'app/admin/discovery/admin-discovery-client',
  outcomes:'app/admin/sold-assets/admin-marketplace-outcomes-client', 'asset-outcomes':'app/admin/sold-assets/sold-assets-client',
@@ -81,7 +81,7 @@ const market={assetKey:'asset:one',sourceAssetId:'one',latestListingId:'listing-
 const valuation={id:'estimate:1',sourceId:'1',recordType:'estimate',valuationMode:'generic',source:'basic',createdAtIso:now,account:{...asset.owner,known:true},asset:{sectorKey:'agricultural',sectorLabel:'Agriculture',familyKey:'small-field-tractor',familyLabel:'Small Field Tractor',brandName:'New Holland',modelName:'TT4.90',yearModel:2022,condition:'good',usageAmount:1250,usageUnit:'hours'},estimate:{selectedValueExVat:327133,lowValueExVat:300000,midValueExVat:327133,highValueExVat:350000,replacementPriceExVat:600000,confidenceLabel:''},input:{},output:{}};
 const valuations={generatedAtIso:now,valuations:[valuation],summary:{totalValuations:1,estimateEvents:1,savedValuations:0,knownAccountValuations:1,unknownAccountValuations:0,uniqueAccounts:1,valuedValuations:1},options:{sectors:options.sectors,years:[]},filters:{search:'',recordType:'all',valuationMode:'all',account:'all',sector:'',period:'all',sort:'latest',page:1,pageSize:50},pagination:{...pagination,totalItems:1}};
 const outcome={outcomeId:'outcome',listingId:'listing-one',sourceAssetId:'one',accountUserId:'owner',sellerLabel:user.name,sellerEmail:user.email,title:asset.title,sectorKey:'agricultural',sectorLabel:'Agriculture',reason:'created_by_mistake',outcomeNote:'',aim4priceHelped:false,finalSalePriceExVat:null,askingPriceExVat:327133,aim4priceValueExVat:327133,totalViewsAtClose:8,accountViewsAtClose:5,unknownViewsAtClose:3,uniqueViewersAtClose:3,sourceSurface:'marketplace',publishedAtIso:now,closedAtIso:now,actorType:'owner'};
-const titles={billing:'Billing',accounts:'Accounts',businesses:'Business Directory',dashboard:'Dashboard',valuations:'Valuations',marketplace:'Marketplace','asset-map':'Asset Map',discovery:'Discovery',outcomes:'Outcomes','asset-outcomes':'Asset register outcomes','work-tracker':'Work tracker','capture-queue':'Capture Queue',lifecycle:'Lifecycle Model',maintenance:'Maintenance checklists'};
+const titles={billing:'Billing',accounts:'Accounts',dashboard:'Dashboard',valuations:'Valuations',marketplace:'Marketplace','asset-map':'Asset Map',discovery:'Discovery',outcomes:'Outcomes','asset-outcomes':'Asset register outcomes','work-tracker':'Work tracker','capture-queue':'Capture Queue',lifecycle:'Lifecycle Model',maintenance:'Maintenance checklists'};
 const props={billing:{clients:[user,{userId:'dealer-test',name:'Example Equipment Dealer',email:'dealer@example.test',accountType:'dealer'},{userId:'farm-test',name:'River Farm',email:'farm@example.test',accountType:'owner'}],initialAccount:'owner',initialWork:'work-one'},accounts:{initialUsers:[user,{...user,userId:'two',name:'Example Dealer',accountType:'dealer',accountSubtype:'equipment_middleman',accountStatus:'pending_payment',accountStatusLabel:'Pending payment',email:'dealer@example.test'}]},marketplace:{report:{assets:[market,{...market,assetKey:'asset:two',title:'3 Ton Tip Trailer',hasRepeatInterest:false}],generatedAtIso:now}},discovery:{initialReport:discovery},'asset-map':{initialReport:discovery},valuations:{initialReport:valuations},outcomes:{report:{outcomes:[outcome]}},'asset-outcomes':{report:{outcomes:[]},allocationAccounts:[]},'work-tracker':{initialClients:[user]}};
 props.videos={initialSlots:[]};
 Object.assign(titles,{videos:'Video Manager','asset-values':'Asset values','annual-review':'Annual asset review'});
@@ -97,7 +97,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   let inviteAttempts=0;
   let verificationAccounts=[],verificationFailure=false; const verificationWrites=[];
-  let failValues=false,failBusiness=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
+  let failValues=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
   const queueRequests=[],workRequests=[],billingRequests=[];let billingIssued=false,previewFailure=false;
   await page.setRequestInterception(true);
   page.on('request',request=>{
@@ -128,7 +128,6 @@ const evidence=path.join(root,'.next/admin-review-validation');
     }
     return verificationFailure?respond({error:'Unable to load business accounts.'},503):respond({accounts:verificationAccounts});
    }
-   if(url.includes('/api/admin/business-network'))return failBusiness?respond({error:'Directory unavailable'},503):respond({businesses:[]});
    if(url.includes('/api/admin/maintenance-catalogue'))return respond({catalogue});
    if(url.includes('/api/admin/capture-assistance'))return respond({rows:[],total:0,pending:0});
    if(captureMode && url.includes('/api/admin/capture-requests/request-one'))return respond({ok:true,request:capture,files:[],events:[{id:'match',eventType:'matched',metadata:{ownerUserId:'owner',assetId:'one',fuelStorageId:''}}],matchedTarget:{targetType:'asset',ownerUserId:'owner',ownerDisplayName:user.name,targetId:'one',targetDisplayName:asset.title,reference:'ABC123',meta:'Tractor',assetUsageMetric:'hours',assetUsageReading:1250}});
@@ -156,7 +155,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.evaluate(section=>{window.fixturePathname=section==='accounts'?'/admin':'/admin/'+({lifecycle:'lifecycle-calculator',outcomes:'sold-assets',maintenance:'maintenance-catalogue'}[section]||section);},section);
    await page.evaluate(()=>{window.fixtureDashboard={cards:['free-estimates','paid-estimates','total-assets-saved','total-accounts-created','owner-accounts-created','average-user-time','marketplace-advertised'].map(id=>({id,title:id,values:[{label:'This month',value:'12'},{label:'This year',value:'54'}]})),storage:{sources:[],customerUsage:{accountCountLabel:'4',averageLabel:'20 MB',medianLabel:'12 MB',p90Label:'100 MB',addedLast30DaysLabel:'10 MB',pendingBucketUploadsLabel:'0',failedBucketUploadsLabel:'0'}}};});
    await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
-   const ownShell=['accounts','businesses','dashboard','work-tracker','maintenance','annual-review','asset-emails','sharing','ai-connect','select-probe'].includes(section);
+   const ownShell=['accounts','dashboard','work-tracker','maintenance','annual-review','asset-emails','sharing','ai-connect','select-probe'].includes(section);
    const cssFile=section==='outcomes'||section==='asset-outcomes'?'sold-assets':section==='lifecycle'?'lifecycle-calculator':section;
    const wrapper=section==='asset-values'||section==='videos'?`React.createElement("main",null,React.createElement("h1",null,${JSON.stringify(titles[section])}),child)`:ownShell?'child':`React.createElement("main",{className:styles.page},React.createElement("section",{className:styles.shell},React.createElement("header",{className:${section==='billing'?'styles.header':'styles.topBar'}},React.createElement("div",{className:styles.titleBlock},React.createElement("h1",null,${JSON.stringify(titles[section])})),React.createElement(require("components/AdminNavigation").default,{active:${JSON.stringify(section)}})),child))`;
    await page.addScriptTag({content:runtime+`; (async()=>{const Component=require(${JSON.stringify(entries[section])}).default;const child=${['dashboard','asset-emails','sharing'].includes(section)?`await Component(${JSON.stringify(props[section]||{})})`:`React.createElement(Component,${JSON.stringify(props[section]||{})})`};const styles=${ownShell||section==='asset-values'||section==='videos'?'{}':`require("app/admin/${cssFile}/page.module.css")`};ReactDOM.createRoot(document.getElementById("app")).render(${canonical ? `React.createElement(require("components/SiteWorkspaceZoom").default,{footer:null,operational:null},React.createElement("div",{className:"adminWorkspaceRoot"},React.createElement(require("components/AdminWorkspace").default,null,${wrapper})))` : process.env.ADMIN_WORKSPACE_QA ? `React.createElement(require("components/AdminWorkspace").default,null,${wrapper})` : wrapper});})().catch(error=>{window.renderError=error.message;});`});
@@ -371,7 +370,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
   }
   for(const width of [390,1440]){
    verificationAccounts=[];
-   await open('businesses',width);
+   await open('accounts',width);
    await page.$eval('nav[aria-label="Admin navigation"] > button[aria-haspopup="dialog"]',e=>{e.focus();e.click();});await page.waitForSelector('[role="dialog"]');
    await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent.includes('Business verification')).click());
    await page.waitForFunction(()=>document.body.textContent.includes('No Business accounts found.'));
@@ -400,15 +399,15 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent==='Back to Manage').click());
    assert.equal(await page.$eval('[role="dialog"] h2',e=>e.textContent),'Manage');
    await page.keyboard.press('Escape');
-   verificationFailure=true;props.businesses={initialVerificationOpen:true};
-   await open('businesses',width);
+   verificationFailure=true;props.accounts.initialVerificationOpen=true;
+   await open('accounts',width);
    await page.waitForSelector('[role="dialog"] [role="alert"]');
    verificationFailure=false;
    await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent==='Try again').click());
    await page.waitForFunction(()=>document.body.textContent.includes('No accounts match this filter or search.'));
    await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent==='Verified').click());
    await page.waitForSelector('[role="dialog"] summary');
-   await page.keyboard.press('Escape');delete props.businesses;
+   await page.keyboard.press('Escape');delete props.accounts.initialVerificationOpen;
    assert.deepEqual(errors,[]);
   }
   console.log('PASS directory verification: empty state, manual approval, status refresh, keyboard focus, error retry and legacy entry at 390/1440');
@@ -417,7 +416,6 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await open(section);
    if(section==='maintenance')await page.waitForFunction(()=>document.body.textContent.includes('Small Field Tractor'));
    if(section==='capture-queue')await page.waitForFunction(()=>document.body.textContent.includes('No documents to capture'));
-   if(section==='businesses')await page.waitForFunction(()=>document.body.textContent.includes('No businesses added yet'));
    await page.screenshot({path:path.join(evidence,section+'-1440.png'),fullPage:true});
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
    assert.equal(overflow,false,section+' page must contain its horizontal scrolling');
@@ -577,7 +575,8 @@ const evidence=path.join(root,'.next/admin-review-validation');
 
   await open('accounts');
   await page.$eval('nav[aria-label="Admin navigation"] > button[aria-haspopup="dialog"]',e=>{e.focus();e.click();});await page.waitForSelector('[role="dialog"]');
-  assert.equal(await page.$$eval('[role="dialog"] a',els=>els.length),18);
+  assert.equal(await page.$$eval('[role="dialog"] a',els=>els.length),17);
+  assert.equal(await page.$('[role="dialog"] a[href="/admin/businesses"]'),null);
   assert.match(await page.$eval('[role="dialog"] a[href="/admin/asset-emails"]',el=>el.textContent.trim()),/^Asset emails/);
   assert.match(await page.$eval('[role="dialog"] a[href="/admin/videos"]',el=>el.textContent.trim()),/^Video Manager/);
   assert.match(await page.$eval('[role="dialog"] a[href="/admin/ai-connect"]',el=>el.textContent.trim()),/^AI connections/);
@@ -585,7 +584,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
   assert.match(await page.$eval('[role="dialog"] a[href="/admin/annual-review"]',el=>el.textContent.trim()),/^Preview annual review/);
   await page.keyboard.press('Escape');assert.equal(await page.$('[role="dialog"]'),null);
   assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-haspopup')),'dialog');
-  console.log('PASS 18-section navigation, Escape and focus restoration');
+  console.log('PASS 17-section navigation, Escape and focus restoration');
   await page.$$eval('[aria-label="Account summary"] button',els=>els.find(e=>e.textContent.includes('Pending')).click());
   await page.waitForFunction(()=>document.querySelectorAll('tbody tr').length===1);
   assert.ok(await page.$eval('tbody',e=>e.textContent.includes('Example Dealer')));
@@ -639,11 +638,6 @@ const evidence=path.join(root,'.next/admin-review-validation');
   assert.equal(await page.$eval('textarea',e=>e.value),editedNote);
   console.log('PASS scoped work history and unsaved note navigation protection');
   page.once('dialog',dialog=>dialog.accept());workMode=false;delete props['work-tracker'].initialAccountId;
-  failBusiness=true;await open('businesses');await page.waitForSelector('[role="alert"]');
-  assert.equal(await page.evaluate(()=>document.body.textContent.includes('No businesses added yet')),false);
-  failBusiness=false;await page.$$eval('button',els=>els.find(e=>e.textContent==='Try again').click());
-  await page.waitForFunction(()=>document.body.textContent.includes('No businesses added yet'));
-  console.log('PASS directory failure and retry');
   failReport=true;
   for(const section of ['discovery','valuations']){
    await open(section);

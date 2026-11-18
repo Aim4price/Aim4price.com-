@@ -11,7 +11,6 @@ export type AdminSection =
   | "ai-connections"
   | "billing"
   | "accounts"
-  | "businesses"
   | "maintenance-catalogue"
   | "dashboard"
   | "asset-values"
@@ -40,11 +39,6 @@ export const ADMIN_LINKS: Array<{
     href: "/admin",
     label: "Accounts",
     key: "accounts",
-  },
-  {
-    href: "/admin/businesses",
-    label: "Business Directory",
-    key: "businesses",
   },
   {
     href: "/admin/dashboard",
@@ -99,7 +93,7 @@ export const ADMIN_LINKS: Array<{
 ];
 
 export const ADMIN_GROUPS: Array<{ title: string; keys: AdminSection[] }> = [
-  { title: "Accounts & service", keys: ["accounts", "asset-emails", "billing", "capture-queue", "work-tracker", "businesses"] },
+  { title: "Accounts & service", keys: ["accounts", "asset-emails", "billing", "capture-queue", "work-tracker"] },
   { title: "Assets & marketplace", keys: ["discovery", "marketplace", "sold-assets", "asset-map"] },
   { title: "Insights & tools", keys: ["annual-review", "videos", "ai-connections", "dashboard", "valuations", "asset-values", "lifecycle", "maintenance-catalogue"] },
 ];
@@ -111,7 +105,7 @@ export default function AdminNavigation({ active, canGetEstimate = false, busine
   initialVerificationOpen?: boolean;
 }) {
   const router = useRouter();
-  const hasVerification = active === "businesses" && Boolean(businessVerification);
+  const hasVerification = active === "accounts" && Boolean(businessVerification);
   const [isOpen, setIsOpen] = useState(initialVerificationOpen && hasVerification);
   const [showVerification, setShowVerification] = useState(initialVerificationOpen && hasVerification);
   const manageButtonRef = useRef<HTMLButtonElement | null>(null);

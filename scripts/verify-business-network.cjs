@@ -112,13 +112,10 @@ async function main() {
         waitUntil: "networkidle2",
         timeout: 120000,
       });
-      await page.waitForFunction(() =>
-        document.body.textContent.includes("Request email"),
-      );
-      assert.equal(
-        await page.$eval("input[readonly]", (el) => el.value),
-        "service@example.com",
-      );
+      await page.waitForFunction(() => document.body.textContent.includes("George Tractor Services"));
+      assert.ok(await page.$('a[href="/business/join"]'));
+      await page.click('button::-p-text(Stop listing requests)');
+      await page.waitForFunction(() => document.body.textContent.includes("Requests stopped."));
       assert.equal(await page.evaluate(() => location.hash), "");
       assert.ok(
         await page.evaluate(
