@@ -10,6 +10,10 @@ on:
       - 'lib/scan-assets.ts'
       - 'lib/scan-current-inputs.ts'
       - 'app/api/asset-register/revalue/route.ts'
+      - 'app/asset-register/asset-register-client.tsx'
+      - 'app/asset-register/recalculate-value.module.css'
+      - 'scripts/verify-recalculate-layout.cjs'
+      - 'tests/recalculate-question-flow.test.mjs'
       - 'tests/automatic-valuation*.test.cjs'
       - 'lib/asset-revaluation-save.ts'
       - 'lib/asset-register-revaluation.ts'
@@ -41,3 +45,10 @@ jobs:
       - run: node --test tests/automatic-valuation.test.cjs tests/automatic-valuation-access.test.cjs tests/asset-revaluation-save.test.cjs tests/approved-value-baseline.test.cjs tests/asset-history.test.cjs tests/asset-saleability.test.cjs
 
       - run: node --experimental-strip-types --test tests/asset-register-brand-recovery.test.mjs
+      - run: node --experimental-strip-types --test tests/recalculate-question-flow.test.mjs tests/pricing-vat.test.mjs tests/asset-register-vat-controls.test.mjs
+      - run: node scripts/verify-recalculate-layout.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recalculate-value-screenshots
+          path: .next/recalculate-validation
