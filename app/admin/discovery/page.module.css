@@ -1260,3 +1260,78 @@
 .tableScroller tbody tr:hover { background: #f6faf7; }
 .tableScroller td strong { font-weight: 650; }
 .tableScroller td small { font-size: 0.95rem; color: #52665d; }
+
+/* Keep the daily review controls and the four comparison columns in view. */
+.metrics {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+}
+.metrics article:first-child {
+  background: #194d3e;
+  border-color: #194d3e;
+}
+.metrics article:first-child :is(span, strong) { color: white; }
+.metrics strong { font-variant-numeric: tabular-nums; }
+.interestTabs { flex-wrap: wrap; }
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  border-radius: .75rem;
+  background: #f4f8f6;
+}
+.filters .searchField { flex: 2 1 18rem; }
+.filters > label { flex: 1 1 11rem; }
+.filters .filterToggle { cursor: pointer; background: white; }
+.filters .extraFilters {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: .85rem;
+  border-top: 1px solid #dce6e0;
+  padding-top: .9rem;
+}
+.extraFilters[hidden] { display: none; }
+.extraFilters label { display: grid; min-width: 0; gap: .28rem; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller table { width: 100%; min-width: 0; table-layout: fixed; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller th:first-child { width: 36%; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller th:nth-child(2) { width: 28%; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller th:nth-child(3) { width: 19%; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller td:nth-child(n) { min-width: 0; white-space: normal; }
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller .assetLink {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #165c45;
+  font: inherit;
+  font-weight: 700;
+  text-align: start;
+  text-decoration: underline;
+  text-decoration-color: #a5c5b7;
+  text-underline-offset: .18em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+:global(.adminWorkspaceRoot #admin-workspace-content) .tableScroller td :is(strong, small, span) { white-space: normal; }
+.detailColumns dd a { color: #176047; }
+@media (max-width: 620px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .tableScroller thead {
+    position: absolute;
+    clip-path: inset(50%);
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .tableScroller tbody,
+  :global(:where(html:not(:has([data-website-canvas])))) .tableScroller table { display: block; }
+  :global(:where(html:not(:has([data-website-canvas])))) .tableScroller tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .55rem;
+    border-bottom: 1px solid #e2e9e5;
+    padding: 1rem;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .tableScroller td { padding: 0; border: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .tableScroller td:nth-child(-n+2) { grid-column: 1 / -1; }
+}
