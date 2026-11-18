@@ -468,7 +468,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
   for(const width of [390,1440]){
    await open('billing',width);
    await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Automatic billing')));
-   await page.$$eval('button',els=>els.find(e=>e.textContent.includes('Aim4price follows your schedule')).click());
+   await page.click('[aria-label="Billing paths"] button::-p-text(Automatic billing)');
    await page.waitForSelector('[aria-label="Automatic billing settings"]');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'automatic billing '+width);
    assert.equal(await page.$$eval('button',els=>els.find(e=>e.textContent==='Save & enable automatic billing').disabled),true);
