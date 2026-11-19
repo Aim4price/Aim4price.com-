@@ -12,7 +12,7 @@ export async function GET(request:NextRequest,{params}:{params:{id:string}}){
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id))return new Response(null,{status:404});
  await ensureTutorialVideos();
  const row=(await getDb().query(`SELECT f.byte_size,f.content_type FROM tutorial_video_files f WHERE f.id=$1 AND ($2 OR EXISTS(SELECT 1 FROM tutorial_video_slots s WHERE s.published_id=f.id))`,[params.id,isAim4priceAdminEmail(session?.user.email)])).rows[0];
- if(!row)return new Response(null,{status:404});
+ if(!row || row.content_type==='text/uri-list')return new Response(null,{status:404});
  const range=videoByteRange(request.headers.get('range'),row.byte_size);
  if(!range)return new Response(null,{status:416,headers:{'Content-Range':`bytes */${row.byte_size}`}});
  let offset=range.start;const end=range.end;

@@ -15,10 +15,10 @@ test('video ranges support seeking and suffixes, reject malformed and unsatisfia
  assert.deepEqual(policy.videoByteRange('bytes=0-200',100),{start:0,end:99});
  for(const value of ['bytes=100-','bytes=80-20','bytes=0-1,4-5','bytes=-0','bytes=','invalid'])assert.equal(policy.videoByteRange(value,100),null);
 });
-test('upload detection checks file bytes rather than trusting a file extension',()=>{
- assert.equal(policy.tutorialVideoType(Buffer.from('0000ftypisom')),'video/mp4');
- assert.equal(policy.tutorialVideoType(Buffer.from([0x1a,0x45,0xdf,0xa3])),'video/webm');
- assert.equal(policy.tutorialVideoType(Buffer.from('<script>alert(1)</script>')),null);
+test('YouTube links and embed code resolve to one video on the fixed player origin',()=>{
+ const id='AbC1234-_xy',target='https://www.youtube-nocookie.com/embed/'+id;
+ for(const url of ['https://youtu.be/'+id+'?si=123','https://youtube.com/watch?v='+id,'https://m.youtube.com/shorts/'+id,target,'<iframe src="'+target+'" allowfullscreen></iframe>'])assert.equal(policy.youtubeEmbed(url),target);
+ for(const url of ['https://youtube.com.example/watch?v='+id,'https://youtube.com/playlist?list='+id,'https://youtu.be/short','javascript:alert(1)'])assert.equal(policy.youtubeEmbed(url),null);
 });
 test('all audiences have unique addressable topics and local destinations',()=>{
  for(const group of Object.values(catalogue.tutorialCatalogue)){
@@ -39,12 +39,12 @@ function service(){
  const api=load('lib/tutorial-videos.ts',{'./db':{getDb:()=>({query:async()=>({rows:[]}),connect:async()=>client})},'./tutorial-catalogue':catalogue,'./tutorial-video-policy':policy});
  return {api,state:()=>state,fileCount:()=>fileCount};
 }
-test('replacement upload preserves published video until explicitly published; unpublish retains a draft',async()=>{
+test('replacement link preserves published video until explicitly published; unpublish retains a draft',async()=>{
  const s=service(),base={audience:'owners',feature:'welcome',actor:'admin'};
- await s.api.saveTutorialVideo({...base,revision:0,action:'upload',bytes:Buffer.from('0000ftypisom'),name:'intro.mp4'});
+ await s.api.saveTutorialVideo({...base,revision:0,action:'link',link:'https://youtu.be/ABCDEFGHIJK'});
  const first=s.state().draft_id;assert.ok(first);assert.equal(s.state().published_id,null);
  await s.api.saveTutorialVideo({...base,revision:1,action:'publish',draftId:first});
- await s.api.saveTutorialVideo({...base,revision:2,action:'upload',bytes:Buffer.from('0000ftypisom')});
+ await s.api.saveTutorialVideo({...base,revision:2,action:'link',link:'https://youtu.be/ZYXWVUTSRQP'});
  assert.equal(s.state().published_id,first);const replacement=s.state().draft_id;
  await assert.rejects(s.api.saveTutorialVideo({...base,revision:3,action:'publish',draftId:first}),/Preview/);
  assert.equal(s.state().published_id,first);
@@ -53,12 +53,12 @@ test('replacement upload preserves published video until explicitly published; u
  await s.api.saveTutorialVideo({...base,revision:4,action:'unpublish'});
  assert.equal(s.state().published_id,null);assert.equal(s.state().draft_id,replacement);
 });
-test('stale updates, unknown slots and invalid uploads cannot replace saved state',async()=>{
- const s=service(),base={audience:'dealers',feature:'welcome',actor:'admin',action:'upload',bytes:Buffer.from('0000ftypisom')};
+test('stale updates, unknown slots and invalid links cannot replace saved state',async()=>{
+ const s=service(),base={audience:'dealers',feature:'welcome',actor:'admin',action:'link',link:'https://youtu.be/ZYXWVUTSRQP'};
  await s.api.saveTutorialVideo({...base,revision:0});const before={...s.state()};
  await assert.rejects(s.api.saveTutorialVideo({...base,revision:0}),/another session/);
  await assert.rejects(s.api.saveTutorialVideo({...base,revision:1,feature:'missing'}),/valid video/);
- await assert.rejects(s.api.saveTutorialVideo({...base,revision:1,bytes:Buffer.from('bad')}),/MP4/);
+ await assert.rejects(s.api.saveTutorialVideo({...base,revision:1,link:'https://example.com/video'}),/YouTube/);
  assert.deepEqual(s.state(),before);assert.equal(s.fileCount(),1);
 });
 test('admin API rejects unauthenticated and cross-origin requests before reading upload bodies',async()=>{
