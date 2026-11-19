@@ -183,8 +183,16 @@ async function main() {
     assert.ok(savedDealerWork.maintenanceWork[0].items.length);
     console.log('PASS Dealer has Checklists, Parts and saves unscheduled maintenance');
     await page.goto(url+'?view=admin',{waitUntil:'networkidle0',timeout:120000});await page.type('input[aria-label="Find a family"]','plough');
-    await clickText('Plough');await page.waitForFunction(()=>document.body.textContent.includes('Create separate checklist'));
-    await clickText('Create separate checklist for this family');await page.waitForFunction(()=>document.body.textContent.includes('Shared by 1 families'));
+    await clickText('Plough');await page.waitForFunction(()=>document.body.textContent.includes('Create family-only copy'));
+    await clickText('Create family-only copy');await page.waitForFunction(()=>document.body.textContent.includes('Only this family uses this checklist.'));
+    await clickText('Add item');
+    await page.waitForSelector('input[value="New component"]');
+    await clickText('Remove item');
+    await page.waitForFunction(()=>!document.querySelector('input[value="New component"]'));
+    const itemToggle = await page.waitForSelector('button[aria-expanded="false"]:has(small):has(strong)');
+    await itemToggle.evaluate(button => button.scrollIntoView({block:'center'}));
+    await itemToggle.click();
+    await page.waitForSelector('input[maxlength="160"]');
     await page.screenshot({path:path.join(output,'admin-family-editor.png')});
     await clickText('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Catalogue saved.'));
     console.log('PASS Admin family search and independent family checklist editing');

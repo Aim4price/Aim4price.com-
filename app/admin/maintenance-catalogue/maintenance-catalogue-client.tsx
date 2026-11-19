@@ -16,6 +16,7 @@ export default function MaintenanceCatalogueClient() {
   const [query, setQuery] = useState("");
   const [source, setSource] = useState("all");
   const [selected, setSelected] = useState("");
+  const [openItem, setOpenItem] = useState("");
   const [profileQuery, setProfileQuery] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,6 +47,11 @@ export default function MaintenanceCatalogueClient() {
       document.removeEventListener("click", protectNavigation, true);
     };
   }, [dirty]);
+  function selectAvailableFamily(catalogue: MaintenanceCatalogue) {
+    setSelected(current => catalogue.families.some(f => familyAssignmentKey(f) === current)
+      ? current : catalogue.families.length ? familyAssignmentKey(catalogue.families[0]) : "");
+    setOpenItem("");
+  }
   async function load() {
     setBusy(true);
     try {
@@ -55,6 +61,7 @@ export default function MaintenanceCatalogueClient() {
       const d = await r.json();
       if (!r.ok) throw Error(d.error);
       setData(d.catalogue);
+      selectAvailableFamily(d.catalogue);
       setVersion(d.catalogue.version);
       setDirty(false);
       setMessage("");
@@ -123,6 +130,7 @@ export default function MaintenanceCatalogueClient() {
         throw Error("Import must be smaller than 2.5 MB.");
       const next = validateMaintenanceCatalogue(JSON.parse(await file.text()));
       change({ ...next, version });
+      selectAvailableFamily(next);
       setMessage("Import loaded for review. Save to apply.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Invalid import.");
@@ -136,7 +144,7 @@ export default function MaintenanceCatalogueClient() {
         (source === "all" || f.source === source) &&
         `${f.sector} ${f.label} ${f.familyKey}`
           .toLowerCase()
-          .includes(query.toLowerCase()),
+          .includes(query.trim().toLowerCase()),
     ) || [];
   return (
     <main className={adminStyles.page}>
@@ -149,6 +157,11 @@ export default function MaintenanceCatalogueClient() {
       </header>
       <div className={styles.page}>
       <div className={styles.toolbar}>
+        <p role="status">
+          {message || (data
+            ? `${data.families.length} ${data.families.length === 1 ? "family" : "families"} · ${data.profiles.length} ${data.profiles.length === 1 ? "checklist" : "checklists"}`
+            : "Loading…")}
+        </p>
         <button className={styles.saveButton} disabled={busy || !dirty} onClick={save}>
           {busy ? "Please wait…" : "Save changes"}
         </button>
@@ -177,15 +190,9 @@ export default function MaintenanceCatalogueClient() {
           Reload
         </button>
       </div>
-      <p role="status">
-        {message ||
-          (data
-            ? `${data.families.length} families · ${data.profiles.length} checklists`
-            : "Loading…")}
-      </p>
       <div className={styles.layout}>
         <section className={styles.panel}>
-          <h2>Asset families</h2>
+          <div className={styles.sectionHeading}><h2>Asset families</h2><span>{families.length}</span></div>
           <input
             aria-label="Find a family"
             placeholder="Search family or sector"
@@ -203,7 +210,7 @@ export default function MaintenanceCatalogueClient() {
               </button>
             ))}
           </div>
-          <p>{families.length} families</p>
+
           {data && !families.length ? <p>No families match these filters.</p> : null}
           <div className={styles.list}>
             {families.map((f) => (
@@ -213,9 +220,10 @@ export default function MaintenanceCatalogueClient() {
                 onClick={() => {
                   setSelected(familyAssignmentKey(f));
                   setProfileQuery("");
+                  setOpenItem("");
                 }}
               >
-                <strong>{f.label}</strong>
+                <strong title={f.label}>{f.label}</strong>
                 <small>
                   {f.sector} · {f.source}
                 </small>
@@ -226,10 +234,10 @@ export default function MaintenanceCatalogueClient() {
         <section className={styles.panel}>
           {family && profile && data ? (
             <>
-              <h2>{family.label}</h2>
-              <p>
-                {profile.label} · Shared by {users} families
-              </p>
+              <header className={styles.editorHeader}>
+                <h2>{family.label}</h2>
+                <p>{users === 1 ? "Only this family uses this checklist." : `Changes apply to all ${users} assigned families.`}</p>
+              </header>
               <button
                 disabled={busy}
                 onClick={() => {
@@ -251,10 +259,11 @@ export default function MaintenanceCatalogueClient() {
                   });
                 }}
               >
-                Create separate checklist for this family
+                Create family-only copy
               </button>
-              <details>
+              <details key={selected}>
                 <summary>Use another checklist</summary>
+                <p>Past records keep their original wording.</p>
                 <input
                   placeholder="Find checklist"
                   aria-label="Find checklist"
@@ -273,7 +282,8 @@ export default function MaintenanceCatalogueClient() {
                         key={p.key}
                         disabled={busy}
                         aria-pressed={profile.key === p.key}
-                        onClick={() =>
+                        onClick={() => {
+                          setOpenItem("");
                           change({
                             ...data,
                             families: data.families.map((f) =>
@@ -281,8 +291,8 @@ export default function MaintenanceCatalogueClient() {
                                 ? { ...f, profileKey: p.key }
                                 : f,
                             ),
-                          })
-                        }
+                          });
+                        }}
                       >
                         {p.label}
                       </button>
@@ -299,69 +309,77 @@ export default function MaintenanceCatalogueClient() {
                   }
                 />
               </label>
-              <p>
-                Edits below apply to all {users} assigned families. Old
-                maintenance records keep their original wording.
-              </p>
+              <div className={styles.sectionHeading}>
+                <h3>Checklist items</h3><span>{profile.items.length}</span>
+              </div>
               {profile.items.map((item, index) => (
-                <fieldset className={styles.item} key={item.id}>
-                  <legend>Item {index + 1}</legend>
-                  {(
-                    [
-                      "label",
-                      "checkLabel",
-                      "serviceLabel",
-                      "description",
-                    ] as const
-                  ).map((field) => (
-                    <label key={field}>
-                      {
-                        {
-                          label: "Component",
-                          checkLabel: "Check wording",
-                          serviceLabel: "Service wording",
-                          description: "Help text",
-                        }[field]
-                      }
-                      <input
-                        value={item[field]}
-                        disabled={busy}
-                        maxLength={field === "description" ? 300 : 160}
-                        onChange={(e) =>
-                          updateProfile({
-                            ...profile,
-                            items: profile.items.map((i) =>
-                              i.id === item.id
-                                ? { ...i, [field]: e.target.value }
-                                : i,
-                            ),
-                          })
-                        }
-                      />
-                    </label>
-                  ))}
-                  <button
-                    disabled={busy || profile.items.length < 2}
-                    onClick={() =>
-                      updateProfile({
-                        ...profile,
-                        items: profile.items.filter((i) => i.id !== item.id),
-                      })
-                    }
-                  >
-                    Remove item
+                <div className={styles.item} key={item.id}>
+                  <button type="button" className={styles.itemToggle}
+                    aria-expanded={openItem === item.id}
+                    onClick={() => setOpenItem(openItem === item.id ? "" : item.id)}>
+                    <span>{index + 1}</span><strong>{item.label || "Unnamed component"}</strong>
+                    <small>{openItem === item.id ? "Close" : "Edit"}</small>
                   </button>
-                </fieldset>
+                  {openItem === item.id && <div className={styles.fields}>
+                    {(
+                      [
+                        "label",
+                        "checkLabel",
+                        "serviceLabel",
+                        "description",
+                      ] as const
+                    ).map((field) => (
+                      <label key={field}>
+                        {
+                          {
+                            label: "Component",
+                            checkLabel: "Check wording",
+                            serviceLabel: "Service wording",
+                            description: "Help text",
+                          }[field]
+                        }
+                        <input
+                          value={item[field]}
+                          disabled={busy}
+                          maxLength={field === "description" ? 300 : 160}
+                          onChange={(e) =>
+                            updateProfile({
+                              ...profile,
+                              items: profile.items.map((i) =>
+                                i.id === item.id
+                                  ? { ...i, [field]: e.target.value }
+                                  : i,
+                              ),
+                            })
+                          }
+                        />
+                      </label>
+                    ))}
+                    <button
+                      disabled={busy || profile.items.length < 2}
+                      onClick={() =>
+                        updateProfile({
+                          ...profile,
+                          items: profile.items.filter((i) => i.id !== item.id),
+                        })
+                      }
+                    >
+                      Remove item
+                    </button>
+                  </div>}
+                </div>
               ))}
               <button
                 disabled={busy || profile.items.length >= 80}
-                onClick={() =>
+                onClick={() => {
+                  const id = `item_${Date.now()}`;
+                  setOpenItem(id);
                   updateProfile({
                     ...profile,
                     items: [
                       ...profile.items,
                       {
-                        id: `item_${Date.now()}`,
+                        id,
                         label: "New component",
                         checkLabel: "New component",
                         serviceLabel: "New component",
@@ -369,8 +387,8 @@ export default function MaintenanceCatalogueClient() {
                           "Select only if fitted and work was completed.",
                       },
                     ],
-                  })
-                }
+                  });
+                }}
               >
                 Add item
               </button>

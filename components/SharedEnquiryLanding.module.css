@@ -82,7 +82,7 @@
 
 .dialog.passwordDialog {
   width:min(34rem,calc(var(--website-visible-width,100vw) - 2rem));
-  padding:clamp(1.25rem,3vw,2rem);
+  padding:clamp(1.25rem,calc(var(--website-design-vw,1vw) * 3),2rem);
 }
 .passwordDialog .passwordBody { gap:.75rem; padding-top:1.25rem; }
 .passwordDialog .passwordSummary { padding:.75rem 1rem; margin-bottom:.25rem; }
