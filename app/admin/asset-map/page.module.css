@@ -765,3 +765,47 @@
 .assetRowCopy span { font-size: 0.95rem; color: #52665d; }
 .filterBar { gap: .8rem; padding: 1.1rem; }
 .filterBar input, .filterBar select { min-height: 40px; font-size: 0.95rem; font-weight: 650; }
+
+.mapCard { container-type: inline-size; }
+.mapCard .filterBar {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1.8fr) repeat(2, minmax(9rem, 1fr)) auto;
+  align-items: end;
+}
+.mapCard .filterBar .searchField { grid-column: auto; min-width: 0; }
+.mapCard .filterBar input, .filterActions button { min-height: 3.25rem; }
+.mapCard .filterActions { grid-column: auto; flex-wrap: wrap; }
+.extraFilters {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .8rem;
+  padding-top: .8rem;
+  border-top: 1px solid #e2e9e5;
+}
+.extraFilters[hidden] { display: none; }
+
+.assetRow { padding: .72rem .85rem; row-gap: .3rem; align-items: center; }
+.assetRowCopy { display: contents; }
+.assetRowCopy strong { grid-column: 1 / -1; }
+.assetRowCopy small { grid-column: 1; }
+.mappedBadge, .missingBadge {
+  border-radius: .4rem;
+  padding: .14rem .45rem;
+  background: #e7f4ec;
+}
+.missingBadge { background: #fbf1dd; }
+.assetDetail { bottom: 1.55rem; }
+.detailDisclosure { margin-top: .65rem; border-block: 1px solid #dce6df; }
+.detailDisclosure summary { padding: .6rem 0; color: #215940; font-weight: 650; cursor: pointer; }
+.detailDisclosure .assetDetailGrid { margin: 0 0 .7rem; }
+.mapPane .mapEmpty { top: 4rem; pointer-events: none; }
+
+@container (max-width: 54rem) {
+  .mapCard .filterBar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mapCard .filterBar > label { min-width: 0; }
+}
+@container (max-width: 34rem) {
+  .mapCard .filterBar .searchField, .mapCard .filterActions { grid-column: 1 / -1; }
+  .extraFilters { grid-template-columns: minmax(0, 1fr); }
+}
