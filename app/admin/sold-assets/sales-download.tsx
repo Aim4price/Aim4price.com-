@@ -54,8 +54,8 @@ export function SalesDownload({rows, selected, owners, owner, changeOwner, sourc
         <option value="">All owners</option>
         {[...owners].sort((a,b)=>a[1].localeCompare(b[1])).map(([id,name])=><option key={id} value={id}>{name}</option>)}
       </AdminSelect></label>
-      <div><span>Total sold</span><strong>{saleMoney(totals.soldValue)}</strong></div>
-      <div><span>Sold with Aim4price help</span><strong>{saleMoney(totals.assistedValue)}</strong></div>
+      <div><span>Total sold excl. VAT</span><strong>{saleMoney(totals.soldValue)}</strong></div>
+      <div><span>Aim4price-assisted sales excl. VAT</span><strong>{saleMoney(totals.assistedValue)}</strong></div>
     </div>
     {totals.missing>0 && <p>{totals.missing} sold {totals.missing===1?'asset has':'assets have'} no recorded sale price.</p>}
     {error && <p role="alert">{error}</p>}
