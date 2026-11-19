@@ -25,11 +25,12 @@ function PasswordIcon({ lock = false }: { lock?: boolean }) {
   </svg>;
 }
 
-export default function ShareLinkPasswordStep({ choice, onChoiceChange, password, onPasswordChange, protectedLink = false, disabled = false }: {
+export default function ShareLinkPasswordStep({ choice, onChoiceChange, password, onPasswordChange, protectedLink = false, disabled = false, partsAudience }: {
   choice: LinkPasswordChoice | null;
   onChoiceChange: (choice: LinkPasswordChoice) => void;
   password: string;
   onPasswordChange: (password: string) => void;
+  partsAudience?: 'public' | 'business';
   protectedLink?: boolean;
   disabled?: boolean;
 }) {
@@ -37,16 +38,22 @@ export default function ShareLinkPasswordStep({ choice, onChoiceChange, password
   const [showPassword, setShowPassword] = useState(false);
   const choices: LinkPasswordChoice[] = protectedLink ? ['keep', 'set', 'remove'] : ['none', 'set'];
 
+  const partsDescriptions = {
+    none: partsAudience === 'business' ? 'Your chosen business signs in to view parts.' : 'Anyone with the link can view parts.',
+    set: 'Enter a password to view parts.',
+    keep: options.keep.description,
+    remove: 'View parts without a link password.',
+  };
   return <div className={`${layout.guideBody} ${styles.passwordSlide}`}>
     <p className={layout.guideHeading}>{protectedLink ? 'How would you like to protect this link?' : 'Would you like to add a password?'}</p>
-    <div className={layout.accessChoices} data-link-password-choices role="group" aria-label="Asset link password protection">
+    <div className={layout.accessChoices} data-link-password-choices role="group" aria-label={partsAudience ? "Parts link password protection" : "Asset link password protection"}>
       {choices.map(option => <button key={option} type="button" className={`${layout.accessChoice} ${option === 'set' ? layout.permissionsChoice : layout.viewChoice}`} disabled={disabled} aria-pressed={choice === option} onClick={() => {
         setShowPassword(false);
         onChoiceChange(option);
       }}>
         <span className={layout.choiceIcon}><PasswordIcon lock={option === 'keep' || option === 'set'} /></span>
         <strong className={layout.choiceTitle}>{protectedLink && option === 'set' ? 'Change password' : options[option].title}</strong>
-        <span className={layout.choiceDescription}>{options[option].description}</span>
+        <span className={layout.choiceDescription}>{partsAudience ? partsDescriptions[option] : options[option].description}</span>
       </button>)}
     </div>
     {choice === 'set' && <div className={styles.passwordInputPanel}>
