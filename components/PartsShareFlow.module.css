@@ -1,70 +1,7 @@
-.dialog.dialog{width:min(1160px,calc(var(--website-visible-width, 100vw) - 32px));color:var(--text,#173d32);font-family:var(--font-body,Montserrat,Arial,sans-serif)}
-.body{padding:24px 2px;display:grid;gap:20px;max-height:calc(var(--website-visible-height, 100dvh) * .65);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#6d9788 #edf4f0;scrollbar-gutter:stable;padding-right:16px}
-.lead{margin:0;font-size:1rem;font-weight:650;color:#637b72}.hint,.field small{color:#637b72;font-size:.88rem;line-height:1.6;margin:0}
-.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.choices button,.choices a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:180px;padding:26px;border:1px solid #6eb39c;border-radius:22px;background:linear-gradient(120deg,#fcfefd,#e2f0eb);color:#173d32;text-decoration:none;text-align:center;font:inherit;cursor:pointer}.choices .amber{border-color:#dba65f;background:linear-gradient(120deg,#fff,#f7eee2)}.choices strong{font-size:1.2rem;font-weight:750}.choices small{font-size:.95rem;font-weight:650}.icon{display:grid;place-items:center;width:54px;height:54px;border:1px solid currentColor;border-radius:16px;font-size:1.8rem}
-.dialog button,.dialog a{transition:background .15s,border-color .15s,box-shadow .15s}.dialog button:focus-visible,.dialog a:focus-visible,.dialog input:focus-visible{outline:3px solid #80aee5;outline-offset:3px}.dialog button:hover:not(:disabled),.dialog a:hover{box-shadow:0 4px 14px #173d3212;border-color:#317e68}.dialog button:disabled{opacity:.45;cursor:not-allowed}
-.history,.recipient{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px;border:1px solid #c8ddd3;border-radius:16px;background:#f0f7f4;color:inherit;font:inherit;cursor:pointer}.history span{font-size:.9rem;font-weight:650}.options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{display:flex;align-items:center;gap:12px;padding:22px 18px;background:#eff7f3;border:1px solid #c8ddd3;border-radius:18px;min-width:0}.card:first-child{flex-direction:column;align-items:flex-start;gap:8px}.card strong,.recipient strong{display:block;font-size:1rem;font-weight:750}.card small,.card>span,.recipient small{display:block;font-size:.85rem;line-height:1.6}.card:has(input:checked),.recipient[aria-pressed=true]{border-color:#167357;box-shadow:inset 0 0 0 1px #167357;background:#e2f1e9}
-.dialog input[type=checkbox]{width:20px;height:20px;accent-color:#196c53;flex-shrink:0}.field{display:block;font-weight:650}.field input,.search input,.body textarea{display:block;width:100%;box-sizing:border-box;border:1px solid #c8ddd3;border-radius:12px;padding:16px;font:inherit;color:inherit;background:#f1f7f4;margin-top:10px}.search{display:flex;gap:12px}.search input{margin:0;flex:1;min-width:0}.check{display:flex;align-items:center;gap:12px;font-weight:650;font-size:.95rem;line-height:1.5}.notice{background:#f1f7f4;border:1px solid #d5e3dc;border-radius:18px;padding:24px;line-height:1.65}.notice p{font-size:.95rem}.link{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px;border:1px solid #c8ddd3;border-radius:16px}.link small{display:block;margin-top:8px;color:#637b72;font-weight:650}.footer,.pager{display:flex;align-items:center;justify-content:space-between;gap:12px}.footer{border-top:1px solid #c8ddd3;padding-top:20px}.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.footer button,.actions button,.actions a,.pager button,.search button{border:1px solid #c8ddd3;border-radius:12px;background:white;color:#173d32;padding:14px 20px;font:inherit;font-weight:650;cursor:pointer;text-decoration:none}.footer .primary{background:#17674f;border-color:#17674f;color:white}.actions .danger{color:#b73238;border-color:#e2a0a4;background:#fff7f7}.pager span{font-size:1rem;font-weight:650;color:#637b72}.error{color:#b73238;font-weight:650}
-@media(max-width:720px){:global(body:not(:has([data-website-canvas]))) .options,:global(body:not(:has([data-website-canvas]))) .choices{grid-template-columns:1fr}:global(body:not(:has([data-website-canvas]))) .body{max-height:calc(var(--website-visible-height, 100dvh) * .64)}:global(body:not(:has([data-website-canvas]))) .choices button,:global(body:not(:has([data-website-canvas]))) .choices a{min-height:120px}:global(body:not(:has([data-website-canvas]))) .history,:global(body:not(:has([data-website-canvas]))) .link{align-items:flex-start;flex-direction:column}:global(body:not(:has([data-website-canvas]))) .pager button{padding:12px;font-size:.8rem}:global(body:not(:has([data-website-canvas]))) .footer button{padding:12px 16px}}
-@media(prefers-reduced-motion:reduce){.dialog button,.dialog a{transition:none}}
+.error { color:#b73238; font-weight:650; }
+.notice { background:#f1f7f4; border:1px solid #d5e3dc; border-radius:18px; padding:24px; line-height:1.65; }
+.notice p { font-size:.95rem; }
 
-.dialog.dialog h2{font-family:var(--font-heading,var(--font-body,Montserrat,Arial,sans-serif));font-size:clamp(26px,calc(var(--website-design-vw, 1vw) * 3),34px);font-weight:750}.icon svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-
-.password{position:relative}.password input{padding-right:3.5rem}.password button{position:absolute;right:.5rem;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:40px;height:40px;border:0;border-radius:10px;background:transparent;color:var(--app-text,#173f31);cursor:pointer}.password button:hover{background:var(--app-surface-soft,#edf5f0)}.password button:focus-visible{outline:3px solid #74ac92;outline-offset:2px}.password svg{width:22px;height:22px}
-
-.settingsContent { display:grid; gap:1.1rem; color:var(--app-text,#173f31); }
-.permissionCards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; }
-.permissionCard { --permission-colour:var(--app-accent,#176b4d); display:grid; grid-template-columns:1fr auto; align-content:start; gap:.65rem; min-width:0; padding:1.15rem; border:1px solid var(--app-line,#cddfd5); border-radius:1.1rem; background:linear-gradient(145deg,var(--app-surface,#fff),var(--app-surface-soft,#f3f8f5)); transition:border-color .15s,box-shadow .15s; }
-label.permissionCard { cursor:pointer; }
-.permissionIcon { display:grid; place-items:center; width:42px; height:42px; border:1px solid var(--app-line,#d2e3da); border-radius:13px; color:var(--permission-colour,var(--app-accent,#176b4d)); background:var(--app-surface,#fff); }
-.permissionIcon svg { width:23px; height:23px; }
-.permissionCard strong { grid-column:1/-1; font-size:1rem; font-weight:750; line-height:1.35; }
-.permissionCard small { grid-column:1/-1; font-size:.8rem; font-weight:550; line-height:1.5; color:var(--app-muted,#647b70); }
-.permissionCard input[type=checkbox] { align-self:start; width:20px; height:20px; margin:3px 0 0; accent-color:var(--permission-colour); }
-.permissionCard:has(input:checked) { border-color:var(--permission-colour); box-shadow:inset 0 0 0 1px var(--permission-colour); }
-label.permissionCard:hover { border-color:var(--permission-colour); box-shadow:0 5px 16px rgb(19 53 45 / 7%); }
-.permissionCard:has(input:focus-visible) { outline:3px solid var(--app-info,#74ac92); outline-offset:3px; }
-.downloadCard { --permission-colour:var(--app-info,#245d91); }
-.enquiryCard { --permission-colour:var(--app-accent,#176b4d); }
-.included { align-self:start; padding:.3rem .55rem; border-radius:20px; background:var(--app-surface-soft,#e5f1eb); color:var(--app-accent,#176b4d); font-size:.7rem; font-weight:700; }
-.accessNote { display:flex; align-items:center; gap:.55rem; margin:0; color:var(--app-muted,#647b70); font-size:.8rem; font-weight:550; line-height:1.5; }
-.accessNote svg { width:17px; height:17px; flex-shrink:0; }
-.passwordPanel { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:1.5rem; padding:1.15rem; border:1px solid var(--app-line,#cddfd5); border-radius:1.1rem; background:var(--app-surface-soft,#f3f8f5); }
-.passwordHeading { display:flex; align-items:center; gap:.85rem; }
-.passwordHeading .permissionIcon { flex-shrink:0; }
-.passwordHeading label { font-size:.95rem; font-weight:750; }
-.passwordHeading label span { color:var(--app-muted,#647b70); font-size:.8rem; font-weight:550; }
-.passwordHeading p { margin:.35rem 0 0; color:var(--app-muted,#647b70); font-size:.8rem; font-weight:550; line-height:1.5; }
-.passwordControl { min-width:0; }
-.passwordControl input { box-sizing:border-box; width:100%; min-height:48px; padding:.8rem 3.2rem .8rem .9rem; border:1px solid var(--app-line,#cddfd5); border-radius:12px; background:var(--app-surface,#fff); color:var(--app-text,#173f31); font:inherit; font-size:.88rem; }
-.passwordControl input:focus-visible { outline:2px solid var(--app-accent,#176b4d); outline-offset:2px; }
-.passwordControl small { display:block; margin:.4rem 0 0; color:var(--app-muted,#647b70); font-size:.72rem; line-height:1.4; }
-@media(max-width:720px) {
- :global(body:not(:has([data-website-canvas]))) .permissionCards { grid-template-columns:1fr; }
- :global(body:not(:has([data-website-canvas]))) .permissionCard { grid-template-columns:42px 1fr auto; column-gap:.8rem; }
- :global(body:not(:has([data-website-canvas]))) .permissionCard .permissionIcon { grid-row:1/3; }
- :global(body:not(:has([data-website-canvas]))) .permissionCard strong,:global(body:not(:has([data-website-canvas]))) .permissionCard small { grid-column:2; }
- :global(body:not(:has([data-website-canvas]))) .permissionCard input,:global(body:not(:has([data-website-canvas]))) .permissionCard .included { grid-column:3; grid-row:1; }
- :global(body:not(:has([data-website-canvas]))) .passwordPanel { grid-template-columns:1fr; gap:.8rem; }
-}
-@media(prefers-reduced-motion:reduce) { .permissionCard { transition:none; } }
-
-label.permissionCard:has(input:checked) { background:var(--permission-soft,var(--app-surface-soft,#eaf5ef)); border-color:var(--permission-colour); box-shadow:inset 0 0 0 1px var(--permission-colour); }
-.downloadCard { --permission-soft:var(--app-info-soft,#eef5fc); }
-
-/* Optional permissions have explicit states; viewing is a fixed baseline. */
-.viewAccess{display:flex;align-items:center;gap:.85rem;padding:.85rem 1rem;border:1px solid var(--app-line,#cddfd5);border-radius:1rem;background:var(--app-surface-soft,#edf6f1)}
-.viewAccess>div{display:grid;gap:.25rem;min-width:0}.viewAccess strong,.permissionCopy strong{font-size:1rem;font-weight:800;line-height:1.35}.viewAccess small,.permissionCopy small{font-size:.82rem;font-weight:650;line-height:1.45;color:var(--app-muted,#64746a)}.viewAccess .included{margin-left:auto;align-self:center;white-space:nowrap}.viewAccess .permissionIcon{flex-shrink:0}
-.permissionOptions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.permissionOption{display:flex;align-items:center;gap:.85rem;min-width:0;padding:1rem;border:1px solid var(--app-line,#cddfd5);border-radius:1rem;background:var(--app-surface,#fff);cursor:pointer}.permissionOption .permissionIcon{flex-shrink:0}.permissionCopy{display:grid;gap:.3rem;min-width:0}.permissionToggle{margin-left:auto;display:grid;justify-items:center;gap:.4rem;flex-shrink:0}.permissionToggle small{font-size:.7rem;font-weight:750;color:var(--app-muted,#64746a);white-space:nowrap}.permissionToggle input[type=checkbox]{appearance:none!important;position:relative;width:2.6rem!important;height:1.5rem!important;border:1px solid var(--app-line,#bdcfc5);border-radius:2rem;background:var(--app-surface-soft,#e5ebe7);cursor:pointer}.permissionToggle input:before{content:'';position:absolute;top:3px;left:3px;width:1rem;height:1rem;border-radius:50%;background:var(--app-muted,#64746a);transition:transform .15s}.permissionToggle input:checked{background:var(--app-accent,#176b4d);border-color:var(--app-accent,#176b4d)}.permissionToggle input:checked:before{transform:translateX(1.1rem);background:#fff}.permissionOption:has(input:checked){background:var(--app-surface-soft,#edf6f1);border-color:var(--app-accent,#176b4d);box-shadow:inset 0 0 0 1px var(--app-accent,#176b4d)}.permissionOption:has(input:checked) .permissionToggle small{color:var(--app-accent,#176b4d)}.permissionOption:has(input:focus-visible){outline:3px solid var(--app-accent,#176b4d);outline-offset:3px}.permissionOption:hover{border-color:var(--app-accent,#176b4d)}
-@media(max-width:720px){:global(body:not(:has([data-website-canvas]))) .permissionOptions{grid-template-columns:1fr}:global(body:not(:has([data-website-canvas]))) .viewAccess{flex-wrap:wrap}:global(body:not(:has([data-website-canvas]))) .viewAccess .included{margin-left:0}}
-@media(prefers-reduced-motion:reduce){.permissionToggle input:before{transition:none}}
-
-/* Keep the short permission form compact, with consistent section spacing. */
-.settingsContent { gap:.85rem; }
-.settingsContent .viewAccess { padding:.7rem 1rem; }
-.settingsContent .permissionOption { padding:.8rem 1rem; }
-.settingsContent .passwordPanel { padding:.85rem 1rem; gap:1.25rem; }
-.settingsContent .check { margin:0; padding:.15rem 0; }
 .historyPanel.historyPanel { gap:1.2rem; }
 .historyPanel.historyPanel > p { margin:0; }
 .historyPanel .historyList { margin:0; padding:.25rem; overflow:visible; flex-shrink:0; }
@@ -72,18 +9,3 @@ label.permissionCard:has(input:checked) { background:var(--permission-soft,var(-
 .historyPanel .linkConfirmation > p { margin:0; }
 .historyPanel .linkConfirmation > div { margin-top:.5rem; gap:.75rem; }
 .historyPanel.historyPanel > footer { margin-top:0; padding-top:1rem; gap:.85rem; }
-
-.passwordSlide {display:grid;gap:1.25rem;padding:.35rem 0;}
-.passwordChoices {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;}
-.passwordChoices>button {display:flex;align-items:flex-start;text-align:left;gap:1rem;padding:1.25rem;border:1px solid var(--app-line,#cddfd5);border-radius:1.1rem;background:var(--app-surface,#fff);color:var(--app-text,#173f31);font:inherit;cursor:pointer;}
-.passwordChoices>button[aria-pressed=true] {border-color:var(--app-accent,#176b4d);background:var(--app-surface-soft,#edf7f1);box-shadow:inset 0 0 0 1px var(--app-accent,#176b4d);}
-.passwordChoices>button:focus-visible {outline:3px solid #74ac92;outline-offset:3px;}
-.passwordChoices>button>span:last-child {display:grid;gap:.5rem;min-width:0;}
-.passwordChoices strong,.passwordSummary strong {font-size:1rem;font-weight:750;}
-.passwordChoices small,.passwordSummary p {font-size:.85rem;line-height:1.55;color:var(--app-muted,#647b70);}
-.passwordChoices .permissionIcon {flex-shrink:0;}
-.passwordSlide .settingsContent:empty {display:none;}
-.passwordSlide .passwordPanel {gap:1rem;}
-.passwordSummary {display:flex;align-items:center;gap:1rem;padding:1.2rem;border:1px solid var(--app-line,#cddfd5);border-radius:1.1rem;background:var(--app-surface-soft,#edf7f1);}
-.passwordSummary p {margin:.4rem 0 0;}
-@media(max-width:600px){:global(body:not(:has([data-website-canvas]))) .passwordChoices {grid-template-columns:1fr;}}

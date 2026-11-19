@@ -1311,7 +1311,7 @@ const appCode =
     await page.screenshot({path:path.join(output,'share-recipient-phone.png')});
     await page.setViewport({width:1440,height:1000});
     await click('Continue');
-    await click('Continue');
+    await click('View only');
     await click('Continue');
     assert.ok(!actions.some(a=>a.action==='create-share'),'Choosing view only does not create a link');
     assert.ok(await page.$eval('dialog[open] footer button:last-child',b=>b.disabled),'Risk consent is required');
@@ -1327,7 +1327,8 @@ const appCode =
     await click('Share link');
     await page.screenshot({path:path.join(output,'share-access-choice.png')});
     assert.equal(await page.$('[role=dialog] input[type=password]'),null,'Permissions and password use separate slides');
-    await page.click('[role=dialog] input[type=checkbox]');
+    await click('Choose permissions');
+    await page.click('[aria-label="Download parts"]');
     await page.screenshot({path:path.join(output,'share-permissions-only.png')});
     await click('Continue');
     await click('Add a password');
@@ -1358,8 +1359,9 @@ const appCode =
     await page.screenshot({path:path.join(output,'parts-share-history.png')});
     assert.ok(await page.$('[data-share-history]'),'Parts uses the owner sharing history layout');
     await click('Settings');
+    await click('Choose permissions');
     await click('Continue');
-    await page.$$eval('[role=dialog] input[type=checkbox]',inputs=>inputs.at(-1).click());
+    await click('Change password');
     await page.type('[role=dialog] input[type=password]','replacement-password');
     await page.setViewport({width:1440,height:650});
     assert.ok(await page.$eval('[role=dialog]',d=>{const body=d.children[1];return body.scrollHeight<=body.clientHeight+2;}),'Editing a password fits the short desktop without scrolling');
@@ -1369,6 +1371,15 @@ const appCode =
     await click('Save settings');
     await page.waitForFunction(()=>document.body.innerText.includes('Manage your shared links'));
     assert.equal(actions.filter(a=>a.action==='update-share').at(-1).password,'replacement-password');
+    for (const choice of ['Keep current password','Remove password']) {
+      await click('Settings');await click('View only');await click(choice);await click('Save settings');
+      await page.waitForSelector('[data-share-history]');
+      const update=actions.filter(a=>a.action==='update-share').at(-1);
+      assert.equal(update.allowDownload,false);
+      assert.equal(update.allowEnquiry,false);
+      if(choice==='Remove password') assert.equal(update.password,'');
+      else assert.ok(!Object.hasOwn(update,'password'));
+    }
     await click('Revoke access');
     assert.equal(await page.$$eval('[data-share-history] article',rows=>rows.length),1,'Only the selected link remains during confirmation');
     assert.ok(!(await page.$eval('[data-share-history]',el=>el.innerText)).includes('Other shared link'));
