@@ -1,6 +1,13 @@
 /* Layered important rules take precedence over older per-modal scrollbar
  * overrides, regardless of CSS-module loading order. */
 @layer modal-scrollbars {
+/* The page unlocks when the last register or sharing dialog leaves the DOM,
+   including when a parent dialog closes before its portalled child. */
+html:has([data-page-scroll-lock]),
+body:has([data-page-scroll-lock]) {
+  overflow: hidden !important;
+}
+
 /* Shared treatment for existing modal scroll areas, including nested lists and
  * portalled selectors. Keep each component's overflow and sizing decisions. */
 :root {

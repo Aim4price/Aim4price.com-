@@ -15,16 +15,7 @@ export default function AssetAccessSettingsDialog({title,assetTitle,onClose,chil
   const dismiss=()=>onClose();
   const ref=useLeadDialog(dismiss);
   useEffect(()=>{ref.current?.querySelector<HTMLElement>(showGuide?'[data-access-start]':focusSelector)?.focus();},[showGuide,focusSelector,ref]);
-  useEffect(()=>{
-    const bodyOverflow=document.body.style.getPropertyValue('overflow');
-    const bodyPriority=document.body.style.getPropertyPriority('overflow');
-    const htmlOverflow=document.documentElement.style.getPropertyValue('overflow');
-    const htmlPriority=document.documentElement.style.getPropertyPriority('overflow');
-    document.body.style.setProperty('overflow','hidden','important');
-    document.documentElement.style.setProperty('overflow','hidden','important');
-    return()=>{document.body.style.setProperty('overflow',bodyOverflow,bodyPriority);document.documentElement.style.setProperty('overflow',htmlOverflow,htmlPriority);};
-  },[]);
-  return createPortal(<div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.quoteTrackingSettingsOverlay}`} data-website-overlay>
+  return createPortal(<div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.quoteTrackingSettingsOverlay}`} data-website-overlay data-page-scroll-lock>
     <div className={styles.modalBackdrop} data-website-overlay onClick={dismiss}/>
     <section ref={ref} tabIndex={-1} className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal} ${styles.quoteTrackingSettingsModal} ${layout.dialog} ${compactLayout && !showGuide ? layout.compactDialog : ''} ${documentsLayout ? layout.documentsDialog : ''} ${locationLayout ? `${styles.assetSettingsLocationModal} ${layout.locationDialog}` : ''} ${(showGuide || guideLayout) ? layout.guideDialog : ''} ${subjectHeader ? layout.subjectDialog : ''}`} role="dialog" aria-modal="true" aria-labelledby={titleId} data-asset-link-dialog={linkSettings || undefined}>
       <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader} ${layout.header}`}>

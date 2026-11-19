@@ -29,13 +29,11 @@ export default function AssetMapAssetDialog({ assets, onSelect, onClose }: Props
     .sort((a, b) => Number(a.mapped) - Number(b.mapped) || a.title.localeCompare(b.title));
 
   useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     const frame = requestAnimationFrame(() => searchRef.current?.focus());
-    return () => { cancelAnimationFrame(frame); document.body.style.overflow = previous; };
+    return () => cancelAnimationFrame(frame);
   }, []);
 
-  return createPortal(<div className={frame.overlay} data-website-overlay>
+  return createPortal(<div className={frame.overlay} data-website-overlay data-page-scroll-lock>
     <div className={frame.backdrop} onClick={onClose} />
     <section ref={ref} tabIndex={-1} className={`${frame.dialog} ${picker.modal}`} data-asset-choice-modal="true" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <header className={frame.header} data-asset-choice-header="true">
