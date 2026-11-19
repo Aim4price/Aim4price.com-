@@ -189,7 +189,9 @@ async function main() {
     await page.waitForSelector('input[value="New component"]');
     await clickText('Remove item');
     await page.waitForFunction(()=>!document.querySelector('input[value="New component"]'));
-    await page.click('button[aria-expanded="false"]:has(strong)');
+    const itemToggle = await page.waitForSelector('button[aria-expanded="false"]:has(small):has(strong)');
+    await itemToggle.evaluate(button => button.scrollIntoView({block:'center'}));
+    await itemToggle.click();
     await page.waitForSelector('input[maxlength="160"]');
     await page.screenshot({path:path.join(output,'admin-family-editor.png')});
     await clickText('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Catalogue saved.'));
