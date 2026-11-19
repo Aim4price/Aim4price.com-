@@ -190,3 +190,30 @@
 .item { border-color: #e6ece8; border-radius: .6rem; background: #fafcfb; }
 .page h2 { font-size: 1rem; font-weight: 650; }
 .page label, .page button, .filters { font-size: 0.95rem; }
+
+.toolbar { padding: .7rem 1rem; gap: .5rem; margin-bottom: 1rem; }
+.toolbar p { flex: 1 1 15rem; margin: 0; }
+.layout { align-items: start; gap: 1rem; }
+.sectionHeading { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; margin: .5rem 0 .75rem; }
+.sectionHeading :is(h2, h3) { margin: 0; }
+.sectionHeading span { font-variant-numeric: tabular-nums; color: #466452; }
+.filters { display: flex; gap: .25rem; background: #f1f6f3; border-radius: .65rem; padding: .25rem; }
+.filters button { flex: 1; padding: .45rem .25rem; text-align: center; border: 0; background: transparent; }
+.filters button[aria-pressed="true"] { background: #195640; color: white; }
+.list { grid-template-columns: minmax(0,1fr); gap: .3rem; scrollbar-gutter: stable; }
+.list button { min-width: 0; gap: .12rem; border-color: transparent; padding: .55rem .65rem; }
+.list button strong, .itemToggle strong { overflow: hidden; text-overflow: ellipsis; }
+.list button small { text-transform: capitalize; }
+.editorHeader { margin: -1.2rem -1.2rem 1rem; padding: 1rem 1.2rem; background: #eef6f1; border-radius: .8rem .8rem 0 0; }
+.editorHeader h2 { margin: 0; font-size: 1.25rem; }
+.editorHeader p { margin: .25rem 0 0; }
+.panel > label { margin-bottom: 1.4rem; }
+.item { padding: 0; margin: .4rem 0; background: white; }
+.page .itemToggle { display: grid; grid-template-columns: 2rem minmax(0,1fr) auto; gap: .6rem; align-items: center; width: 100%; padding: .65rem .8rem; background: transparent; border: 0; }
+.itemToggle span { color: #52665d; font-variant-numeric: tabular-nums; }
+.itemToggle small { color: #186446; }
+.itemToggle[aria-expanded="true"] { background: #eff6f2; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,13rem),1fr)); gap: .8rem; padding: 1rem; }
+.fields label { margin: 0; min-width: 0; }
+.fields button { grid-column: 1/-1; justify-self: start; }
+.item + button { margin-top: .65rem; }
