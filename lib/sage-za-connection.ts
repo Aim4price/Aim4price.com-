@@ -1,18 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { notFound } from 'next/navigation';
-import { requireActivePageAccess } from './account-access';
-import { getServerSession, isAdminSupportSession } from './auth-session';
-import { getAccountProfile } from './account-profile';
+import { accountingOwner } from './accounting-owner';
 import { getDb } from './db';
 import { sageConfig, sageTokens, seal, unseal } from './sage-za-api';
 
 export async function sageOwner() {
-  const {session} = await requireActivePageAccess();
-  const desktop = await getServerSession();
+  const owner = await accountingOwner();
   const config = sageConfig();
-  if (!config || !desktop || isAdminSupportSession(desktop) || desktop.user.id !== session.user.id ||
-      session.user.id !== process.env.SAGE_ZA_PILOT_OWNER_ID || (await getAccountProfile(session.user)).accountType !== 'owner') notFound();
-  return {owner: session.user.id, config};
+  if (!config) notFound();
+  return {owner,config};
 }
 
 export type SageOwner = Awaited<ReturnType<typeof sageOwner>>;
