@@ -38,7 +38,7 @@ export default function CostEntryChoices({ showAccounting = false }: { showAccou
                     </Link>
                   ))}
                 </nav>
-                {showAccounting && <Link href="/my-invoices/accounting" prefetch={false}>Accounting connections</Link>}
+                {showAccounting && <Link href="/account/accounting" prefetch={false}>Accounting connections</Link>}
               </div>
             </div>
           </div>

@@ -20,11 +20,11 @@ export default async function ProviderPage({params,searchParams}:{params:{provid
     if(row?.company_id && searchParams?.preview==='1') {
       const bills=await latestBills(ctx.config,await validGrant(ctx,row.id),row.company_id);
       const {items}=await listAllOwnerAppAssets(ctx.owner);
-      lines=bills.map(line=>({...line,asset:assetForLine(line.description,items)||'Needs allocation'}));
+      lines=bills.map(line=>({...line,asset:assetForLine(line.description,items)||'Asset unassigned'}));
     }
   } catch {error=true;}
-  return <><AppHeader active="none"/><main className={styles.panel}>
-    <Link href="/my-invoices/accounting">Accounting connections</Link><h1>{names[p]}</h1>
+  return <><AppHeader active="account"/><main className={styles.panel}>
+    <Link href="/account/accounting">Accounting connections</Link><h1><img src={`/accounting/${p === "intacct" ? "sage" : p}.svg`} alt="" />{names[p]}</h1>
     {error && <p role="alert">The request failed. Retry or disconnect and sign in again.</p>}
     {!row ? <form action={start.bind(null,p)}><button>Connect {names[p]}</button></form> : <>
       {row.company_id ? <><h2>{row.company_name}</h2><Link prefetch={false} href={cloudPath(p)+'?preview=1'}>Preview supplier bills</Link></>

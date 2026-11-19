@@ -8,6 +8,6 @@ import styles from '../../sage-za/sage.module.css';
 export const dynamic='force-dynamic';
 export default async function SageExportPage(){
   const {items}=await listAllOwnerAppAssets(await accountingOwner());
-  return <><AppHeader active="none"/><main className={styles.panel}><Link href="/my-invoices/accounting">Accounting connections</Link>
-    <h1>Sage export preview</h1><ExportPreview assets={items.map(({title,serialNumber})=>({title,serialNumber}))}/></main></>;
+  return <><AppHeader active="account"/><main className={styles.panel}><Link href="/account/accounting">Accounting connections</Link>
+    <h1><img src="/accounting/sage.svg" alt="" />Sage export preview</h1><ExportPreview assets={items.map(({title,serialNumber})=>({title,serialNumber}))}/></main></>;
 }

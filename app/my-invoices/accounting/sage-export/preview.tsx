@@ -22,7 +22,7 @@ export default function ExportPreview({assets}:{assets:{title:string;serialNumbe
   }
   function match(row:string[]){
     const serial=cols[3]>=0?row[cols[3]].trim():'';
-    return assetForLine(row[cols[1]]+(serial?' S/N '+serial:''),assets)||'Needs allocation';
+    return assetForLine(row[cols[1]]+(serial?' S/N '+serial:''),assets)||'Asset unassigned';
   }
   return <>
     <p>Export one row per supplier bill line from Pastel Partner, Xpress, Sage 200 Evolution or another Sage edition. Include the invoice number, description and amount. Keep serial numbers as text.</p>

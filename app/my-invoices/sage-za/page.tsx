@@ -27,16 +27,16 @@ export default async function SagePage({searchParams}: {searchParams?: {preview?
           supplier: String(bill.SupplierName || 'Unknown supplier'), invoice: String(bill.DocumentNumber || bill.ID),
           description: String(line.Description || 'No description'),
           amount: typeof line.Exclusive === 'number' ? line.Exclusive.toLocaleString('en-ZA',{minimumFractionDigits:2, maximumFractionDigits:2}) : 'Unavailable',
-          asset: assetForSageLine(String(line.Description || ''), items) || 'Needs allocation',
+          asset: assetForSageLine(String(line.Description || ''), items) || 'Asset unassigned',
         }));
       });
     }
   } catch {
     failed = true;
   }
-  return <><AppHeader active="none"/><main className={styles.panel}>
-    <Link href="/my-invoices">Back to costs</Link>
-    <h1>Sage Accounting South Africa</h1>
+  return <><AppHeader active="account"/><main className={styles.panel}>
+    <Link href="/account/accounting">Accounting connections</Link>
+    <h1><img src="/accounting/sage.svg" alt="" />Sage Accounting South Africa</h1>
     {failed && <p role="alert">Sage could not complete the request. Try again or reconnect your account.</p>}
     {!current ? <form action={startSage}><p>Connect your company to preview supplier costs by asset serial number.</p><button>Connect Sage</button></form>
       : <>
