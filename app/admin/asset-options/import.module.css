@@ -1,0 +1,10 @@
+.review {
+  overflow: auto;
+  max-height: 18rem;
+  border: 1px solid #d8e6dd;
+  border-radius: .65rem;
+}
+.review table { width: 100%; border-collapse: collapse; }
+.review th, .review td { padding: .6rem .8rem; text-align: left; white-space: nowrap; }
+.review th { position: sticky; top: 0; color: #345648; background: #edf5f0; }
+.review td { border-top: 1px solid #e1ebe5; }
