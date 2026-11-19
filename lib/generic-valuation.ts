@@ -1728,6 +1728,17 @@ export async function runGenericValuation(input: GenericValuationInput, context?
   const basicRelease = rawSpecsJson.basic_catalogue_release;
   const basicRecord = basicRelease == null ? null
     : await getBasicCatalogueFamily(input.sectorKey, input.familyKey, basicRelease);
+  // Resolve edited wording on the server before snapshotting a new valuation.
+  const optionLabel = rawSpecsJson.managed_asset_option === true
+    ? cleanText((await getDb().query(
+        'select label from public.valuation_asset_options where id=$1',
+        [[basicRecord ? 'basic' : 'public', input.sectorKey, input.familyKey].join('/')],
+      )).rows[0]?.label)
+    : '';
+  if (basicRecord?.basicCatalogue && optionLabel) {
+    basicRecord.familyLabel = optionLabel;
+    basicRecord.basicCatalogue.familyLabel = optionLabel;
+  }
   const basicCatalogue = basicRecord?.basicCatalogue;
   const basicGuide = basicCatalogue
     ? resolveCatalogueGuide(basicCatalogue, rawSpecsJson.basic_specification_level as BasicSpecificationLevel)
@@ -1761,6 +1772,7 @@ export async function runGenericValuation(input: GenericValuationInput, context?
     isPropelled: basicRecord.isPropelled, catalogMode: basicRecord.catalogMode,
   } : await fetchFamilyContext(input.sectorKey, input.familyKey);
   if (!family) throw new Error('FAMILY_NOT_FOUND');
+  if (optionLabel) family.label = optionLabel;
 
   const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, family.usageMetricType);
 

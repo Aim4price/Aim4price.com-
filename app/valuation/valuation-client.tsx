@@ -121,6 +121,8 @@ type AdvancedAssumptionsRequest = {
 };
 
 type EquipmentFamilyRecord = {
+  optionId?: string;
+  managedOption?: boolean;
   basicCatalogue?: BasicCatalogueIdentity;
   id: number;
   sectorId: number;
@@ -1815,7 +1817,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const appHomePath = ownerAppMode ? '/owner-app' : dealerAppMode ? dealerAppRoot : '/';
   const marketplacePath = ownerAppMode ? '/owner-app/marketplace' : dealerAppMode ? `${dealerAppRoot}/marketplace` : '/marketplace';
   const [step, setStep] = useState<Step>(1);
-  const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
+  const [browseSector, setSelectedSector] = useState<SectorKey | null>(null);
   const [estimateExperience, setEstimateExperience] = useState<EstimateExperience>('');
   const [basicSpecLevel, setBasicSpecLevel] = useState<BasicSpecificationLevel | ''>('');
   const [basicReplacementBands, setBasicReplacementBands] = useState<BasicReplacementBandInput[]>([]);
@@ -2112,9 +2114,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }, []);
 
   const selectedFamily = useMemo(
-    () => families.find((family) => family.familyKey === familyKey) ?? null,
+    () => families.find((family) => (family.optionId ?? family.familyKey) === familyKey) ?? null,
     [families, familyKey],
   );
+  const selectedSector = selectedFamily?.sectorKey ?? browseSector;
   const basicEstimateActive = estimateExperience === 'basic';
   const basicFamilyExtra = useMemo(
     () => getBasicFamilyExtra(selectedFamily?.familyKey, selectedFamily?.familyLabel),
@@ -2403,6 +2406,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         : {}),
       ...specsJson,
       ...selectedMotorSubtypeSpecs,
+      ...(selectedFamily?.managedOption ? { managed_asset_option: true } : {}),
       ...(isMotorSector(selectedSector) ? getMotorCanonicalTypeSpecs(selectedFamily?.familyKey, selectedMotorTypeOption) : {}),
       ...(isMotorSector(selectedSector) && selectedMotorCanonicalModel
         ? {
@@ -2511,6 +2515,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     yearModelUnknown,
     yearNumber,
     usageNumber,
+    selectedFamily?.managedOption,
     selectedFamily?.usageMetricType,
     selectedFamily?.familyKey,
     selectedSector,
@@ -3000,7 +3005,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           if (!response.ok || !data.ok || !Array.isArray(data.models)) {
             throw new Error(data.error ?? 'Failed to search Motor models.');
           }
-          if (!ignore) setMotorCanonicalResults(data.models);
+          if (!ignore) setMotorCanonicalResults(data.models.filter(model => families.some(f => f.familyKey === model.familyKey)));
         })
         .catch((error) => {
           console.error(error);
@@ -3018,7 +3023,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ignore = true;
       window.clearTimeout(timer);
     };
-  }, [selectedSector, motorCanonicalQuery]);
+  }, [selectedSector, motorCanonicalQuery, families]);
 
   useEffect(() => {
     let ignore = false;
@@ -3028,7 +3033,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMotorSubtypeValue('');
     setMotorSubtypeDropdownOpen(false);
     setFamilySearch('');
-    setEquipmentDropdownOpen(compactAppMode && Boolean(selectedSector));
+    setEquipmentDropdownOpen(compactAppMode && Boolean(browseSector));
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setBrands([]);
@@ -3081,14 +3086,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setFinalSaveError('');
     setSavedMarketplaceAssetId(null);
 
-    if (!selectedSector) {
+    if (!browseSector) {
       setFamiliesLoading(false);
       return () => {
         ignore = true;
       };
     }
 
-    const sectorForRequest = selectedSector;
+    const sectorForRequest = browseSector;
     setFamiliesLoading(true);
 
     async function loadFamilies() {
@@ -3111,7 +3116,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return () => {
       ignore = true;
     };
-  }, [compactAppMode, selectedSector, basicEstimateActive]);
+  }, [compactAppMode, browseSector, basicEstimateActive]);
 
   useEffect(() => {
     if (!selectedFamily || !selectedSector) return;
@@ -5767,7 +5772,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMotorCanonicalSearchError('');
     setMotorSelectedTypeKey(resolvedTypeKey);
     setMotorTypeDropdownOpen(false);
-    setFamilyKey(result.familyKey);
+    setFamilyKey(families.find(f => f.familyKey === result.familyKey)?.optionId ?? result.familyKey);
     setBrands([{ slug: result.brandSlug, name: result.brandName }]);
     setBrandSlug(result.brandSlug);
     setBrandSearch(result.brandName);
@@ -6139,7 +6144,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.sectorStart}>
           <div className={`${styles.sectorIntro} ${styles.estimateModeIntro}`}>
             <div className={`${styles.selectedSummary} ${styles.estimateModeSectorLabel}`}>
-              <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
+              <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[browseSector ?? selectedSector]}</span>
             </div>
             <h2 className={styles.stepTitle}>Choose estimate type</h2>
             {!compactAppMode ? <p className={styles.stepText}>Choose how you want Aim4price to build the estimate.</p> : null}
@@ -6192,7 +6197,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return (
       <div className={styles.equipmentStage}>
         <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
-          <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
+          <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[browseSector ?? selectedSector]}</span>
         </div>
 
         {!compactAppMode ? (
@@ -6246,12 +6251,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 {filteredFamilies.length ? (
                   filteredFamilies.map((family) => (
                     <button
-                      key={family.familyKey}
+                      key={family.optionId ?? family.familyKey}
                       type="button"
-                      className={`${styles.equipmentDropdownOption} ${familyKey === family.familyKey ? styles.equipmentDropdownOptionActive : ''}`}
+                      className={`${styles.equipmentDropdownOption} ${familyKey === (family.optionId ?? family.familyKey) ? styles.equipmentDropdownOptionActive : ''}`}
                       data-family-label={family.familyLabel}
                       data-family-group={family.basicCatalogue?.groupLabel ?? ''}
-                      onClick={() => handleFamilySelection(family.familyKey)}
+                      onClick={() => handleFamilySelection(family.optionId ?? family.familyKey)}
                     >
                       <span>{family.familyLabel}</span>
                     </button>
