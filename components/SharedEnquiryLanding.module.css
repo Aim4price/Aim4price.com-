@@ -1,6 +1,5 @@
 /* The global Aim4price photo background remains visible at every canvas zoom. */
 .page { background:transparent; color:var(--app-text,#123b2e); }
-.passwordPage { min-height:calc(var(--website-visible-height, 100dvh) - 7rem); display:grid; align-content:center; }
 .dialog.dialog { width:min(45rem,calc(var(--website-design-vw,1vw) * 100 - 2rem)); }
 .passwordBody { display:grid; gap:1rem; padding-top:.5rem; color:var(--app-text,#123b2e); }
 .passwordSummary { display:flex; align-items:center; gap:1rem; padding:1rem; border:1px solid var(--app-line,#c8ddd1); border-radius:1rem; background:var(--app-surface-soft,#f3f8f5); }
@@ -75,3 +74,14 @@
  :global(:where(html:not(:has([data-website-canvas])))) .signInButton { grid-column:1 / -1; min-height:3.5rem; }
  :global(:where(html:not(:has([data-website-canvas])))) .dialog > header h2 { white-space:normal; }
 }
+
+.dialog.passwordDialog {
+  width:min(34rem,calc(var(--website-visible-width,100vw) - 2rem));
+  padding:clamp(1.25rem,3vw,2rem);
+}
+.passwordDialog .passwordBody { gap:.75rem; padding-top:1.25rem; }
+.passwordDialog .passwordSummary { padding:.75rem 1rem; margin-bottom:.25rem; }
+.passwordDialog .passwordControl:focus-within { outline:2px solid var(--app-accent,#176b4d); outline-offset:2px; }
+.passwordDialog .passwordControl button { background:var(--app-surface,#fff); }
+.passwordDialog .passwordBody > small { color:var(--app-text,#173f31); font-weight:600; }
+.passwordDialog .passwordSubmit:disabled { cursor:default; }
