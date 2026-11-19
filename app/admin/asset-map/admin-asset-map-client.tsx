@@ -1,5 +1,6 @@
 "use client";
 
+import AssetPhotos from "./asset-photos";
 import AdminSelect from "../../../components/AdminSelect";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -171,17 +172,6 @@ function formatDate(value: string | null): string {
     month: "short",
     year: "numeric",
   }).format(parsed);
-}
-
-function formatUsage(asset: AdminGlobalAsset): string {
-  if (asset.hours !== null) {
-    const unit = asset.usageMetric === "km" || asset.kind === "vehicle" ? "km" : "hours";
-    return `${new Intl.NumberFormat("en-ZA").format(asset.hours)} ${unit}`;
-  }
-  if (asset.lifeWorkedPercent !== null) {
-    return `${Math.round(asset.lifeWorkedPercent * 10) / 10}% worked`;
-  }
-  return "Usage not saved";
 }
 
 function assetSearchText(asset: AdminGlobalAsset): string {
@@ -705,11 +695,12 @@ export default function AdminAssetMapClient({
                     <span><small>Value</small><strong>{formatAdminAssetValue(selectedAsset)}</strong></span>
                     <span><small>Serial / VIN</small><strong>{selectedAsset.serialNumber || "Not saved"}</strong></span>
                     <span><small>Registration</small><strong>{selectedAsset.registrationNumber || "Not saved"}</strong></span>
-                    <span><small>Usage</small><strong>{formatUsage(selectedAsset)}</strong></span>
+                    <span><small>Usage</small><strong>{selectedAsset.usageLabel}</strong></span>
                     <span><small>Last scanned</small><strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong></span>
                     <span><small>Lifecycle</small><strong>{titleCase(selectedAsset.lifecycleState)}</strong></span>
                   </div>
                 </details>
+                <AssetPhotos key={selectedAsset.id} asset={selectedAsset} />
                 <section className={styles.ownerContact}>
                   <strong>Owner</strong>
                   <span>{selectedAsset.owner.name || selectedAsset.owner.label}</span>

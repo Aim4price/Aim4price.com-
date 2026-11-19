@@ -48,6 +48,7 @@ export type AdminGlobalAsset = {
   hours: number | null;
   lifeWorkedPercent: number | null;
   usageMetric: string;
+  usageLabel: string;
   condition: string;
   serialNumber: string;
   registrationNumber: string;
