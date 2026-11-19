@@ -18,7 +18,6 @@ const icons: Record<string, string> = {
   'asset-map': 'M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2z M9 3v16 M15 5v16',
   'sold-assets': 'M4 12l5 5L20 6 M4 3h8 M3 3v18h18v-8',
   valuations: 'M4 20V10 M10 20V4 M16 20v-8 M22 20H2',
-  'asset-values': 'M12 3v18 M17 7h-7a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H6',
   'asset-options': 'M4 5h16v4H4z M4 12h7v7H4z M14 13h6 M14 17h6',
   lifecycle: 'M5 3h14v18H5z M8 7h8 M8 11h1 M12 11h1 M16 11h1 M8 15h1 M12 15h1 M16 15h1 M8 18h1 M12 18h1 M16 18h1',
   videos: 'M3 5h13v14H3z M16 10l5-4v12l-5-4',

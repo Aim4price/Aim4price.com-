@@ -1,57 +1,23 @@
 import {notifyReplacementSuggestion} from './asset-replacement-mail';
 import type {NextRequest} from 'next/server';
-import {getServerSession,getAnyServerSession,isOwnerAppSession,isDealerAppSession,isAdminSupportSession} from './auth-session';
+import {getServerSession,isOwnerAppSession,isDealerAppSession,isAdminSupportSession} from './auth-session';
 import {getAssetRegisterAccountAccess} from './asset-register-account-access';
 import {getOwnerAppAccess,ownerAppCan,ownerAppCanAccessAsset} from './owner-app-access';
-import {isAim4priceAdminEmail} from './account-constants';
 import {businessJson,businessBody,requireBusinessOrigin} from './business-network-api';
-import {getDb} from './db';
-import {previewAim4priceReset,decideAssetValue,readAssetValueReview,previewReplacementValue,valueAmount,listValueRequests,ensureValueRequests,suggestAssetValue} from './asset-value-requests';
+import {previewAim4priceReset,decideAssetValue,readAssetValueReview,previewReplacementValue,valueAmount,listValueRequests,suggestAssetValue} from './asset-value-requests';
 import {contributionScope,type ContributionTarget} from './shared-asset-contributions';
 import {getAssetRegisterItemById} from './asset-register-db';
 import {ExternalLeadAccessError} from './external-lead-access';
 import {notifyValueSuggestion} from './asset-value-mail';
 export function valueApiError(e:unknown){if(e instanceof ExternalLeadAccessError)return businessJson({error:e.message},e.status);const message=e instanceof Error?e.message:'';const safe=/^(Enter |Please |Reopen |Choose |Replacement |Manual |This |The asset|Asset unavailable|Suggestion unavailable|Invalid save|Sign in|Owner access)/.test(message);if(!safe)console.error('Value review failed',e);return businessJson({error:safe?message:'Unable to save this value. Please reload and try again.'},400);}
-export async function ownerValueApi(request:NextRequest,assetId?:string,admin=false){try{
+export async function ownerValueApi(request:NextRequest,assetId?:string){try{
  if(request.method!=='GET')requireBusinessOrigin(request);
- const session=admin?await getAnyServerSession():await getServerSession({allowOwnerApp:true,allowDealerApp:true});
+ const session=await getServerSession({allowOwnerApp:true,allowDealerApp:true});
  if(!session?.user)return businessJson({error:'Sign in to review values.'},401);
- if(admin&&!isAim4priceAdminEmail(session.user.email))return businessJson({error:'Admin access required.'},403);
- if(!admin&& !await getAssetRegisterAccountAccess(session))return businessJson({error:'Owner access required.'},403);
- if(!admin&&isOwnerAppSession(session)){const access=await getOwnerAppAccess();if(!access||!ownerAppCan(access,'manage_assets')||(assetId&&!ownerAppCanAccessAsset(access,assetId)))return businessJson({error:'Owner access required.'},403);}
- const ownerId=admin?request.nextUrl.searchParams.get('ownerId')||'':session.user.id;
- if(!assetId){
-  if(admin) {
-    await ensureValueRequests();
-    const search = (request.nextUrl.searchParams.get('search') ?? '').trim().slice(0,120);
-    const requested = Number(request.nextUrl.searchParams.get('page') ?? 1);
-    const page = Number.isSafeInteger(requested) && requested > 0 ? Math.min(requested, 2147483647) : 1;
-    const pendingOnly = request.nextUrl.searchParams.get('pending') === '1';
-    const {rows} = await getDb().query(`
-      WITH pending_requests AS (
-        SELECT owner_id, asset_id FROM asset_value_requests WHERE status='pending'
-        UNION ALL
-        SELECT owner_user_id, asset_register_item_id FROM dealer_asset_correction_requests
-        WHERE status='pending' AND replacement_price_changed=true
-      ), counts AS (
-        SELECT owner_id, asset_id, count(*)::int AS pending FROM pending_requests GROUP BY owner_id,asset_id
-      ), matches AS (
-        SELECT a.id,a.user_id,a.title,a.value,u.email,a.updated_at,coalesce(c.pending,0) AS pending
-        FROM asset_register_items a JOIN "user" u ON u.id=a.user_id
-        LEFT JOIN counts c ON c.owner_id=a.user_id AND c.asset_id=a.id
-        WHERE ($1='' OR a.title ILIKE '%'||$1||'%' OR u.email ILIKE '%'||$1||'%')
-          AND (NOT $2::boolean OR c.pending > 0)
-      ), totals AS (SELECT count(*)::int AS total FROM matches),
-      bounds AS (SELECT total,least($3::int,1+greatest(total-1,0)/50) AS page FROM totals),
-      page_rows AS (
-        SELECT * FROM matches ORDER BY updated_at DESC,id LIMIT 50 OFFSET (SELECT (page-1)*50 FROM bounds)
-      )
-      SELECT total,page,(SELECT coalesce(json_agg(page_rows ORDER BY updated_at DESC,id),'[]') FROM page_rows) AS items FROM bounds
-    `,[search,pendingOnly,page]);
-    return businessJson(rows[0]);
-  }
-  return businessJson({requests:await listValueRequests(ownerId)});
- }
+ if(!await getAssetRegisterAccountAccess(session))return businessJson({error:'Owner access required.'},403);
+ if(isOwnerAppSession(session)){const access=await getOwnerAppAccess();if(!access||!ownerAppCan(access,'manage_assets')||(assetId&&!ownerAppCanAccessAsset(access,assetId)))return businessJson({error:'Owner access required.'},403);}
+ const ownerId=session.user.id;
+ if(!assetId)return businessJson({requests:await listValueRequests(ownerId)});
  if(request.method==='GET')return businessJson(await readAssetValueReview(ownerId,assetId,request.nextUrl.searchParams.get('valueRequest')||undefined));
  const body=await businessBody(request);
  if(body.action==='retryNotification'){
@@ -64,8 +30,8 @@ export async function ownerValueApi(request:NextRequest,assetId?:string,admin=fa
 
  if(body.action==='previewReset')return businessJson(await previewAim4priceReset(ownerId,assetId));
  if(body.action==='previewReplacement')return businessJson(await previewReplacementValue(ownerId,assetId,valueAmount(body.replacementPrice)));
- const support=!admin&&isAdminSupportSession(session);
- const actor={id:support?session.adminSupport.adminUserId:!admin&&isOwnerAppSession(session)?session.ownerApp.ownerAppUserId:!admin&&isDealerAppSession(session)?session.dealerApp.staffId:session.user.id,name:`${admin||support?'Admin: ':''}${support?session.adminSupport.adminEmail:session.user.name||session.user.email}`};
+ const support=isAdminSupportSession(session);
+ const actor={id:support?session.adminSupport.adminUserId:isOwnerAppSession(session)?session.ownerApp.ownerAppUserId:isDealerAppSession(session)?session.dealerApp.staffId:session.user.id,name:`${support?'Admin: ':''}${support?session.adminSupport.adminEmail:session.user.name||session.user.email}`};
  return businessJson(await decideAssetValue(ownerId,assetId,actor,body));
 }catch(e){return valueApiError(e);}}
 export async function sharedValueApi(request:NextRequest,target:ContributionTarget){try{
