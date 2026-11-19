@@ -809,3 +809,26 @@
   .mapCard .filterBar .searchField, .mapCard .filterActions { grid-column: 1 / -1; }
   .extraFilters { grid-template-columns: minmax(0, 1fr); }
 }
+
+.photos { margin-top: .65rem; }
+.photos img {
+  display: block;
+  width: 100%;
+  height: 10rem;
+  object-fit: contain;
+  background: #f4f8f6;
+  border-radius: .5rem;
+}
+.photos p { margin: .35rem 0; }
+.photoControls { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-top: .45rem; }
+.photos button {
+  border: 1px solid #c8dbd1;
+  border-radius: .45rem;
+  padding: .45rem .7rem;
+  background: #f2f7f4;
+  color: #20543e;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.photos button:disabled { opacity: .6; cursor: default; }
