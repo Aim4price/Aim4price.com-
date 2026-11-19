@@ -585,7 +585,8 @@ const evidence=path.join(root,'.next/admin-review-validation');
 
   await open('accounts');
   await page.$eval('nav[aria-label="Admin navigation"] > button[aria-haspopup="dialog"]',e=>{e.focus();e.click();});await page.waitForSelector('[role="dialog"]');
-  assert.equal(await page.$$eval('[role="dialog"] a',els=>els.length),17);
+  assert.equal(await page.$$eval('[role="dialog"] a',els=>els.length),18);
+  assert.match(await page.$eval('[role="dialog"] a[href="/admin/asset-options"]', el=>el.textContent.trim()), /^Asset options/);
   assert.equal(await page.$('[role="dialog"] a[href="/admin/businesses"]'),null);
   assert.match(await page.$eval('[role="dialog"] a[href="/admin/asset-emails"]',el=>el.textContent.trim()),/^Asset emails/);
   assert.match(await page.$eval('[role="dialog"] a[href="/admin/videos"]',el=>el.textContent.trim()),/^Video Manager/);
@@ -594,7 +595,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
   assert.match(await page.$eval('[role="dialog"] a[href="/admin/annual-review"]',el=>el.textContent.trim()),/^Preview annual review/);
   await page.keyboard.press('Escape');assert.equal(await page.$('[role="dialog"]'),null);
   assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-haspopup')),'dialog');
-  console.log('PASS 17-section navigation, Escape and focus restoration');
+  console.log('PASS 18-section navigation, Escape and focus restoration');
   await page.$$eval('[aria-label="Account summary"] button',els=>els.find(e=>e.textContent.includes('Pending')).click());
   await page.waitForFunction(()=>document.querySelectorAll('tbody tr').length===1);
   assert.ok(await page.$eval('tbody',e=>e.textContent.includes('Example Dealer')));
