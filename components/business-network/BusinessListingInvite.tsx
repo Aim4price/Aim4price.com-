@@ -7,6 +7,7 @@ import ShareDisclaimer from '../asset-register/ShareDisclaimer';
 import ShareDisclosureDialog from '../asset-register/ShareDisclosureDialog';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import ShareLinkPasswordStep from '../asset-register/ShareLinkPasswordStep';
 import ShareLinkDelivery from '../asset-register/ShareLinkDelivery';
 import styles from './BusinessListingInvite.module.css';
 import { assetLinkPermissions, readOnlyAssetLinkPermissions, type ExternalSharePermissions } from '../../lib/external-share-permissions';
@@ -25,7 +26,6 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
   const [accepted, setAccepted] = useState(false);
   const [protectLink, setProtectLink] = useState(false);
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const requestVersion = useRef(0);
   useEffect(() => () => { requestVersion.current++; }, []);
   const [senderName, setSenderName] = useState('');
@@ -102,14 +102,16 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
           />
 
         </>}
-        {!link && step === 'password' && <div className={styles.passwordSlide}>
-          <p>Would you like to add a password?</p>
-          <div className={styles.passwordChoices} role="group" aria-label="Asset link password protection">
-            <button type="button" aria-pressed={!protectLink} onClick={()=>{setProtectLink(false);setPassword('');setAccepted(false);}}><span className={styles.passwordChoiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span><span><strong>No password</strong><small>Recipients sign in to open the shared assets.</small></span></button>
-            <button type="button" aria-pressed={protectLink} onClick={()=>{setProtectLink(true);setAccepted(false);}}><span className={styles.passwordChoiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></span><span><strong>Add a password</strong><small>Recipients enter your password before signing in.</small></span></button>
-          </div>
-          {protectLink && <div className={styles.passwordInputPanel}><label htmlFor={`${titleId}-link-password`}>Link password</label><div><input id={`${titleId}-link-password`} type={showPassword?'text':'password'} autoComplete="new-password" maxLength={128} value={password} onChange={event=>{setPassword(event.target.value);setAccepted(false);}} placeholder="At least 8 characters"/><button type="button" aria-label={showPassword?'Hide password':'Show password'} aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div><small>{password.length>0&&password.length<8?'Use at least 8 characters.':'Send the password separately.'}</small></div>}
-        </div>}
+        {!link && step === 'password' && <ShareLinkPasswordStep
+          choice={protectLink ? 'set' : 'none'}
+          password={password}
+          onChoiceChange={choice => {
+            setProtectLink(choice === 'set');
+            if (choice === 'none') setPassword('');
+            setAccepted(false);
+          }}
+          onPasswordChange={value => { setPassword(value); setAccepted(false); }}
+        />}
         {!link && step === 'recipient' && <form className={styles.form} onSubmit={e=>{e.preventDefault();void prepare();}}>
           <fieldset disabled={busy}>
             <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink disclosure={`Anyone with this link can view the selected asset details and included photos after ${protectLink ? 'entering the password and ' : ''}signing in. The link can be forwarded. Reports keep their separate access restrictions.`} />

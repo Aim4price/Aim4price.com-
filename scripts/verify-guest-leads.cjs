@@ -19,6 +19,8 @@ async function main() {
   await fs.writeFile(path.join(fixture,'page.tsx'), `'use client';
 import {useEffect,useState,useRef} from 'react';
 import GroupReports from '../../../components/asset-register/AssetGroupManagerModal';
+import ShareLinkSettings from '../../../components/asset-register/ShareLinkSettings';
+import {assetLinkPermissions} from '../../../lib/external-share-permissions';
 import SharedEnquiryRequest from '../../../components/asset-register/SharedEnquiryRequest';
 import BusinessListingInvite from '../../../components/business-network/BusinessListingInvite';
 import ShareDestinationDialog from '../../../components/asset-register/ShareDestinationDialog';
@@ -36,8 +38,9 @@ export default function Validation(){
  const reportAsset={id:'10000000-0000-4000-8000-000000000001',registerId:null,title:'Test bakkie',kind:'vehicle',value:1000,createdAtIso:'2025-09-01',updatedAtIso:'2026-09-01',lastScannedAtIso:null};
  const finishReport=(kind:string,format='pdf',filters:any={})=>{const params=new URLSearchParams({assetId:reportAsset.id,report:kind,format,year:filters.year||'all',month:filters.month||'all'});reportDone.current?.({id:params.toString(),kind:'report',label:kind+' · '+format,fileName:kind+'.'+format,url:'/api/asset-register/scan-report?'+params,contentType:'application/pdf'});setReportOpen(false);};
  const details={allowSubmissions:true,recipientName:'George Workshop',recipientEmail:'business@example.com',request:'Please quote for servicing.',replyName:'Asset Owner',replyEmail:'owner@example.com',replyPhone:'',allowReply:true};
- return <main data-hydrated={hydrated} style={{maxWidth:900,margin:'auto',padding:16}}><nav>{['accept','compose','recipient','admin','external','find','asset','register','umbrella'].map(x=><button key={x} onClick={()=>setMode(x)}>{x}</button>)}</nav>
+ return <main data-hydrated={hydrated} style={{maxWidth:900,margin:'auto',padding:16}}><nav>{['accept','compose','recipient','admin','external','find','asset','register','umbrella','edit link','edit protected link'].map(x=><button key={x} onClick={()=>setMode(x)}>{x}</button>)}</nav>
  {['asset','register','umbrella'].includes(mode)&&<ShareDestinationDialog kind={mode as any} titleId="fixture-share" subject="Test asset" onClose={()=>setMode('find')} onSendLink={()=>setMode('link')} onInside={()=>setMode('inside')} onOutside={()=>setMode('external')}/>}
+ {['edit link','edit protected link'].includes(mode)&&<ShareLinkSettings token={'g'.repeat(43)} subject="Test asset" initialPermissions={assetLinkPermissions()} initialProtected={mode==='edit protected link'} onClose={()=>setMode('find')} onSaved={()=>setMode('find')}/>}
  {mode==='link'&&<BusinessListingInvite sendLink assetIds={['10000000-0000-4000-8000-000000000001']} onDismiss={()=>setMode('asset')}/>}
  {mode==='inside'&&<InsideShareDialog titleId="fixture-inside" subject="Test asset" onClose={()=>setMode('find')} options={['finance','insurance','replacement_quote','license_renewal'].map((id,i)=>({id,title:['Finance & accounting','Insurance','Dealer','Licence renewal'][i],description:['Accountant, financier or bank','Insurer or broker','Share with a dealer','Renewal date required'][i],icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V8l8-5 8 5v12ZM9 20v-8h6v8"/></svg>,onSelect:()=>setMode('find')}))}/>}
  {mode==='accept'&&<BusinessAcceptanceForm/>}
@@ -70,6 +73,10 @@ export default function Validation(){
    if(p.endsWith('/access')){requests.push({path:p,method:req.method(),data:req.postData()});return req.respond({status:200,contentType:'application/json',body:JSON.stringify({assigned:false,recipientEmail:null,allowReply:true,permissions:{reports:true,replacementPrice:true,serialNumber:true,documents:true},requests:[{user_id:'recipient',email:'business@example.com',business_name:'Verified Workshop',status:'pending'}],ok:true})});}
    if(p==='/api/fixture-pdf')return req.respond({status:200,contentType:'application/pdf',body:'%PDF-1.4 fixture'});
    let body={ok:true};requests.push({path:p,method:req.method(),data:req.postData()});
+   if(p==='/api/asset-share-links/history'&&req.method()==='PATCH'){
+    const update=JSON.parse(req.postData());
+    body={permissions:update.permissions,protected:!!update.password};
+   }
    if(p==='/api/asset-share-links/leads'){
     if(req.method()==='POST'){history=[{token,recipient_name:'George Workshop',recipient_email:'business@example.com',created_at:'2026-09-22T00:00:00Z'}];body={share:{token,sender_name:'Saved Business Ltd'}};}
     else body={leads:history,replyName:'Asset Owner',replyEmail:'owner@example.com'};
@@ -96,7 +103,58 @@ export default function Validation(){
   await fs.mkdir(output,{recursive:true});
   await page.setViewport({width:1440,height:900});
   await page.goto('http://127.0.0.1:3033/business/send-link-validation',{waitUntil:'networkidle2'});
-  await page.waitForSelector('[data-hydrated=true]');await click('asset');
+  await page.waitForSelector('[data-hydrated=true]');
+  const historyWrites=()=>requests.filter(r=>r.path==='/api/asset-share-links/history'&&r.method==='PATCH').map(r=>JSON.parse(r.data));
+  const edit=async(protectedLink=false)=>{
+   await click(protectedLink?'edit protected link':'edit link');
+   await page.waitForSelector('[data-access-start]',{visible:true});
+   await click('Choose permissions');
+  };
+  const saveButton='[data-access-footer] button:last-child';
+  const passwordInput='input[autocomplete="new-password"]';
+  const save=async()=>{await click('Save changes');await page.waitForSelector('[data-asset-link-dialog]',{hidden:true});};
+  await edit();
+  assert.equal(await page.$('[data-link-password-choices]'),null,'Permissions open without password controls');
+  assert.equal(await page.$eval(saveButton,button=>button.textContent),'Next');
+  await page.click('[data-permission-toolbar] input');
+  await click('Next');
+  assert.equal(await page.$eval('[data-asset-link-dialog] h3',heading=>heading.textContent),'Protect your asset link');
+  assert.equal(await page.$eval(saveButton,button=>button.disabled),true,'Saving requires a password choice');
+  assert.equal(historyWrites().length,0,'Next does not update the link');
+  await click('Add a password');
+  await page.type(passwordInput,'short');
+  assert.equal(await page.$eval(saveButton,button=>button.disabled),true,'A short password cannot be saved');
+  await click('Back');
+  assert.ok(await page.$eval('[data-permission-toolbar] input',input=>input.checked),'Back preserves permission edits');
+  await click('Next');
+  assert.equal(await page.$eval(passwordInput,input=>input.value),'short','Next restores the password draft');
+  await page.type(passwordInput,'-fixture');
+  await save();
+  assert.equal(historyWrites().length,1);
+  assert.equal(historyWrites()[0].password,'short-fixture');
+  assert.equal(historyWrites()[0].permissions.addPhotos,true);
+  await edit();
+  await click('Next');
+  await click('No password');
+  await save();
+  assert.equal(Object.hasOwn(historyWrites().at(-1),'password'),false);
+  await edit(true);
+  await click('Next');
+  await click('Keep current password');
+  await save();
+  assert.equal(Object.hasOwn(historyWrites().at(-1),'password'),false);
+  await edit(true);
+  await click('Next');
+  await click('Change password');
+  await page.type(passwordInput,'replacement-fixture');
+  await save();
+  assert.equal(historyWrites().at(-1).password,'replacement-fixture');
+  await edit(true);
+  await click('Next');
+  await click('Remove password');
+  await save();
+  assert.equal(historyWrites().at(-1).password,'');
+  await click('asset');
   await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"] strong').length===3);
   const cards=await page.$$eval('[role="dialog"] button:has(strong)',nodes=>nodes.map(n=>({text:n.querySelector('strong').textContent,x:n.getBoundingClientRect().x,y:n.getBoundingClientRect().y,width:n.getBoundingClientRect().width})));
   assert.deepEqual(cards.map(c=>c.text),['Copy link','Inside Aim4price','Outside Aim4price']);

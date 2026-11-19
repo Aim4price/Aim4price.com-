@@ -7,14 +7,14 @@ import layout from './AssetAccessSettingsDialog.module.css';
 import styles from '../../app/asset-register/page.module.css';
 
 /** The same settings surface for inside sharing and asset links. */
-export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,footer,linkSettings=false,onViewOnly,subjectHeader=false,locationLayout=false,documentsLayout=false,compactLayout=false,guideDescription='The recipient signs in to use your link.',permissionsDescription='Choose allowed updates and reports.'}: {
-  title:string;assetTitle:string;onClose:()=>void;children:ReactNode;footer?:ReactNode;linkSettings?:boolean;onViewOnly?:()=>void;subjectHeader?:boolean;locationLayout?:boolean;documentsLayout?:boolean;compactLayout?:boolean;guideDescription?:string;permissionsDescription?:string;
+export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,footer,linkSettings=false,onViewOnly,subjectHeader=false,locationLayout=false,documentsLayout=false,compactLayout=false,focusSelector='input',guideDescription='The recipient signs in to use your link.',permissionsDescription='Choose allowed updates and reports.'}: {
+  title:string;assetTitle:string;onClose:()=>void;children:ReactNode;footer?:ReactNode;linkSettings?:boolean;onViewOnly?:()=>void;subjectHeader?:boolean;locationLayout?:boolean;documentsLayout?:boolean;compactLayout?:boolean;focusSelector?:string;guideDescription?:string;permissionsDescription?:string;
 }) {
   const titleId=useId();
   const [showGuide,setShowGuide]=useState(linkSettings);
   const dismiss=()=>onClose();
   const ref=useLeadDialog(dismiss);
-  useEffect(()=>{ref.current?.querySelector<HTMLElement>(showGuide?'[data-access-start]':'input')?.focus();},[showGuide,ref]);
+  useEffect(()=>{ref.current?.querySelector<HTMLElement>(showGuide?'[data-access-start]':focusSelector)?.focus();},[showGuide,focusSelector,ref]);
   useEffect(()=>{
     const bodyOverflow=document.body.style.getPropertyValue('overflow');
     const bodyPriority=document.body.style.getPropertyPriority('overflow');

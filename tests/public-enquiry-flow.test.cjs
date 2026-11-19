@@ -10,6 +10,7 @@ function load(file, mocks = {}) {
   new Function('require','exports',code)(name => name in mocks ? mocks[name] : name.endsWith('.css') ? {} : require(name), exports);
   return exports;
 }
+const ShareLinkPasswordStep = load('components/asset-register/ShareLinkPasswordStep.tsx').default;
 const token = 'a'.repeat(43);
 const share = {senderName:'Farm & Co',createdAt:'2026-09-26T10:00:00Z',assets:['Tractor','Trailer','Bakkie'].map(title=>({title,serialNumber:title+'123',yearModel:2022,usage:'100 hours',condition:'Good',valueExVat:100000,replacementPriceExVat:200000,photoUrls:[],publicUrl:null}))};
 test('invitation shows every selected asset, opens the real enquiry and has no signup or Google form',async()=>{
@@ -92,6 +93,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       const Invite=load('components/business-network/BusinessListingInvite.tsx',{
         react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:value=>hook({current:value})[0],useState:hook},
         '../asset-register/AssetAccessSettingsDialog':'dialog',
+        '../asset-register/ShareLinkPasswordStep':ShareLinkPasswordStep,
     '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
     '../asset-register/ShareDisclaimer':Disclaimer,
     '../asset-register/ShareLinkDelivery':'share-delivery',
@@ -158,6 +160,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    const Invite=load('components/business-network/BusinessListingInvite.tsx',{
     react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:v=>hook({current:v})[0],useState:hook},
     '../asset-register/AssetAccessSettingsDialog':'dialog',
+    '../asset-register/ShareLinkPasswordStep':ShareLinkPasswordStep,
     '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
     '../asset-register/ShareDisclaimer':Disclaimer,
     '../asset-register/ShareLinkDelivery':'share-delivery',
@@ -171,6 +174,10 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    const button=text=>walk(view,n=>n.type==='button'&&React.Children.toArray(n.props.children).includes(text));
    render();assert.equal(sent,undefined);
    button('Continue view only').props.onClick();render();
+   walk(view,n=>n.type===ShareLinkPasswordStep).props.onChoiceChange('set');render();
+   assert.equal(button('Continue').props.disabled,true);
+   walk(view,n=>n.type===ShareLinkPasswordStep).props.onPasswordChange('fixture-pass');render();
+   assert.equal(button('Continue').props.disabled,false);
    button('Continue').props.onClick();render();
    await walk(view,n=>n.type==='form').props.onSubmit({preventDefault(){}});
    assert.equal(sent,undefined);assert.equal(button('Create asset link').props.disabled,true);
@@ -179,6 +186,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    await new Promise(resolve=>setImmediate(resolve));render();
    assert.equal(sent.url,'/api/asset-share-links/leads');
    assert.equal(sent.body.get('umbrellaId'),'fleet');
+   assert.equal(sent.body.get('password'),'fixture-pass');
    assert.deepEqual(JSON.parse(sent.body.get('assetIds')),['asset-a']);
    const details=JSON.parse(sent.body.get('details'));
    assert.equal(details.accessMode,'signed-in');assert.equal(details.permissions.allReports,true);assert.equal(sent.body.get('includePhotos'),'true');for(const key of ['serialNumber','replacementPrice','maintenanceSchedules','documents'])assert.equal(details.permissions[key],false);
