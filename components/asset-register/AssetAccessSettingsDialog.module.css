@@ -296,7 +296,12 @@
 .dialog.guideDialog .body.body.body:has([data-link-password-choices]) {
   margin: 0 -.5rem !important;
   padding: 1.25rem .5rem !important;
+  overflow-x: hidden !important;
   scrollbar-gutter: auto !important;
+}
+.dialog.guideDialog [data-link-password-choices] {
+  margin: 0;
+  padding: 0;
 }
 .dialog.guideDialog:has([data-link-password-choices]) .footer {
   margin: 0;
