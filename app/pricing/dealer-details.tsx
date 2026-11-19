@@ -4,6 +4,7 @@ import styles from './owner-journey.module.css';
 export default function DealerDetails({ topic }: { topic: 'funding' | 'commission' }) {
   return <div className={styles.benefits}>
     {topic === 'funding' && <div>
+      <p><strong>You manage your clients.</strong> Aim4price works through your business.</p>
       <p>Client hosting costs 25% of normal Owner hosting fees per client, based on active assets across that client’s registers. Your Dealer or Business account hosting is separate.</p>
       <dl className={styles.dealerRates}>
         {ownerHosting.map(plan => <div key={plan.range}><dt>{plan.range} assets per client</dt><dd>{rand(plan.monthly / 4)}/month · {rand(plan.annually / 4)}/year</dd></div>)}

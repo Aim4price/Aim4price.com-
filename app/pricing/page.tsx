@@ -10,8 +10,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Hosting Fees',
-  description: 'Compare Aim4price Owner, Dealer, Business and Middleman hosting, client hosting and optional assistance fees.',
+  title: 'Subscriptions',
+  description: 'Compare Aim4price Owner, Dealer, Business and Middleman subscriptions, client hosting and optional assistance fees.',
   robots: { index: false, follow: false },
 };
 

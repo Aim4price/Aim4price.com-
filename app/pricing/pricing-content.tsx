@@ -17,44 +17,51 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
     <div className={styles.photoSurface}>
     <div className={styles.shell}>
       <header className={styles.hero}>
-        <h1>Hosting Fees</h1>
-        <p className={styles.heroDescription}>Choose the package that fits your work.</p>
+        <h1>Subscriptions</h1>
+        <p className={styles.heroDescription}>Choose your account. Add help when you need it.</p>
       </header>
       <section className={styles.pricingChoices} aria-label="Choose your account">
         <button className={styles.accountCard} type="button" aria-haspopup="dialog" onClick={() => setAudience('owner')}>
           <strong className={styles.accountTitle}>Owner</strong>
           <span className={styles.cardPrice}><span className={styles.priceLabel}>From</span><span className={styles.priceLine}><strong>{rand(ownerHosting[0].monthly)}</strong><span>/ month</span></span></span>
-          <span className={styles.accountDescription}>For farms, companies and individuals managing their own assets.</span>
-          <span className={styles.cardNote}>Choose by active asset count. Unlimited registers included.</span>
+          <span className={styles.accountDescription}>Manage your own assets, records and running costs.</span>
+          <span className={styles.cardNote}>Priced by active assets. Unlimited registers.</span>
           <span className={styles.cardAction}>Explore Owner hosting</span>
         </button>
         <button type="button" aria-haspopup="dialog" onClick={() => setAudience('dealer')} className={styles.accountCard}>
           <strong className={styles.accountTitle}>Dealer</strong>
           <span className={styles.cardPrice}><span className={styles.priceLabel}>Hosting</span><span className={styles.priceLine}><strong>{rand(businessHosting.monthly)}</strong><span>/ month</span></span></span>
-          <span className={styles.accountDescription}>For dealerships managing stock, client registers and asset enquiries.</span>
-          <span className={styles.cardNote}>Client hosting is 25% of normal Owner fees, billed to your dealership.</span>
+          <span className={styles.accountDescription}>Manage dealership stock and your clients’ assets.</span>
+          <span className={styles.cardNote}>Client hosting from {rand(ownerHosting[0].monthly / 4)} per client/month.</span>
           <span className={styles.cardAction}>Explore Dealer hosting</span>
         </button>
         <button type="button" aria-haspopup="dialog" onClick={() => setAudience('business')} className={styles.accountCard}>
           <strong className={styles.accountTitle}>Business</strong>
           <span className={styles.cardPrice}><span className={styles.priceLabel}>Shared access</span><span className={styles.priceLine}><strong>Free</strong></span></span>
-          <span className={styles.accountDescription}>For repairers, insurers and financiers working with assets shared by clients.</span>
-          <span className={styles.cardNote}>Optional workspace: R199/month or R1 999/year.</span>
+          <span className={styles.accountDescription}>Work with client assets as a repairer, insurer or financier.</span>
+          <span className={styles.cardNote}>Your own workspace: R199/month or R1 999/year.</span>
           <span className={styles.cardAction}>Explore Business access</span>
         </button>
       </section>
       <p className={styles.signIn}>{signedIn ? <>Want to change your package? <Link href="/contact-us">Discuss it with Aim4price</Link></> : <>Already have an account? <Link href="/auth#login">Log in</Link></>}</p>
       <PricingModal owner open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
       <PricingModal owner open={audience === 'dealer'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney audience="dealer" signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
-      <PricingModal open={audience === 'business'} title="Business access" onClose={() => setAudience(null)}>
-        <div className={styles.accessExplanation}>
-          <h2>Start with free shared access.</h2>
-          <p>Work with assets your clients share with you. The asset owner chooses which records and actions you can access.</p>
-          <h3>Need your own workspace?</h3>
-          <p>Business hosting is R199/month or R1 999/year, arranged with Aim4price. Client hosting is separate. We confirm your tools, access and billing before setup.</p>
-          <details><summary>Client hosting &amp; your business relationship</summary><DealerDetails topic="funding" /></details>
-          <p>Managing your own assets? Choose Owner. Managing dealership stock and client registers? Choose Dealer.</p>
-          <Link className={styles.button} href={signedIn ? '/contact-us' : '/business/join'}>{signedIn ? 'Discuss Business access' : 'Create free Business account'}</Link>
+      <PricingModal open={audience === 'business'} title="Choose your Business access" onClose={() => setAudience(null)}>
+        <div className={styles.businessAccess}>
+          <section className={styles.accessOption} aria-labelledby="business-shared-title">
+            <div className={styles.accessHeading}><h3 id="business-shared-title">Shared access</h3><strong>Free</strong></div>
+            <p>Work with assets your clients share. They choose which records you can view or update.</p>
+            <Link className={styles.button} href={signedIn ? '/contact-us' : '/business/join'}>{signedIn ? 'Discuss shared access' : 'Create free Business account'}</Link>
+          </section>
+          <section className={styles.accessOption} aria-labelledby="business-hosting-title">
+            <div className={styles.accessHeading}><h3 id="business-hosting-title">Your own workspace</h3><strong>{rand(businessHosting.monthly)}<span>/month</span></strong></div>
+            <p className={styles.accessAnnual}>Or {rand(businessHosting.annually)}/year for hosting.</p>
+            <p>Manage client records in your Business workspace. Client hosting is separate, from {rand(ownerHosting[0].monthly / 4)} per client/month.</p>
+            <Link className={styles.button} href="/contact-us">Discuss Business hosting</Link>
+          </section>
+          <p className={styles.relationshipNote}><strong>You manage your clients.</strong> Aim4price works through your business.</p>
+          <details className={styles.accessDetails}><summary>Client hosting rates &amp; sharing<span className={styles.coverageToggle} aria-hidden="true" /></summary><DealerDetails topic="funding" /></details>
+          <p className={styles.accessFootnote}>We confirm paid hosting, access and any assistance before setup.</p>
         </div>
       </PricingModal>
       <PricingModal open={audience === 'middleman'} title="Middleman access" onClose={() => setAudience(null)}>
@@ -98,7 +105,7 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
       </details>
       <p className={styles.additionalLinks}><button type="button" aria-haspopup="dialog" onClick={() => setAudience('middleman')}>Middleman access</button><button type="button" aria-haspopup="dialog" onClick={() => setFeesOpen(true)}>Success fees &amp; services</button></p>
       <div className={styles.closing}>
-        <div><h2>Still have a question?</h2><p>We’ll help you find the right hosting.</p></div>
+        <div><h2>Still have a question?</h2><p>We’ll help you choose your hosting and support.</p></div>
         <Link className={styles.contactButton} href="/contact-us">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 18H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-7l-4 3v-3Z"/><path d="M7 9h10M7 13h6"/></svg>
           <span>Talk to Aim4price</span>
