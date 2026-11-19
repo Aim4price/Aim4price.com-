@@ -50,6 +50,7 @@ export default function ShareLinkSettings({ token, subject, initialPermissions, 
     title={choosingPassword ? 'Protect your asset link' : 'Asset link settings'}
     assetTitle={subject}
     linkSettings
+    guideLayout={choosingPassword}
     focusSelector={choosingPassword ? '[data-link-password-choices] button' : 'input'}
     onViewOnly={choosingPassword || permissions.documents ? undefined : () => setPermissions({
       ...readOnlyAssetLinkPermissions(permissions),

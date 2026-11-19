@@ -1,15 +1,16 @@
 'use client';
 
 import { useId, useState } from 'react';
+import layout from './AssetAccessSettingsDialog.module.css';
 import styles from './ShareLinkPasswordStep.module.css';
 
 export type LinkPasswordChoice = 'none' | 'set' | 'keep' | 'remove';
 
 const options = {
-  none: { title: 'No password', description: 'Recipients sign in to open the shared assets.' },
-  set: { title: 'Add a password', description: 'Recipients enter your password before signing in.' },
-  keep: { title: 'Keep current password', description: 'Recipients continue using the same password.' },
-  remove: { title: 'Remove password', description: 'Recipients only need to sign in.' },
+  none: { title: 'No password', description: 'Sign in to open the link.' },
+  set: { title: 'Add a password', description: 'Enter a password before signing in.' },
+  keep: { title: 'Keep current password', description: 'Use the existing password.' },
+  remove: { title: 'Remove password', description: 'Sign in without a link password.' },
 };
 
 function PasswordIcon({ lock = false }: { lock?: boolean }) {
@@ -36,18 +37,16 @@ export default function ShareLinkPasswordStep({ choice, onChoiceChange, password
   const [showPassword, setShowPassword] = useState(false);
   const choices: LinkPasswordChoice[] = protectedLink ? ['keep', 'set', 'remove'] : ['none', 'set'];
 
-  return <div className={styles.passwordSlide}>
-    <p>{protectedLink ? 'How would you like to protect this link?' : 'Would you like to add a password?'}</p>
-    <div className={styles.passwordChoices} data-link-password-choices role="group" aria-label="Asset link password protection">
-      {choices.map(option => <button key={option} type="button" disabled={disabled} aria-pressed={choice === option} onClick={() => {
+  return <div className={`${layout.guideBody} ${styles.passwordSlide}`}>
+    <p className={layout.guideHeading}>{protectedLink ? 'How would you like to protect this link?' : 'Would you like to add a password?'}</p>
+    <div className={layout.accessChoices} data-link-password-choices role="group" aria-label="Asset link password protection">
+      {choices.map(option => <button key={option} type="button" className={`${layout.accessChoice} ${option === 'set' ? layout.permissionsChoice : layout.viewChoice}`} disabled={disabled} aria-pressed={choice === option} onClick={() => {
         setShowPassword(false);
         onChoiceChange(option);
       }}>
-        <span className={styles.passwordChoiceIcon}><PasswordIcon lock={option === 'keep' || option === 'set'} /></span>
-        <span>
-          <strong>{protectedLink && option === 'set' ? 'Change password' : options[option].title}</strong>
-          <small>{options[option].description}</small>
-        </span>
+        <span className={layout.choiceIcon}><PasswordIcon lock={option === 'keep' || option === 'set'} /></span>
+        <strong className={layout.choiceTitle}>{protectedLink && option === 'set' ? 'Change password' : options[option].title}</strong>
+        <span className={layout.choiceDescription}>{options[option].description}</span>
       </button>)}
     </div>
     {choice === 'set' && <div className={styles.passwordInputPanel}>
