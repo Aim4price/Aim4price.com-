@@ -350,8 +350,8 @@ export default function MaintenanceCatalogueClient() {
                                   ? { ...i, [field]: e.target.value }
                                   : i,
                               ),
-                            });
-                          }}
+                            })
+                          }
                         />
                       </label>
                     ))}
