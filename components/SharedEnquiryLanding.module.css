@@ -41,25 +41,30 @@
 .accessActions > div > button { width:100%; min-height:2.75rem; border-color:transparent; background:transparent; box-shadow:none; white-space:nowrap; }
 
 
-.accountChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.5rem; }
+.dialog.dialog:has(.accountChoices) {
+ width:min(68rem,calc(var(--website-design-vw,1vw) * 100 - 3rem));
+ padding:clamp(1.25rem,calc(var(--website-design-vw,1vw) * 2.75),2.5rem);
+}
+.signInBody:has(> .accountChoices) { gap:1.25rem; }
+.accountChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.25rem; }
 .accountChoice {
  display:flex; flex-direction:column; align-items:center; text-align:center;
- gap:1.5rem; min-width:0; padding:2rem;
+ gap:1.25rem; min-width:0; padding:1.875rem;
  border:2px solid #b5dace; border-radius:1.4rem;
  background:#f0faf5; color:#123e31; text-decoration:none;
  box-shadow:0 8px 24px rgba(18,62,49,.06);
  transition:transform 160ms ease,box-shadow 160ms ease,border-color 160ms ease;
 }
 .accountChoice:hover { transform:translateY(-3px); border-color:#168461; box-shadow:0 14px 30px rgba(18,62,49,.13); }
-.choiceIcon { display:grid; place-items:center; width:6.5rem; height:6.5rem; flex-shrink:0; border-radius:1.5rem; background:#fff; color:#087f5b; border:1px solid #c5e2d6; }
-.choiceIcon svg { width:4rem; height:4rem; }
+.choiceIcon { display:grid; place-items:center; width:6rem; height:6rem; flex-shrink:0; border-radius:1.5rem; background:#fff; color:#087f5b; border:1px solid #c5e2d6; }
+.choiceIcon svg { width:3.75rem; height:3.75rem; }
 .choiceCopy { display:grid; gap:.55rem; }
 .choiceCopy strong { font-size:clamp(1.5rem,calc(var(--website-design-vw,1vw) * 2),2rem); font-weight:800; line-height:1.2; letter-spacing:-.025em; }
 .choiceCopy small { font-size:1rem; line-height:1.5; color:#4d685e; }
 .newAccount { background:#eff6ff; border-color:#c0d6ef; }
 .newAccount:hover { border-color:#3878ba; box-shadow:0 14px 30px rgba(36,89,146,.13); }
 .newAccount .choiceIcon { color:#245d98; border-color:#cedff2; }
-.accountChoice .signInButton { display:flex; align-items:center; justify-content:center; gap:1rem; margin-top:auto; min-height:4rem; padding:1rem; border-radius:1rem; background:#087f5b; color:#fff; font-size:1.1rem; font-weight:800; line-height:1.4; }
+.accountChoice .signInButton { display:flex; align-items:center; justify-content:center; gap:1rem; margin-top:auto; min-height:3.75rem; padding:1rem; border-radius:1rem; background:#087f5b; color:#fff; font-size:1.1rem; font-weight:800; line-height:1.4; }
 .newAccount .signInButton { background:#245d98; }
 .accountChoice .signInButton svg { width:1.5rem; height:1.5rem; flex-shrink:0; }
 .signInBody > .returnHint { text-align:center; font-size:.9rem; padding-top:.15rem; }
