@@ -1328,6 +1328,19 @@ const appCode =
     await page.screenshot({path:path.join(output,'share-access-choice.png')});
     assert.equal(await page.$('[role=dialog] input[type=password]'),null,'Permissions and password use separate slides');
     await click('Choose permissions');
+    async function checkChoiceText(selector) {
+      for (const width of [390, 1024, 1440]) {
+        await page.setViewport({width,height:900});
+        const failures=await page.$$eval(selector, nodes=>nodes.filter(node=>{
+          const range=document.createRange();
+          range.selectNodeContents(node);
+          const card=node.closest('button,label') || node.parentElement;
+          return range.getClientRects().length!==1 || range.getBoundingClientRect().right>card.getBoundingClientRect().right;
+        }).map(node=>node.textContent));
+        assert.deepEqual(failures,[],`Choice text should fit at ${width}px`);
+      }
+    }
+    await checkChoiceText('[data-parts-permissions] :is(p,strong,label > span)');
     await page.click('[aria-label="Download parts"]');
     await page.screenshot({path:path.join(output,'share-permissions-only.png')});
     await click('Continue');
@@ -1361,6 +1374,7 @@ const appCode =
     await click('Settings');
     await click('Choose permissions');
     await click('Continue');
+    await checkChoiceText('[data-parts-password] :is(p,strong,button > span:last-child)');
     await click('Change password');
     await page.type('[role=dialog] input[type=password]','replacement-password');
     await page.setViewport({width:1440,height:650});

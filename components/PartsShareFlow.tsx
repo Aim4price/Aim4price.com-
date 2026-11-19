@@ -5,7 +5,7 @@ import ShareDisclosureDialog from './asset-register/ShareDisclosureDialog';
 import styles from './PartsShareFlow.module.css';
 import AssetAccessSettingsDialog from './asset-register/AssetAccessSettingsDialog';
 import ShareLinkPasswordStep, { type LinkPasswordChoice } from './asset-register/ShareLinkPasswordStep';
-import permissionStyles from './DealerMaintenanceAccessSettings.module.css';
+import layout from './asset-register/AssetAccessSettingsDialog.module.css';
 import ShareDisclaimer from './asset-register/ShareDisclaimer';
 import ShareLinkDelivery from './asset-register/ShareLinkDelivery';
 import ownerStyles from './business-network/BusinessListingInvite.module.css';
@@ -65,21 +65,28 @@ export default function PartsShareFlow({name,count,network,api,onClose}:{name:st
   </div>
  </AssetAccessSettingsDialog>;
  if(step==='settings'||step==='permissions') return <AssetAccessSettingsDialog key={step} title="Parts link settings" assetTitle={name} onClose={onClose}
-   linkSettings={startWithGuide} onViewOnly={()=>chooseAccess(true)}
+   guideLayout linkSettings={startWithGuide} onViewOnly={()=>chooseAccess(true)}
    guideDescription={channel==='direct'?'Only your chosen business can view the list.':'Anyone with the link can view the list.'}
    permissionsDescription="Choose downloads and enquiries."
    footer={<div data-access-actions className={actionsClass}>
      <button type="button" className={assetStyles.secondaryButton} disabled={busy} onClick={()=>step==='settings'?void run(history):setStep(channel==='direct'?'recipient':'choose')}>Back</button>
      <button type="button" className={assetStyles.primaryButton} disabled={busy} onClick={()=>chooseAccess()}>Continue</button>
    </div>}>
-   <div className={permissionStyles.permissionGroups} data-permission-groups>
-     <fieldset className={permissionStyles.permissionGroup}><legend>Parts permissions</legend>
-       <div className={permissionStyles.permissions} data-permission-grid>
-         <label className={permissionStyles.permission}><input type="checkbox" aria-label="Download parts" checked={download} onChange={e=>{setDownload(e.target.checked);setAccepted(false);}}/><span><strong>Download parts</strong></span></label>
-         <label className={permissionStyles.permission}><input type="checkbox" aria-label="Send enquiries" checked={enquiry} onChange={e=>{setEnquiry(e.target.checked);setAccepted(false);}}/><span><strong>Send enquiries</strong></span></label>
-       </div>
-       <p data-permission-note>Recipients sign in to download the parts PDF or send an enquiry.</p>
-     </fieldset>
+   <div className={layout.guideBody} data-parts-permissions>
+     <p className={layout.guideHeading} id={titleId}>Recipient permissions</p>
+     <p className={layout.guideDescription}>Sign-in required for both options.</p>
+     <div className={layout.accessChoices} role="group" aria-labelledby={titleId}>
+       <label className={`${layout.accessChoice} ${layout.permissionsChoice}`}>
+         <input className={styles.permissionCheck} type="checkbox" aria-label="Download parts" checked={download} onChange={e=>{setDownload(e.target.checked);setAccepted(false);}}/>
+         <strong className={layout.choiceTitle}>Download parts</strong>
+         <span className={layout.choiceDescription}>Save the parts PDF.</span>
+       </label>
+       <label className={`${layout.accessChoice} ${layout.viewChoice}`}>
+         <input className={styles.permissionCheck} type="checkbox" aria-label="Send enquiries" checked={enquiry} onChange={e=>{setEnquiry(e.target.checked);setAccepted(false);}}/>
+         <strong className={layout.choiceTitle}>Send enquiries</strong>
+         <span className={layout.choiceDescription}>Ask about listed parts.</span>
+       </label>
+     </div>
    </div>
    {error && <p role="alert" className={styles.error}>{error}</p>}
  </AssetAccessSettingsDialog>;

@@ -292,18 +292,19 @@
 .dialog.compactDialog .footer { margin:0; padding:1rem 0 0; background:transparent; }
 .dialog.compactDialog .footer [data-access-actions] { justify-content:space-between; }
 
-/* Align the password choices, field and footer with the header. */
-.dialog.guideDialog .body.body.body:has([data-link-password-choices]) {
+/* Align the choices and footer with the header. */
+.dialog.guideDialog .body.body.body:has([data-link-password-choices], [data-parts-permissions]) {
   margin: 0 -.5rem !important;
   padding: 1.25rem .5rem !important;
   overflow-x: hidden !important;
   scrollbar-gutter: auto !important;
 }
+.dialog.guideDialog [data-parts-permissions] .accessChoices,
 .dialog.guideDialog [data-link-password-choices] {
   margin: 0;
   padding: 0;
 }
-.dialog.guideDialog:has([data-link-password-choices]) .footer {
+.dialog.guideDialog:has([data-link-password-choices], [data-parts-permissions]) .footer {
   margin: 0;
   padding: 1rem 0 0;
   background: transparent;
@@ -314,3 +315,7 @@
 .dialog:has([data-tracking-options], [data-tracker-setup]) { width:min(var(--website-dialog-reference-width,100%),64rem) !important; }
 .dialog:has([data-tracking-options], [data-tracker-setup]) .body:not(:has([data-tracking-usage-editor])) { scrollbar-width:none !important; }
 .dialog:has([data-tracking-options], [data-tracker-setup]) .body:not(:has([data-tracking-usage-editor]))::-webkit-scrollbar { display:none !important; }
+
+.dialog [data-parts-permissions] label:has(input:checked) { box-shadow:inset 0 0 0 2px var(--choice-ink); }
+.dialog [data-parts-permissions] label:has(input:focus-visible) { outline:3px solid var(--choice-ink); outline-offset:2px; }
+.dialog [data-parts-permissions] .choiceDescription { color:var(--app-text,#183f30); }
