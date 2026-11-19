@@ -221,6 +221,7 @@ export default function AdminAssetMapClient({
   initialReport: AdminAssetMapReport;
 }) {
   const [report, setReport] = useState(initialReport);
+  const [moreFilters, setMoreFilters] = useState(false);
   const [search, setSearch] = useState("");
   const [ownerUserId, setOwnerUserId] = useState("");
   const [province, setProvince] = useState("");
@@ -270,6 +271,7 @@ export default function AdminAssetMapClient({
     () => report.assets.find((asset) => asset.id === selectedAssetId) ?? null,
     [report.assets, selectedAssetId],
   );
+  const extraFilterCount = [province, sector, lifecycle].filter(Boolean).length;
   const filtersActive = Boolean(
     search.trim() || ownerUserId || province || sector || lifecycle || location !== "all",
   );
@@ -564,28 +566,6 @@ export default function AdminAssetMapClient({
             </AdminSelect>
           </label>
           <label>
-            <span>Province</span>
-            <AdminSelect value={province} onChange={(event) => setProvince(event.target.value)}>
-              <option value="">All provinces</option>
-              {report.options.provinces.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.count})
-                </option>
-              ))}
-            </AdminSelect>
-          </label>
-          <label>
-            <span>Sector</span>
-            <AdminSelect value={sector} onChange={(event) => setSector(event.target.value)}>
-              <option value="">All sectors</option>
-              {report.options.sectors.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.count})
-                </option>
-              ))}
-            </AdminSelect>
-          </label>
-          <label>
             <span>Location</span>
             <AdminSelect
               value={location}
@@ -596,22 +576,48 @@ export default function AdminAssetMapClient({
               <option value="missing">Missing GPS</option>
             </AdminSelect>
           </label>
-          <label>
-            <span>State</span>
-            <AdminSelect value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}>
-              <option value="">All states</option>
-              {report.options.lifecycleStates.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label} ({option.count})
-                </option>
-              ))}
-            </AdminSelect>
-          </label>
-          {filtersActive ? (
-            <div className={styles.filterActions}>
-              <button type="button" onClick={clearFilters}>Clear</button>
-            </div>
-          ) : null}
+          <div className={styles.filterActions}>
+            <button type="button" aria-expanded={moreFilters} aria-controls="map-extra-filters"
+              onClick={() => setMoreFilters(open => !open)}>
+              {moreFilters ? "Fewer filters" : "More filters"}{extraFilterCount > 0 && ` (${extraFilterCount})`}
+            </button>
+            {filtersActive && <button type="button" onClick={clearFilters}>Clear</button>}
+          </div>
+          <div id="map-extra-filters" hidden={!moreFilters} className={styles.extraFilters}>
+            <label>
+              <span>Province</span>
+              <AdminSelect value={province} onChange={(event) => setProvince(event.target.value)}>
+                <option value="">All provinces</option>
+                {report.options.provinces.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} ({option.count})
+                  </option>
+                ))}
+              </AdminSelect>
+            </label>
+            <label>
+              <span>Sector</span>
+              <AdminSelect value={sector} onChange={(event) => setSector(event.target.value)}>
+                <option value="">All sectors</option>
+                {report.options.sectors.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} ({option.count})
+                  </option>
+                ))}
+              </AdminSelect>
+            </label>
+            <label>
+              <span>State</span>
+              <AdminSelect value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}>
+                <option value="">All states</option>
+                {report.options.lifecycleStates.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} ({option.count})
+                  </option>
+                ))}
+              </AdminSelect>
+            </label>
+          </div>
         </header>
 
         {error ? <p className={styles.errorNotice}>{error}</p> : null}
@@ -632,11 +638,13 @@ export default function AdminAssetMapClient({
                       key={asset.id}
                       type="button"
                       className={`${styles.assetRow} ${selectedAssetId === asset.id ? styles.assetRowActive : ""}`}
+                      aria-pressed={selectedAssetId === asset.id}
+                      title={asset.title}
                       onClick={() => setSelectedAssetId(asset.id)}
                     >
                       <span className={styles.assetRowCopy}>
                         <strong>{asset.title}</strong>
-                        <small>· {asset.owner.label} · {asset.owner.province || "No province"}</small>
+                        <small>{asset.owner.label} · {asset.owner.province || "No province"}</small>
                       </span>
                       <span className={mapped ? styles.mappedBadge : styles.missingBadge}>
                         {mapped ? "Mapped" : "No GPS"}
@@ -664,6 +672,7 @@ export default function AdminAssetMapClient({
               <button
                 type="button"
                 className={basemap === "road" ? styles.mapModeActive : ""}
+                aria-pressed={basemap === "road"}
                 onClick={() => setBasemap("road")}
               >
                 Map
@@ -671,6 +680,7 @@ export default function AdminAssetMapClient({
               <button
                 type="button"
                 className={basemap === "satellite" ? styles.mapModeActive : ""}
+                aria-pressed={basemap === "satellite"}
                 onClick={() => setBasemap("satellite")}
               >
                 Satellite
@@ -689,14 +699,17 @@ export default function AdminAssetMapClient({
                     ×
                   </button>
                 </header>
-                <div className={styles.assetDetailGrid}>
-                  <span><small>Value</small><strong>{formatAdminAssetValue(selectedAsset)}</strong></span>
-                  <span><small>Serial / VIN</small><strong>{selectedAsset.serialNumber || "Not saved"}</strong></span>
-                  <span><small>Registration</small><strong>{selectedAsset.registrationNumber || "Not saved"}</strong></span>
-                  <span><small>Usage</small><strong>{formatUsage(selectedAsset)}</strong></span>
-                  <span><small>Last scanned</small><strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong></span>
-                  <span><small>Lifecycle</small><strong>{titleCase(selectedAsset.lifecycleState)}</strong></span>
-                </div>
+                <details className={styles.detailDisclosure} key={selectedAsset.id}>
+                  <summary>Asset details</summary>
+                  <div className={styles.assetDetailGrid}>
+                    <span><small>Value</small><strong>{formatAdminAssetValue(selectedAsset)}</strong></span>
+                    <span><small>Serial / VIN</small><strong>{selectedAsset.serialNumber || "Not saved"}</strong></span>
+                    <span><small>Registration</small><strong>{selectedAsset.registrationNumber || "Not saved"}</strong></span>
+                    <span><small>Usage</small><strong>{formatUsage(selectedAsset)}</strong></span>
+                    <span><small>Last scanned</small><strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong></span>
+                    <span><small>Lifecycle</small><strong>{titleCase(selectedAsset.lifecycleState)}</strong></span>
+                  </div>
+                </details>
                 <section className={styles.ownerContact}>
                   <strong>Owner</strong>
                   <span>{selectedAsset.owner.name || selectedAsset.owner.label}</span>
