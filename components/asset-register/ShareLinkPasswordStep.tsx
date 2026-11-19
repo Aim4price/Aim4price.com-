@@ -7,10 +7,10 @@ import styles from './ShareLinkPasswordStep.module.css';
 export type LinkPasswordChoice = 'none' | 'set' | 'keep' | 'remove';
 
 const options = {
-  none: { title: 'No password', description: 'Sign in to open the link.' },
-  set: { title: 'Add a password', description: 'Password, then sign in.' },
+  none: { title: 'No password', description: 'Open without a password.' },
+  set: { title: 'Add a password', description: 'Require a link password.' },
   keep: { title: 'Keep current password', description: 'Use the same password.' },
-  remove: { title: 'Remove password', description: 'Only sign-in required.' },
+  remove: { title: 'Remove password', description: 'Open without a password.' },
 };
 
 function PasswordIcon({ lock = false }: { lock?: boolean }) {

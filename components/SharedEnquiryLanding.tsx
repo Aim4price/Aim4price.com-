@@ -15,7 +15,7 @@ export default function SharedEnquiryLanding({ returnTo, access, summary, prompt
   const [open, setOpen] = useState(prompt);
   const titleId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
-  const allowed = ['owner', 'active', 'read-only'].includes(access);
+  const allowed = ['owner', 'active', 'read-only', 'guest-view'].includes(access);
   const contents = <>
     <span className={styles.actionIcon} aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M4 9a2 2 0 0 1 2-2h7l3 3h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="m12 21 8-8m-7 0h7v7"/></svg></span>
     <strong>Open enquiry</strong><span className={styles.actionHint}>View the shared asset details</span>

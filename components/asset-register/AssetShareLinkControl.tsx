@@ -55,7 +55,7 @@ export default function AssetShareLinkControl({ assetIds, includePhotos, onChang
     finally { setBusy(false); }
   }
   return <section className={styles.panel} aria-label="Asset page link">
-    <div><h4>Asset page link</h4><p>A live, read-only asset page. Recipients sign in to view the latest saved information. You can revoke access at any time.</p><p>{includePhotos ? 'Includes the selected asset photos.' : 'Asset details only. Turn on Include photos to add photos.'} Reports remain separate attachments.</p></div>
+    <div><h4>Asset page link</h4><p>A live, read-only asset page. Anyone with the link can view the latest saved information. You can revoke access at any time.</p><p>{includePhotos ? 'Includes the selected asset photos.' : 'Asset details only. Turn on Include photos to add photos.'} Reports remain separate attachments.</p></div>
     <ShareDisclaimer publicLink accepted={accepted} onChange={value => { setAccepted(value); if (!value) { setIncluded(false); onChange(''); } }} disabled={busy}/>
     {token ? <>
       <label className={styles.toggle}><input type="checkbox" checked={included} disabled={busy || !accepted} onChange={event => { setIncluded(event.target.checked); onChange(event.target.checked ? url : ''); }} />Include link in message</label>

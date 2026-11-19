@@ -114,7 +114,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
         />}
         {!link && step === 'recipient' && <form className={styles.form} onSubmit={e=>{e.preventDefault();void prepare();}}>
           <fieldset disabled={busy}>
-            <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink disclosure={`Anyone with this link can view the selected asset details and included photos after ${protectLink ? 'entering the password and ' : ''}signing in. The link can be forwarded. Reports keep their separate access restrictions.`} />
+            <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink disclosure={`Anyone with this link can view the selected asset details and included photos${protectLink ? ' after entering the password' : ''}. Sign-in is required for additional actions. The link can be forwarded. Reports keep their separate access restrictions.`} />
             <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setStep('password');setAccepted(false);}}>Back</button><button className={styles.primary} disabled={!accepted || busy}>{busy ? 'Preparing enquiry…' : sendLink ? 'Create asset link' : 'Create invitation link'}</button></div>
           </fieldset>
         </form>}
@@ -122,7 +122,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
 
         {error && <p role="alert">{error}</p>}
         {link && <>
-        <ShareLinkDelivery linkLabel={sendLink?"Asset link":"Business invitation link"} copiedMessage={sendLink?"Asset link copied.":"Invitation link copied."} descriptionId={descriptionId} link={link} copy={copy} description={`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`} hint={`Choose the recipient in WhatsApp or your email app. ${protectLink?'Enter the password before signing in. Send it separately. ':''}Anyone with this link can view the assets and use the permissions you selected. New free accounts verify their email once. You can revoke the link in History.`} previewLabel="Preview enquiry" />
+        <ShareLinkDelivery linkLabel={sendLink?"Asset link":"Business invitation link"} copiedMessage={sendLink?"Asset link copied.":"Invitation link copied."} descriptionId={descriptionId} link={link} copy={copy} description={`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`} hint={`Choose the recipient in WhatsApp or your email app. ${protectLink?'Send the link password separately. ':''}Anyone with this link can view the assets. Recipients sign in to use the permissions you selected. New free accounts verify their email once. You can revoke the link in History.`} previewLabel="Preview enquiry" />
         </>}
       </Dialog>}
   </>;

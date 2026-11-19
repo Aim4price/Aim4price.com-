@@ -7,7 +7,7 @@ export default function ShareDisclaimer({accepted, onChange, disabled = false, p
   return <div className={styles.notice}>
     {!ownerApproval && <strong>Before you share</strong>}
     <p>{disclosure || (publicLink
-      ? 'Anyone with this link can view the selected asset details and included photos after signing in, and can forward the link. Any contact details you choose to include will also be visible. Reports keep their separate access restrictions.'
+      ? 'Anyone with this link can view the selected asset details and included photos, and can forward the link. Any contact details you choose to include will also be visible. Reports keep their separate access restrictions.'
       : 'The recipient can view the latest saved asset details and any photos or reports you include. They may save or forward this information.')}</p>
     <p>Only share information you have permission to disclose. Check your selection and recipient before continuing. Sharing does not create a sales, finance, insurance or service agreement. Disabling access later cannot remove copies already saved.</p>
     {ownerApproval && <p>Reports and selected actions stay locked until the recipient signs in with a verified account and you approve their access request. Updates and documents are sent for your review.</p>}

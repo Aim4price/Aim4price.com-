@@ -141,3 +141,22 @@ test('free Business login defaults to Shared enquiries while preserving explicit
  await assert.rejects(page.default({}),{message:'/business'});
  await assert.rejects(page.default({searchParams:{returnTo:'/asset-share/'+token+'?open=1'}}),{message:'/asset-share/'+token+'?open=1'});
 });
+
+test('guests can browse standard links while recipient and approval restrictions still apply', async()=>{
+ for(const [details,publicView] of [
+  [null,true],[{accessMode:'signed-in',permissions:{}},true],
+  [{accessMode:'owner-approval'},false],[{accessMode:'signed-in',recipientUserId:'invited'},false],
+  [{recipientWhatsApp:'+27111111111'},false],[{recipientEmail:'invited@example.test'},false],
+ ]) {
+  const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/guest-leads':{readLeadPage:async()=>({...lead,details})}});
+  const landing=await page.default({params:{token}});
+  assert.equal(landing.props.children[1].props.access,publicView?'guest-view':'sign-in');
+  const opened=await page.default({params:{token},searchParams:{open:'1'}});
+  if(publicView){
+   const cards=opened.props.children[2];
+   assert.equal(cards.props.share,lead.share);
+   assert.equal(opened.props.children[1],false);
+   if(details){assert.equal(cards.props.enquiry.access,'sign-in');assert.deepEqual(cards.props.enquiry.reports,[]);}
+  }else{assert.equal(opened.props.children[1].type,'Landing');}
+ }
+});
