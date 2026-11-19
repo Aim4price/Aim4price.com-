@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       }
       umbrella = { id: group.id, name: group.name };
     }
-    const share = await createAssetShareLink(userId, body.assetIds, body.includePhotos === true, umbrella);
+    const share = await createAssetShareLink(userId, body.assetIds, body.includePhotos === true, umbrella, Object.prototype.hasOwnProperty.call(body,'password') ? body.password : undefined);
     return respond({ share });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_SHARE_FORBIDDEN') return respond({ error: 'Only assets owned by your account can be shared by link.' }, 403);

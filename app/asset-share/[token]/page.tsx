@@ -7,6 +7,8 @@ import { readLeadPage } from '../../../lib/guest-leads';
 import { externalLeadAccess, leadAllows } from '../../../lib/external-lead-access';
 import SharedEnquiryRequest from '../../../components/asset-register/SharedEnquiryRequest';
 import SharedAssetCards from '../../../components/asset-register/SharedAssetCards';
+import SharedAssetPasswordGate from '../../../components/SharedAssetPasswordGate';
+import { getAssetSharePasswordState } from '../../../lib/asset-share-links';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -15,8 +17,11 @@ export const metadata: Metadata = {
   referrer: 'no-referrer',
 };
 export default async function AssetSharePage({ params, searchParams }: { params: { token: string }; searchParams?: { from?: string | string[]; open?: string | string[] } }) {
-  const lead = await readLeadPage(params.token);
   const header = <Suspense fallback={null}><AppHeader active="none" /></Suspense>;
+  if (!/^[A-Za-z0-9_-]{43}$/.test(params.token)) return <>{header}<SharedAssetCards share={null}/></>;
+  const passwordState = await getAssetSharePasswordState(params.token);
+  if (passwordState.exists && passwordState.protected && !passwordState.unlocked) return <><Suspense fallback={null}><AppHeader active="none" /></Suspense><SharedAssetPasswordGate token={params.token}/></>;
+  const lead = await readLeadPage(params.token);
   if (!lead) return <>{header}<SharedAssetCards share={null}/></>;
   const {share,details,reports}=lead;
   const {access}=await externalLeadAccess(lead);

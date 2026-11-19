@@ -103,6 +103,7 @@ export default function Validation(){
   assert.ok(cards.every(c=>Math.abs(c.width-cards[0].width)<1&&Math.abs(c.y-cards[0].y)<1));
   await page.screenshot({path:path.join(output,'send-link-options.png')});
   await click('Copy link');await click('Choose permissions');await click('Continue view only');
+  await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
   assert.equal(await page.$eval('dialog button[type="submit"], dialog button:not([type])',b=>b.disabled),true);
   await page.click('dialog input[type="checkbox"]');await click('Create asset link');
@@ -202,6 +203,7 @@ export default function Validation(){
    const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
    await click('Continue view only');
+   await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
@@ -234,6 +236,7 @@ export default function Validation(){
    assert.deepEqual(overflowingTitles,[], 'Permission titles fit one line without clipping');
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
    await click('Continue');
+   await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$('dialog input[type=email]'),null);
    assert.equal(await page.$('dialog input[type=file]'),null);
@@ -247,6 +250,7 @@ export default function Validation(){
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
    await click('Continue view only');
+   await click('Continue');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');

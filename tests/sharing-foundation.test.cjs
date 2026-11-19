@@ -108,7 +108,7 @@ test('History deletion is owner-only, requires revocation and keeps the revoked 
  const active='a'.repeat(43),revoked='r'.repeat(43),foreign='f'.repeat(43),assetId='10000000-0000-4000-8000-000000000001';
  let session={user:{id:'owner'}};let allowed=true;
  try {
-  await pg.exec('CREATE TABLE asset_share_links(token text PRIMARY KEY,user_id text,revoked_at timestamptz,created_at timestamptz DEFAULT now(),asset_ids uuid[],umbrella_id uuid,umbrella_name text,lead_details jsonb);');
+  await pg.exec('CREATE TABLE asset_share_links(token text PRIMARY KEY,user_id text,revoked_at timestamptz,created_at timestamptz DEFAULT now(),asset_ids uuid[],umbrella_id uuid,umbrella_name text,lead_details jsonb,password_hash text);');
   const migration=fs.readFileSync('database/migrations/124-share-history-removal.sql','utf8');await pg.exec(migration);await pg.exec(migration);
   for(const [token,owner,isRevoked] of [[active,'owner',false],[revoked,'owner',true],[foreign,'other',true]])await pg.query('INSERT INTO asset_share_links(token,user_id,revoked_at,asset_ids) VALUES($1,$2,$3,$4)',[token,owner,isRevoked?new Date():null,[assetId]]);
   const route=load('app/api/asset-share-links/history/route.ts',{
@@ -119,6 +119,7 @@ test('History deletion is owner-only, requires revocation and keeps the revoked 
    '../../../../lib/db':{getDb:()=>pg},
    '../../../../lib/asset-share-snapshot':{parseShareAssetIds:ids=>ids},
    '../../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.com')throw Error('Origin');},businessBody:r=>r.json()},
+   '../../../../lib/asset-share-links':{hashAssetSharePassword:async value=>value?`test-hash:${value}`:null},
   });
   const remove=(token,origin='https://aim4price.com')=>route.DELETE(new NextRequest('https://aim4price.com/api/asset-share-links/history',{method:'DELETE',headers:{origin,'content-type':'application/json'},body:JSON.stringify({token})}));
   session=null;assert.equal((await remove(revoked)).status,403);session={user:{id:'owner'}};

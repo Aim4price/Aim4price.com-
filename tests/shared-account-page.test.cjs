@@ -8,9 +8,12 @@ const mocks={
  '../../../components/SharedEnquiryLive':{default:'Live'},
  '../../../components/SharedEnquiryLanding':{default:'Landing'},
  '../../../components/AppHeader':{default:'Header'},
+ '../../../components/SharedAssetPasswordGate':{default:'PasswordGate'},
  '../../../components/asset-register/SharedEnquiryRequest':{default:'Request'},
  '../../../components/asset-register/SharedAssetCards':{default:'AssetCards'},
+ '../../../lib/external-lead-access':{externalLeadAccess:async()=>({access:'sign-in'}),leadAllows:()=>true},
  '../../../lib/guest-leads':{readLeadPage:async()=>lead},
+ '../../../lib/asset-share-links':{getAssetSharePasswordState:async()=>({exists:false,protected:false,unlocked:true})},
  './page.module.css':{},
 };
 test('protected enquiry page keeps asset data behind access checks and shows the landing before opening',async()=>{
@@ -43,6 +46,19 @@ test('umbrella landing identifies the group without serializing the member recor
  const output=await page.default({params:{token}});
  assert.deepEqual(output.props.children[1].props.summary,{senderName:'Private sender',umbrellaName:'Vehicles',assetCount:1,assetTitles:[]});
  assert.ok(!JSON.stringify(output).includes('PRIVATE-SERIAL'));
+});
+
+test('malformed asset share tokens stop before password or database checks',async()=>{
+ let passwordChecks=0,leadReads=0;
+ const page=load('app/asset-share/[token]/page.tsx',{...mocks,
+  '../../../lib/asset-share-links':{getAssetSharePasswordState:async()=>{passwordChecks++;return{exists:false,protected:false,unlocked:true};}},
+  '../../../lib/guest-leads':{readLeadPage:async()=>{leadReads++;return null;}},
+ });
+ const output=await page.default({params:{token:'invalid'}});
+ assert.equal(output.props.children[1].type,'AssetCards');
+ assert.equal(output.props.children[1].props.share,null);
+ assert.equal(passwordChecks,0);
+ assert.equal(leadReads,0);
 });
 
 test('signed-in free Dealers return to their enquiry or hub instead of the unpaid-account screen',async()=>{

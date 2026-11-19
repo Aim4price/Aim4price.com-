@@ -16,13 +16,16 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
   const titleId = useId();
   const descriptionId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
-  const [step, setStep] = useState<'permissions'|'recipient'>('permissions');
+  const [step, setStep] = useState<'permissions'|'password'|'recipient'>('permissions');
   const [permissions, setPermissions] = useState<ExternalSharePermissions>(assetLinkPermissions());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const opening = useRef(false);
   const [selection, setSelection] = useState<{assetIds: string[]; includePhotos: boolean; umbrellaId?: string} | null>(sendLink ? {assetIds: [...assetIds], includePhotos:true, umbrellaId} : null);
   const [accepted, setAccepted] = useState(false);
+  const [protectLink, setProtectLink] = useState(false);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const requestVersion = useRef(0);
   useEffect(() => () => { requestVersion.current++; }, []);
   const [senderName, setSenderName] = useState('');
@@ -36,12 +39,12 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
     if (!assetIds.length) { setError('Select the assets you want to include in this enquiry.'); return; }
     setSelection({assetIds: [...assetIds], includePhotos:true, ...(umbrellaId ? { umbrellaId } : {})});
     setStep('permissions'); setPermissions(assetLinkPermissions());
-    setAccepted(false); setLink(''); setError('');
+    setAccepted(false); setLink(''); setProtectLink(false); setPassword(''); setError('');
   }
 
   function close() {
     if (busy) return;
-    if (step === 'recipient' && !link) { setStep('permissions'); return; }
+    if (step === 'recipient' && !link) { setStep('password'); return; }
     requestVersion.current++;
     setSelection(null); setLink(''); setAccepted(false);
     opening.current = false; setBusy(false);
@@ -65,6 +68,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
         form.set('includePhotos', String(selection.includePhotos));
         if (selection.umbrellaId) form.set('umbrellaId', selection.umbrellaId);
         form.set('details', JSON.stringify({ accessMode: 'signed-in', recipientName: '', recipientEmail: '', request: 'Please open the shared assets.', replyPhone: '', allowReply: false, permissions }));
+        form.set('password', protectLink ? password : '');
         response = await fetch('/api/asset-share-links/leads', { method: 'POST', body: form });
       }
       const data = await response.json();
@@ -77,15 +81,18 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
     } finally { if (version === requestVersion.current) { opening.current = false; setBusy(false); } }
   }
 
-  const Dialog = !link && step === 'permissions' ? AssetAccessSettingsDialog : ShareDisclosureDialog;
+  const Dialog = !link && step !== 'recipient' ? AssetAccessSettingsDialog : ShareDisclosureDialog;
   return <>
     {!sendLink && <button ref={trigger} type="button" className={styles.trigger} aria-haspopup="dialog" disabled={busy} onClick={() => void open()}>
       <span>{busy ? 'Preparing enquiry…' : 'Business not listed?'}</span><span aria-hidden="true">+</span>
     </button>}
     {error && !selection && <p role="alert">{error}</p>}
-    {selection && <Dialog linkSettings onViewOnly={()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setAccepted(false);setStep('recipient');}} assetTitle={reportUmbrellaName || (selection.assetIds.length===1 ? reportAssets.find(asset=>asset.id===selection.assetIds[0])?.title || 'Selected asset' : `${selection.assetIds.length} selected assets`)} className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Asset link settings" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close} footer={!link && step === 'permissions' ? (<div data-access-actions className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
-            <button type="button" className={assetStyles.secondaryButton} onClick={()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setStep('recipient');}}>Continue view only</button>
-            <button type="button" className={assetStyles.primaryButton} onClick={()=>setStep('recipient')}>Continue</button>
+    {selection && <Dialog linkSettings onViewOnly={step==='permissions'?()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setAccepted(false);setStep('password');}:undefined} assetTitle={reportUmbrellaName || (selection.assetIds.length===1 ? reportAssets.find(asset=>asset.id===selection.assetIds[0])?.title || 'Selected asset' : `${selection.assetIds.length} selected assets`)} className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Asset link settings" : step === 'password' ? "Protect your asset link" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close} footer={!link && step === 'permissions' ? (<div data-access-actions className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
+            <button type="button" className={assetStyles.secondaryButton} onClick={()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setStep('password');}}>Continue view only</button>
+            <button type="button" className={assetStyles.primaryButton} onClick={()=>setStep('password')}>Continue</button>
+          </div>) : !link && step === 'password' ? (<div data-access-actions className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
+            <button type="button" className={assetStyles.secondaryButton} onClick={()=>{setStep('permissions');setAccepted(false);}}>Back</button>
+            <button type="button" className={assetStyles.primaryButton} disabled={protectLink && password.length < 8} onClick={()=>setStep('recipient')}>Continue</button>
           </div>) : undefined}>
         {!link && step === 'permissions' && <>
           <DealerMaintenancePermissionPicker
@@ -95,17 +102,25 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
           />
 
         </>}
+        {!link && step === 'password' && <div className={styles.passwordSlide}>
+          <p>Would you like to add a password?</p>
+          <div className={styles.passwordChoices} role="group" aria-label="Asset link password protection">
+            <button type="button" aria-pressed={!protectLink} onClick={()=>{setProtectLink(false);setPassword('');setAccepted(false);}}><span className={styles.passwordChoiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span><span><strong>No password</strong><small>Recipients sign in to open the shared assets.</small></span></button>
+            <button type="button" aria-pressed={protectLink} onClick={()=>{setProtectLink(true);setAccepted(false);}}><span className={styles.passwordChoiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></svg></span><span><strong>Add a password</strong><small>Recipients enter your password before signing in.</small></span></button>
+          </div>
+          {protectLink && <div className={styles.passwordInputPanel}><label htmlFor={`${titleId}-link-password`}>Link password</label><div><input id={`${titleId}-link-password`} type={showPassword?'text':'password'} autoComplete="new-password" maxLength={128} value={password} onChange={event=>{setPassword(event.target.value);setAccepted(false);}} placeholder="At least 8 characters"/><button type="button" aria-label={showPassword?'Hide password':'Show password'} aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></button></div><small>{password.length>0&&password.length<8?'Use at least 8 characters.':'Send the password separately.'}</small></div>}
+        </div>}
         {!link && step === 'recipient' && <form className={styles.form} onSubmit={e=>{e.preventDefault();void prepare();}}>
           <fieldset disabled={busy}>
-            <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink />
-            <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setStep('permissions');setAccepted(false);}}>Back</button><button className={styles.primary} disabled={!accepted || busy}>{busy ? 'Preparing enquiry…' : sendLink ? 'Create asset link' : 'Create invitation link'}</button></div>
+            <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink disclosure={`Anyone with this link can view the selected asset details and included photos after ${protectLink ? 'entering the password and ' : ''}signing in. The link can be forwarded. Reports keep their separate access restrictions.`} />
+            <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setStep('password');setAccepted(false);}}>Back</button><button className={styles.primary} disabled={!accepted || busy}>{busy ? 'Preparing enquiry…' : sendLink ? 'Create asset link' : 'Create invitation link'}</button></div>
           </fieldset>
         </form>}
 
 
         {error && <p role="alert">{error}</p>}
         {link && <>
-        <ShareLinkDelivery linkLabel={sendLink?"Asset link":"Business invitation link"} copiedMessage={sendLink?"Asset link copied.":"Invitation link copied."} descriptionId={descriptionId} link={link} copy={copy} description={`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`} hint="Choose the recipient in WhatsApp or your email app. Anyone with this link can sign in to view the assets and use the permissions you selected. New free accounts verify their email once. You can revoke the link in History." previewLabel="Preview enquiry" />
+        <ShareLinkDelivery linkLabel={sendLink?"Asset link":"Business invitation link"} copiedMessage={sendLink?"Asset link copied.":"Invitation link copied."} descriptionId={descriptionId} link={link} copy={copy} description={`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`} hint={`Choose the recipient in WhatsApp or your email app. ${protectLink?'Enter the password before signing in. Send it separately. ':''}Anyone with this link can view the assets and use the permissions you selected. New free accounts verify their email once. You can revoke the link in History.`} previewLabel="Preview enquiry" />
         </>}
       </Dialog>}
   </>;
