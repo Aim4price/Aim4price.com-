@@ -292,6 +292,21 @@
 .dialog.compactDialog .footer { margin:0; padding:1rem 0 0; background:transparent; }
 .dialog.compactDialog .footer [data-access-actions] { justify-content:space-between; }
 
+/* Align the password choices, field and footer with the header. */
+.dialog.guideDialog .body.body.body:has([data-link-password-choices]) {
+  align-self: stretch;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 -.5rem;
+  padding: 1.25rem .5rem !important;
+  scrollbar-gutter: auto !important;
+}
+.dialog.guideDialog:has([data-link-password-choices]) .footer {
+  margin: 0;
+  padding: 1rem 0 0;
+  background: transparent;
+}
+
 /* Tracking is a sequence of short screens; retain overflow access only for
    unusually short viewports, without drawing nested scrollbar chrome. */
 .dialog:has([data-tracking-options], [data-tracker-setup]) { width:min(var(--website-dialog-reference-width,100%),64rem) !important; }
