@@ -41,6 +41,9 @@
 .accessActions > div > button { width:100%; min-height:2.75rem; border-color:transparent; background:transparent; box-shadow:none; white-space:nowrap; }
 
 
+[role="dialog"]:has(.accountChoices) {
+ width:min(68rem,var(--website-dialog-reference-width,100%));
+}
 .dialog.dialog:has(.accountChoices) {
  width:min(68rem,calc(var(--website-design-vw,1vw) * 100 - 3rem));
  padding:clamp(1.25rem,calc(var(--website-design-vw,1vw) * 2.75),2.5rem);
