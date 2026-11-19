@@ -153,6 +153,16 @@ export default function Validation(){
   assert.equal(Object.hasOwn(historyWrites().at(-1),'password'),false);
   await edit(true);
   await click('Next');
+  for(const width of [390,1024,1440,1920]) {
+    await page.setViewport({width,height:900});
+    const overflowing=await page.$$eval('[data-link-password-choices] button > :is(strong,span:last-child)',nodes=>nodes.filter(node=>{
+      const range=document.createRange();
+      range.selectNodeContents(node);
+      return range.getClientRects().length!==1 || range.getBoundingClientRect().right>node.parentElement.getBoundingClientRect().right;
+    }).map(node=>node.textContent));
+    assert.deepEqual(overflowing,[],`Password choices fit at ${width}px`);
+  }
+  await page.setViewport({width:1440,height:900});
   await click('Keep current password');
   await save();
   assert.equal(Object.hasOwn(historyWrites().at(-1),'password'),false);
