@@ -173,15 +173,60 @@ function formatDate(value: string | null): string {
   }).format(parsed);
 }
 
-function formatUsage(asset: AdminGlobalAsset): string {
-  if (asset.hours !== null) {
-    const unit = asset.usageMetric === "km" || asset.kind === "vehicle" ? "km" : "hours";
-    return `${new Intl.NumberFormat("en-ZA").format(asset.hours)} ${unit}`;
+function AssetPhotos({ asset }: { asset: AdminGlobalAsset }) {
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [index, setIndex] = useState(0);
+  const [imageFailed, setImageFailed] = useState(false);
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => () => request.current?.abort(), []);
+
+  async function loadPhotos() {
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
+    setStatus("loading");
+    setImageFailed(false);
+    try {
+      const query = new URLSearchParams({ assetId: asset.id, ownerId: asset.ownerUserId });
+      const response = await fetch(`/api/admin/asset-map/photos?${query}`, {
+        signal: controller.signal, cache: "no-store",
+      });
+      if (!response.ok) throw new Error("Photo request failed");
+      const data = await response.json();
+      if (!Array.isArray(data.photos)) throw new Error("Invalid photo list");
+      if (controller.signal.aborted) return;
+      setPhotos(data.photos);
+      setIndex(0);
+      setStatus("ready");
+    } catch {
+      if (!controller.signal.aborted) setStatus("error");
+    }
   }
-  if (asset.lifeWorkedPercent !== null) {
-    return `${Math.round(asset.lifeWorkedPercent * 10) / 10}% worked`;
+
+  function showPhoto(next: number) {
+    setImageFailed(false);
+    setIndex(next);
   }
-  return "Usage not saved";
+
+  return <section className={styles.photos} aria-label="Asset photos">
+    {status === "ready" && photos.length > 0 ? <>
+      {imageFailed ? <p role="status">This photo could not be displayed.</p> :
+        <img key={photos[index]} src={photos[index]} alt={`${asset.title}, photo ${index + 1}`}
+          referrerPolicy="no-referrer" onError={() => setImageFailed(true)} />}
+      <div className={styles.photoControls}>
+        {photos.length > 1 && <button type="button" disabled={index === 0} onClick={() => showPhoto(index - 1)}>Previous</button>}
+        <span aria-live="polite">Photo {index + 1} of {photos.length}</span>
+        {photos.length > 1 && <button type="button" disabled={index === photos.length - 1} onClick={() => showPhoto(index + 1)}>Next</button>}
+        {imageFailed && <button type="button" onClick={() => setImageFailed(false)}>Retry photo</button>}
+      </div>
+    </> : status === "ready" ? <p role="status">No photos saved for this asset.</p> : <>
+      {status === "error" && <p role="status">Photos could not be loaded.</p>}
+      <button type="button" disabled={status === "loading"} onClick={() => void loadPhotos()}>
+        {status === "loading" ? "Loading photos…" : status === "error" ? "Retry loading photos" : "Load photos"}
+      </button>
+    </>}
+  </section>;
 }
 
 function assetSearchText(asset: AdminGlobalAsset): string {
@@ -705,11 +750,12 @@ export default function AdminAssetMapClient({
                     <span><small>Value</small><strong>{formatAdminAssetValue(selectedAsset)}</strong></span>
                     <span><small>Serial / VIN</small><strong>{selectedAsset.serialNumber || "Not saved"}</strong></span>
                     <span><small>Registration</small><strong>{selectedAsset.registrationNumber || "Not saved"}</strong></span>
-                    <span><small>Usage</small><strong>{formatUsage(selectedAsset)}</strong></span>
+                    <span><small>Usage</small><strong>{selectedAsset.usageLabel}</strong></span>
                     <span><small>Last scanned</small><strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong></span>
                     <span><small>Lifecycle</small><strong>{titleCase(selectedAsset.lifecycleState)}</strong></span>
                   </div>
                 </details>
+                <AssetPhotos key={selectedAsset.id} asset={selectedAsset} />
                 <section className={styles.ownerContact}>
                   <strong>Owner</strong>
                   <span>{selectedAsset.owner.name || selectedAsset.owner.label}</span>
