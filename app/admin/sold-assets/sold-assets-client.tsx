@@ -9,6 +9,8 @@ import type {
   AdminAssetOutcomesReport,
   AdminAssetOutcomeRow,
 } from '../../../lib/admin-asset-sales';
+import { SalesDownload, useOutcomeSelection } from './sales-download';
+import { registerRow } from '../../../lib/outcome-sales-report';
 import styles from './page.module.css';
 
 const PAGE_SIZE = 25;
@@ -126,12 +128,20 @@ export default function SoldAssetsClient({
   report: AdminAssetOutcomesReport;
   allocationAccounts: AdminAssetAllocationAccount[];
 }) {
+  const selection = useOutcomeSelection();
+  const [owner, setOwner] = useState('');
+  const owners = useMemo(() => new Map(report.outcomes.map(row=>[row.sourceUserId,row.sourceName])), [report.outcomes]);
   const [search, setSearch] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>('all');
   const [influenceFilter, setInfluenceFilter] = useState<InfluenceFilter>('all');
   const [transferFilter, setTransferFilter] = useState<TransferFilter>('all');
   const [sort, setSort] = useState<OutcomeSort>('latest');
   const [page, setPage] = useState(1);
+  function resetSelectionAndPage() {
+    selection.clear();
+    setPage(1);
+  }
+
   const [actionDialog, setActionDialog] = useState<ActionDialog>(null);
   const [accountSearch, setAccountSearch] = useState('');
   const [selectedBuyerUserId, setSelectedBuyerUserId] = useState('');
@@ -145,6 +155,7 @@ export default function SoldAssetsClient({
     const term = search.replace(/\s+/g, ' ').trim().toLocaleLowerCase('en-ZA');
     return report.outcomes
       .filter((record) => {
+        if (owner && record.sourceUserId !== owner) return false;
         if (outcomeFilter !== 'all' && record.outcome !== outcomeFilter) return false;
         if (influenceFilter !== 'all' && record.aim4priceInfluence !== influenceFilter) return false;
         if (transferFilter !== 'all' && record.transferStatus !== transferFilter) return false;
@@ -182,6 +193,7 @@ export default function SoldAssetsClient({
         return dateTime(right.outcomeDate) - dateTime(left.outcomeDate);
       });
   }, [
+    owner,
     influenceFilter,
     outcomeFilter,
     report.outcomes,
@@ -196,7 +208,7 @@ export default function SoldAssetsClient({
   const pageStart = rows.length ? (currentPage - 1) * PAGE_SIZE : 0;
   const pageEnd = Math.min(pageStart + PAGE_SIZE, rows.length);
   const pageRows = rows.slice(pageStart, pageEnd);
-  const filtersActive = Boolean(search.trim())
+  const filtersActive = Boolean(owner || search.trim())
     || outcomeFilter !== 'all'
     || influenceFilter !== 'all'
     || transferFilter !== 'all'
@@ -239,12 +251,13 @@ export default function SoldAssetsClient({
   }
 
   function clearFilters() {
+    setOwner('');
     setSearch('');
     setOutcomeFilter('all');
     setInfluenceFilter('all');
     setTransferFilter('all');
     setSort('latest');
-    setPage(1);
+    resetSelectionAndPage();
   }
 
   async function submitAction() {
@@ -324,6 +337,8 @@ export default function SoldAssetsClient({
 
   return (
     <>
+      <SalesDownload rows={rows.map(registerRow)} selected={selection.ids} owners={owners} owner={owner}
+        source="assets" changeOwner={id => { setOwner(id); resetSelectionAndPage(); }} />
       <section className={styles.metrics} aria-label="Asset register outcome summary">
         <article className={styles.featuredMetric}>
           <span>Outcomes</span>
@@ -369,7 +384,7 @@ export default function SoldAssetsClient({
                   value={search}
                   onChange={(event) => {
                     setSearch(event.target.value);
-                    setPage(1);
+                    resetSelectionAndPage();
                   }}
                   placeholder="Asset, account or reference"
                 />
@@ -380,7 +395,7 @@ export default function SoldAssetsClient({
                   value={outcomeFilter}
                   onChange={(event) => {
                     setOutcomeFilter(event.target.value as OutcomeFilter);
-                    setPage(1);
+                    resetSelectionAndPage();
                   }}
                 >
                   <option value="all">All outcomes</option>
@@ -395,7 +410,7 @@ export default function SoldAssetsClient({
                   value={influenceFilter}
                   onChange={(event) => {
                     setInfluenceFilter(event.target.value as InfluenceFilter);
-                    setPage(1);
+                    resetSelectionAndPage();
                   }}
                 >
                   <option value="all">All answers</option>
@@ -411,7 +426,7 @@ export default function SoldAssetsClient({
                   value={transferFilter}
                   onChange={(event) => {
                     setTransferFilter(event.target.value as TransferFilter);
-                    setPage(1);
+                    resetSelectionAndPage();
                   }}
                 >
                   <option value="all">All statuses</option>
@@ -428,7 +443,7 @@ export default function SoldAssetsClient({
                   value={sort}
                   onChange={(event) => {
                     setSort(event.target.value as OutcomeSort);
-                    setPage(1);
+                    resetSelectionAndPage();
                   }}
                 >
                   <option value="latest">Latest</option>
@@ -450,6 +465,10 @@ export default function SoldAssetsClient({
             <table aria-label="Asset register outcomes">
               <thead>
                 <tr>
+                  <th className={styles.pickCell}><input type="checkbox" aria-label="Select all matching outcomes"
+                    checked={rows.length > 0 && selection.ids.size === rows.length}
+                    ref={node => { if (node) node.indeterminate = selection.ids.size > 0 && selection.ids.size < rows.length; }}
+                    onChange={e => selection.select(e.target.checked ? rows.map(row => row.id) : [])} /></th>
                   <th>Asset</th>
                   <th>Outcome</th>
                   <th>Value</th>
@@ -462,7 +481,9 @@ export default function SoldAssetsClient({
                 {pageRows.map((record) => {
                   const alreadyMoved = record.transferStatus === 'claimed';
                   return (
-                    <tr key={record.id}>
+                    <tr key={record.id} data-picked={selection.ids.has(record.id)}>
+                    <td className={styles.pickCell}><input type="checkbox" aria-label={`Select ${record.assetTitle}`}
+                      checked={selection.ids.has(record.id)} onChange={()=>selection.toggle(record.id)} /></td>
                       <td className={styles.assetCell}>
                         <button
                           type="button"

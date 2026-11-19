@@ -148,7 +148,7 @@ export async function getAdminAssetOutcomesReport(): Promise<AdminAssetOutcomesR
      where event.event_type = 'disposed'
        and event.reason in ('sold', 'traded_in', 'scrapped')
      order by event.effective_date desc, event.created_at desc
-     limit 5000`,
+`,
   );
 
   const outcomes = result.rows.map<AdminAssetOutcomeRow>((row) => {
