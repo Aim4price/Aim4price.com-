@@ -39,13 +39,13 @@ export default function ShareLinkPasswordStep({ choice, onChoiceChange, password
   const choices: LinkPasswordChoice[] = protectedLink ? ['keep', 'set', 'remove'] : ['none', 'set'];
 
   const partsDescriptions = {
-    none: partsAudience === 'business' ? 'Your chosen business signs in to view parts.' : 'Anyone with the link can view parts.',
-    set: 'Enter a password to view parts.',
-    keep: options.keep.description,
-    remove: 'View parts without a link password.',
+    none: partsAudience === 'business' ? 'Invited business signs in.' : 'Open with the link.',
+    set: protectedLink ? 'Set a new password.' : 'Require a password.',
+    keep: 'Use the same password.',
+    remove: 'Open without a password.',
   };
-  return <div className={`${layout.guideBody} ${styles.passwordSlide}`}>
-    <p className={layout.guideHeading}>{protectedLink ? 'How would you like to protect this link?' : 'Would you like to add a password?'}</p>
+  return <div data-parts-password={partsAudience || undefined} className={`${layout.guideBody} ${styles.passwordSlide}`}>
+    <p className={layout.guideHeading}>{partsAudience ? 'Password options' : protectedLink ? 'How would you like to protect this link?' : 'Would you like to add a password?'}</p>
     <div className={layout.accessChoices} data-link-password-choices role="group" aria-label={partsAudience ? "Parts link password protection" : "Asset link password protection"}>
       {choices.map(option => <button key={option} type="button" className={`${layout.accessChoice} ${option === 'set' ? layout.permissionsChoice : layout.viewChoice}`} disabled={disabled} aria-pressed={choice === option} onClick={() => {
         setShowPassword(false);
