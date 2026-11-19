@@ -1,3 +1,5 @@
+import { planAssetOptionsCsv } from './asset-options-csv';
+import type { PoolClient } from 'pg';
 import { randomUUID } from 'node:crypto';
 import { getDb, withDatabaseClient } from './db';
 import { basicCatalogueEnabled, listBasicCatalogueFamilies } from './basic-catalogue';
@@ -55,49 +57,87 @@ export class OptionError extends Error {
   constructor(message: string, readonly status = 400) { super(message); }
 }
 
-export async function saveAssetOption(input: AssetOption) {
+function validateOption(input: AssetOption, current: AssetOption | undefined, options: AssetOption[]) {
   const label = typeof input?.label === 'string' ? input.label.trim() : '';
   if (!label || label.length > 120 || !isSectorKey(input.sector) ||
       !['basic','advanced','both'].includes(input.mode) || typeof input.archived !== 'boolean' ||
       typeof input.id !== 'string' || !Number.isInteger(input.version))
     throw new OptionError('Enter an asset name, sector and estimate type.');
+  if ((input.id && !current) || (current?.version ?? 0) !== input.version)
+    throw new OptionError('This option changed. Reload the page to see the latest version.', 409);
+  if (input.id.startsWith('basic/') && input.mode !== 'basic')
+    throw new OptionError('This family uses the Basic catalogue. Choose Basic.');
+  const originalSector = current?.id.split('/')[1];
+  if (input.mode !== 'basic' && (input.sector === 'motor' || originalSector === 'motor') &&
+      (!current || originalSector !== input.sector || current.id.includes('/custom_')))
+    throw new OptionError('Advanced Motor uses the model catalogue. Choose Basic for this option.');
+  if (!input.archived && options.some(row => (!input.id || row.id !== input.id) && !row.archived && row.sector === input.sector &&
+      row.label.toLowerCase() === label.toLowerCase() && (row.mode === input.mode || row.mode === 'both' || input.mode === 'both')))
+    throw new OptionError('An option with this name already exists in this sector and estimate type.');
+}
+
+async function writeOption(client: PoolClient, input: AssetOption) {
+  const label = input.label.trim();
+  let id = input.id;
+  if (!id) {
+    const key = 'custom_' + randomUUID().replaceAll('-', '');
+    const inserted = await client.query(`insert into public.equipment_families
+      (sector_id,family_key,family_label,is_propelled,usage_metric_type,valuation_mode,catalog_mode,sort_order,is_active)
+      select id,$2,$3,false,'wear_class','percent_used','generic_specs',999,true from public.sectors where sector_key=$1`,
+      [input.sector, key, label]);
+    if (!inserted.rowCount) throw new OptionError('Sector unavailable.');
+    id = ['public',input.sector,key].join('/');
+  }
+  const { rows } = await client.query<AssetOption>(`insert into public.valuation_asset_options
+    (id,label,sector,mode,archived,version) values ($1,$2,$3,$4,$5,1)
+    on conflict (id) do update set label=excluded.label, sector=excluded.sector, mode=excluded.mode,
+    archived=excluded.archived, version=valuation_asset_options.version+1 returning *`,
+    [id,label,input.sector,input.mode,input.archived]);
+  return rows[0];
+}
+
+async function editOptions<T>(work: (client: PoolClient, options: AssetOption[]) => Promise<T>) {
   await ensureOptions();
   const client = await getDb().connect();
   try {
     await client.query('begin');
     await client.query('select pg_advisory_xact_lock(481172040)');
     const options = await withDatabaseClient(client, listAssetOptions);
-    const current = options.find(row => row.id === input.id);
-    if ((input.id && !current) || (current?.version ?? 0) !== input.version)
-      throw new OptionError('This option changed. Reload the page to see the latest version.', 409);
-    if (input.id.startsWith('basic/') && input.mode !== 'basic')
-      throw new OptionError('This family uses the Basic catalogue. Choose Basic.');
-    const originalSector = current?.id.split('/')[1];
-    if (input.mode !== 'basic' && (input.sector === 'motor' || originalSector === 'motor') &&
-        (!current || originalSector !== input.sector || current.id.includes('/custom_')))
-      throw new OptionError('Advanced Motor uses the model catalogue. Choose Basic for this option.');
-    if (!input.archived && options.some(row => row.id !== input.id && !row.archived && row.sector === input.sector &&
-        row.label.toLowerCase() === label.toLowerCase() && (row.mode === input.mode || row.mode === 'both' || input.mode === 'both')))
-      throw new OptionError('An option with this name already exists in this sector and estimate type.');
-    let id = input.id;
-    if (!current) {
-      const key = 'custom_' + randomUUID().replaceAll('-', '');
-      const inserted = await client.query(`insert into public.equipment_families
-        (sector_id,family_key,family_label,is_propelled,usage_metric_type,valuation_mode,catalog_mode,sort_order,is_active)
-        select id,$2,$3,false,'wear_class','percent_used','generic_specs',999,true from public.sectors where sector_key=$1`,
-        [input.sector, key, label]);
-      if (!inserted.rowCount) throw new OptionError('Sector unavailable.');
-      id = ['public',input.sector,key].join('/');
-    }
-    const { rows } = await client.query<AssetOption>(`insert into public.valuation_asset_options
-      (id,label,sector,mode,archived,version) values ($1,$2,$3,$4,$5,1)
-      on conflict (id) do update set label=excluded.label, sector=excluded.sector, mode=excluded.mode,
-      archived=excluded.archived, version=valuation_asset_options.version+1 returning *`,
-      [id,label,input.sector,input.mode,input.archived]);
+    const result = await work(client, options);
     await client.query('commit');
-    return rows[0];
+    return result;
   } catch (error) {
     await client.query('rollback');
     throw error;
   } finally { client.release(); }
+}
+
+export function saveAssetOption(input: AssetOption) {
+  return editOptions(async (client, options) => {
+    validateOption(input, options.find(row => row.id === input?.id), options);
+    return writeOption(client, input);
+  });
+}
+
+export function importAssetOptionsCsv(csv: string) {
+  return editOptions(async (client, options) => {
+    let changes;
+    try { changes = planAssetOptionsCsv(csv, options); }
+    catch (error) { throw new OptionError(error instanceof Error ? error.message : 'Invalid CSV.'); }
+    const current = new Map(options.map(option => [option.id, option]));
+    const changedIds = new Set(changes.map(({option}) => option.id));
+    const projected = [...options.filter(option => !changedIds.has(option.id)), ...changes.map(change => change.option)];
+    for (const {row,option} of changes) {
+      try { validateOption(option, current.get(option.id), projected.filter(other => other !== option)); }
+      catch (error) {
+        if (error instanceof OptionError) throw new OptionError(`Row ${row}: ${error.message}`, error.status);
+        throw error;
+      }
+    }
+    for (const {option} of changes) {
+      const saved = await writeOption(client, option);
+      current.set(saved.id, saved);
+    }
+    return {options: [...current.values()].sort((a,b) => a.label.localeCompare(b.label)), count: changes.length};
+  });
 }

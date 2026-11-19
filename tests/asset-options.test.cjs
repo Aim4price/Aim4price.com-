@@ -32,8 +32,10 @@ test('Get Value options support creation, reclassification, archival, restoratio
         {sectorKey:'agricultural',familyKey:'tractor',familyLabel:'Compact tractor',isActive:true,basicCatalogue:{familyLabel:'Compact tractor'}},
       ]},
     };
+    const csv = load('asset-options-csv', {...mocks, './parts-network-csv':load('parts-network-csv', {})});
+    mocks['./asset-options-csv'] = csv;
     mocks['./equipment-catalog'] = load('equipment-catalog', mocks);
-    const { listAssetOptions, listValuationOptions, saveAssetOption } = load('asset-options-db', mocks);
+    const { listAssetOptions, listValuationOptions, saveAssetOption, importAssetOptionsCsv } = load('asset-options-db', mocks);
     const initial = await listAssetOptions();
     assert.equal(initial.length, 2);
     const tractor = initial.find(row => row.mode === 'basic');
@@ -50,5 +52,17 @@ test('Get Value options support creation, reclassification, archival, restoratio
     assert.equal((await db.query('select count(*) from equipment_families')).rows[0].count, 2);
     await saveAssetOption({...archived,archived:false});
     assert.equal((await listValuationOptions('basic','agricultural',true))[0].optionId, created.id);
+    const catalogue = await listAssetOptions();
+    const exported = csv.assetOptionsCsv(catalogue);
+    assert.equal((await importAssetOptionsCsv(exported)).count, 0);
+    const add = {...created,id:'',version:0,label:'=Farm, "A"'};
+    const replace = {...catalogue.find(row => row.id === created.id),label:'Utility cart'};
+    const imported = await importAssetOptionsCsv(csv.assetOptionsCsv([replace,add]));
+    assert.equal(imported.count, 2);
+    assert.ok(imported.options.some(row => row.label === add.label));
+    await assert.rejects(importAssetOptionsCsv(csv.assetOptionsCsv([{...add,label:'Never saved'}, {...replace,label:'Old edit'}])), /Row 3 changed/);
+    await assert.rejects(importAssetOptionsCsv(csv.assetOptionsCsv([add,add])), /already exists/);
+    assert.equal((await listAssetOptions()).length, catalogue.length + 1);
+    assert.throws(() => csv.readAssetOptionsCsv(csv.assetOptionsCsv([replace,replace])), /repeats/);
   } finally { await pg.close(); }
 });
