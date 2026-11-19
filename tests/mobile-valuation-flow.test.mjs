@@ -35,7 +35,7 @@ test('app sector choices are static green cards and progress numbers are centere
 test('app selections open as searchable lists and remain available when navigating backwards', () => {
   assert.match(client, /setEquipmentDropdownOpen\(compactAppMode\)/);
   assert.match(client, /setBrandDropdownOpen\(compactAppMode\)/);
-  assert.match(client, /setEquipmentDropdownOpen\(compactAppMode && Boolean\(selectedSector\)\)/);
+  assert.match(client, /setEquipmentDropdownOpen\(compactAppMode && Boolean\(browseSector\)\)/);
   assert.match(client, /compactAppMode && step === 2[\s\S]*?setEquipmentDropdownOpen\(true\)/);
   assert.match(appStyles, /equipmentPickerCard[^\n]*equipmentDropdownTrigger[^\{]*\{[\s\S]*?display: none !important/);
   assert.match(appStyles, /equipmentPickerCard[^\n]*equipmentDropdownMenu[^\{]*\{[\s\S]*?background: transparent !important/);
