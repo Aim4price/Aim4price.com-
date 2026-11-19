@@ -40,7 +40,7 @@
 .metrics {
   margin-bottom: 1rem;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.65rem;
 }
 
@@ -975,12 +975,12 @@
 }
 
 :global(:where(html:has([data-website-canvas]))) .metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
 @media (max-width: 1500px) {
   :global(:where(html:not(:has([data-website-canvas])))) .metrics {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1114,26 +1114,10 @@
   }
 }
 
-/* Let filter controls reflow before their labels become clipped. */
-.filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  align-items: end;
-  overflow: visible;
-  gap: 0.75rem;
-}
-.filters > label,
-.filters .searchField {
-  min-width: 0;
-}
-.filters .searchField {
-  grid-column: span 2;
-}
-@media (max-width: 600px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .filters { grid-template-columns: minmax(0, 1fr); }
-  :global(:where(html:not(:has([data-website-canvas])))) .filters .searchField { grid-column: auto; }
-}
-
+/* Let filters share available space, including the last row. */
+.filters { display: flex; flex-wrap: wrap; align-items: end; overflow: visible; }
+.filters > label { flex: 1 1 9rem; min-width: 0; }
+.filters .searchField { flex: 1.4 1 12rem; min-width: 0; }
 /* Constrain long asset names so remaining columns stay reachable. */
 .tableScroller table { table-layout: fixed; }
 .tableScroller td { white-space: nowrap; overflow-wrap: anywhere; }
@@ -1169,3 +1153,16 @@
 .tableScroller tbody tr:hover { background: #f6faf7; }
 .tableScroller td strong { font-weight: 650; }
 .tableScroller td small { font-size: 0.95rem; color: #52665d; }
+
+.metrics { margin-block: 1rem; }
+.metrics article { gap: .45rem; min-height: 0; box-shadow: none; padding: 1rem 1.1rem; }
+.metrics article > strong { margin: .1rem 0; font-variant-numeric: tabular-nums; }
+.metrics .featuredMetric { background: #194e40; border-color: #194e40; }
+.metrics .featuredMetric > :is(span, strong, small) { color: white; }
+.tableTitle { flex-wrap: wrap; margin-bottom: 1rem; }
+.listingHeading { display: flex; align-items: baseline; gap: .75rem; }
+.listingHeading span { color: #52665d; font-variant-numeric: tabular-nums; }
+.interestTabs { margin: 0; }
+.filters { border-radius: .65rem; padding: .85rem; }
+.tableScroller td > .badge { display: inline-flex; width: fit-content; }
+.tableScroller td.moneyCell { font-variant-numeric: tabular-nums; }

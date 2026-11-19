@@ -372,55 +372,51 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
         <article className={styles.featuredMetric}>
           <span>Advertised value</span>
           <strong>{formatAdminMarketplaceMoney(allMetrics.allTimeAdvertisedValueExVat)}</strong>
+          <small>{allMetrics.totalUniqueAssets.toLocaleString('en-ZA')} assets · excl. VAT</small>
         </article>
         <article>
           <span>Live value</span>
           <strong>{formatAdminMarketplaceMoney(allMetrics.liveAdvertisedValueExVat)}</strong>
+          <small>{allMetrics.liveAssets.toLocaleString('en-ZA')} live · excl. VAT</small>
         </article>
         <article>
           <span>Views</span>
           <strong>{allMetrics.totalViews.toLocaleString('en-ZA')}</strong>
-        </article>
-        <article>
-          <span>Account views</span>
-          <strong>{allMetrics.accountViews.toLocaleString('en-ZA')}</strong>
-        </article>
-        <article>
-          <span>Guest views</span>
-          <strong>{allMetrics.unknownViews.toLocaleString('en-ZA')}</strong>
+          <small>{allMetrics.accountViews.toLocaleString('en-ZA')} account · {allMetrics.unknownViews.toLocaleString('en-ZA')} guest</small>
         </article>
         <article className={allMetrics.repeatInterestAssets ? styles.signalMetric : undefined}>
           <span>Repeat interest</span>
           <strong>{allMetrics.repeatInterestAssets.toLocaleString('en-ZA')}</strong>
+          <small>Assets with repeat views</small>
         </article>
       </section>
 
       <section className={styles.tableCard} aria-label="Marketplace listings">
         <header className={styles.tableHeader}>
           <div className={styles.tableTitle}>
-            <h2>
-              Listings · {filteredAssets.length
-                ? `${pageStart + 1}-${pageEnd} of ${filteredAssets.length.toLocaleString('en-ZA')}`
-                : 'No matches'}
-            </h2>
-          </div>
+            <div className={styles.listingHeading}>
+              <h2>Listings</h2>
+              <span aria-live="polite">{filteredAssets.length
+                ? `${pageStart + 1}–${pageEnd} of ${filteredAssets.length.toLocaleString('en-ZA')}`
+                : 'No matches'}</span>
+            </div>
 
-          <div className={styles.interestTabs} role="group" aria-label="Marketplace popularity filter">
-            {(['all', 'viewed', 'repeat', 'unviewed'] as AdminMarketplaceInterestFilter[]).map((option) => (
-              <button
-                key={option}
-                type="button"
-                className={interest === option ? styles.interestTabActive : undefined}
-                aria-pressed={interest === option}
-                onClick={() => selectInterest(option)}
-              >
-                {interestButtonLabel(option)}
-                {option === 'viewed' ? ` (${allMetrics.viewedAssets.toLocaleString('en-ZA')})` : ''}
-                {option === 'repeat' ? ` (${allMetrics.repeatInterestAssets.toLocaleString('en-ZA')})` : ''}
-              </button>
-            ))}
+            <div className={styles.interestTabs} role="group" aria-label="Marketplace popularity filter">
+              {(['all', 'viewed', 'repeat', 'unviewed'] as AdminMarketplaceInterestFilter[]).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className={interest === option ? styles.interestTabActive : undefined}
+                  aria-pressed={interest === option}
+                  onClick={() => selectInterest(option)}
+                >
+                  {interestButtonLabel(option)}
+                  {option === 'viewed' ? ` (${allMetrics.viewedAssets.toLocaleString('en-ZA')})` : ''}
+                  {option === 'repeat' ? ` (${allMetrics.repeatInterestAssets.toLocaleString('en-ZA')})` : ''}
+                </button>
+              ))}
+            </div>
           </div>
-
           <div className={styles.filters}>
             <label className={styles.searchField}>
               <span>Search</span>
@@ -495,7 +491,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                 <option value="popular">Most viewed</option>
                 <option value="repeat-interest">Strongest repeat interest</option>
                 <option value="recent-view">Recently viewed</option>
-                <option value="latest">Latest advertised</option>
+                <option value="latest">Newest first</option>
                 <option value="oldest">Oldest first</option>
                 <option value="value-high">Highest value</option>
                 <option value="value-low">Lowest value</option>
@@ -510,8 +506,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
           <table>
             <thead>
               <tr>
-                <th>Asset</th>
-                <th>Seller</th>
+                <th>Asset / seller</th>
                 <th>Status</th>
                 <th>Views</th>
                 <th>Value excl. VAT</th>
@@ -527,17 +522,15 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                 return (
                   <tr key={asset.assetKey} className={asset.hasRepeatInterest ? styles.flaggedRow : undefined}>
                     <td className={styles.assetCell}>
-                      <strong>{asset.title}</strong>
-                      <span>{[...assetDetails, formatLocation(asset.area, asset.province)].filter(Boolean).join(' · ')}</span>
-                    </td>
-                    <td className={styles.sellerCell}>
-                      <strong>{asset.sellerLabel}</strong>
+                      <strong title={asset.title}>{asset.title}</strong>
+                      <span>{asset.sellerLabel}</span>
+                      <small>{[...assetDetails, formatLocation(asset.area, asset.province)].filter(Boolean).join(' · ')}</small>
                     </td>
                     <td>
                       <span className={`${styles.badge} ${styles[`status_${asset.status}`]}`}>
                         {STATUS_LABELS[asset.status]}
                       </span>
-                      <span>· {formatDate(asset.lastAdvertisedAtIso)}</span>
+                      <span>{formatDate(asset.lastAdvertisedAtIso)}</span>
                     </td>
                     <td className={styles.interestCell}>
                       {asset.totalViews > 0 ? (
