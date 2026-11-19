@@ -18,6 +18,7 @@ async function main() {
   await fs.writeFile(path.join(canonicalFixture,'page.tsx'), "export {default} from '../../business-network/guest-validation/page';\n");
   await fs.writeFile(path.join(fixture,'page.tsx'), `'use client';
 import {useEffect,useState,useRef} from 'react';
+import SharedAssetPasswordGate from '../../../components/SharedAssetPasswordGate';
 import GroupReports from '../../../components/asset-register/AssetGroupManagerModal';
 import ShareLinkSettings from '../../../components/asset-register/ShareLinkSettings';
 import {assetLinkPermissions} from '../../../lib/external-share-permissions';
@@ -38,9 +39,10 @@ export default function Validation(){
  const reportAsset={id:'10000000-0000-4000-8000-000000000001',registerId:null,title:'Test bakkie',kind:'vehicle',value:1000,createdAtIso:'2025-09-01',updatedAtIso:'2026-09-01',lastScannedAtIso:null};
  const finishReport=(kind:string,format='pdf',filters:any={})=>{const params=new URLSearchParams({assetId:reportAsset.id,report:kind,format,year:filters.year||'all',month:filters.month||'all'});reportDone.current?.({id:params.toString(),kind:'report',label:kind+' · '+format,fileName:kind+'.'+format,url:'/api/asset-register/scan-report?'+params,contentType:'application/pdf'});setReportOpen(false);};
  const details={allowSubmissions:true,recipientName:'George Workshop',recipientEmail:'business@example.com',request:'Please quote for servicing.',replyName:'Asset Owner',replyEmail:'owner@example.com',replyPhone:'',allowReply:true};
- return <main data-hydrated={hydrated} style={{maxWidth:900,margin:'auto',padding:16}}><nav>{['accept','compose','recipient','admin','external','find','asset','register','umbrella','edit link','edit protected link'].map(x=><button key={x} onClick={()=>setMode(x)}>{x}</button>)}</nav>
+ return <main data-hydrated={hydrated} style={{maxWidth:900,margin:'auto',padding:16}}><nav>{['accept','compose','recipient','admin','external','find','asset','register','umbrella','edit link','edit protected link','locked enquiry'].map(x=><button key={x} onClick={()=>setMode(x)}>{x}</button>)}</nav>
  {['asset','register','umbrella'].includes(mode)&&<ShareDestinationDialog kind={mode as any} titleId="fixture-share" subject="Test asset" onClose={()=>setMode('find')} onSendLink={()=>setMode('link')} onInside={()=>setMode('inside')} onOutside={()=>setMode('external')}/>}
  {['edit link','edit protected link'].includes(mode)&&<ShareLinkSettings token={'g'.repeat(43)} subject="Test asset" initialPermissions={assetLinkPermissions()} initialProtected={mode==='edit protected link'} onClose={()=>setMode('find')} onSaved={()=>setMode('find')}/>}
+ {mode==='locked enquiry'&&<SharedAssetPasswordGate token={'g'.repeat(43)}/>}
  {mode==='link'&&<BusinessListingInvite sendLink assetIds={['10000000-0000-4000-8000-000000000001']} onDismiss={()=>setMode('asset')}/>}
  {mode==='inside'&&<InsideShareDialog titleId="fixture-inside" subject="Test asset" onClose={()=>setMode('find')} options={['finance','insurance','replacement_quote','license_renewal'].map((id,i)=>({id,title:['Finance & accounting','Insurance','Dealer','Licence renewal'][i],description:['Accountant, financier or bank','Insurer or broker','Share with a dealer','Renewal date required'][i],icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V8l8-5 8 5v12ZM9 20v-8h6v8"/></svg>,onSelect:()=>setMode('find')}))}/>}
  {mode==='accept'&&<BusinessAcceptanceForm/>}
@@ -67,6 +69,11 @@ export default function Validation(){
   await page.setRequestInterception(true);
   page.on('request',req=>{
    const p=new URL(req.url()).pathname;
+   if(p===`/asset-share/${token}` && req.isNavigationRequest()) return req.respond({status:200,contentType:'text/html',body:'<main>Opened fixture enquiry</main>'});
+   if(p===`/api/asset-share-links/${token}/password`) {
+     const valid=JSON.parse(req.postData()).password==='fixture-pass';
+     return req.respond({status:valid?200:403,contentType:'application/json',body:JSON.stringify(valid?{ok:true}:{error:'Incorrect password'})});
+   }
    if(!p.startsWith('/api/'))return req.continue();
    if(p==='/api/business-network/accept/search')return req.respond({status:200,contentType:'application/json',body:JSON.stringify({places:[{id:'fixture-place',displayName:{text:'George Workshop'},formattedAddress:'George, Western Cape',googleMapsUri:'https://maps.google.com/?cid=123'}]})});
    if(p==='/api/asset-register/scan-report'||p==='/api/my-invoices/report'){requests.push({path:p,url:req.url(),method:req.method()});return req.respond({status:200,contentType:'application/pdf',body:reportPdf});}
@@ -102,6 +109,23 @@ export default function Validation(){
   const labelInput=async(label,value)=>{const handle=await page.evaluateHandle(t=>[...document.querySelectorAll('label')].find(e=>e.textContent.trim()===t)?.querySelector('input,textarea'),label);assert.ok(handle.asElement(),`Missing input ${label}`);await handle.asElement().type(value);await handle.dispose();};
   await fs.mkdir(output,{recursive:true});
   await page.setViewport({width:1440,height:900});
+  await page.goto('http://127.0.0.1:3033/business/send-link-validation',{waitUntil:'networkidle2'});
+  await page.waitForSelector('[data-hydrated=true]');
+  await click('locked enquiry');
+  assert.equal(await page.$('dialog[open]'),null,'The locked enquiry opens on the landing page');
+  await click('Open enquiry');
+  await page.waitForSelector('dialog[open] input[type=password]');
+  await page.type('dialog input','incorrect');
+  await click('Unlock enquiry');
+  await page.waitForSelector('dialog [role=alert]');
+  await click('Back to enquiry');
+  await page.waitForSelector('dialog',{hidden:true});
+  await click('Open enquiry');
+  assert.equal(await page.$eval('dialog input',el=>el.value),'');
+  await page.type('dialog input','fixture-pass');
+  await click('Show password');await click('Hide password');
+  await Promise.all([page.waitForNavigation(),click('Unlock enquiry')]);
+  assert.equal(new URL(page.url()).searchParams.get('open'),'1');
   await page.goto('http://127.0.0.1:3033/business/send-link-validation',{waitUntil:'networkidle2'});
   await page.waitForSelector('[data-hydrated=true]');
   // Close overlapping page and portal locks in both orders.
