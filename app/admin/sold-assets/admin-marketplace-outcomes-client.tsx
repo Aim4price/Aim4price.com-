@@ -4,14 +4,13 @@ import AdminSelect from "../../../components/AdminSelect";
 import ListPagination from '../../../components/ListPagination';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  formatAdminMarketplaceMoney,
   summarizeAdminMarketplaceOutcomes,
   type AdminMarketplaceOutcomeReason,
   type AdminMarketplaceOutcomeReport,
   type AdminMarketplaceOutcomeRow,
 } from '../../../lib/admin-marketplace-shared';
 import { SalesDownload, useOutcomeSelection } from './sales-download';
-import { marketplaceRow } from '../../../lib/outcome-sales-report';
+import { marketplaceRow, saleMoney as formatAdminMarketplaceMoney } from '../../../lib/outcome-sales-report';
 import styles from './page.module.css';
 
 const PAGE_SIZE = 25;
@@ -306,7 +305,7 @@ export default function AdminMarketplaceOutcomesClient({
           <strong>{formatPercent(visibleMetrics.helpRatePercent)}</strong>
         </article>
         <article>
-          <span>Final value</span>
+          <span>Final value excl. VAT</span>
           <strong title={formatAdminMarketplaceMoney(visibleMetrics.recordedSaleValueExVat)}>
             {formatAdminMarketplaceMoney(visibleMetrics.recordedSaleValueExVat)}
           </strong>
@@ -427,7 +426,7 @@ export default function AdminMarketplaceOutcomesClient({
                   <th>Asset</th>
                 <th>Outcome</th>
                 <th>Helped?</th>
-                <th>Price evidence</th>
+                <th>Price evidence excl. VAT</th>
                 <th>Activity</th>
               </tr>
             </thead>
@@ -465,7 +464,7 @@ export default function AdminMarketplaceOutcomesClient({
                           <strong>{formatAdminMarketplaceMoney(safeMoney(outcome.finalSalePriceExVat))}</strong>
                         </>
                       ) : (
-                        <strong>—</strong>
+                        <strong>{outcome.reason === 'sold' || outcome.reason === 'traded' ? 'Not recorded' : 'Not applicable'}</strong>
                       )}
                       {outcome.askingPriceExVat > 0 ? (
                         <small>· Asked {formatAdminMarketplaceMoney(outcome.askingPriceExVat)}</small>
@@ -530,9 +529,9 @@ export default function AdminMarketplaceOutcomesClient({
                 <div><dt>Sector</dt><dd>{detailOutcome.sectorLabel || 'Uncategorised'}</dd></div>
                 <div><dt>Source</dt><dd>{detailOutcome.sourceSurface === 'showroom' ? 'Showroom' : 'Marketplace'} · {actorLabel(detailOutcome.actorType)}</dd></div>
                 <div><dt>Closed</dt><dd>{formatDate(detailOutcome.closedAtIso)} · {formatDays(daysToOutcome(detailOutcome))}</dd></div>
-                <div><dt>Final value</dt><dd>{recordedFinalValue(detailOutcome) === null ? '—' : formatAdminMarketplaceMoney(recordedFinalValue(detailOutcome) as number)}</dd></div>
-                <div><dt>Asking value</dt><dd>{detailOutcome.askingPriceExVat > 0 ? formatAdminMarketplaceMoney(detailOutcome.askingPriceExVat) : '—'}</dd></div>
-                <div><dt>Aim4price value</dt><dd>{detailOutcome.aim4priceValueExVat > 0 ? formatAdminMarketplaceMoney(detailOutcome.aim4priceValueExVat) : '—'}</dd></div>
+                <div><dt>Final value excl. VAT</dt><dd>{recordedFinalValue(detailOutcome) === null ? (detailOutcome.reason === 'sold' || detailOutcome.reason === 'traded' ? 'Not recorded' : 'Not applicable') : formatAdminMarketplaceMoney(recordedFinalValue(detailOutcome) as number)}</dd></div>
+                <div><dt>Asking value excl. VAT</dt><dd>{detailOutcome.askingPriceExVat > 0 ? formatAdminMarketplaceMoney(detailOutcome.askingPriceExVat) : 'Not recorded'}</dd></div>
+                <div><dt>Aim4price value excl. VAT</dt><dd>{detailOutcome.aim4priceValueExVat > 0 ? formatAdminMarketplaceMoney(detailOutcome.aim4priceValueExVat) : 'Not recorded'}</dd></div>
                 <div><dt>Views</dt><dd>{detailOutcome.totalViewsAtClose.toLocaleString('en-ZA')} total · {detailOutcome.uniqueViewersAtClose.toLocaleString('en-ZA')} unique</dd></div>
                 <div><dt>View source</dt><dd>{detailOutcome.accountViewsAtClose.toLocaleString('en-ZA')} accounts · {detailOutcome.unknownViewsAtClose.toLocaleString('en-ZA')} unknown</dd></div>
                 <div className={styles.detailWide}><dt>Note</dt><dd title={detailOutcome.outcomeNote || 'No note'}>{detailOutcome.outcomeNote || '—'}</dd></div>

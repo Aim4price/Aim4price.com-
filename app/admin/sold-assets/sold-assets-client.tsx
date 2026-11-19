@@ -77,7 +77,7 @@ function formatDateTime(value: string): string {
 }
 
 function formatMoney(value: number | null): string {
-  if (value === null || !Number.isFinite(value) || value < 0) return '—';
+  if (value === null || !Number.isFinite(value) || value < 0) return 'Not recorded';
   return new Intl.NumberFormat('en-ZA', {
     style: 'currency',
     currency: 'ZAR',
@@ -471,7 +471,7 @@ export default function SoldAssetsClient({
                     onChange={e => selection.select(e.target.checked ? rows.map(row => row.id) : [])} /></th>
                   <th>Asset</th>
                   <th>Outcome</th>
-                  <th>Value</th>
+                  <th>Value excl. VAT</th>
                   <th>Helped?</th>
                   <th>Allocation</th>
                   <th>Actions</th>
@@ -588,7 +588,7 @@ export default function SoldAssetsClient({
               <div className={styles.detailBody}>
                 <dl className={styles.detailGrid}>
                   <div><dt>Outcome</dt><dd>{OUTCOME_LABELS[actionDialog.record.outcome]} · {formatDate(actionDialog.record.outcomeDate)}</dd></div>
-                  <div><dt>Value</dt><dd>{formatMoney(actionDialog.record.amountExVat)}</dd></div>
+                  <div><dt>Value excl. VAT</dt><dd>{formatMoney(actionDialog.record.amountExVat)}</dd></div>
                   <div><dt>Helped</dt><dd>{INFLUENCE_LABELS[actionDialog.record.aim4priceInfluence]}</dd></div>
                   <div><dt>Allocation</dt><dd>{TRANSFER_LABELS[actionDialog.record.transferStatus]}</dd></div>
                   <div><dt>Source</dt><dd title={actionDialog.record.sourceName}>{actionDialog.record.sourceName}</dd></div>

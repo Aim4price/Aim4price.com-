@@ -938,24 +938,22 @@
   }
 }
 
-/* Let filter controls reflow before their labels become clipped. */
+/* Distribute spare space across the filters on each line. */
 .filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   align-items: end;
   overflow: visible;
-  gap: 0.75rem;
 }
-.filters > label,
-.filters .searchField {
+.filters > label {
+  flex: 1 1 10rem;
   min-width: 0;
 }
 .filters .searchField {
-  grid-column: span 2;
+  flex: 2 1 15rem;
 }
 @media (max-width: 600px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .filters { grid-template-columns: minmax(0, 1fr); }
-  :global(:where(html:not(:has([data-website-canvas])))) .filters .searchField { grid-column: auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .filters > label { flex-basis: 100%; }
 }
 
 /* Constrain long asset names so remaining columns stay reachable. */

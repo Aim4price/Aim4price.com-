@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { MarketplaceListing } from '../lib/marketplace';
 import styles from './MarketplaceOutcomeModal.module.css';
+import disposalStyles from './asset-register/AssetDisposal.module.css';
 import accountStyles from '../app/account/page.module.css';
 
 export type MarketplaceOutcomeReason =
@@ -63,7 +64,7 @@ function money(value: number): string {
   return new Intl.NumberFormat('en-ZA', {
     style: 'currency',
     currency: 'ZAR',
-    maximumFractionDigits: 0,
+    maximumFractionDigits: 2,
   })
     .format(Math.max(0, Number(value) || 0))
     .replace(/\u00a0/g, ' ')
@@ -119,6 +120,7 @@ export default function MarketplaceOutcomeModal({
   const [step, setStep] = useState<RemovalStep>(1);
   const [reason, setReason] = useState<MarketplaceOutcomeReason | ''>('');
   const [aim4priceHelped, setAim4priceHelped] = useState<boolean | null>(null);
+  const [includesVat, setIncludesVat] = useState(false);
   const [finalPrice, setFinalPrice] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -132,6 +134,7 @@ export default function MarketplaceOutcomeModal({
     setStep(1);
     setReason('');
     setAim4priceHelped(null);
+    setIncludesVat(false);
     setFinalPrice('');
     setNotes('');
     setSubmitting(false);
@@ -206,6 +209,10 @@ export default function MarketplaceOutcomeModal({
   const assetId = String(listing.sourceAssetId ?? '').trim();
   const listingId = String(listing.id ?? '').trim();
   const isCompletedDeal = reason === 'sold' || reason === 'traded';
+  const enteredAmount = isCompletedDeal ? parseOptionalMoney(finalPrice) : null;
+  const finalSalePriceExVat = enteredAmount !== null && includesVat
+    ? Math.round(enteredAmount * 100 / 1.15) / 100
+    : enteredAmount;
   const finalPriceLabel = reason === 'traded'
     ? 'Final trade-in value (optional)'
     : 'Final selling price (optional)';
@@ -243,7 +250,7 @@ export default function MarketplaceOutcomeModal({
         return;
       }
 
-      if (isCompletedDeal && finalPrice.trim() && parseOptionalMoney(finalPrice) === null) {
+      if (isCompletedDeal && finalPrice.trim() && finalSalePriceExVat === null) {
         setError('Enter a valid final amount or leave the field empty.');
         return;
       }
@@ -283,7 +290,6 @@ export default function MarketplaceOutcomeModal({
       return;
     }
 
-    const finalSalePriceExVat = isCompletedDeal ? parseOptionalMoney(finalPrice) : null;
     if (isCompletedDeal && finalPrice.trim() && finalSalePriceExVat === null) {
       setError('Enter a valid final amount or leave the field empty.');
       return;
@@ -454,11 +460,16 @@ export default function MarketplaceOutcomeModal({
                   ) : (
                     <div className={styles.detailsGrid}>
                       {isCompletedDeal ? (
-                        <label className={styles.textField}>
-                          <span>{finalPriceLabel}</span>
+                        <div className={styles.textField}>
+                          <label htmlFor={titleId + '-amount'}>{finalPriceLabel}</label>
+                          <div className={disposalStyles.amountVatToggle} role="group" aria-label="Entered price VAT basis">
+                            <button type="button" aria-pressed={!includesVat} disabled={submitting} onClick={() => setIncludesVat(false)}>Excluding VAT</button>
+                            <button type="button" aria-pressed={includesVat} disabled={submitting} onClick={() => setIncludesVat(true)}>Including VAT (15%)</button>
+                          </div>
                           <div className={styles.moneyField}>
                             <span aria-hidden="true">R</span>
                             <input
+                              id={titleId + '-amount'}
                               value={finalPrice}
                               onChange={(event) => {
                                 setFinalPrice(event.target.value);
@@ -471,8 +482,8 @@ export default function MarketplaceOutcomeModal({
                               aria-label={finalPriceLabel}
                             />
                           </div>
-                          <small>Optional, excluding VAT.</small>
-                        </label>
+                          <small>{finalSalePriceExVat === null ? 'Reports use the final value excluding VAT.' : money(finalSalePriceExVat) + ' excluding VAT'}</small>
+                        </div>
                       ) : null}
                       <label className={`${styles.textField} ${styles.noteField}`}>
                         <span>{reason === 'other' ? 'What happened?' : 'Reference or note'}</span>
@@ -537,7 +548,7 @@ export default function MarketplaceOutcomeModal({
                   <dl className={styles.summary}>
                     <div><dt>Advert</dt><dd>{listing.title}</dd></div>
                     <div><dt>Outcome</dt><dd>{outcomeLabel(reason)}</dd></div>
-                    <div><dt>Final amount</dt><dd>{isCompletedDeal ? (parseOptionalMoney(finalPrice) ? money(parseOptionalMoney(finalPrice) ?? 0) : 'Not recorded') : 'Not applicable'}</dd></div>
+                    <div><dt>Final amount excl. VAT</dt><dd>{isCompletedDeal ? (finalSalePriceExVat !== null ? money(finalSalePriceExVat) : 'Not recorded') : 'Not applicable'}</dd></div>
                     <div><dt>Aim4price helped</dt><dd>{aim4priceHelped ? 'Yes' : 'No'}</dd></div>
                   </dl>
                   <div className={styles.informationCard}>
