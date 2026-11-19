@@ -69,7 +69,6 @@ const ROUTE_LABELS: Array<{
   { prefix: "/admin/asset-map", key: "admin-asset-map", label: "Admin - Global Asset Map", isAdminArea: true },
   { prefix: "/admin/discovery", key: "admin-discovery", label: "Admin - Discovery", isAdminArea: true },
   { prefix: "/admin/capture-queue", key: "admin-capture-queue", label: "Admin - Capture Queue", isAdminArea: true },
-  { prefix: "/admin/lifecycle-calculator", key: "admin-lifecycle", label: "Admin - Lifecycle Model", isAdminArea: true },
   { prefix: "/admin", key: "admin-users", label: "Admin - User Accounts", isAdminArea: true },
   { prefix: "/asset-registers", key: "asset-register", label: "Asset Register" },
   { prefix: "/asset-register", key: "asset-register", label: "Asset Register" },

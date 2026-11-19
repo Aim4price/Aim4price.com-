@@ -39,10 +39,6 @@ on:
       - 'app/account/**'
       - 'app/admin/admin-client.tsx'
       - 'app/admin/page.module.css'
-      - 'app/admin/lifecycle-calculator/**'
-      - 'lib/admin-lifecycle-calculator.ts'
-      - 'tests/admin-lifecycle-calculator.test.mjs'
-      - 'tests/admin-lifecycle-calculator.security.test.mjs'
       - 'app/tracking/**'
       - 'components/AppHeader.tsx'
       - 'components/AppHeader.module.css'
@@ -97,8 +93,8 @@ jobs:
       - name: Test app access modal flows
         run: npm run test:account-app-access
 
-      - name: Test admin lifecycle calculator
-        run: npm run test:lifecycle-calculator
+      - name: Test admin experience
+        run: node --test tests/admin-experience.test.mjs
 
       - name: Test Owner App operations
         run: npm run test:owner-app-operations

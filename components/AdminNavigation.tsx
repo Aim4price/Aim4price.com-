@@ -21,8 +21,7 @@ export type AdminSection =
   | "sold-assets"
   | "work-tracker"
   | "capture-queue"
-  | "annual-review"
-  | "lifecycle";
+  | "annual-review";
 
 export const ADMIN_LINKS: Array<{
   key: AdminSection;
@@ -81,11 +80,6 @@ export const ADMIN_LINKS: Array<{
     key: "capture-queue",
   },
   {
-    href: "/admin/lifecycle-calculator",
-    label: "Lifecycle Model",
-    key: "lifecycle",
-  },
-  {
     href: "/admin/maintenance-catalogue",
     label: "Maintenance checklists",
     key: "maintenance-catalogue",
@@ -95,7 +89,7 @@ export const ADMIN_LINKS: Array<{
 export const ADMIN_GROUPS: Array<{ title: string; keys: AdminSection[] }> = [
   { title: "Accounts & service", keys: ["accounts", "asset-emails", "billing", "capture-queue", "work-tracker"] },
   { title: "Assets & marketplace", keys: ["discovery", "marketplace", "sold-assets", "asset-map"] },
-  { title: "Insights & tools", keys: ["annual-review", "videos", "ai-connections", "dashboard", "valuations", "asset-options", "lifecycle", "maintenance-catalogue"] },
+  { title: "Insights & tools", keys: ["annual-review", "videos", "ai-connections", "dashboard", "valuations", "asset-options", "maintenance-catalogue"] },
 ];
 
 export default function AdminNavigation({ active, canGetEstimate = false, businessVerification, initialVerificationOpen = false }: {

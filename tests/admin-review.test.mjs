@@ -26,7 +26,7 @@ test('admin mutations reject missing/untrusted origins and accept configured pub
   const previous = process.env.NODE_ENV;
   process.env.NODE_ENV = 'production';
   try {
-    for (const path of ['users', 'valuations', 'marketplace', 'sold-assets', 'work-tracker', 'maintenance-catalogue', 'capture-requests/example', 'lifecycle-calculator/export']) {
+    for (const path of ['users', 'valuations', 'marketplace', 'sold-assets', 'work-tracker', 'maintenance-catalogue', 'capture-requests/example']) {
       for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
         for (const origin of [null, 'null', 'https://evil.test', 'https://aim4price.com.evil.test']) {
           const response = middleware({ method, nextUrl: new URL(`http://internal:3000/api/admin/${path}`), headers: new Headers(origin ? { origin } : {}) });

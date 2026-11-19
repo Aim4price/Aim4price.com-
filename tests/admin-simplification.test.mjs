@@ -14,7 +14,6 @@ const pages = {
   outcomes: read("app/admin/sold-assets/page.tsx"),
   work: read("app/admin/work-tracker/work-tracker-client.tsx"),
   capture: read("app/admin/capture-queue/page.tsx"),
-  lifecycle: read("app/admin/lifecycle-calculator/page.tsx"),
 };
 
 const navigation = read("components/AdminNavigation.tsx");
@@ -24,7 +23,6 @@ const loading = read("app/admin/loading.tsx");
 const dashboard = read("app/admin/dashboard/page.tsx");
 const dashboardStyles = read("app/admin/dashboard/page.module.css");
 const mapClient = read("app/admin/asset-map/admin-asset-map-client.tsx");
-const lifecycleClient = read("app/admin/lifecycle-calculator/lifecycle-calculator-client.tsx");
 const marketplaceStyles = read("app/admin/marketplace/page.module.css");
 const outcomeStyles = read("app/admin/sold-assets/page.module.css");
 const accountStyles = read("app/admin/page.module.css");
@@ -36,7 +34,6 @@ const singleLineStyles = [
   read("app/admin/asset-map/page.module.css"),
   read("app/admin/capture-queue/page.module.css"),
   read("app/admin/discovery/page.module.css"),
-  read("app/admin/lifecycle-calculator/page.module.css"),
   read("app/admin/sold-assets/page.module.css"),
   read("app/admin/valuations/page.module.css"),
   read("app/admin/work-tracker/page.module.css"),
@@ -53,7 +50,6 @@ test("every Admin workspace uses one concise page title", () => {
     outcomes: "Outcomes",
     work: "Work tracker",
     capture: "Capture Queue",
-    lifecycle: "Lifecycle Model",
   };
 
   for (const [key, title] of Object.entries(expectedTitles)) {
@@ -82,13 +78,10 @@ test("loading and summary surfaces contain no decorative copy", () => {
   assert.match(foundation, /--admin-control-radius: \.9rem/);
 });
 
-test("map and lifecycle remove redundant labels while preserving their actions", () => {
+test("map controls retain refresh and owner access", () => {
   assert.doesNotMatch(mapClient, /markerNumber|index \+ 1|<br>|>Refresh</);
   assert.match(mapClient, /setInterval/);
   assert.match(mapClient, /Open owner/);
-  assert.doesNotMatch(lifecycleClient, /\{help \? <small>|\{detail \? <small>/);
-  assert.match(lifecycleClient, /Funding structure/);
-  assert.match(lifecycleClient, /Structure comparison/);
 });
 
 test("status values are plain text rather than pills", () => {
