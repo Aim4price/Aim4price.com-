@@ -229,7 +229,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await clickText('Explore help options');
      await choose('[aria-label="Visit type"] button');
      await choose('[data-pricing-content] + div button:last-child');
-     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /Asset recording visit.*Separate quote/);
+     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /Asset recording visit.*R450\/hour \+ travel/);
      await clickText('Remove');
      await clickText('Need monthly admin help?');
      await page.screenshot({path:path.join(evidence,`owner-admin-options-${width}.png`)});
@@ -239,7 +239,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R498/month total');
      await clickText('Yearly');
      assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year hosting');
-     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/R399\/month for admin help, billed separately/);
+     assert.equal(await page.$eval('[data-recurring-admin]',e=>e.textContent),'+ R399/month admin');
      await clickText('Remove');
      assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year hosting');
      await clickText('Monthly');
@@ -258,8 +258,8 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await clickText('Need help uploading?');
      await page.screenshot({path:path.join(evidence,`owner-setup-details-${width}.png`)});
      await clickText('Back to package');
-     await clickText('What else should I know?');
-     await page.waitForFunction(()=>document.querySelector('[role="dialog"] h2')?.textContent==='Good to know');
+     await clickText('What’s included?');
+     await page.waitForFunction(()=>document.querySelector('[role="dialog"] h2')?.textContent==='What your hosting includes');
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/Sold and archived assets are excluded/);
      await page.screenshot({path:path.join(evidence,`owner-billing-notes-${width}.png`)});
      await clickText('Back to package');
@@ -317,11 +317,31 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Dealer')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/customers.*asset registers/);
+     assert.match(await page.$eval('[aria-label="Customer registers"]',e=>e.textContent),/R24.75 per client\/month/);
+     await clickText('View client hosting rates');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/R24.75\/month.*R249.75\/year/);
+     await clickText('Back to choices');
+     assert.ok(await page.$('[aria-label="Customer registers"]'),'Rate details return to the current question');
+     await choose('[aria-label="Customer registers"] button:last-child');
+     await clickText('Continue');
+     await page.$$eval('[aria-label="Aim4price assistance"] button',els=>els.find(e=>e.textContent.startsWith('Monthly admin help')).click());
+     await clickText('Continue');
+     await choose('[aria-label="Admin package"] button');
+     await clickText('See my package');
+     assert.equal(await page.$eval('[data-dealer-package-price]',e=>e.textContent),'R598/month total');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/Client hosting is additional/);
+     await clickText('Yearly');
+     assert.equal(await page.$eval('[data-dealer-package-price]',e=>e.textContent),'R1 999/year hosting');
+     assert.equal(await page.$eval('[data-recurring-admin]',e=>e.textContent),'+ R399/month admin');
+     await page.screenshot({path:path.join(evidence,`dealer-yearly-summary-${width}.png`)});
      await page.keyboard.press('Escape');
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).click());
      await page.waitForSelector('[role="dialog"]');
-     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/free shared access.*R199\/month/);
-     assert.ok(await page.$('[role="dialog"] a[href="/business/join"]'));
+     assert.match(await page.$eval('[aria-labelledby="business-shared-title"]',e=>e.textContent),/Shared access.*Free/);
+     assert.match(await page.$eval('[aria-labelledby="business-hosting-title"]',e=>e.textContent),/R199\/month.*R1 999\/year.*R24.75 per client\/month/);
+     assert.ok(await page.$('[aria-labelledby="business-shared-title"] a[href="/business/join"]'));
+     assert.ok(await page.$('[aria-labelledby="business-hosting-title"] a[href="/contact-us"]'));
+     await page.screenshot({path:path.join(evidence,`business-access-options-${width}.png`)});
      await page.keyboard.press('Escape');
     }
     if(['guest','business-join','business-register'].includes(mode)){

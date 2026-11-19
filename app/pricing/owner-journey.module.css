@@ -345,3 +345,33 @@
 .billingNotes > div + div { border-top: 1px solid #e0e9e4; }
 .billingNotes dt { font-weight: 750; color: #183b30; font-size: 1rem; }
 .billingNotes dd { margin: .3rem 0 0; font-size: .95rem; line-height: 1.65; }
+
+/* One readable question, aligned selection controls and explicit billing periods. */
+.simpleOwner .heading > p:last-child { font-size: 1rem; font-weight: 500; color: #405b4f; }
+.simpleOwner .choiceTitle { display: grid; grid-template-columns: minmax(0, 1fr) 1.35rem; gap: .85rem; align-items: center; padding-right: 0; font-size: 1.05rem; }
+.simpleOwner .selection { position: static; width: 1.35rem; height: 1.35rem; align-self: center; }
+.selection svg { display: block; width: .9rem; height: .9rem; }
+.simpleOwner .choiceCopy { color: #405b4f; font-size: 1rem; line-height: 1.55; }
+.choiceRate { display: block; font-size: 1rem; font-weight: 700; color: #24533e; }
+.choiceSecondary { display: block; margin-top: .15rem; font-size: .95rem; font-weight: 500; }
+.simpleOwner .choice { padding: 1.1rem 1.25rem; }
+.simpleOwner .choices { gap: .85rem; }
+.annualAdmin { margin: .35rem 0 0; color: #24533e; font-size: 1.2rem; font-weight: 750; line-height: 1.5; }
+.simpleOwner .totalCaption { font-size: .95rem; line-height: 1.5; }
+.simpleOwner .rowLabel { font-size: .9rem; color: #52665c; margin-bottom: .15rem; }
+.simpleOwner .reviewNote, .simpleOwner .serviceNote { font-size: .95rem; color: #405b4f; line-height: 1.6; }
+.simpleOwner .detailLinks button, .simpleOwner .review .optionalHelp > button { font-size: 1rem; }
+.simpleOwner .navigation { background: #fff; }
+.simpleOwner .navigation > .note { font-size: .95rem; line-height: 1.5; }
+.simpleOwner .primary, .simpleOwner .secondary { font-size: 1rem; }
+.relationshipNote { margin: .85rem 0 0; color: #24533e; font-size: 1rem; line-height: 1.6; }
+.review .relationshipNote { margin: 0; }
+.benefits p { font-size: 1rem; line-height: 1.7; color: #405b4f; }
+.dealerRates > div { align-items: baseline; font-size: 1rem; gap: .5rem 1.5rem; }
+.dealerRates dd { font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .simpleOwner .assetChoices { grid-template-columns: 1fr; }
+  :global(html:not(:has([data-website-canvas]))) .simpleOwner .choice, :global(html:not(:has([data-website-canvas]))) .simpleOwner .assetChoices .choice { min-height: 0; padding: 1rem 1.1rem; }
+  :global(html:not(:has([data-website-canvas]))) .dealerRates > div { flex-wrap: wrap; }
+  :global(html:not(:has([data-website-canvas]))) .dealerRates dd { text-align: left; }
+}
