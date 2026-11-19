@@ -78,6 +78,10 @@ async function main() {
         const scale=canvas?Number(canvas.dataset.websiteScale):1;
         return {scale,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:innerWidth,height:innerHeight,
           dialogWidth:r.width,overflow:d.scrollWidth-d.clientWidth,
+          scrollableText:[...d.querySelectorAll('h2,h3,p,dd')].filter(el=>{
+            const style=getComputedStyle(el);
+            return [style.overflowX,style.overflowY].some(axis=>['auto','scroll'].includes(axis));
+          }).map(el=>el.textContent),
           targets:[...d.querySelectorAll('footer button')].map(el=>el.getBoundingClientRect().height/scale)};
       });
       assert.ok(Number.isFinite(geometry.scale)&&geometry.scale>0,'Valid canvas scale');
@@ -86,6 +90,7 @@ async function main() {
       assert.ok(geometry.targets.every(height=>height>=55.5),'Footer actions must retain 56 logical-pixel click targets: '+JSON.stringify(geometry));
       assert.ok(geometry.left>=0&&geometry.right<=geometry.width+1&&geometry.top>=0&&geometry.bottom<=geometry.height+1,JSON.stringify(geometry));
       assert.ok(geometry.overflow<2,JSON.stringify(geometry));
+      assert.deepEqual(geometry.scrollableText,[],'Review text should never have its own scrollbar');
       assert.ok(geometry.dialogWidth/geometry.scale>=Math.min(900,geometry.width/geometry.scale-60),JSON.stringify(geometry));
       if(!await page.$('dialog details[open]'))await assertDesktopFits();
     }

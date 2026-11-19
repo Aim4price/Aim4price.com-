@@ -105,5 +105,4 @@ html:has(.adminWorkspaceRoot) #aim4price-website-overlays :is(h2, h3, p, label, 
 .adminWorkspaceRoot #admin-workspace-content :is([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"], [class*="tableScroll"])::-webkit-scrollbar-track { background: #eef4f0; }
 .adminWorkspaceRoot #admin-workspace-content :is([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"], [class*="tableScroll"])::-webkit-scrollbar-thumb { border: 2px solid #eef4f0; border-radius: 8px; background: #91b2a1; }
 .adminWorkspaceRoot [data-admin-annual-review] :is(p, small, label, dt, button) { font-size: 1rem; }
-.adminWorkspaceRoot [data-admin-annual-review] [class*="confirmation"] h3 { white-space: nowrap !important; overflow-x: auto !important; }
 .adminWorkspaceRoot [data-admin-annual-review] :is([class*="badge"], [class*="rangeLabels"], [class*="stageLabel"], [class*="previewLabel"], [class*="welcomeFacts"] strong) { font-size: 1rem; font-weight: 650; }

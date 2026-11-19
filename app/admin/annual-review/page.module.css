@@ -73,7 +73,7 @@
 .stageLabel { font-size: .7rem; font-weight: 650; color: var(--app-muted, #64766e); }
 .progressTrack { padding: 0; gap: 3px; }
 .progressTrack > span { flex: 1; width: auto; height: 3px; border-radius: 0; }
-.body { scrollbar-gutter: stable; }
+.body { min-height: 0; scrollbar-gutter: auto; overscroll-behavior: contain; }
 .welcome { display: grid; grid-template-columns: .85fr 1.15fr; gap: 2.25rem; align-items: center; text-align: left; padding: .4rem 0; }
 .yearPanel { position: relative; overflow: hidden; min-height: 310px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 1.25rem; background: radial-gradient(ellipse at top left, #377d66, transparent 70%), #103e32; color: #fff; isolation: isolate; }
 .yearPanel::before, .yearPanel::after { content: ''; position: absolute; width: 300px; height: 300px; border: 1px solid #ffffff20; border-radius: 50%; z-index: -1; }
@@ -197,7 +197,13 @@
 .valueBreakdown > div:last-child { border-top: 1px solid var(--app-line, #d6e4dd); padding-top: .7rem; }
 @media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .valueBreakdown > div { flex-direction: column; gap: .2rem; } }
 
-.dialog .confirmation h3 { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+/* Only the dialog body scrolls when the review exceeds the available height. */
+.page .dialog :is(h2, h3, p, dd, dt, summary, small, strong, span, li) {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.page .dialog :is(h2, h3, p, dd) { overflow: visible; }
 
 /* Readable supporting copy, without changing the shared dialog design. */
 .page { --review-secondary: color-mix(in srgb, var(--app-text, #153d31) 85%, var(--app-surface, #fff)); }
