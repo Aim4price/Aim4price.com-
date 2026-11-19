@@ -119,9 +119,11 @@ export default function Validation(){
   await click('Unlock enquiry');
   await page.waitForSelector('dialog [role=alert]');
   await click('Back to enquiry');
-  await page.waitForSelector('dialog',{hidden:true});
+  // Native close hides the dialog before React unmounts it and restores focus.
+  await page.waitForFunction(()=>!document.querySelector('dialog') && document.activeElement?.textContent.includes('Open enquiry'));
   await click('Open enquiry');
-  assert.equal(await page.$eval('dialog input',el=>el.value),'');
+  await page.waitForSelector('dialog[open] input[type=password]',{visible:true});
+  assert.equal(await page.$eval('dialog[open] input',el=>el.value),'');
   await page.type('dialog input','fixture-pass');
   await click('Show password');await click('Hide password');
   await Promise.all([page.waitForNavigation(),click('Unlock enquiry')]);

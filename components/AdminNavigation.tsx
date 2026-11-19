@@ -14,7 +14,6 @@ export type AdminSection =
   | "asset-options"
   | "maintenance-catalogue"
   | "dashboard"
-  | "asset-values"
   | "valuations"
   | "marketplace"
   | "asset-map"
@@ -35,7 +34,6 @@ export const ADMIN_LINKS: Array<{
   { href: "/admin/videos", label: "Video Manager", key: "videos" },
   { href: "/admin/ai-connect", label: "AI connections", key: "ai-connections" },
   { href: "/admin/asset-options", label: "Asset options", key: "asset-options" },
-  {href:"/admin/asset-values",label:"Asset values",key:"asset-values"},
   { href: "/admin/billing", label: "Billing", key: "billing" },
   {
     href: "/admin",
@@ -97,7 +95,7 @@ export const ADMIN_LINKS: Array<{
 export const ADMIN_GROUPS: Array<{ title: string; keys: AdminSection[] }> = [
   { title: "Accounts & service", keys: ["accounts", "asset-emails", "billing", "capture-queue", "work-tracker"] },
   { title: "Assets & marketplace", keys: ["discovery", "marketplace", "sold-assets", "asset-map"] },
-  { title: "Insights & tools", keys: ["annual-review", "videos", "ai-connections", "dashboard", "valuations", "asset-values", "asset-options", "lifecycle", "maintenance-catalogue"] },
+  { title: "Insights & tools", keys: ["annual-review", "videos", "ai-connections", "dashboard", "valuations", "asset-options", "lifecycle", "maintenance-catalogue"] },
 ];
 
 export default function AdminNavigation({ active, canGetEstimate = false, businessVerification, initialVerificationOpen = false }: {
