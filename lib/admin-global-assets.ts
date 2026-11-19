@@ -15,6 +15,7 @@ import {
   type AdminGlobalAssetOptions,
   type AdminGlobalAssetSummary,
 } from "./admin-global-assets-shared";
+import { formatResolvedAssetUsage, resolveAssetUsage } from "./asset-usage";
 import { getDb } from "./db";
 import { ensureAssetDiscoveryViewTracking } from "./discovery-views";
 
@@ -40,6 +41,7 @@ type AdminGlobalAssetRow = {
   hours: DatabaseValue;
   life_worked_percent: DatabaseValue;
   usage_metric: DatabaseValue;
+  usage_specs: Record<string, unknown> | null;
   condition: DatabaseValue;
   serial_number: DatabaseValue;
   registration_number: DatabaseValue;
@@ -202,6 +204,7 @@ const ADMIN_GLOBAL_ASSET_CTE = `
       coalesce(asset.typed_model_name, '') as typed_model_name,
       asset.year_model,
       asset.hours,
+      asset.specs_json as usage_specs,
       asset.life_worked_percent,
       coalesce(nullif(trim(family.usage_metric_type), ''), '') as usage_metric,
       coalesce(asset.condition, '') as condition,
@@ -408,6 +411,15 @@ function mapAsset(row: AdminGlobalAssetRow): AdminGlobalAsset {
     hours: nullableNumber(row.hours),
     lifeWorkedPercent: nullableNumber(row.life_worked_percent),
     usageMetric: text(row.usage_metric),
+    usageLabel: formatResolvedAssetUsage(resolveAssetUsage({
+      kind,
+      hours: row.hours,
+      lifeWorkedPercent: row.life_worked_percent,
+      specsJson: {
+        ...row.usage_specs,
+        usageMetricType: row.usage_specs?.usageMetricType ?? row.usage_specs?.usage_metric_type ?? row.usage_metric,
+      },
+    })),
     condition: text(row.condition),
     serialNumber: text(row.serial_number),
     registrationNumber: text(row.registration_number),
