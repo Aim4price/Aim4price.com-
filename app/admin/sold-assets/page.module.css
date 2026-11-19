@@ -976,7 +976,14 @@
 
 /* Outer spacing is owned by AdminWorkspace. */
 .page { background: transparent; min-height: auto; }
-.shell { width: 100%; max-width: none; margin: 0; padding: 0; min-width: 0; gap: 1.35rem; }
+.shell {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  container-type: inline-size;
+}
 @media (max-width: 980px) { :global(:where(html:not(:has([data-website-canvas])))) .shell { padding: 0; } }
 
 .topBar { padding: 0 0 1.1rem; margin-bottom: 0.15rem; border-bottom: 1px solid #e2e9e5; gap: 1rem; }
@@ -995,7 +1002,13 @@
 .tableScroller td strong { font-weight: 650; }
 .tableScroller td small { font-size: 0.95rem; color: #52665d; }
 
-.salesReport { padding:1.1rem 1.2rem; border:1px solid #cedfd6; background:#fff; border-radius:.85rem; }
+.salesReport {
+  margin-block-end: 1rem;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid #cedfd6;
+  background: #fff;
+  border-radius: .85rem;
+}
 .reportHead,.downloadActions,.salesFigures { display:flex; align-items:center; flex-wrap:wrap; gap:.75rem; }
 .reportHead { justify-content:space-between; }
 .reportHead h2 { margin:0; font-size:1.25rem; color:#153d30; }
@@ -1009,7 +1022,34 @@
 .salesFigures > div { align-content:center; border-radius:.55rem; padding:.65rem .85rem; background:#f4f8f5; color:#244c39; }
 .salesFigures > div:last-child { background:#e4f2e9; }
 .salesFigures strong { font-size:1.4rem; font-variant-numeric:tabular-nums; }
-.metrics.metrics { grid-template-columns:repeat(auto-fit,minmax(min(100%,9rem),1fr)); }
+.shell .metrics {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(12rem, 1.45fr);
+}
+.shell .filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .85rem 1rem;
+  padding: 1rem;
+  border-radius: .65rem;
+}
+.shell .filters > label { min-width: 0; grid-column: auto; }
+.shell .filters input { min-height: 3.25rem; }
+.shell .filters > button { justify-self: start; }
+.tableScroller th.pickCell:first-child { width: 3.25rem; }
+@container (max-width: 60rem) {
+  .shell .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .shell .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 40rem) {
+  .shell .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .salesFigures > label { flex-basis: 100%; }
+  .shell .metrics article > span { white-space: normal; }
+}
+@container (max-width: 30rem) {
+  .shell .filters { grid-template-columns: minmax(0, 1fr); }
+  .downloadActions { width: 100%; }
+  .downloadActions button { flex: 1 1 auto; }
+}
 .metrics.metrics article { min-height:0; padding:.7rem .9rem; gap:.4rem; }
 .metrics.metrics strong { margin:0; }
 .pickCell input { width:1.1rem; height:1.1rem; accent-color:#196248; cursor:pointer; }
