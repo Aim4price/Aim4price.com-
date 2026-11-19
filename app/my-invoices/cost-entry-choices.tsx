@@ -5,7 +5,7 @@ import valuationStyles from '../valuation/page.module.css';
 import entryStyles from '../marketplace/marketplace-entry.module.css';
 
 // Reuse Marketplace's entry layout so spacing, cards and responsive behaviour stay aligned.
-export default function CostEntryChoices() {
+export default function CostEntryChoices({ showSage = false }: { showSage?: boolean }) {
   return (
     <main className={valuationStyles.page}>
       <AppHeader active="none" />
@@ -38,6 +38,7 @@ export default function CostEntryChoices() {
                     </Link>
                   ))}
                 </nav>
+                {showSage && <Link href="/my-invoices/sage-za" prefetch={false}>Connect Sage Accounting South Africa</Link>}
               </div>
             </div>
           </div>
