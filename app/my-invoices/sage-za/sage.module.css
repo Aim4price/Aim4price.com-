@@ -1,0 +1,6 @@
+.panel { max-width: 52rem; margin: 2rem auto; padding: clamp(1.25rem, 4vw, 2.5rem); border: 1px solid #bacbc0; border-radius: 1rem; background: #fff; color: #193829; }
+.panel a { color: #22573d; font-weight: 700; }
+.panel h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); }
+.panel button { background: #214d38; color: #fff; border: 0; border-radius: .65rem; padding: .7rem 1.1rem; font: inherit; font-weight: 700; cursor: pointer; }
+.panel form, .panel section { margin: 1rem 0; }
+.panel li { margin-bottom: .8rem; }
