@@ -35,6 +35,7 @@ export default function SharedAssetCards({
   example = false,
   senderName = "",
   allowBusinessDetails = false,
+  guestReturnTo,
 }: {
   example?: boolean;
   share: PublicAssetShare | null;
@@ -43,6 +44,7 @@ export default function SharedAssetCards({
   enquiry?: ExternalLeadActionData;
   senderName?: string;
   allowBusinessDetails?: boolean;
+  guestReturnTo?: string;
 }) {
   const router=useRouter();
   const [manageSuspended, setManageSuspended] = useState(false);
@@ -175,7 +177,7 @@ export default function SharedAssetCards({
                           <div
                             className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${leadStyles.exportHeaderActions}`}
                           >
-                            <SharedAssetExport title={item.title} photos={item.photoUrls} asset={item} attachments={enquiry && enquiry.permissions.reports && ['owner','active','read-only'].includes(enquiry.access) ? enquiry.reports.map(report => ({name:report.label, url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}`})) : []}/>
+                            <SharedAssetExport signInReturnTo={guestReturnTo} title={item.title} photos={item.photoUrls} asset={item} attachments={enquiry && enquiry.permissions.reports && ['owner','active','read-only'].includes(enquiry.access) ? enquiry.reports.map(report => ({name:report.label, url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}`})) : []}/>
                             {enquiry && item.assetId && <SharedAssetSend enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>}
                             <LeadManageButton
                               label={`Manage ${item.title}`}

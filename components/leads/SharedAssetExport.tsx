@@ -4,6 +4,9 @@ import { useId, useMemo, useState } from 'react';
 import { createPortal } from '../WebsitePortal';
 import AssetExternalShare, { type ExternalShareFileSource } from '../asset-register/AssetExternalShare';
 import ShareModalCloseButton from '../asset-register/ShareModalCloseButton';
+import SharedEnquiryAccess from '../SharedEnquiryAccess';
+import ShareDisclosureDialog from '../asset-register/ShareDisclosureDialog';
+import gateStyles from '../SharedEnquiryLanding.module.css';
 import LeadReportDialog from './LeadReportDialog';
 import { useLeadDialog } from './useLeadDialog';
 import type { ExternalAssetShareItem } from '../../lib/asset-external-share';
@@ -16,14 +19,18 @@ export type ExportAttachment = { url: string; name: string };
 type Props = { title: string; photos: string[]; details?: string; asset?: Partial<ExternalAssetShareItem>; attachments?: ExportAttachment[] };
 
 /** Recipient entry point to the same outside-sharing panel used by the Asset Register. */
-export default function SharedAssetExport(props: Props) {
+export default function SharedAssetExport({ signInReturnTo, ...props }: Props & { signInReturnTo?: string }) {
   const [open, setOpen] = useState(false);
+  const titleId = useId();
   return <>
     <button type="button" className={`${styles.optionsButton} ${styles.cardOptionsButton} ${styles.controlTooltip} ${triggerStyles.trigger}`} data-tooltip="Share asset" onClick={() => setOpen(true)}>
       <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.2m-6.8 7 6.8 4.2"/></svg>
       <span>Share</span>
     </button>
-    {open && createPortal(<OutsideShareDialog key={JSON.stringify(props)} {...props} onClose={() => setOpen(false)}/>, document.body)}
+    {open && signInReturnTo && <ShareDisclosureDialog title="Sign in to share" titleId={titleId} closeLabel="Back to enquiry" onClose={() => setOpen(false)} className={gateStyles.dialog}>
+      <SharedEnquiryAccess returnTo={signInReturnTo} access="sign-in" embedded />
+    </ShareDisclosureDialog>}
+    {open && !signInReturnTo && createPortal(<OutsideShareDialog key={JSON.stringify(props)} {...props} onClose={() => setOpen(false)}/>, document.body)}
   </>;
 }
 

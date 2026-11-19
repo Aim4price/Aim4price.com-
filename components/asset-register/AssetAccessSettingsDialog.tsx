@@ -7,7 +7,7 @@ import layout from './AssetAccessSettingsDialog.module.css';
 import styles from '../../app/asset-register/page.module.css';
 
 /** The same settings surface for inside sharing and asset links. */
-export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,footer,linkSettings=false,onViewOnly,subjectHeader=false,locationLayout=false,documentsLayout=false,compactLayout=false,guideLayout=false,focusSelector='input',guideDescription='The recipient signs in to use your link.',permissionsDescription='Choose allowed updates and reports.'}: {
+export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,footer,linkSettings=false,onViewOnly,subjectHeader=false,locationLayout=false,documentsLayout=false,compactLayout=false,guideLayout=false,focusSelector='input',guideDescription='Sign in to use additional permissions.',permissionsDescription='Choose allowed updates and reports.'}: {
   title:string;assetTitle:string;onClose:()=>void;children:ReactNode;footer?:ReactNode;linkSettings?:boolean;onViewOnly?:()=>void;subjectHeader?:boolean;locationLayout?:boolean;documentsLayout?:boolean;compactLayout?:boolean;guideLayout?:boolean;focusSelector?:string;guideDescription?:string;permissionsDescription?:string;
 }) {
   const titleId=useId();
