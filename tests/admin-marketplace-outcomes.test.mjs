@@ -107,3 +107,15 @@ test('Admin Asset Outcomes keeps the white responsive Aim4price layout', () => {
   assert.match(styles, /@media \(max-width: 980px\)/);
   assert.match(styles, /@media \(max-width: 540px\)/);
 });
+
+test('sales totals use final sold amounts, explicit help and the original owner', async () => {
+  const { saleTotals, registerRow, marketplaceRow } = await import('../lib/outcome-sales-report.ts');
+  const asset = registerRow({ id:'a', sourceUserId:'seller', buyerUserId:'buyer', sourceName:'Farm',
+    outcome:'sold', aim4priceInfluence:'yes', amountExVat:51000, outcomeDate:'2026-11-18' });
+  assert.equal(asset.ownerId,'seller');
+  const noPrice = marketplaceRow({ outcomeId:'b', reason:'sold', aim4priceHelped:true,
+    askingPriceExVat:500, aim4priceValueExVat:600, finalSalePriceExVat:null });
+  const rows = [asset, noPrice, {...asset, sold:false, outcome:'Scrapped', amount:347.83},
+    {...asset, sold:false, outcome:'Traded', amount:7500}, {...asset, helped:'No', amount:1500.95}];
+  assert.deepEqual(saleTotals(rows),{sold:3, assisted:2, soldValue:52500.95, assistedValue:51000, missing:1});
+});

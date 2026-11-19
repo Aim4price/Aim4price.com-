@@ -10,6 +10,8 @@ import {
   type AdminMarketplaceOutcomeReport,
   type AdminMarketplaceOutcomeRow,
 } from '../../../lib/admin-marketplace-shared';
+import { SalesDownload, useOutcomeSelection } from './sales-download';
+import { marketplaceRow } from '../../../lib/outcome-sales-report';
 import styles from './page.module.css';
 
 const PAGE_SIZE = 25;
@@ -134,6 +136,9 @@ export default function AdminMarketplaceOutcomesClient({
 }: {
   report: AdminMarketplaceOutcomeReport;
 }) {
+  const selection = useOutcomeSelection();
+  const [owner, setOwner] = useState('');
+  const owners = useMemo(() => new Map(report.outcomes.map(row=>[row.accountUserId,row.sellerLabel])), [report.outcomes]);
   const [search, setSearch] = useState('');
   const [reason, setReason] = useState<'all' | AdminMarketplaceOutcomeReason>('all');
   const [helped, setHelped] = useState<HelpFilter>('all');
@@ -141,6 +146,11 @@ export default function AdminMarketplaceOutcomesClient({
   const [closed, setClosed] = useState<ClosedFilter>('all');
   const [sort, setSort] = useState<OutcomeSort>('latest');
   const [page, setPage] = useState(1);
+  function resetSelectionAndPage() {
+    selection.clear();
+    setPage(1);
+  }
+
   const [detailOutcome, setDetailOutcome] = useState<AdminMarketplaceOutcomeRow | null>(null);
   const detailDialogRef = useRef<HTMLElement>(null);
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -158,6 +168,7 @@ export default function AdminMarketplaceOutcomesClient({
     const query = search.replace(/\s+/g, ' ').trim().toLocaleLowerCase('en-ZA');
     return report.outcomes
       .filter((outcome) => {
+        if (owner && outcome.accountUserId !== owner) return false;
         if (reason !== 'all' && outcome.reason !== reason) return false;
         if (helped === 'yes' && !outcome.aim4priceHelped) return false;
         if (helped === 'no' && outcome.aim4priceHelped) return false;
@@ -197,7 +208,7 @@ export default function AdminMarketplaceOutcomesClient({
         }
         return dateTime(right.closedAtIso) - dateTime(left.closedAtIso);
       });
-  }, [closed, helped, reason, report.outcomes, search, sort, source]);
+  }, [owner, closed, helped, reason, report.outcomes, search, sort, source]);
 
   const visibleMetrics = useMemo(
     () => summarizeAdminMarketplaceOutcomes(filteredOutcomes),
@@ -209,7 +220,7 @@ export default function AdminMarketplaceOutcomesClient({
   const pageEnd = Math.min(pageStart + PAGE_SIZE, filteredOutcomes.length);
   const pageOutcomes = filteredOutcomes.slice(pageStart, pageEnd);
   const filtersActive =
-    Boolean(search.trim()) ||
+    Boolean(owner || search.trim()) ||
     reason !== 'all' ||
     helped !== 'all' ||
     source !== 'all' ||
@@ -217,13 +228,14 @@ export default function AdminMarketplaceOutcomesClient({
     sort !== 'latest';
 
   function clearFilters() {
+    setOwner('');
     setSearch('');
     setReason('all');
     setHelped('all');
     setSource('all');
     setClosed('all');
     setSort('latest');
-    setPage(1);
+    resetSelectionAndPage();
   }
 
   function openDetails(
@@ -270,6 +282,8 @@ export default function AdminMarketplaceOutcomesClient({
 
   return (
     <>
+      <SalesDownload rows={filteredOutcomes.map(marketplaceRow)} selected={selection.ids} owners={owners} owner={owner}
+        source="marketplace" changeOwner={id => { setOwner(id); resetSelectionAndPage(); }} />
       <section className={styles.metrics} aria-label="Marketplace outcome summary">
         <article className={styles.featuredMetric}>
           <span>Outcomes</span>
@@ -317,7 +331,7 @@ export default function AdminMarketplaceOutcomesClient({
                 value={search}
                 onChange={(event) => {
                   setSearch(event.target.value);
-                  setPage(1);
+                  resetSelectionAndPage();
                 }}
                 placeholder="Asset, seller or reference"
               />
@@ -328,7 +342,7 @@ export default function AdminMarketplaceOutcomesClient({
                 value={reason}
                 onChange={(event) => {
                   setReason(event.target.value as 'all' | AdminMarketplaceOutcomeReason);
-                  setPage(1);
+                  resetSelectionAndPage();
                 }}
               >
                 <option value="all">All outcomes</option>
@@ -343,7 +357,7 @@ export default function AdminMarketplaceOutcomesClient({
                 value={helped}
                 onChange={(event) => {
                   setHelped(event.target.value as HelpFilter);
-                  setPage(1);
+                  resetSelectionAndPage();
                 }}
               >
                 <option value="all">Yes and No</option>
@@ -357,7 +371,7 @@ export default function AdminMarketplaceOutcomesClient({
                 value={source}
                 onChange={(event) => {
                   setSource(event.target.value as SourceFilter);
-                  setPage(1);
+                  resetSelectionAndPage();
                 }}
               >
                 <option value="all">Marketplace and Showroom</option>
@@ -371,7 +385,7 @@ export default function AdminMarketplaceOutcomesClient({
                 value={closed}
                 onChange={(event) => {
                   setClosed(event.target.value as ClosedFilter);
-                  setPage(1);
+                  resetSelectionAndPage();
                 }}
               >
                 <option value="all">All time</option>
@@ -388,7 +402,7 @@ export default function AdminMarketplaceOutcomesClient({
                 value={sort}
                 onChange={(event) => {
                   setSort(event.target.value as OutcomeSort);
-                  setPage(1);
+                  resetSelectionAndPage();
                 }}
               >
                 <option value="latest">Latest closed</option>
@@ -406,7 +420,11 @@ export default function AdminMarketplaceOutcomesClient({
           <table>
             <thead>
               <tr>
-                <th>Asset</th>
+                <th className={styles.pickCell}><input type="checkbox" aria-label="Select all matching outcomes"
+                    checked={filteredOutcomes.length > 0 && selection.ids.size === filteredOutcomes.length}
+                    ref={node => { if (node) node.indeterminate = selection.ids.size > 0 && selection.ids.size < filteredOutcomes.length; }}
+                    onChange={e => selection.select(e.target.checked ? filteredOutcomes.map(row => row.outcomeId) : [])} /></th>
+                  <th>Asset</th>
                 <th>Outcome</th>
                 <th>Helped?</th>
                 <th>Price evidence</th>
@@ -416,7 +434,9 @@ export default function AdminMarketplaceOutcomesClient({
             <tbody>
               {pageOutcomes.map((outcome) => {
                 return (
-                  <tr key={outcome.outcomeId}>
+                  <tr key={outcome.outcomeId} data-picked={selection.ids.has(outcome.outcomeId)}>
+                    <td className={styles.pickCell}><input type="checkbox" aria-label={`Select ${outcome.title}`}
+                      checked={selection.ids.has(outcome.outcomeId)} onChange={()=>selection.toggle(outcome.outcomeId)} /></td>
                     <td className={styles.assetCell}>
                       <button
                         type="button"
