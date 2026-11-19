@@ -1,4 +1,4 @@
-dialog.dialog { position: fixed; inset: 0; margin: auto; padding: 0; width: min(58rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); color: var(--app-text, #123e31); }
+dialog.dialog { position: fixed; inset: 0; margin: auto; padding: 0; width: min(58rem, calc(var(--website-visible-width, 100vw) - 2rem)); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); color: var(--app-text, #123e31); }
 dialog.dialog:not([open]) { display: none; }
 .dialog::backdrop { background: rgba(16,37,43,.43); backdrop-filter: blur(5px); }
 .options { display: grid; gap: .75rem; }

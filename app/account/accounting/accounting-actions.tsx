@@ -44,7 +44,7 @@ export default function AccountingActions({ choices }: { choices: Choice[] }) {
       <header className={access.modalHeader}>
         <h2 id="accounting-title" className={styles.flowTitle} ref={heading} tabIndex={-1}>{isBrand && <span className={styles.titleLogo}><img alt="" src={`/accounting/${view}.svg`} width="32" height="32" /></span>}{title}</h2>
         <p>{view === 'choose' ? 'Which platform do you use for bookkeeping?' : view === 'manage' ? 'Open a connection to preview bills or disconnect.' : view === 'sage' ? 'Choose the Sage product you use.' : 'View setup for your accounting platform.'}</p>
-        <button type="button" className={access.closeButton} onClick={() => dialog.current?.close()} aria-label="Close accounting connections">×</button>
+        <button type="button" data-modal-close="true" className={access.closeButton} onClick={() => dialog.current?.close()} aria-label="Close accounting connections">×</button>
       </header>
       <div className={`${access.modalBody} ${styles.flowPanel}`}>
         {view === 'choose' ? <div className={styles.assistantChoices}>{(Object.keys(brands) as Brand[]).map(brand =>
