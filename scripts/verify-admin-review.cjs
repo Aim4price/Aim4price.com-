@@ -569,7 +569,8 @@ const evidence=path.join(root,'.next/admin-review-validation');
 
   await open('accounts');
   await page.$eval('nav[aria-label="Admin navigation"] > button[aria-haspopup="dialog"]',e=>{e.focus();e.click();});await page.waitForSelector('[role="dialog"]');
-  assert.equal(await page.$$eval('[role="dialog"] a',els=>els.length),17);
+  assert.equal(await page.$$eval('[role="dialog"] a',els=>els.length),16);
+  assert.equal(await page.$('[role="dialog"] a[href="/admin/lifecycle-calculator"]'),null);
   assert.match(await page.$eval('[role="dialog"] a[href="/admin/asset-options"]', el=>el.textContent.trim()), /^Asset options/);
   assert.equal(await page.$('[role="dialog"] a[href="/admin/businesses"]'),null);
   assert.match(await page.$eval('[role="dialog"] a[href="/admin/asset-emails"]',el=>el.textContent.trim()),/^Asset emails/);
