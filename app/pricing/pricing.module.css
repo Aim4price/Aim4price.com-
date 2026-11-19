@@ -302,3 +302,15 @@
   :global(html:not(:has([data-website-canvas]))) .accessOption { padding: 1.1rem; }
   :global(html:not(:has([data-website-canvas]))) .accessOption .button { width: 100%; box-sizing: border-box; }
 }
+
+/* Strong secondary headings throughout Subscriptions and its dialogs. */
+.heroDescription, .accountDescription, .cardNote, .priceLabel, .priceLine > span,
+.subscriptionDetail p, .closing p, .accessOption p, .accessFootnote,
+.accessHeading > strong span, .accessExplanation > p, .relationshipNote {
+  color: #244c3c;
+  font-weight: 600;
+}
+.heroDescription { font-weight: 650; }
+.photoSurface .signIn { color: #244c3c; font-weight: 600; }
+.serviceFees summary, .serviceList dt { color: #183b30; font-weight: 700; }
+.detailBody, .serviceFees .footnote { color: #29483b; }

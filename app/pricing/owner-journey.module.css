@@ -375,3 +375,16 @@
   :global(html:not(:has([data-website-canvas]))) .dealerRates > div { flex-wrap: wrap; }
   :global(html:not(:has([data-website-canvas]))) .dealerRates dd { text-align: left; }
 }
+
+/* Match the main headings with clear, dark supporting labels. */
+.simpleOwner .heading > p:last-child { color: #244c3c; font-weight: 650; }
+.simpleOwner .choiceCopy, .choiceSecondary, .simpleOwner .rowLabel,
+.simpleOwner .totalCaption, .simpleOwner .reviewNote, .simpleOwner .serviceNote,
+.simpleOwner .navigation > .note, .simpleOwner .price span,
+.simpleOwner .reviewBilling p, .yearlySaving span, .included, .relationshipNote {
+  color: #244c3c;
+  font-weight: 600;
+}
+.simpleOwner .reviewTotal .label { color: #244c3c; font-weight: 700; }
+.detailPage, .benefits p, .billingNotes dd { color: #29483b; }
+.dealerRates dt { color: #244c3c; font-weight: 600; }

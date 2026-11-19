@@ -17,7 +17,7 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
     <div className={styles.photoSurface}>
     <div className={styles.shell}>
       <header className={styles.hero}>
-        <h1>Hosting Fees</h1>
+        <h1>Subscriptions</h1>
         <p className={styles.heroDescription}>Choose your account. Add help when you need it.</p>
       </header>
       <section className={styles.pricingChoices} aria-label="Choose your account">
