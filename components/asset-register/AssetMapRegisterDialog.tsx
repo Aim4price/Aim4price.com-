@@ -22,15 +22,13 @@ export default function AssetMapRegisterDialog({ options, selectedId, onSelect, 
   const visible = options.filter(option => option.label.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
 
   useEffect(() => {
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     // The website portal mounts its host after commit.
     const frame = requestAnimationFrame(() => searchRef.current?.focus());
-    return () => { cancelAnimationFrame(frame); document.body.style.overflow = previous; };
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   return createPortal(
-    <div className={styles.overlay} data-website-overlay>
+    <div className={styles.overlay} data-website-overlay data-page-scroll-lock>
       <div className={styles.backdrop} onClick={onClose} />
       <section id="asset-map-register-dialog" ref={ref} tabIndex={-1} className={styles.dialog}
         role="dialog" aria-modal="true" aria-labelledby={titleId}>

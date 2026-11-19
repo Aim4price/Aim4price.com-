@@ -104,6 +104,19 @@ export default function Validation(){
   await page.setViewport({width:1440,height:900});
   await page.goto('http://127.0.0.1:3033/business/send-link-validation',{waitUntil:'networkidle2'});
   await page.waitForSelector('[data-hydrated=true]');
+  // Close overlapping page and portal locks in both orders.
+  for (const parentFirst of [true,false]) {
+   await page.$eval('main[data-hydrated]',main=>main.setAttribute('data-page-scroll-lock',''));
+   await click('edit link');
+   await page.waitForSelector('[data-access-start]');
+   const releaseParent=()=>page.$eval('main[data-hydrated]',main=>main.removeAttribute('data-page-scroll-lock'));
+   const closeSharing=async()=>{await page.keyboard.press('Escape');await page.waitForSelector('[data-access-start]',{hidden:true});};
+   if(parentFirst) await releaseParent(); else await closeSharing();
+   assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden');
+   if(parentFirst) await closeSharing(); else await releaseParent();
+   assert.notEqual(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden');
+   assert.notEqual(await page.evaluate(()=>getComputedStyle(document.body).overflowY),'hidden');
+  }
   const historyWrites=()=>requests.filter(r=>r.path==='/api/asset-share-links/history'&&r.method==='PATCH').map(r=>JSON.parse(r.data));
   const edit=async(protectedLink=false)=>{
    await click(protectedLink?'edit protected link':'edit link');

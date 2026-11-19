@@ -39,12 +39,6 @@ export default function AssetValueDialog({endpoint,assetTitle,onClose,onSaved,su
  const summaryMoney=(value:unknown)=>value==null?'Not saved':money(pricingVatAmount(Number(value),summaryVat));
  const ownerMoney=(value:unknown)=>value==null?'Not saved':money(pricingVatAmount(Number(value),valueVat));
  const bodyRef=useRef<HTMLDivElement>(null);
- useEffect(()=>{
-  const elements=[document.documentElement,document.body];
-  const previous=elements.map(element=>({value:element.style.getPropertyValue('overflow'),priority:element.style.getPropertyPriority('overflow')}));
-  elements.forEach(element=>element.style.setProperty('overflow','hidden','important'));
-  return()=>elements.forEach((element,index)=>element.style.setProperty('overflow',previous[index].value,previous[index].priority));
- },[]);
  useEffect(()=>{if(bodyRef.current?.parentElement)bodyRef.current.parentElement.scrollTop=0;},[view,replacementReview]);
  const [suggestionVat,setSuggestionVat]=useState(false);
  const suggestedAmount=pricingInputExVat(Number(amount),suggestionVat);
@@ -101,7 +95,7 @@ export default function AssetValueDialog({endpoint,assetTitle,onClose,onSaved,su
   </div>
  </div>;
  return <LeadActionDialog title={replacementSuggestion?(manual?'Update replacement price':'Suggest replacement price'):suggest?(manual?'Update manual value':'Suggest current value'):view==='override'?'Change current value':view==='complete'?'Replacement price updated':replacementReview?'Review replacement change':view==='replacement'?'Change replacement price':view==='history'?(initialRequestId?'Value suggestion':'Value history'):view==='review'?'Review suggestion':view==='reset'?'Return to Aim4price value':view==='restore'?'Restore previous value':'Manage values'} assetTitle={assetTitle} onClose={()=>{if(!busy)onClose();}} busy={busy} className={`${styles.dialog} ${suggest?styles.suggestionDialog:''}`} footer={footer}>
- <div ref={bodyRef} className={styles.body} data-value-view={view}>
+ <div data-page-scroll-lock ref={bodyRef} className={styles.body} data-value-view={view}>
  {error&&<p role="alert" className={styles.error}>{error}</p>}{notice&&<p role="status">{notice}</p>}
  {!suggest&&!replacementReview&&view!=='menu'&&view!=='history'&&<div className={styles.summary}>
   <div><span>Current value · {summaryVat?'Incl. VAT':'Excl. VAT'}</span><strong>{summaryMoney(review?.asset.value)}</strong></div>

@@ -8566,21 +8566,6 @@ export default function AssetRegisterClient({
   const isShareModalFocusOpen = isRegisterShareModalOpen || isQuoteModalOpen;
 
   useEffect(() => {
-    if (!anyModalOpen) return;
-    const previousOverflow = document.body.style.getPropertyValue('overflow');
-    const previousPriority = document.body.style.getPropertyPriority('overflow');
-    const previousHtmlOverflow = document.documentElement.style.getPropertyValue('overflow');
-    const previousHtmlPriority = document.documentElement.style.getPropertyPriority('overflow');
-    document.body.style.setProperty('overflow', 'hidden', 'important');
-    document.documentElement.style.setProperty('overflow', 'hidden', 'important');
-
-    return () => {
-      document.body.style.setProperty('overflow', previousOverflow, previousPriority);
-      document.documentElement.style.setProperty('overflow', previousHtmlOverflow, previousHtmlPriority);
-    };
-  }, [anyModalOpen]);
-
-  useEffect(() => {
     if (!isShareModalFocusOpen) {
       return undefined;
     }
@@ -16032,7 +16017,7 @@ export default function AssetRegisterClient({
   }
 
   return (
-    <main className={`${styles.page} ${desktopAccess ? styles.delegatedRegister : ""}`} onClickCapture={event => { if (desktopAccess && (event.target as HTMLElement).closest('[data-access-restricted="true"]')) {event.preventDefault(); event.stopPropagation(); desktop.unavailable();} }}>
+    <main data-page-scroll-lock={anyModalOpen || undefined} className={`${styles.page} ${desktopAccess ? styles.delegatedRegister : ""}`} onClickCapture={event => { if (desktopAccess && (event.target as HTMLElement).closest('[data-access-restricted="true"]')) {event.preventDefault(); event.stopPropagation(); desktop.unavailable();} }}>
       {desktop.dialog}
       {showAppHeader ? <AppHeader active="asset-register" brandAlignment="working-column" /> : null}
 
