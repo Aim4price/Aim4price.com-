@@ -1,3 +1,4 @@
+import { sageConfig } from '../../lib/sage-za-api';
 import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
 import { getDesktopScope, desktopWorkspace } from '../../lib/desktop-workspace';
 import { redirect } from 'next/navigation';
@@ -53,7 +54,7 @@ export default async function MyInvoicesPage({ searchParams }: MyInvoicesPagePro
     || readSingleSearchParam(searchParams?.budgetId)
     || readSingleSearchParam(searchParams?.captureRequestId);
   if (readSingleSearchParam(searchParams?.view) !== 'costs' && !hasDirectTarget) {
-    return <CostEntryChoices />;
+    return <CostEntryChoices showSage={session.user.id === process.env.SAGE_ZA_PILOT_OWNER_ID && Boolean(sageConfig())} />;
   }
 
   return (
