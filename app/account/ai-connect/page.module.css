@@ -465,3 +465,41 @@
   :global(body:not(:has([data-website-canvas]))) .addressStep .serverAddress { display: grid; grid-template-columns: minmax(0, 1fr); }
   :global(body:not(:has([data-website-canvas]))) .addressStep .serverAddress button { justify-self: start; }
 }
+
+.verifyCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  padding: clamp(1rem, 2vw, 1.6rem);
+  background: var(--app-surface, #fff);
+  border: 1px solid var(--app-line, #cddfd5);
+  border-radius: 1rem;
+}
+
+.verifyHeading {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.verifyCard .verifyHeading h2 { margin: 0; font-size: 1.3rem; }
+.verifyCard p { margin: .35rem 0 0; line-height: 1.5; white-space: normal; }
+.verifyCard strong { white-space: nowrap; }
+.verifyCard button {
+  min-height: 44px;
+  padding: .65rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: .7rem;
+  background: var(--app-accent, #17694e);
+  color: var(--ai-button-text, #fff);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.verifyCard button:hover { filter: brightness(.94); }
+.verifyCard button:focus-visible { outline: 3px solid currentColor; outline-offset: -5px; }
+.verifyCard button:disabled { opacity: .7; cursor: wait; }
+.verifyCard p[role="status"] { margin-top: .75rem; max-width: 32rem; }
