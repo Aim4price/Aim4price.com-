@@ -94,6 +94,7 @@ type ScanPinApiResponse = {
 };
 
 type AccountClientProps = {
+  showAccounting?: boolean;
   canManageDesktopUsers?: boolean;
   sharedAccount?: boolean;
   sharedSettings?: ReactNode;
@@ -467,6 +468,7 @@ function ModalInlineNotice({ notice }: { notice: AccountNotice | null }) {
 }
 
 export default function AccountClient({
+  showAccounting = false,
   canManageDesktopUsers = false,
   sharedAccount = false,
   sharedSettings,
@@ -1652,6 +1654,7 @@ export default function AccountClient({
                     ) : null}
 
                     {(isOwnerAccount || (isDealerAccount && !isMiddlemanAccount) || normalizedAccountType === "business") ? <Link className={styles.quickActionButton} href="/account/ai-connect" data-tooltip="Connect an AI assistant to read the Aim4price data you allow." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>AI connections</strong></Link> : null}
+                    {showAccounting && <Link className={styles.quickActionButton} href="/account/accounting" prefetch={false}><QuickActionIcon name="connections" /><strong>Accounting connections</strong></Link>}
                   </div>
                 </section>
 

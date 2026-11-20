@@ -1,0 +1,16 @@
+.panel {
+  max-width: 65rem;
+  margin: clamp(1rem, calc(3 * var(--website-design-vw, 1vw)), 2.5rem) auto;
+  padding: clamp(1.25rem, calc(4 * var(--website-design-vw, 1vw)), 2.5rem);
+  border: 1px solid var(--app-line, #ceded7);
+  border-radius: 1.75rem;
+  background: radial-gradient(at top left, var(--app-surface-soft, #e2f1eb), transparent 65%), var(--app-surface, white);
+  color: var(--app-text, #123e31);
+  box-shadow: 0 1rem 3rem var(--app-shadow-colour, rgba(16,49,39,.09));
+}
+.panel h1 { display: flex; gap: .8rem; align-items: center; font-size: clamp(1.75rem, calc(4 * var(--website-design-vw, 1vw)), 3rem); line-height: 1.1; }
+.panel h1 img { width: 1.35em; height: 1.35em; object-fit: contain; flex: none; }
+.panel a { color: inherit; font-weight: 750; }
+.panel button { background: var(--app-accent, #17684d); color: white; border: 0; border-radius: .8rem; padding: .8rem 1.2rem; font: inherit; font-weight: 750; cursor: pointer; }
+.panel form, .panel section { margin: 1rem 0; }
+.panel li { margin-bottom: .8rem; }

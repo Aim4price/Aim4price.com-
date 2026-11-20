@@ -1,0 +1,6 @@
+dialog.dialog { position: fixed; inset: 0; margin: auto; padding: 0; width: min(58rem, calc(var(--website-visible-width, 100vw) - 2rem)); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); color: var(--app-text, #123e31); }
+dialog.dialog:not([open]) { display: none; }
+.dialog::backdrop { background: rgba(16,37,43,.43); backdrop-filter: blur(5px); }
+.options { display: grid; gap: .75rem; }
+.options > div { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; padding: 1rem; border: 1px solid var(--app-line,#cbded4); border-radius: .9rem; background: var(--app-surface-soft,#eff6f2); }
+.options a { margin-inline-start: auto; color: var(--app-text,#123e31); font-weight: 750; }

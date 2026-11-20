@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import dynamic from 'next/dynamic';
@@ -225,6 +226,7 @@ type MyInvoicesClientProps = {
   dealerMode?: boolean;
   showAppHeader?: boolean;
   initialAssetId?: string;
+  showAccounting?: boolean;
   initialOpenAdd?: boolean;
   initialReturnTo?: string;
   initialDealerDefaults?: DealerDefaults;
@@ -1041,6 +1043,7 @@ export default function MyInvoicesClient({
   dealerMode = false,
   showAppHeader,
   initialAssetId = '',
+  showAccounting = false,
   initialOpenAdd = false,
   initialReturnTo = '',
   initialDealerDefaults = { supplierName: '', vatNumber: '', address: '' },
@@ -3590,6 +3593,8 @@ export default function MyInvoicesClient({
             </button>
           )}
         </section>
+
+        {showAccounting && <Link className={styles.secondaryButton} prefetch={false} href="/account/accounting">Accounting connections</Link>}
 
         <CaptureRequestStatusList
           requests={captureRequests}
