@@ -12,6 +12,7 @@ const stubs={
  'components/AppPatternBackground':'exports.AppViewportBackground=()=>null;',
  'lib/db':'exports.getDb=()=>({query:async(q)=>({rows:q.includes("count(*)")?[{accepted:12,pending:0,review:0}]:[]})});',
  'lib/maintenance-email-delivery':'exports.ensureAssetEmailDelivery=async()=>{};exports.emailRollout=()=>({enabled:true});',
+ 'lib/business-credits':'exports.ensureCreditSchema=async()=>{};exports.creditLimitsActive=()=>false;exports.MONTHLY_BUSINESS_CREDITS=500;',
  'lib/sharing-admin':'exports.sharingAdminAccounts=async()=>[];',
  'lib/admin-attention':'exports.getAdminAttention=async()=>[{label:"Pending accounts",count:3,href:"/admin?status=pending_payment",description:"Review access before activating."},{label:"Overdue capture",count:5,href:"/admin/capture-queue?status=overdue",description:"Open requests past their deadline.",urgent:true},{label:"Unclaimed capture",count:2,href:"/admin/capture-queue?status=unassigned",description:"Open requests without an assigned admin."},{label:"Needs matching",count:1,href:"/admin/capture-queue?status=needs_matching",description:"Confirm the customer and destination."},{label:"Needs information",count:0,href:"/admin/capture-queue?status=needs_information",description:"Follow up on missing details."},{label:"Awaiting owner",count:2,href:"/admin/capture-queue?status=awaiting_owner",description:"Documents awaiting owner review."}];',
  'lib/admin-dashboard':'exports.getAdminDashboardStats=async()=>window.fixtureDashboard;',

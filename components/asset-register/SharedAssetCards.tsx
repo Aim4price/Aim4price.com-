@@ -1,4 +1,5 @@
 "use client";
+import { creditAction,CreditNotice } from '../BusinessCreditControls';
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { PublicAssetShare } from "../../lib/asset-share-links";
 import SharedAssetValueDialog from "../leads/SharedAssetValueDialog";
@@ -35,7 +36,7 @@ export default function SharedAssetCards({
   example = false,
   senderName = "",
   allowBusinessDetails = false,
-  guestReturnTo,
+  guestReturnTo, creditToken,
 }: {
   example?: boolean;
   share: PublicAssetShare | null;
@@ -44,9 +45,35 @@ export default function SharedAssetCards({
   enquiry?: ExternalLeadActionData;
   senderName?: string;
   allowBusinessDetails?: boolean;
-  guestReturnTo?: string;
+  guestReturnTo?: string; creditToken?: string;
 }) {
   const router=useRouter();
+  const [creditError,setCreditError]=useState('');
+  const manageBusy=useRef(false);
+  const visit=useRef<{token:string;assetKey:string;requestId:string}|null>(null);
+  const attempt=useRef<{assetKey:string;requestId:string}|null>(null);
+  function closeVisit(){
+    const current=visit.current;
+    visit.current=null;attempt.current=null;
+    if(current) void creditAction(current,'manage','close',current.requestId).catch(()=>{});
+  }
+  useEffect(()=>{
+    window.addEventListener('pagehide',closeVisit);
+    return ()=>{window.removeEventListener('pagehide',closeVisit);closeVisit();};
+  },[creditToken]);
+  async function openManage(index:number){
+    if(!creditToken){setManaged(index);return;}
+    if(manageBusy.current || visit.current)return;
+    manageBusy.current=true;
+    const assetKey=share?.assets[index]?.assetId||String(index);
+    if(attempt.current?.assetKey!==assetKey)attempt.current={assetKey,requestId:crypto.randomUUID()};
+    const current={token:creditToken,...attempt.current};
+    try{
+      await creditAction(current,'manage','complete',current.requestId);
+      visit.current=current;setManaged(index);
+    }catch(e){setCreditError(e instanceof Error?e.message:'Could not open Manage.');}
+    finally{manageBusy.current=false;}
+  }
   const [manageSuspended, setManageSuspended] = useState(false);
   const [valueAsset,setValueAsset]=useState<{id:string;title:string}|null>(null);
   const [vatIncluded,setVatIncluded]=useState<Record<string,boolean>>({});
@@ -59,7 +86,7 @@ export default function SharedAssetCards({
     photoIndex: number;
   } | null>(null);
   const selectionKey=share?.assets.map(asset=>asset.assetId||asset.title).join('|')||'';
-  useEffect(()=>{setOpened(null);setManaged(null);setPhotoViewer(null);},[selectionKey]);
+  useEffect(()=>{closeVisit();setOpened(null);setManaged(null);setPhotoViewer(null);},[selectionKey]);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const photoTrigger = useRef<HTMLElement | null>(null);
   const panelPrefix = useId();
@@ -79,6 +106,7 @@ export default function SharedAssetCards({
     <main
       className={`${assetStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${leadStyles.dealerDesktopLeads} ${styles.page}`}
     >
+      {creditError&&<CreditNotice message={creditError} onClose={()=>setCreditError('')}/>}
       {valueAsset&&enquiry&&createPortal(<SharedAssetValueDialog endpoint={`/api/asset-share-links/${enquiry.token}/assets/${valueAsset.id}`} assetTitle={valueAsset.title} field="current" onClose={()=>setValueAsset(null)} onSaved={()=>router.refresh()}/>,document.body)}
       <section className={assetStyles.shell}>
       {!share ? (
@@ -177,13 +205,13 @@ export default function SharedAssetCards({
                           <div
                             className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${leadStyles.exportHeaderActions}`}
                           >
-                            <SharedAssetExport signInReturnTo={guestReturnTo} title={item.title} photos={item.photoUrls} asset={item} attachments={enquiry && enquiry.permissions.reports && ['owner','active','read-only'].includes(enquiry.access) ? enquiry.reports.map(report => ({name:report.label, url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}`})) : []}/>
-                            {enquiry && item.assetId && <SharedAssetSend enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>}
+                            <SharedAssetExport creditTarget={creditToken?{token:creditToken,assetKey:item.assetId||String(index)}:undefined} signInReturnTo={guestReturnTo} title={item.title} photos={item.photoUrls} asset={item} attachments={enquiry && enquiry.permissions.reports && ['owner','active','read-only'].includes(enquiry.access) ? enquiry.reports.map(report => ({name:report.label, url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}`})) : []}/>
+                            {enquiry && item.assetId && <SharedAssetSend creditTarget={creditToken?{token:creditToken,assetKey:item.assetId}:undefined} enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>}
                             <LeadManageButton
                               label={`Manage ${item.title}`}
                               onClick={(event) => {
                                 trigger.current = event.currentTarget;
-                                setManaged(index);
+                                void openManage(index);
                               }}
                             />
                           </div>
@@ -263,8 +291,12 @@ export default function SharedAssetCards({
       )}
       {asset &&
         createPortal(
-          <LeadManageDialog suspended={manageSuspended} title={asset.title} description={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} onClose={() => { setManaged(null); trigger.current?.focus(); }}>
-              {enquiry ? <ExternalLeadActions key={asset.assetId||managed} {...enquiry} onDialogChange={setManageSuspended} assetSubtitle={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} assetTitle={asset.title} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
+          <LeadManageDialog suspended={manageSuspended} title={asset.title} description={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} onClose={() => { closeVisit(); setManaged(null); trigger.current?.focus(); }}>
+              {visit.current && <div className={assetStyles.assetHeaderActions}>
+                {enquiry?.reply && asset.assetId && <SharedAssetSend enquiry={enquiry} assetId={asset.assetId} assetTitle={asset.title} creditTarget={{...visit.current,visitId:visit.current.requestId}} onDialogChange={setManageSuspended}/>}
+                <SharedAssetExport title={asset.title} asset={asset} photos={asset.photoUrls} attachments={enquiry?.permissions.reports?enquiry.reports.map(report=>({name:report.label,url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}` })):[]} creditTarget={{...visit.current,visitId:visit.current.requestId}} onDialogChange={setManageSuspended}/>
+              </div>}
+              {enquiry ? <ExternalLeadActions creditVisit={visit.current||undefined} key={asset.assetId||managed} {...enquiry} onDialogChange={setManageSuspended} assetSubtitle={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} assetTitle={asset.title} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
                 <section aria-label="Enquiry actions">
                   <p className={styles.note}>
                     These actions apply to the shared enquiry.

@@ -15,6 +15,8 @@ export async function sendSharedAssetNote(token:string,assetId:string,form:FormD
  const id=String(form.get('requestId')||randomUUID());
  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))throw new Error('Invalid save identifier.');
  await ensurePartnerAccessTables();await ensureSharingFoundation();
+ const credits=scope.business ? await import('./business-credits') : null;
+ if(credits) await credits.ensureCreditSchema();
  const db=await getDb().connect();
  try {
   await db.query('BEGIN');await lockLiveSharedAsset(db,scope);
@@ -26,6 +28,7 @@ export async function sendSharedAssetNote(token:string,assetId:string,form:FormD
    const previous=existing.rows[0];
    if(previous.owner_user_id!==scope.lead.ownerId||previous.partner_user_id!==scope.user.id||previous.asset_register_item_id!==assetId)throw new Error('Invalid save identifier.');
   }else{
+   if(credits) await credits.recordCredit(db,{userId:scope.user.id,action:'send',requestId:id,token,assetKey:assetId,visitId:form.get('visitId')?String(form.get('visitId')):undefined});
    await db.query(`INSERT INTO asset_partner_notes(id,owner_user_id,partner_user_id,asset_register_item_id,note_text,status,attachment_file_name,attachment_content_type,attachment_byte_size,attachment_data) VALUES($1::uuid,$2,$3,$4::uuid,$5,'open',$6,$7,$8,$9)`,[id,scope.lead.ownerId,scope.user.id,assetId,note||'PDF quote attached.',attachment?.fileName||null,attachment?.contentType||null,attachment?.data.length||null,attachment?.data||null]);
    const usage={accountId:scope.user.id,actorId:scope.user.id,assetId,token};
    await recordSharingUsage({...usage,metric:'contribution',eventKey:`shared-note:${id}`},db);

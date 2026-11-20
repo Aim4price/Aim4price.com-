@@ -1168,7 +1168,7 @@ export default function AccountClient({
   }
 
   function openOverviewAccess() {
-    if (sharedAccount) { window.location.assign('/pricing'); return; }
+    if (sharedAccount) { window.location.hash='business-credits'; return; }
     if (isOwnerAccount) openScanPinEditor();
     else if (showPartnerDirectory) openPartnerDirectory();
     else openBusinessEditor();
@@ -1553,12 +1553,12 @@ export default function AccountClient({
                 </div>
               </button>
 
-              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={openOverviewAccess} data-tooltip={sharedAccount ? "Explore desktop plans for more account features." : isOwnerAccount ? "Manage the PIN used for QR access to your assets." : showPartnerDirectory ? "Manage how your business appears in the partner directory." : "Review and update your business details."} data-tooltip-style="description">
+              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={openOverviewAccess} data-tooltip={sharedAccount ? "View Business credits and upgrade options." : isOwnerAccount ? "Manage the PIN used for QR access to your assets." : showPartnerDirectory ? "Manage how your business appears in the partner directory." : "Review and update your business details."} data-tooltip-style="description">
                 <span>
                   {sharedAccount ? "Account access" : isOwnerAccount ? "QR PIN status" : "Directory status"}
                 </span>
                 <strong>
-                  {sharedAccount ? "Free sharing account" : isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
+                  {sharedAccount ? "Business sharing account" : isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
                 </strong>
               </button>
             </div>
@@ -1733,7 +1733,7 @@ export default function AccountClient({
                     <QuickActionIcon name="invoices" />
                     <strong>Aim4price invoices</strong>
                   </button>
-                  {sharedAccount ? <Link href="/pricing" data-tooltip="Compare desktop plans and the features they include." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="registers" /><strong>Explore Desktop plans</strong></Link> : null}
+                  {sharedAccount ? <Link href="#business-credits" data-tooltip="View credits and Business upgrade options." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="registers" /><strong>Business credits</strong></Link> : null}
                 </div>
               </section>
             </div>

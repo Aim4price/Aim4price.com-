@@ -15,7 +15,7 @@ export default async function UpgradeAccountPage() {
  return <main className={`${styles.page} ${styles.switchPage}`}><AppHeader active="none"/>
   <section className={styles.switchShell} aria-labelledby="upgrade-heading"><div className={styles.switchCard}>
    <h1 id="upgrade-heading" className={styles.switchTitle}>Oops, upgrade your account</h1>
-   <p className={styles.switchText}>Your free account opens shared assets. Desktop needs an activated subscription.</p>
+   <p className={styles.switchText}>Your sharing account opens shared assets. Desktop features require a Desktop subscription.</p>
    <p className={styles.switchText}>Keep the same login, assets and history when you upgrade.</p>
    <div className={buttons.accessChoices}><Link className={buttons.button} href="/pricing">View Desktop plans</Link><Link className={buttons.secondaryButton} href={profile.accountType==='business'?'/business':'/shared-enquiries'}>Back to shared assets</Link></div>
   </div></section>

@@ -1,6 +1,6 @@
 # Sharing foundation
 
-Free Dealer and Business accounts use the normal permanent user identity. Free signup does not create a billing invoice. Desktop access remains restricted. Admin → Businesses → Sharing usage & access can activate Dealer Desktop after the subscription is arranged; this retains the user ID, contributions and Business workspace membership. It does not collect payment or create a new subscription automatically.
+New free registrations use the Business account type and the normal permanent user identity. Free signup does not create a billing invoice. Desktop access remains restricted. Admin → Businesses → Sharing usage & access can activate Dealer Desktop after the subscription is arranged; this retains the user ID, contributions and Business workspace membership. It does not collect payment or create a new subscription automatically.
 
 ## Live sharing
 
@@ -15,7 +15,9 @@ Free Dealer and Business accounts use the normal permanent user identity. Free s
 
 ## Usage and sessions
 
-All draft allowances are observation-only. Zero does not block access. No reset period or paid credit debit is implemented in this foundation.
+Business credits are pooled per workspace and reset at midnight in South Africa on the first of each month. The 500-credit trial counts Manage opens, successfully saved messages and confirmed external shares. A completed action inside its active Manage visit has zero additional cost. External drafts require sender confirmation. Account shows balances, recent usage and the paid upgrade request. Admin confirms the subscription in Sharing usage, preserving the Business identity. Set `AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT=true` to enforce the cap after the trial. Without this setting, activity is recorded beyond 500.
+
+The original sharing analytics and draft allowances are separate from this ledger. All draft allowances are observation-only. Zero does not block access. Their totals do not debit the Business credit balance.
 
 | Metric | Meaning |
 | --- | --- |
@@ -29,7 +31,7 @@ Usage belongs to the permanent account, not browser storage, and survives sign-o
 
 Free accounts have a 12-hour maximum session and expire after 30 minutes without an authenticated request. Refreshes count as requests. Closing a browser window cannot reliably signal logout; use Sign out for immediate logout. Normal password-manager autofill remains available.
 
-The ledger is ready for maintenance reminder email metering, but this change does not add a scheduled reminder sender. Multi-email organisation management, recurring billing automation and enforcement of decided allowances remain follow-up work.
+The ledger is ready for maintenance reminder email metering, but this change does not add a scheduled reminder sender. Multi-email organisation management and recurring billing automation remain follow-up work.
 
 ## Validation / rollout
 

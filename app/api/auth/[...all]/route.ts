@@ -35,8 +35,8 @@ export async function POST(request: Request): Promise<Response> {
       return Response.json({ message: 'Enter your business name and accept the terms.' }, { status: 400 });
     }
     const accountAccess = signupInput?.accountAccess === 'free' || accountType === 'business' ? 'free' : 'desktop';
-    if (accountAccess === 'free' && !['dealer','business'].includes(accountType)) {
-      return Response.json({message:'Free sharing is available for Dealer and Business accounts.'},{status:400});
+    if (accountAccess === 'free' && accountType !== 'business') {
+      return Response.json({message:'Free sharing is available for Business accounts only.'},{status:400});
     }
     const billingSignup = accountAccess === 'free' ? null : await validateSignupBilling(signupInput ?? {});
     return await withSignupWorkspaceInput({ ...signupInput, accountType, accountAccess, billingSignup }, () => authHandlers.POST(request));

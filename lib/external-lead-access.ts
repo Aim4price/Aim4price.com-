@@ -15,7 +15,7 @@ type Lead = NonNullable<Awaited<ReturnType<typeof readLeadPage>>>;
 export async function externalLeadAccess(lead: Lead) {
     const session = await getServerSession({ requireActive: false, allowDealerApp: true, allowOwnerApp: true });
     const user = session?.user;
-    const result = (access: ExternalLeadAccess) => ({ access, user: user || null });
+    const result = (access: ExternalLeadAccess, business = false) => ({ access, user: user || null, business });
     if (!user) return result('sign-in');
     if (user.id === lead.ownerId && await getAssetRegisterAccountAccess(session!))
         return result('owner');
@@ -30,11 +30,11 @@ export async function externalLeadAccess(lead: Lead) {
     if (plan === 'free' && user.emailVerified !== true) return result('verify-email');
     if (profile.accountStatus === 'suspended')
         return result('suspended');
-    if (!lead.details) return result('read-only');
+    if (!lead.details) return result('read-only', profile.accountType === 'business');
     if (profile.accountType === 'business') {
         if (!(await canBusinessRead(user))) return result('suspended');
         // Owner-selected permissions govern both targeted and untargeted shares.
-        return result('active');
+        return result('active', true);
     }
     if (profile.accountType === 'dealer' && plan === 'free')
         return result('active');
@@ -51,11 +51,12 @@ export async function requireExternalLeadAction(token: string, permission: Exter
     const lead = await readLeadPage(token);
     if (!lead)
         throw new ExternalLeadAccessError('This action was not shared or the enquiry is no longer available.', lead ? 403 : 404);
-    const { access, user } = await externalLeadAccess(lead);
+    const { access, user, business } = await externalLeadAccess(lead);
     if (access !== 'owner' && !leadAllows(lead, permission))
         throw new ExternalLeadAccessError('This action was not shared.', 403);
     if (!user || (access !== 'owner' && access !== 'active'))
         throw new ExternalLeadAccessError('This action requires the recipient’s signed-in, approved account.', user ? 403 : 401);
+    if (business) await (await import('./business-credits')).checkBusinessWrite(user.id,token);
     return { lead, user };
 }
 // Reuse the existing owner approval and revaluation workflow for external proposals.
@@ -79,7 +80,7 @@ export async function resolveExternalCorrectionAccess(input: {
 export async function requestExternalLeadAccess(token: string) {
     const lead = await readLeadPage(token);
     if (!lead || !lead.details) throw new ExternalLeadAccessError('This enquiry is unavailable.', 404);
-    const { access, user } = await externalLeadAccess(lead);
+    const { access, user, business } = await externalLeadAccess(lead);
     if (access !== 'request-access' || !user) throw new ExternalLeadAccessError('Sign in with your account to request access.', 403);
     const profile = await getAccountProfile(user);
     const result = await getDb().query(`INSERT INTO asset_share_access_requests(token,user_id,email,business_name)
