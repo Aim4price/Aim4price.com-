@@ -9,7 +9,7 @@ export default async function SharingAdmin({searchParams}:{searchParams?:{period
  const period=searchParams?.period==='all'?'all':'month';
  const accounts=await sharingAdminAccounts(period);
  return <main className={styles.page}>
-  <header className={styles.heading}><div><h1>Sharing usage</h1><p>See how accounts use shared assets before setting free limits.</p></div><span className={styles.badge}>Measuring only · no limits enforced</span></header>
+  <header className={styles.heading}><div><h1>Sharing usage</h1><p>Track shared assets, link opens and account activity.</p></div><span className={styles.badge}>Usage tracking only</span></header>
   <SharingUsage accounts={accounts} period={period} adminId={admin.user.id}/>
   <ListingReviews />
   <details className={styles.explanation}><summary>What do these numbers mean?</summary>
