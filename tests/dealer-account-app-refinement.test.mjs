@@ -21,7 +21,7 @@ test('Dealer App home mirrors the Owner App launcher without dropping dealer too
   assert.doesNotMatch(source, /href: '\/dealer\/clients'|label: 'Clients'/);
   assert.match(source, /label: 'Notifications'/);
   assert.match(source, /label: 'Overview'/);
-  assert.match(source, /label: 'Leads'/);
+  assert.match(source, /label: 'Assets Shared'/);
   assert.match(source, /label: 'Maintenance'/);
   assert.match(source, /label: 'Value Asset'/);
   assert.match(source, /label: 'Discover Assets'/);
@@ -148,7 +148,7 @@ test('Dealer App Leads keeps every mobile action clear and reachable', () => {
   assert.match(page, /styles\.leadsModule/);
   assert.match(dealerStyles, /\.leadsModule\.leadsModule \{[\s\S]*?padding-top: 0/);
   assert.match(dealerStyles, /\.maintenanceModule\.maintenanceModule \{[\s\S]*?padding-top: 0/);
-  assert.match(source, /dealerAppMode \? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'/);
+  assert.match(source, /title="Assets Shared"/);
   assert.match(source, /<h1>LEAD MANAGEMENT SYSTEM<\/h1>/);
   assert.match(source, /nativeSelect=\{dealerAppMode\}/);
   assert.match(source, /className=\{styles\.leadFilterNativeSelect\}/);
