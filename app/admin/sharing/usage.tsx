@@ -27,7 +27,7 @@ export default function SharingUsage({accounts,period,adminId}:{accounts:Account
    <div className={styles.toolbar}>
     <label>Find an account<input type="search" placeholder="Business name or email" value={search} onChange={e=>setSearch(e.target.value)}/></label>
     <label>Account access<AdminSelect value={plan} onChange={e=>setPlan(e.target.value)}>
-     <option value="all">All accounts</option><option value="free">Free sharing</option><option value="desktop">Desktop</option>
+     <option value="all">All accounts</option><option value="free">Free sharing</option><option value="paid-business">Paid Business</option><option value="desktop">Desktop</option>
     </AdminSelect></label>
    </div>
    <div className={styles.resultCount} aria-live="polite">{visible.length} {visible.length===1?'account':'accounts'}</div>
@@ -35,7 +35,7 @@ export default function SharingUsage({accounts,period,adminId}:{accounts:Account
     <table><thead><tr><th>Account</th><th>Access</th><th>Assets received</th><th>Link opens</th><th>Changes</th><th><span className={styles.srOnly}>Actions</span></th></tr></thead>
      <tbody>{visible.map(a=><tr key={a.user_id}>
       <td><strong>{a.name||a.email}</strong>{a.name && a.name!==a.email && <small>{a.email}</small>}</td>
-      <td><span className={styles.plan}>{a.plan==='free'?'Free sharing':'Desktop'}</span></td>
+      <td><span className={styles.plan}>{a.plan==='free'?'Free sharing':a.plan==='paid-business'?'Paid Business':'Desktop'}</span></td>
       <td>{a.assets}</td><td>{a.opens}</td><td>{a.contributions}</td>
       <td><button className={styles.button} aria-haspopup="dialog" onClick={()=>{setSelected(a.user_id);setConfirm(false);setNotice('');}}>View activity</button></td>
      </tr>)}</tbody>

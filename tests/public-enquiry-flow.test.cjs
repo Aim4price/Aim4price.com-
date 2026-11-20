@@ -46,6 +46,7 @@ test('revoked and missing invitations do not offer a fabricated enquiry',async()
 });
 test('public enquiry renders an expandable Leads card for every selected asset',()=>{
   const Cards=load('components/asset-register/SharedAssetCards.tsx',{
+    '../BusinessCreditControls':{CreditNotice:()=>null},
     '../leads/useOutsideCardDismiss':load('components/leads/useOutsideCardDismiss.ts',{
       '../../lib/viewport-scrollbar':load('lib/viewport-scrollbar.ts'),
     }),
