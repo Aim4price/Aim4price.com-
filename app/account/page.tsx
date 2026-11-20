@@ -1,3 +1,4 @@
+import { isAccountingPilotSession } from '../../lib/accounting-pilot';
 import { canManageTeamAccess } from '../../lib/team-access';
 import AccountDirectoryListing from '../../components/AccountDirectoryListing';
 import BusinessDetails from '../business/business-client';
@@ -40,5 +41,5 @@ export default async function AccountPage() {
     getAccountScanPinStatus(session.user.id),
   ]);
 
-  return <AccountClient showAccounting={profile.accountType === "owner" && [process.env.ACCOUNTING_PILOT_OWNER_ID, process.env.SAGE_ZA_PILOT_OWNER_ID].includes(session.user.id)} canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
+  return <AccountClient showAccounting={profile.accountType === "owner" && isAccountingPilotSession(session)} canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
 }
