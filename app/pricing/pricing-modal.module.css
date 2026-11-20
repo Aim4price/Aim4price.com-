@@ -51,3 +51,7 @@
 .owner:has([data-pricing-view]) .header h2 { text-align: left; font-size: 1.65rem; line-height: 1.25; letter-spacing: -.035em; }
 
 .owner:has([data-pricing-view='question']) { width: min(58rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem)); }
+
+@media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .owner .body { padding: 0; }
+}

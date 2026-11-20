@@ -372,6 +372,9 @@
 .dealerRates > div { align-items: baseline; font-size: 1rem; gap: .5rem 1.5rem; }
 .dealerRates dd { font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .simpleOwner .panel { padding: 0; }
+  :global(html:not(:has([data-website-canvas]))) .simpleOwner .navigation :is(button, a) { min-width: 0; white-space: nowrap; }
+  :global(html:not(:has([data-website-canvas]))) .simpleOwner .finalActions { gap: .75rem; }
   :global(html:not(:has([data-website-canvas]))) .simpleOwner .assetChoices { grid-template-columns: 1fr; }
   :global(html:not(:has([data-website-canvas]))) .simpleOwner .choice, :global(html:not(:has([data-website-canvas]))) .simpleOwner .assetChoices .choice { min-height: 0; padding: 1rem 1.1rem; }
   :global(html:not(:has([data-website-canvas]))) .dealerRates > div { flex-wrap: wrap; }

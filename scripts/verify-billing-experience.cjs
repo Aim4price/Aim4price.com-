@@ -226,14 +226,16 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
      assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden','Background document scrollbar is removed while pricing is open');
      assert.equal(await page.$eval('[data-pricing-content]',e=>e.scrollHeight>e.clientHeight),false,'Asset choices fit without an internal scrollbar');
-     const rateLines=await page.$eval('[aria-label="Number of active assets"] button',e=>{
-      const rates=[...e.querySelectorAll('span')].filter(n=>['R99/month','or R999/year'].includes(n.textContent));
+     const rateLines=await page.$$eval('[aria-label="Number of active assets"] button',els=>els.slice(0,3).map(e=>{
+      const rates=[...e.querySelectorAll('span')].filter(n=>/^(R[\d ]+\/month|or R[\d ]+\/year)$/.test(n.textContent));
       return rates.map(n=>{const rect=n.getBoundingClientRect();return {top:rect.top,bottom:rect.bottom};});
-     });
-     assert.equal(rateLines.length,2);
+     }));
      await page.screenshot({path:path.join(evidence,`owner-asset-options-${width}.png`)});
      // Different font sizes share a baseline, not an identical top edge.
-     assert.ok(Math.max(...rateLines.map(r=>r.top))<Math.min(...rateLines.map(r=>r.bottom)),'Monthly and annual options share a line when there is room');
+     for(const rates of rateLines){
+      assert.equal(rates.length,2);
+      assert.ok(Math.max(...rates.map(r=>r.top))<Math.min(...rates.map(r=>r.bottom)),'Monthly and annual options share a line when there is room');
+     }
      const choose = async selector => { await page.$eval(selector, e => e.click()); };
      await choose('[aria-label="Number of active assets"] button');
      await choose('[data-pricing-content] + div button:last-child');
