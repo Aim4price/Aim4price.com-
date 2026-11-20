@@ -351,3 +351,38 @@
 .photoSurface .signIn { color: #244c3c; font-weight: 600; }
 .serviceFees summary, .serviceList dt { color: #183b30; font-weight: 700; }
 .detailBody, .serviceFees .footnote { color: #29483b; }
+
+/* Compare Business access at a glance, with aligned actions and clear rates. */
+.businessAccess { gap: .85rem; padding-bottom: 1.25rem; }
+.accessIntro { margin: 0; color: #244c3c; font-size: .95rem; font-weight: 600; }
+.businessOptions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.businessOptions .accessOption { display: flex; flex-direction: column; min-width: 0; padding: 1.2rem; background: #fff; }
+.businessOptions .accessOption:last-child { background: linear-gradient(140deg, #eff7f2, #f8fbf9); border-color: #b5d0c1; }
+.businessOptions .accessHeading { justify-content: flex-start; align-items: center; flex-wrap: nowrap; gap: .7rem; }
+.businessOptions h3 { font-size: 1.05rem; }
+.accessIcon, .feeIcon { display: grid; place-items: center; width: 2rem; height: 2rem; flex: 0 0 2rem; border-radius: .6rem; background: #eaf2ed; color: #24533e; }
+.accessIcon svg, .feeIcon svg { width: 1.2rem; height: 1.2rem; }
+.accessPrice { display: grid; gap: .25rem; margin-top: 1rem; }
+.accessPrice > strong { color: #173f31; font-size: 2rem; line-height: 1.2; letter-spacing: -.04em; }
+.accessPrice small { margin-left: .2rem; font-size: .9rem; letter-spacing: 0; font-weight: 600; }
+.accessPrice > span { color: #345444; font-size: .8rem; font-weight: 600; }
+.businessOptions .accessOption p { margin: .85rem 0 1rem; font-size: .88rem; line-height: 1.6; font-weight: 550; }
+.businessOptions .accessOption .button { margin-top: auto; font-size: .85rem; min-height: 2.75rem; padding: .7rem .8rem; box-sizing: border-box; text-align: center; }
+.businessOptions .accessSecondary { color: #24533e; background: #f3f7f4; border: 1px solid #cddfd3; }
+.businessAssurance { display: flex; gap: .55rem; align-items: center; margin: 0; color: #294c3c; font-size: .83rem; line-height: 1.6; }
+.businessAssurance svg { width: 1.15rem; height: 1.15rem; flex-shrink: 0; }
+.businessAccess .accessDetails { padding-inline: 1rem; border-radius: .8rem; }
+.businessAccess .accessDetails > summary { padding-block: .7rem; font-size: .9rem; }
+.businessAccess .coverageToggle { width: 1.8rem; height: 1.8rem; }
+.businessAccess .accessFootnote { font-size: .78rem; }
+.feeTitle { display: flex; align-items: center; gap: .7rem; min-width: 0; }
+.feeIcon { width: 1.75rem; height: 1.75rem; flex-basis: 1.75rem; border-radius: .5rem; }
+.feeIcon svg { width: 1.05rem; height: 1.05rem; }
+.serviceFees summary { padding-block: .75rem; }
+.serviceFees td:last-child { font-variant-numeric: tabular-nums; font-weight: 650; }
+@media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .businessOptions { grid-template-columns: 1fr; gap: .75rem; }
+  :global(html:not(:has([data-website-canvas]))) .businessOptions .accessOption { padding: 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .accessPrice { margin-top: .75rem; }
+  :global(html:not(:has([data-website-canvas]))) .feeTitle { gap: .55rem; }
+}

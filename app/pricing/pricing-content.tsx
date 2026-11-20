@@ -7,6 +7,7 @@ import PackageJourney from './owner-journey';
 import PricingModal from './pricing-modal';
 import DealerDetails from './dealer-details';
 import ServiceFees from './service-fees';
+import PricingIcon from './pricing-icon';
 import { businessHosting, ownerHosting, rand, type HostingAudience } from '../../lib/hosting-pricing';
 
 export default function PricingContent({ signedIn = false, initialAudience = null }: { signedIn?: boolean; initialAudience?: HostingAudience | null }) {
@@ -48,19 +49,23 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
       <PricingModal owner open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
       <PricingModal owner open={audience === 'dealer'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney audience="dealer" signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
       <PricingModal open={audience === 'business'} title="Choose your Business access" onClose={() => setAudience(null)}>
-        <div className={styles.businessAccess}>
-          <section className={styles.accessOption} aria-labelledby="business-shared-title">
-            <div className={styles.accessHeading}><h3 id="business-shared-title">Shared access</h3><strong>Free</strong></div>
-            <p>Work with assets your clients share. They choose which records you can view or update.</p>
-            <Link className={styles.button} href={signedIn ? '/contact-us' : '/business/join'}>{signedIn ? 'Discuss shared access' : 'Create free Business account'}</Link>
-          </section>
-          <section className={styles.accessOption} aria-labelledby="business-hosting-title">
-            <div className={styles.accessHeading}><h3 id="business-hosting-title">Your own workspace</h3><strong>{rand(businessHosting.monthly)}<span>/month</span></strong></div>
-            <p className={styles.accessAnnual}>Or <span className={styles.rate}>{rand(businessHosting.annually)}/year</span> for hosting.</p>
-            <p>Manage client records in your Business workspace. Client hosting is separate, from <span className={styles.rate}>{rand(ownerHosting[0].monthly / 4)} per client/month.</span></p>
-            <Link className={styles.button} href="/contact-us">Discuss Business hosting</Link>
-          </section>
-          <p className={styles.relationshipNote}><strong>You manage your clients.</strong> Aim4price works through your business.</p>
+        <div className={styles.businessAccess} data-business-access>
+          <p className={styles.accessIntro}>Choose how you work with client assets.</p>
+          <div className={styles.businessOptions}>
+            <section className={styles.accessOption} aria-labelledby="business-shared-title">
+              <div className={styles.accessHeading}><span className={styles.accessIcon}><PricingIcon name="link" /></span><h3 id="business-shared-title">Shared access</h3></div>
+              <div className={styles.accessPrice}><strong>Free</strong><span>For records shared with you</span></div>
+              <p>Work with assets your clients share. They choose which records you can view or update.</p>
+              <Link className={`${styles.button} ${styles.accessSecondary}`} href={signedIn ? '/contact-us' : '/business/join'}>{signedIn ? 'Discuss shared access' : 'Create free Business account'}</Link>
+            </section>
+            <section className={styles.accessOption} aria-labelledby="business-hosting-title">
+              <div className={styles.accessHeading}><span className={styles.accessIcon}><PricingIcon name="workspace" /></span><h3 id="business-hosting-title">Your own workspace</h3></div>
+              <div className={styles.accessPrice}><strong>{rand(businessHosting.monthly)}<small>/month</small></strong><span>Or <span className={styles.rate}>{rand(businessHosting.annually)}/year</span> for hosting</span></div>
+              <p>Manage client records in your Business workspace. Client hosting is separate, from <span className={styles.rate}>{rand(ownerHosting[0].monthly / 4)} per client/month.</span></p>
+              <Link className={styles.button} href="/contact-us">Discuss Business hosting</Link>
+            </section>
+          </div>
+          <p className={styles.businessAssurance}><PricingIcon name="shield" /><span><strong>You manage your clients.</strong> Aim4price works through your business.</span></p>
           <details className={styles.accessDetails}><summary>Client hosting rates &amp; sharing<span className={styles.coverageToggle} aria-hidden="true" /></summary><DealerDetails topic="funding" /></details>
           <p className={styles.accessFootnote}>We confirm paid hosting, access and any assistance before setup.</p>
         </div>
