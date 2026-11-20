@@ -32,14 +32,14 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
           <strong className={styles.accountTitle}>Dealer</strong>
           <span className={styles.cardPrice}><span className={styles.priceLabel}>Hosting</span><span className={styles.priceLine}><strong>{rand(businessHosting.monthly)}</strong><span>/ month</span></span></span>
           <span className={styles.accountDescription}>Manage dealership stock and your clients’ assets.</span>
-          <span className={styles.cardNote}>Client hosting from {rand(ownerHosting[0].monthly / 4)} per client/month.</span>
+          <span className={styles.cardNote}>Client hosting from <span className={styles.rate}>{rand(ownerHosting[0].monthly / 4)} per client/month.</span></span>
           <span className={styles.cardAction}>Explore Dealer hosting</span>
         </button>
         <button type="button" aria-haspopup="dialog" onClick={() => setAudience('business')} className={styles.accountCard}>
           <strong className={styles.accountTitle}>Business</strong>
           <span className={styles.cardPrice}><span className={styles.priceLabel}>Shared access</span><span className={styles.priceLine}><strong>Free</strong></span></span>
           <span className={styles.accountDescription}>Work with client assets as a repairer, insurer or financier.</span>
-          <span className={styles.cardNote}>Your own workspace: R199/month or R1 999/year.</span>
+          <span className={styles.cardNote}>Your own workspace: <span className={styles.rate}>{rand(businessHosting.monthly)}/month</span> or <span className={styles.rate}>{rand(businessHosting.annually)}/year.</span></span>
           <span className={styles.cardAction}>Explore Business access</span>
         </button>
       </section>
@@ -55,8 +55,8 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
           </section>
           <section className={styles.accessOption} aria-labelledby="business-hosting-title">
             <div className={styles.accessHeading}><h3 id="business-hosting-title">Your own workspace</h3><strong>{rand(businessHosting.monthly)}<span>/month</span></strong></div>
-            <p className={styles.accessAnnual}>Or {rand(businessHosting.annually)}/year for hosting.</p>
-            <p>Manage client records in your Business workspace. Client hosting is separate, from {rand(ownerHosting[0].monthly / 4)} per client/month.</p>
+            <p className={styles.accessAnnual}>Or <span className={styles.rate}>{rand(businessHosting.annually)}/year</span> for hosting.</p>
+            <p>Manage client records in your Business workspace. Client hosting is separate, from <span className={styles.rate}>{rand(ownerHosting[0].monthly / 4)} per client/month.</span></p>
             <Link className={styles.button} href="/contact-us">Discuss Business hosting</Link>
           </section>
           <p className={styles.relationshipNote}><strong>You manage your clients.</strong> Aim4price works through your business.</p>

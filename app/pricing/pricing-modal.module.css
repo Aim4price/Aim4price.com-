@@ -1,4 +1,4 @@
-.overlay { position: fixed; inset: 0; z-index: 2147482500; display: flex; padding: 1rem; overflow: auto; }
+.overlay { position: fixed; inset: 0; z-index: 2147482500; display: flex; padding: 1rem; overflow: hidden; }
 .dialog { position: relative; z-index: 1; flex-shrink: 0; width: min(64rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); margin: auto; padding: 0; border: 1px solid rgba(18,45,37,.12); border-radius: 1.55rem; color: #17362c; background: #fff; box-shadow: 0 32px 90px rgba(7,25,20,.28), 0 8px 24px rgba(7,25,20,.12); font-family: var(--font-body, 'Montserrat'), sans-serif; overflow: hidden; }
 .dialog { box-sizing: border-box; max-width: 100%; display: flex; flex-direction: column; }
 .backdrop { position: fixed; inset: 0; background: var(--modal-backdrop-color, rgba(12,24,35,.42)); backdrop-filter: var(--modal-backdrop-filter, blur(12px)); }
