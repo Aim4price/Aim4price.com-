@@ -2,6 +2,7 @@
 import { PageHelpHeading } from '../../components/PageHelp';
 
 import { receivedUmbrella, sharedAssetRows } from './shared-asset-rows';
+import sharedStyles from './shared-assets.module.css';
 import PartsInbox from "../../components/PartsInbox";
 import ListPagination from '../../components/ListPagination';
 import AssetPartsModal from '../../components/AssetPartsModal';
@@ -3485,7 +3486,6 @@ export default function LeadsClient({
                 {assetIdentifier ? <span className={styles.leadAssetIdentifier}>{assetIdentifier}</span> : null}
               </div>
               <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
-              {null}
               {lead.ownerMessage ? (
                 <span className={`${styles.trackingLeadPurpose} ${styles.leadOwnerMessagePreview}`}>
                   <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
@@ -3494,16 +3494,6 @@ export default function LeadsClient({
                   <span className={styles.trackingLeadPurposeCopy}>
                     <strong>Owner message</strong>
                     <small>{lead.ownerMessage}</small>
-                  </span>
-                </span>
-              ) : isTrackingRequest ? (
-                <span className={styles.trackingLeadPurpose}>
-                  <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
-                    <MaintenanceTrackingIcon className={styles.trackingLeadPurposeIconGraphic} />
-                  </span>
-                  <span className={styles.trackingLeadPurposeCopy}>
-                    <strong>Asset sent for tracking</strong>
-                    <small>Maintenance tracking access was shared with your dealership.</small>
                   </span>
                 </span>
               ) : null}
@@ -3685,7 +3675,7 @@ export default function LeadsClient({
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
             <WorkspaceTitlePanel
-              title="Assets Shared"
+              title="Shared Assets"
               helpTopic="partnerLeads"
               className={dealerAppMode ? styles.leadsTitlePanel : undefined}
             />
@@ -3842,8 +3832,14 @@ export default function LeadsClient({
                           </svg>
                         </span>
                         <div className={assetStyles.assetGroupIdentity}><div>
-                          <h2>{row.name}</h2>
-                          <p>{row.members.length} grouped {row.members.length === 1 ? 'asset' : 'assets'} · {first.ownerBusinessName || ownerDisplayName(first)}</p>
+                          <div className={sharedStyles.heading}>
+                            <h2>{row.name}</h2>
+                            <span className={sharedStyles.count}>{row.members.length} {row.members.length === 1 ? 'asset' : 'assets'}</span>
+                          </div>
+                          <div className={sharedStyles.metadata}>
+                            <strong>{first.ownerBusinessName || ownerDisplayName(first)}</strong>
+                            <span>Received {formatDate(first.createdAtIso)}</span>
+                          </div>
                           {!expanded && <span className={assetStyles.assetGroupPreview}>{assetTitle(first)}{row.members.length > 1 && ` + ${row.members.length - 1} more`}</span>}
                         </div></div>
                         <div className={assetStyles.assetGroupSummary}>
