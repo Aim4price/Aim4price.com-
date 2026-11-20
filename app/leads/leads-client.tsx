@@ -1930,6 +1930,8 @@ export default function LeadsClient({
   const [openUmbrellas, setOpenUmbrellas] = useState<Set<string>>(() => new Set());
   const rows = useMemo(() => sharedAssetRows(receivedLeads, filteredLeads, isDealerLeadsMode),
     [receivedLeads, filteredLeads, isDealerLeadsMode]);
+  const umbrellaCount = rows.filter(row => row.name !== null).length;
+  const individualCount = rows.length - umbrellaCount;
   const totalLeadPages = Math.max(1, Math.ceil(rows.length / LEADS_PER_PAGE));
   const visibleLeadPage = Math.min(Math.max(currentPage, 1), totalLeadPages);
   const pageRows = useMemo(() => {
@@ -3464,6 +3466,7 @@ export default function LeadsClient({
     const isTrackingRequest = isTrackingLead(lead);
     const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
     const assetIdentifier = leadAssetIdentifier(lead);
+    const collapsedAsset = isDealerLeadsMode && !isLeadOpen;
 
     return (
       <article key={lead.id} ref={isLeadOpen ? openedCardRef : null}
@@ -3475,9 +3478,35 @@ export default function LeadsClient({
           if (isLeadOpen) setOpenLeadId(null);
           else void openLead(lead);
         }}
-        className={`${assetStyles.cardToggleSurface} ${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
+        className={collapsedAsset ? sharedStyles.frame : `${assetStyles.cardToggleSurface} ${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
         <span aria-hidden="true" className={`${assetStyles.controlTooltip} ${assetStyles.cardToggleHint}`} data-tooltip={isLeadOpen ? 'Close lead' : 'Open lead'} />
-        <LeadCardSummary headerClassName={''} identityClassName={`${''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
+        {collapsedAsset ? (
+          <div className={sharedStyles.card}>
+            <span className={sharedStyles.icon} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round">
+                <path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm-9 5 9 5 9-5M12 12v10"/>
+              </svg>
+            </span>
+            <div className={sharedStyles.body}>
+              <div className={sharedStyles.heading}><h3>{assetTitle(lead)}</h3></div>
+              <div className={sharedStyles.metadata}>
+                <strong>{lead.ownerBusinessName || ownerDisplayName(lead)}</strong>
+                <span>Received {formatDate(lead.createdAtIso)}</span>
+              </div>
+              <div className={sharedStyles.preview}>
+                <span className={assetStyles.assetGroupPreview}>{isTrackingRequest ? 'Maintenance tracking' : formatLeadDisplayType(lead)}</span>
+                {assetIdentifier && !assetIdentifier.startsWith('Asset ') && <span className={assetStyles.assetGroupPreview} title={assetIdentifier}>{assetIdentifier}</span>}
+              </div>
+              {lead.ownerMessage && <p className={sharedStyles.message}><strong>Owner message</strong> · {lead.ownerMessage}</p>}
+            </div>
+            <div className={sharedStyles.actions}>
+              {isTrackingRequest && lead.maintenanceAccess?.hasMaintenanceRecords && (
+                <button type="button" className={`${sharedStyles.toggle} ${sharedStyles.secondary}`} onClick={() => openTracking(lead)}>Tracking</button>
+              )}
+              <button type="button" className={sharedStyles.toggle} onClick={() => void openLead(lead)}>Open</button>
+            </div>
+          </div>
+        ) : (<LeadCardSummary headerClassName={''} identityClassName={`${''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
               <div className={styles.leadCardTitleRow}>
                 <h3>{assetTitle(lead)}</h3>
               </div>
@@ -3583,7 +3612,7 @@ export default function LeadsClient({
                   </>
                 )}
               </div>
-        } />
+        } />)}
 
         {lead.maintenanceAccess?.isActive && lead.maintenanceAccess.permissions.canViewLoggedProblems && <SharedProblems endpoint={`/api/asset-leads/${lead.id}/problems`} assetTitle={assetTitle(lead)} notesOnly detailsVisible={isLeadOpen}/>}
 
@@ -3796,9 +3825,11 @@ export default function LeadsClient({
 
           {!isLoading ? (
             <div className={`${styles.leadResultSummary} ${useDealerWorkspaceStyles ? styles.leadResultSummaryDealer : ''}`}>
-              <span>Showing</span>
+              {isDealerLeadsMode && !searchTerm.trim() && !hasActiveLeadFilter ? (
+                <strong>{filteredLeads.length} shared {filteredLeads.length === 1 ? 'asset' : 'assets'} · {individualCount} individual {individualCount === 1 ? 'asset' : 'assets'} · {umbrellaCount} {umbrellaCount === 1 ? 'umbrella' : 'umbrellas'}</strong>
+              ) : <><span>Showing</span>
               <strong>{filteredLeads.length}</strong>
-              <span>of {periodLeads.length} {isDealerLeadsMode ? 'shared assets' : 'leads'} for the selected period</span>
+              <span>of {periodLeads.length} {isDealerLeadsMode ? 'shared assets' : 'leads'} for the selected period</span></>}
             </div>
           ) : null}
 
