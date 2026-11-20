@@ -9,7 +9,8 @@ import local from './accounting.module.css';
 const brands = { sage: 'Sage', xero: 'Xero', quickbooks: 'QuickBooks', zoho: 'Zoho Books' } as const;
 type Brand = keyof typeof brands;
 export type Choice = { brand: Brand; label: string; href: string; ready: boolean; connected: boolean; company?: string | null };
-type View = 'choose' | 'manage' | Brand;
+type View = 'choose' | 'manage' | 'other' | Brand;
+const message = encodeURIComponent('Hi Aim4price Admin, please help me connect my accounting software. I use: ');
 
 export default function AccountingActions({ choices }: { choices: Choice[] }) {
   const [view, setView] = useState<View>('choose');
@@ -23,8 +24,8 @@ export default function AccountingActions({ choices }: { choices: Choice[] }) {
     heading.current?.focus();
   }
 
-  const isBrand = view !== 'choose' && view !== 'manage';
-  const title = isBrand ? brands[view] : view === 'choose' ? 'Choose your accounting software' : 'Your connections';
+  const isBrand = view !== 'choose' && view !== 'manage' && view !== 'other';
+  const title = isBrand ? brands[view] : view === 'choose' ? 'Choose your accounting software' : view === 'other' ? 'Contact Aim4price Admin' : 'Your connections';
   const visible = view === 'manage' ? connections : choices.filter(choice => choice.brand === view);
 
   return <>
@@ -43,20 +44,27 @@ export default function AccountingActions({ choices }: { choices: Choice[] }) {
       } }}>
       <header className={access.modalHeader}>
         <h2 id="accounting-title" className={styles.flowTitle} ref={heading} tabIndex={-1}>{isBrand && <span className={styles.titleLogo}><img alt="" src={`/accounting/${view}.svg`} width="32" height="32" /></span>}{title}</h2>
-        <p>{view === 'choose' ? 'Which platform do you use for bookkeeping?' : view === 'manage' ? 'Open a connection to preview bills or disconnect.' : view === 'sage' ? 'Choose the Sage product you use.' : 'View setup for your accounting platform.'}</p>
+        <p>{view === 'choose' ? 'Which platform do you use for bookkeeping?' : view === 'manage' ? 'Open a connection to preview bills or disconnect.' : view === 'other' ? 'Tell us which accounting software you use so we can help.' : view === 'sage' ? 'Choose the Sage product you use.' : 'View setup for your accounting platform.'}</p>
         <button type="button" data-modal-close="true" className={access.closeButton} onClick={() => dialog.current?.close()} aria-label="Close accounting connections">×</button>
       </header>
       <div className={`${access.modalBody} ${styles.flowPanel}`}>
-        {view === 'choose' ? <div className={styles.assistantChoices}>{(Object.keys(brands) as Brand[]).map(brand =>
+        {view === 'choose' ? <div className={`${styles.assistantChoices} ${local.providerGrid}`}>{(Object.keys(brands) as Brand[]).map(brand =>
           <button type="button" key={brand} className={styles.assistantChoice} onClick={() => show(brand)}>
             <span className={styles.assistantLogo}><img alt="" src={`/accounting/${brand}.svg`} width="56" height="56" /></span><strong>{brands[brand]}</strong>
-          </button>)}</div> : visible.length ? <div className={local.options}>{visible.map(choice => <div key={choice.href}>
+          </button>)}
+          <button type="button" className={styles.assistantChoice} onClick={() => show('other')}>
+            <span className={styles.assistantLogo}><svg className={styles.setupOptionIcon} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></span><strong>Other</strong>
+          </button>
+        </div> : view === 'other' ? <div className={styles.helpActions}>
+          <a className={styles.contactChoice} href={`https://wa.me/27625721650?text=${message}`} target="_blank" rel="noopener noreferrer"><strong>WhatsApp</strong><span className={styles.contactAction}>Open WhatsApp</span></a>
+          <a className={styles.contactChoice} href={`mailto:aim4price@gmail.com?subject=Accounting%20connection&body=${message}`}><strong>Email</strong><span className={styles.contactAction}>Write an email</span></a>
+        </div> : visible.length ? <div className={local.options}>{visible.map(choice => <div key={choice.href}>
           <strong>{choice.label}</strong>
           {choice.company && <span>{choice.company}</span>}
           {choice.ready ? <Link prefetch={false} href={choice.href}>{choice.href.endsWith('sage-export') ? 'Preview a file' : choice.connected ? 'Manage connection' : 'Open setup'}</Link> : <span>Awaiting provider setup</span>}
         </div>)}</div> : <div className={styles.empty}><h3>No active connections</h3><p>Choose your accounting software to get started.</p></div>}
       </div>
-      <footer className={styles.dialogFooter}><p>Only the company you approve will be connected.</p>
+      <footer className={styles.dialogFooter}><p>{view === 'other' ? 'You can edit the message before sending.' : 'Only the company you approve will be connected.'}</p>
         {view !== 'choose' && <div className={styles.footerActions}><button type="button" onClick={() => show('choose')}>Choose software</button></div>}
       </footer>
     </dialog>
