@@ -1,6 +1,7 @@
 .overlay { position: fixed; inset: 0; z-index: 2147482500; display: flex; padding: 1rem; overflow: hidden; }
 .dialog { position: relative; z-index: 1; flex-shrink: 0; width: min(64rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); margin: auto; padding: 0; border: 1px solid rgba(18,45,37,.12); border-radius: 1.55rem; color: #17362c; background: #fff; box-shadow: 0 32px 90px rgba(7,25,20,.28), 0 8px 24px rgba(7,25,20,.12); font-family: var(--font-body, 'Montserrat'), sans-serif; overflow: hidden; }
 .dialog { box-sizing: border-box; max-width: 100%; display: flex; flex-direction: column; }
+.dialog { --action-hover-shadow: 0 3px 10px rgba(23,63,49,.08); --action-hover-outline: transparent; }
 .backdrop { position: fixed; inset: 0; background: var(--modal-backdrop-color, rgba(12,24,35,.42)); backdrop-filter: var(--modal-backdrop-filter, blur(12px)); }
 .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin: 0 1.75rem; padding: 1.4rem 0 1rem; border-bottom: 1px solid rgba(18,45,37,.1); flex-shrink: 0; }
 .header h2 { margin: 0; font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem); line-height: 1.15; font-weight: 850; letter-spacing: -.045em; }
@@ -60,6 +61,9 @@
 
 /* Give the fee cards breathing room, including below the last section. */
 .body:has([data-service-fees]) { padding: 1.15rem 1.75rem 1.5rem; scroll-padding-block: 1rem; }
+.dialog:has([data-business-access]) { width: min(60rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem)); }
+.dialog:has([data-business-access], [data-service-fees]) .header { align-items: center; padding-block: 1.1rem; }
+.dialog:has([data-business-access], [data-service-fees]) .header h2 { font-size: 1.65rem; line-height: 1.25; }
 
 @media (max-width: 640px) {
   :global(html:not(:has([data-website-canvas]))) .owner .body { padding: 0; }

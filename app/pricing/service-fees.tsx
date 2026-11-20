@@ -3,17 +3,20 @@
 import { useState, type ReactNode } from 'react';
 import { adminRetainers, assetSaleFees, rand } from '../../lib/hosting-pricing';
 import DealerDetails from './dealer-details';
+import PricingIcon, { type PricingIconName } from './pricing-icon';
 import styles from './pricing.module.css';
 
 type FeeTopic = 'setup' | 'sale' | 'savings' | 'commission' | 'clients' | 'coverage' | 'other';
 
-function Detail({ title, children, open, onToggle }: { title: string; children: ReactNode; open: boolean; onToggle: () => void }) {
-  return <details open={open}><summary onClick={event => { event.preventDefault(); onToggle(); }}>{title}</summary><div className={styles.detailBody}>{children}</div></details>;
+function Detail({ title, icon, children, open, onToggle }: { title: string; icon: PricingIconName; children: ReactNode; open: boolean; onToggle: () => void }) {
+  return <details open={open}><summary onClick={event => { event.preventDefault(); onToggle(); }}><span className={styles.feeTitle}><span className={styles.feeIcon}><PricingIcon name={icon} /></span>{title}</span></summary><div className={styles.detailBody}>{children}</div></details>;
 }
 
 export default function ServiceFees({ initialTopic }: { initialTopic?: 'commission' }) {
   const [activeTopic, setActiveTopic] = useState<FeeTopic | null>(initialTopic ?? null);
+  const icons: Record<FeeTopic, PricingIconName> = { setup: 'admin', sale: 'sale', savings: 'savings', commission: 'clients', clients: 'link', coverage: 'shield', other: 'services' };
   const section = (topic: FeeTopic) => ({
+    icon: icons[topic],
     open: activeTopic === topic,
     onToggle: () => setActiveTopic(current => current === topic ? null : topic),
   });

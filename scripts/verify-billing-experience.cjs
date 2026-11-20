@@ -341,12 +341,15 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/customers.*asset registers/);
      assert.match(await page.$eval('[aria-label="Customer registers"]',e=>e.textContent),/R24.75 per client\/month/);
+     assert.match(await page.$eval('[data-dealer-journey]',e=>e.textContent),/Stock & parts stocklists/);
+     await page.screenshot({path:path.join(evidence,`dealer-client-options-${width}.png`)});
      await clickText('View client hosting rates');
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/R24.75\/month.*R249.75\/year/);
      await clickText('Back to choices');
      assert.ok(await page.$('[aria-label="Customer registers"]'),'Rate details return to the current question');
      await choose('[aria-label="Customer registers"] button:last-child');
      await clickText('Continue');
+     await page.screenshot({path:path.join(evidence,`dealer-support-options-${width}.png`)});
      await page.$$eval('[aria-label="Aim4price assistance"] button',els=>els.find(e=>e.textContent.startsWith('Monthly admin help')).click());
      await clickText('Continue');
      await choose('[aria-label="Admin package"] button');
@@ -357,6 +360,31 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$eval('[data-dealer-package-price]',e=>e.textContent),'R1 999/year hosting');
      assert.equal(await page.$eval('[data-recurring-admin]',e=>e.textContent),'+ R399/month admin');
      await page.screenshot({path:path.join(evidence,`dealer-yearly-summary-${width}.png`)});
+     await page.click('[aria-label="Change setup"]');
+     await page.$$eval('[aria-label="Aim4price assistance"] button',els=>els.find(e=>e.textContent.startsWith('Help getting set up')).click());
+     await clickText('Continue');
+     await choose('[aria-label="Setup assistance"] button:first-child');
+     assert.equal(await page.$$eval('[aria-label="Setup assistance"] button[aria-pressed="true"]',els=>els.length),1);
+     await page.screenshot({path:path.join(evidence,`dealer-setup-options-${width}.png`)});
+     await clickText('Update package');
+     await clickText('Monthly');
+     assert.equal(await page.$eval('[data-dealer-package-price]',e=>e.textContent),'R199/month hosting','Editing assistance clears unselected monthly admin');
+     assert.match(await page.$eval('[data-dealer-journey]',e=>e.textContent),/R250\/hour · once-off/);
+     assert.equal(await page.$('[data-recurring-admin]'),null);
+     await clickText('Start again');
+     assert.equal(await page.$$eval('[aria-label="Customer registers"] button[aria-pressed="true"]',els=>els.length),0,'Restart clears customer selection');
+     await choose('[aria-label="Customer registers"] button:first-child');
+     await clickText('Continue');
+     await choose('[aria-label="Aim4price assistance"] button:first-child');
+     await clickText('See my package');
+     assert.equal(await page.$eval('[data-dealer-package-price]',e=>e.textContent),'R199/month hosting');
+     assert.match(await page.$eval('[data-dealer-journey]',e=>e.textContent),/No setup fee.*No client hosting fee.*No admin fee/);
+     if(width===1440){
+      await page.setViewport({width,height:700});
+      assert.equal(await page.$eval('[data-pricing-content]',e=>e.scrollHeight>e.clientHeight+1),false,'Compact Dealer package fits without an inner scrollbar');
+     }
+     await page.screenshot({path:path.join(evidence,`dealer-compact-summary-${width}.png`)});
+     await page.setViewport({width,height:1000});
      await page.keyboard.press('Escape');
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).click());
      await page.waitForSelector('[role="dialog"]');
@@ -364,7 +392,15 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.match(await page.$eval('[aria-labelledby="business-hosting-title"]',e=>e.textContent),/R199\/month.*R1 999\/year.*R24.75 per client\/month/);
      assert.ok(await page.$('[aria-labelledby="business-shared-title"] a[href="/business/join"]'));
      assert.ok(await page.$('[aria-labelledby="business-hosting-title"] a[href="/contact-us"]'));
+     if(width===1440){
+      await page.setViewport({width,height:700});
+      assert.equal(await page.$eval('[data-business-access]',e=>e.parentElement.scrollHeight>e.parentElement.clientHeight+1),false,'Business comparison fits without an inner scrollbar');
+     }
      await page.screenshot({path:path.join(evidence,`business-access-options-${width}.png`)});
+     await page.setViewport({width,height:1000});
+     await page.click('[data-business-access] summary');
+     assert.match(await page.$eval('[data-business-access] details',e=>e.textContent),/R24.75\/month.*R249.75\/year/);
+     assert.equal(await page.$eval('[data-business-access]',e=>e.scrollWidth>e.clientWidth+1),false,'Business access stays within the dialog width');
      await page.keyboard.press('Escape');
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent==='Middleman access').click());
      await page.waitForSelector('[data-middleman-access]');
