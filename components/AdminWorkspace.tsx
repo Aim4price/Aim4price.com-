@@ -62,7 +62,11 @@ export default function AdminWorkspace({ children }: { children: ReactNode }) {
     <aside className={styles.sidebar} aria-label="Admin workspace">
       <Link href="/admin/dashboard" className={styles.brand} aria-label="Aim4price Admin dashboard"><img className={styles.brandLogo} src="/brand/aim4price-mark-black.png" alt="" width={660} height={515} /><span className={styles.brandText}>Aim4price<small>Admin workspace</small></span></Link>
       {navigation(collapsed)}
-      <div className={styles.sidebarFooter}><img className={styles.adminAvatar} src="/brand/aim4price-mark-black.png" alt="" width={660} height={515} /><span className={styles.adminIdentity}>Administrator<small>Aim4price</small></span><button type="button" className={styles.collapseButton} onClick={toggleSidebar} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed}>{collapsed ? '›' : '‹'}</button></div>
+      <div className={styles.sidebarFooter}><img className={styles.adminAvatar} src="/brand/aim4price-mark-black.png" alt="" width={660} height={515} /><span className={styles.adminIdentity}>Administrator<small>Aim4price</small></span><button type="button" className={styles.collapseButton} onClick={toggleSidebar} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d={collapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'} />
+        </svg>
+      </button></div>
     </aside>
     <div className={styles.content}>
       <header className={styles.workspaceBar}>
