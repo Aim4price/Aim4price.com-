@@ -355,7 +355,7 @@
 .choiceRate { display: block; font-size: 1rem; font-weight: 700; color: #24533e; }
 .choiceSecondary { display: block; margin-top: .15rem; font-size: .95rem; font-weight: 500; }
 .choicePrices { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .35rem; }
-.rate { white-space: nowrap; }
+.rate { display: inline-block; white-space: nowrap; }
 .simpleOwner .choice { padding: 1.1rem 1.25rem; }
 .simpleOwner .choices { gap: .85rem; }
 .annualAdmin { margin: .35rem 0 0; color: #24533e; font-size: 1.2rem; font-weight: 750; line-height: 1.5; }
