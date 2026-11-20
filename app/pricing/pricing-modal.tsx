@@ -16,7 +16,7 @@ function ModalSurface({ open, title, onClose, children, owner = false, compact =
     return () => { document.body.style.overflow = overflow; previous?.isConnected && previous.focus({ preventScroll: true }); };
   }, [open]);
   if (!open) return null;
-  return <div className={styles.overlay} data-website-overlay onClick={event => {
+  return <div className={styles.overlay} data-website-overlay data-page-scroll-lock onClick={event => {
     if (event.target === event.currentTarget) onClose();
   }}>
     <div className={styles.backdrop} data-website-overlay onClick={onClose} aria-hidden="true" />

@@ -195,6 +195,16 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
 
     }
     if(mode==='pricing'){
+     // Include the production document lock: body-only locking leaves the
+     // website's root scrollbar visible behind an open pricing dialog.
+     await page.addStyleTag({content:'html{overflow:auto;scrollbar-gutter:stable}'+fs.readFileSync(path.join(root,'app/modal-scrollbars.css'),'utf8')});
+     const annualRate=await page.$$eval('button[aria-haspopup="dialog"] span',els=>{
+      const rate=els.find(e=>e.textContent==='R1 999/year.');
+      const rect=rate.getBoundingClientRect(),card=rate.closest('button').getBoundingClientRect();
+      return {lines:rate.getClientRects().length,fits:rect.left>=card.left&&rect.right<=card.right};
+     });
+     assert.equal(annualRate.lines,1,'Business annual amount and period stay on one line');
+     assert.ok(annualRate.fits,'Unbroken annual price still fits the card');
      const prices=await page.$$eval('button[aria-haspopup="dialog"]',els=>els.slice(0,3).map(e=>{const amount=[...e.querySelectorAll('strong')].find(n=>/^(R99|R199|Free)$/.test(n.textContent));return {top:amount.getBoundingClientRect().top,size:parseFloat(getComputedStyle(amount).fontSize)};}));
      assert(prices.every(p=>p.size>=40),'Subscription prices are prominent');
      if(width===1440)assert(Math.max(...prices.map(p=>p.top))-Math.min(...prices.map(p=>p.top))<2,'Subscription prices align across cards');
@@ -214,6 +224,18 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
+     assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden','Background document scrollbar is removed while pricing is open');
+     assert.equal(await page.$eval('[data-pricing-content]',e=>e.scrollHeight>e.clientHeight),false,'Asset choices fit without an internal scrollbar');
+     const rateLines=await page.$$eval('[aria-label="Number of active assets"] button',els=>els.slice(0,3).map(e=>{
+      const rates=[...e.querySelectorAll('span')].filter(n=>/^(R[\d ]+\/month|or R[\d ]+\/year)$/.test(n.textContent));
+      return rates.map(n=>{const rect=n.getBoundingClientRect();return {top:rect.top,bottom:rect.bottom};});
+     }));
+     await page.screenshot({path:path.join(evidence,`owner-asset-options-${width}.png`)});
+     // Different font sizes share a baseline, not an identical top edge.
+     for(const rates of rateLines){
+      assert.equal(rates.length,2);
+      assert.ok(Math.max(...rates.map(r=>r.top))<Math.min(...rates.map(r=>r.bottom)),'Monthly and annual options share a line when there is room');
+     }
      const choose = async selector => { await page.$eval(selector, e => e.click()); };
      await choose('[aria-label="Number of active assets"] button');
      await choose('[data-pricing-content] + div button:last-child');
@@ -314,6 +336,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
 
      await page.keyboard.press('Escape');
      await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
+     assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'auto','Document scrolling returns after closing pricing');
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Dealer')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/customers.*asset registers/);

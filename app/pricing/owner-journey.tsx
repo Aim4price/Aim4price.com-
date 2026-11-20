@@ -99,7 +99,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
           'Review your hosting and optional services.',
           'Choose a monthly retainer. Unused hours expire each month.',
           'Choose remote help, an on-site visit or a specialist assessment.',
-          'Your Dealer workspace is R199/month or R1 999/year. Client hosting is separate.',
+          <>Your Dealer workspace is <span className={styles.rate}>{money(businessHosting.monthly / 100)}/month</span> or <span className={styles.rate}>{money(businessHosting.annually / 100)}/year.</span> Client hosting is separate.</>,
           'Choose only the assistance you need.',
           'Tell us what you need to get started.',
         ][step]}</p>}
@@ -107,7 +107,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
 
       {!detail && step === 0 && <>
         <div className={styles.assetChoices} role="group" aria-label="Number of active assets">
-          {plans.map((item, index) => <Choice key={item.name} selected={assetBand === index} onClick={() => setAssetBand(index)} title={item.range}><span className={styles.choiceRate}>{money(item.monthly)}/month</span><span className={styles.choiceSecondary}>or {money(item.yearly)}/year</span></Choice>)}
+          {plans.map((item, index) => <Choice key={item.name} selected={assetBand === index} onClick={() => setAssetBand(index)} title={item.range}><span className={styles.choicePrices}><span className={`${styles.choiceRate} ${styles.rate}`}>{money(item.monthly)}/month</span>{' '}<span className={styles.rate}>or {money(item.yearly)}/year</span></span></Choice>)}
           <Choice selected={assetBand === 3} onClick={() => setAssetBand(3)} title="301+">Enterprise · quoted for your asset count</Choice>
         </div>
       </>}

@@ -7,7 +7,7 @@ export default function DealerDetails({ topic }: { topic: 'funding' | 'commissio
       <p><strong>You manage your clients.</strong> Aim4price works through your business.</p>
       <p>Client hosting costs 25% of normal Owner hosting fees per client, based on active assets across that client’s registers. Your Dealer or Business account hosting is separate.</p>
       <dl className={styles.dealerRates}>
-        {ownerHosting.map(plan => <div key={plan.range}><dt>{plan.range} assets per client</dt><dd>{rand(plan.monthly / 4)}/month · {rand(plan.annually / 4)}/year</dd></div>)}
+        {ownerHosting.map(plan => <div key={plan.range}><dt>{plan.range} assets per client</dt><dd><span className={styles.rate}>{rand(plan.monthly / 4)}/month</span> · <span className={styles.rate}>{rand(plan.annually / 4)}/year</span></dd></div>)}
         <div><dt>301+ assets per client</dt><dd>Custom quote</dd></div>
       </dl>
       <p>Your business controls the records, sharing and client communication. A separate Owner account or client login is not created. You decide which records to share through the available sharing tools.</p>
