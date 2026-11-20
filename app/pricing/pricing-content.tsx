@@ -32,7 +32,7 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
         <button type="button" aria-haspopup="dialog" onClick={() => setAudience('dealer')} className={styles.accountCard}>
           <strong className={styles.accountTitle}>Dealer</strong>
           <span className={styles.cardPrice}><span className={styles.priceLabel}>Hosting</span><span className={styles.priceLine}><strong>{rand(businessHosting.monthly)}</strong><span>/ month</span></span></span>
-          <span className={styles.accountDescription}>Manage dealership stock and your clients’ assets.</span>
+          <span className={styles.accountDescription}>Manage stock, parts stocklists and your clients’ assets.</span>
           <span className={styles.cardNote}>Client hosting from <span className={styles.rate}>{rand(ownerHosting[0].monthly / 4)} per client/month.</span></span>
           <span className={styles.cardAction}>Explore Dealer hosting</span>
         </button>
@@ -95,9 +95,10 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
           </article>
           <article className={styles.subscriptionDetail}>
             <h3>Dealer</h3>
-            <p>A workspace for your dealership stock.</p>
+            <p>Your dealership stock and parts in one place.</p>
             <ul>
               <li>Your stock workspace is covered by your hosting.</li>
+              <li>Upload, update and share your parts stocklists.</li>
               <li>Client hosting is 25% of normal Owner fees, billed to your dealership.</li>
             </ul>
           </article>
