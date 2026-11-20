@@ -4,9 +4,9 @@
 .card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: clamp(.9rem, 2vw, 1.6rem);
+  gap: clamp(.9rem, calc(var(--website-design-vw, 1vw) * 2), 1.6rem);
   align-items: center;
-  padding: clamp(1rem, 2vw, 1.6rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.6rem);
   border: 1px solid var(--app-line, #a6cbbd);
   border-radius: 1.45rem;
   background: var(--app-surface, #f5fbf7);
@@ -25,7 +25,7 @@
 .icon {
   display: grid;
   place-items: center;
-  width: clamp(3.4rem, 6vw, 5.5rem);
+  width: clamp(3.4rem, calc(var(--website-design-vw, 1vw) * 6), 5.5rem);
   aspect-ratio: 1;
   border: 1px solid var(--app-line, #a6cbbd);
   border-radius: 1.1rem;
@@ -42,7 +42,7 @@
 .heading h2 {
   margin: 0;
   font: inherit;
-  font-size: clamp(1.35rem, 2.1vw, 1.9rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.1), 1.9rem);
   font-weight: 800;
   line-height: 1.15;
   overflow-wrap: anywhere;
