@@ -228,11 +228,12 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$eval('[data-pricing-content]',e=>e.scrollHeight>e.clientHeight),false,'Asset choices fit without an internal scrollbar');
      const rateLines=await page.$eval('[aria-label="Number of active assets"] button',e=>{
       const rates=[...e.querySelectorAll('span')].filter(n=>['R99/month','or R999/year'].includes(n.textContent));
-      return rates.map(n=>n.getBoundingClientRect().top);
+      return rates.map(n=>{const rect=n.getBoundingClientRect();return {top:rect.top,bottom:rect.bottom};});
      });
      assert.equal(rateLines.length,2);
-     assert.ok(Math.abs(rateLines[0]-rateLines[1])<2,'Monthly and annual options share a line when there is room');
      await page.screenshot({path:path.join(evidence,`owner-asset-options-${width}.png`)});
+     // Different font sizes share a baseline, not an identical top edge.
+     assert.ok(Math.max(...rateLines.map(r=>r.top))<Math.min(...rateLines.map(r=>r.bottom)),'Monthly and annual options share a line when there is room');
      const choose = async selector => { await page.$eval(selector, e => e.click()); };
      await choose('[aria-label="Number of active assets"] button');
      await choose('[data-pricing-content] + div button:last-child');
