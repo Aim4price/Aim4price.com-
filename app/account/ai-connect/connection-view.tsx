@@ -177,7 +177,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
     <details className={styles.disclosure}>
     <summary className={styles.disclosureHeading}><span>What information is shared?</span><span className={styles.disclosureChevron} aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span></summary>
     <div className={styles.sharingDetails}>
-      <div><span className={styles.sharingIcon}><Icon kind="account" /></span><h3>{admin ? 'Admin access' : partner ? 'Your permitted records' : 'Your account only'}</h3><p>{admin ? 'Approved asset information across accounts. No passwords, tokens, contact details or exact locations.' : partner ? 'Your workspace and selected client records. Access is checked on every request. Untargeted links and umbrella shares are not included in this pilot.' : 'Your account profile, assets, costs, budgets, fuel and maintenance. Other owners’ accounts are not accessible.'}</p></div>
+      <div><span className={styles.sharingIcon}><Icon kind="account" /></span><h3>{partner ? 'Your permitted records' : 'Your account only'}</h3><p>{partner ? 'Your workspace and selected client records. Access is checked on every request. Untargeted links and umbrella shares are not included in this pilot.' : 'Your account profile, assets, costs, budgets, fuel and maintenance. Other owners’ accounts are not accessible.'}</p></div>
       <div><span className={styles.sharingIcon}><Icon kind="shield" /></span><h3>Read-only access</h3><p>Your assistant cannot add, edit or delete records. Stop future access at any time through Manage.</p></div>
       <div><span className={styles.sharingIcon}><Icon kind="records" /></span><h3>Saved records</h3><p>Answers depend on what you have recorded. Missing information can leave gaps. Photos and document attachments are not shared.</p></div>
     </div>
@@ -220,7 +220,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
           </section> : !blocked ? <ConnectionActions admin={admin} assistantOptions={assistantOptions} setup={setup} management={management} count={connections?.length} /> : null}
           <div className={styles.safety} hidden={!!proof}><Icon kind="shield" /><p><strong>{admin ? 'Private admin access.' : 'Read-only access.'}</strong> Your assistant cannot add, edit or delete records.</p></div>
         </section>
-        {!proof && !blocked && (admin ? sharingDisclosure : <details className={styles.examples} open>
+        {!admin && !proof && !blocked && <details className={styles.examples} open>
           <summary className={styles.exampleHeading}>
             <span className={styles.exampleHeadingCopy}><span className={styles.exampleTitle}>Questions you can ask</span><span>{partner ? 'Explore your workspace and authorised client records.' : 'Explore questions about assets, budgets, fuel and maintenance.'}</span></span>
             <span className={styles.exampleChevron} aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span>
@@ -230,7 +230,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
             <SharedInformation examples accountType={account?.accountType} />
             {sharingDisclosure}
           </div>
-        </details>)}
+        </details>}
       </div>
     </main>
   );
