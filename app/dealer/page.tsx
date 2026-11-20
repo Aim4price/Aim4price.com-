@@ -120,7 +120,7 @@ export default async function DealerHome() {
       count: openProblemCount,
     },
     {
-      label: 'Leads',
+      label: 'Assets Shared',
       href: '/dealer/leads',
       capability: 'leads',
       count: newLeadCount,

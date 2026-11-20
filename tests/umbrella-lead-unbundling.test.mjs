@@ -45,8 +45,10 @@ test('umbrella children reuse the exact single-asset lead rendering and actions'
   assert.match(leadsClient, /maintenanceAccess\?\.permissions.canAddPhotos/);
   assert.match(leadsClient, /setContribution\(\{lead:managedLead,kind:'photos'\}\)/);
   assert.match(leadsClient, /<SharedAssetContributionDialog/);
-  assert.doesNotMatch(leadsClient, /Shared umbrella|umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
-  assert.doesNotMatch(leadsStyles, /umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
+  assert.match(leadsClient, /assetStyles\.assetGroupHeader/);
+  assert.match(leadsClient, /assetStyles\.assetGroupMemberRow/);
+  assert.match(leadsClient, /aria-expanded=\{expanded\}/);
+  assert.match(leadsClient, /renderLead\(member\)/);
 });
 
 test('legacy umbrella shares are recognised as independent asset leads without a data migration', () => {
@@ -71,4 +73,27 @@ test('collapsed leads prioritise the asset, searchable identifiers and owner con
   assert.match(leadsClient, /lead\.ownerMessage/);
   assert.match(leadsClient, /lead\.partnerNotes/);
   assert.match(leadsStyles, /\.leadAssetContext/);
+});
+
+test('filtering and paginating preserve a complete delivery in sender order', async () => {
+  const { default: ts } = await import('typescript');
+  const { outputText } = ts.transpileModule(await read('app/leads/shared-asset-rows.ts'), {
+    compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext },
+  });
+  const { sharedAssetRows } = await import('data:text/javascript;base64,' + Buffer.from(outputText).toString('base64'));
+  const child = (id, batchId, childIndex, ownerUserId = 'owner') => ({
+    id, ownerUserId, partnerUserId: 'dealer',
+    includedSections: { assetGroupShare: { name: 'Verkoop', batchId, childIndex } },
+  });
+  const members = Array.from({ length: 15 }, (_, i) => child(String(i), 'first', i));
+  const single = { ...members[0], id: 'single', includedSections: {} };
+  const repeated = child('repeated', 'second', 0);
+  const otherOwner = child('other', 'first', 0, 'another owner');
+  const received = [single, ...members.slice().reverse(), repeated, otherOwner];
+  const rows = sharedAssetRows(received, received, true);
+  assert.equal(rows.length, 4);
+  assert.equal(rows[0].name, null);
+  assert.deepEqual(rows[1].members, members);
+  assert.deepEqual(sharedAssetRows(received, [members[12]], true)[0].members, members);
+  assert.equal(sharedAssetRows(received, received, false).length, received.length);
 });
