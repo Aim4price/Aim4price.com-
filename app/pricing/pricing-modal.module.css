@@ -58,7 +58,11 @@
 .dialog:has([data-middleman-access]) .header h2 { font-size: 1.65rem; line-height: 1.25; }
 .body:has([data-middleman-access]) { padding: 1rem 1.75rem 1.25rem; }
 
+/* Give the fee cards breathing room, including below the last section. */
+.body:has([data-service-fees]) { padding: 1.15rem 1.75rem 1.5rem; scroll-padding-block: 1rem; }
+
 @media (max-width: 640px) {
   :global(html:not(:has([data-website-canvas]))) .owner .body { padding: 0; }
   :global(html:not(:has([data-website-canvas]))) .body:has([data-middleman-access]) { padding: .75rem 1rem 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .body:has([data-service-fees]) { padding: 1rem 1rem 1.25rem; }
 }

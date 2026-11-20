@@ -390,6 +390,31 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent==='Success fees & services').click());
      await page.waitForSelector('[role="dialog"]');
      assert.equal(await page.$$eval('[role="dialog"] details[open]',els=>els.length),0,'General service fees still start collapsed');
+     await page.setViewport({width,height:1000});
+     const feeSpacing=await page.$eval('[data-service-fees]',e=>{
+      const cards=[...e.children].map(n=>n.getBoundingClientRect()),body=e.parentElement;
+      return {gaps:cards.slice(1).map((r,i)=>r.top-cards[i].bottom),bottomPadding:parseFloat(getComputedStyle(body).paddingBottom),horizontal:body.scrollWidth>body.clientWidth+1};
+     });
+     assert.ok(feeSpacing.gaps.every(gap=>gap>=8),'Fee sections have separate card spacing');
+     assert.ok(feeSpacing.bottomPadding>=20,'Fee list has space beneath the last card');
+     assert.equal(feeSpacing.horizontal,false,'Fee list stays within the dialog width');
+     await page.screenshot({path:path.join(evidence,`service-fees-overview-${width}.png`)});
+     await page.click('[data-service-fees] > details:first-child > summary');
+     await page.mouse.move(0,0);
+     await page.waitForFunction(()=>[...document.querySelectorAll('[data-service-fees] > details:not([open])')].every(e=>getComputedStyle(e).filter==='blur(1.25px)'));
+     assert.equal(await page.$$eval('[data-service-fees] > details[open]',els=>els.length),1,'Only the selected fee section opens');
+     assert.equal(await page.$eval('[data-service-fees] > details[open]',e=>getComputedStyle(e).filter),'none','Selected section stays sharp');
+     await page.screenshot({path:path.join(evidence,`service-fees-focused-${width}.png`)});
+     await page.focus('[data-service-fees] > details:nth-child(2) > summary');
+     await page.waitForFunction(()=>getComputedStyle(document.querySelector('[data-service-fees] > details:nth-child(2)')).filter==='none');
+     await page.keyboard.press('Enter');
+     assert.equal(await page.$eval('[data-service-fees] > details:nth-child(2)',e=>e.open),true,'Keyboard selection opens another section');
+     assert.equal(await page.$$eval('[data-service-fees] > details[open]',els=>els.length),1,'Switching sections closes the previous section');
+     await page.click('[data-service-fees] > details:nth-child(3) > summary');
+     assert.equal(await page.$eval('[data-service-fees] > details:nth-child(3)',e=>e.open),true,'Clicking a blurred section switches the selection');
+     assert.equal(await page.$$eval('[data-service-fees] > details[open]',els=>els.length),1);
+     await page.keyboard.press('Space');
+     await page.waitForFunction(()=>[...document.querySelectorAll('[data-service-fees] > details')].every(e=>!e.open&&getComputedStyle(e).filter==='none'));
      await page.keyboard.press('Escape');
      await page.setViewport({width,height:1000});
     }
