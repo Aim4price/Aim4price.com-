@@ -170,7 +170,7 @@ async function main(){
       assert.equal(await page.evaluate(() => [...document.querySelectorAll('button')].some(button => button.textContent.trim() === 'Mark handled')), false);
       await page.$eval('[aria-label="Shared asset summary"] button:nth-child(2)', button => button.click());
       await page.waitForFunction(() => document.querySelector('[aria-label="Shared asset summary"] button:nth-child(2)')?.getAttribute('aria-pressed') === 'true');
-      assert.equal(await page.$$eval('article[class*="leadThread"]', cards => cards.length), summary[1].count);
+      assert.equal(await page.$$eval('[class*="leadStack"] article:has(h3)', cards => cards.length), summary[1].count);
       await page.$eval('[aria-label="Shared asset summary"] button:nth-child(3)', button => button.click());
       await clickText('Open');
       await page.waitForSelector('[class*="expandedLeadHeader"]');

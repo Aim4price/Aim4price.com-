@@ -39,7 +39,7 @@
   flex-wrap: wrap;
   gap: .4rem .75rem;
 }
-.heading h2 {
+.heading h2, .heading h3 {
   margin: 0;
   font: inherit;
   font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.1), 1.9rem);
@@ -81,6 +81,7 @@
   justify-content: center;
   gap: .55rem;
   min-height: 3.2rem;
+  min-width: 9rem;
   padding: .75rem 1.4rem;
   border: 1px solid #244d37;
   border-radius: 1rem;
@@ -97,4 +98,21 @@
   .card { grid-template-columns: auto minmax(0, 1fr); }
   .icon { align-self: start; }
   .toggle { grid-column: 1 / -1; }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .6rem;
+}
+.secondary, .secondary:hover {
+  color: var(--app-text, #173e2c);
+  background: var(--app-surface, #fff);
+  border-color: var(--app-line, #a6cbbd);
+}
+.message { margin: .6rem 0 0; font-weight: 650; overflow-wrap: anywhere; }
+@container (max-width: 38rem) {
+  .actions { grid-column: 1 / -1; }
+  .actions > button { flex: 1 1 8rem; min-width: 0; }
 }
