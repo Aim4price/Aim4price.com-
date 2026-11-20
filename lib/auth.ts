@@ -185,7 +185,7 @@ function createAuth() {
               error,
             );
           }
-          if (readSignupField(context, "accountAccess") === "free" || readSignupField(context, "accountType") === "business") await registerFreeSharingAccount(user.id);
+          if (readSignupField(context, "accountType") === "business") await registerFreeSharingAccount(user.id);
           if (readSignupField(context, "accountType") === "business") await ensureBusinessWorkspace(user.id);
           const billing = readSignupWorkspaceField("billingSignup") as SignupBilling | null;
           if (billing) await queueSignupInvoice(user.id, billing);

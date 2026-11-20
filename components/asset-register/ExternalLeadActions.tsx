@@ -13,6 +13,7 @@ import type { LeadReport } from '../../lib/guest-leads';
 import SharedAssetWorkDialog from '../leads/SharedAssetWorkDialog';
 import SharedAssetContributionDialog from '../leads/SharedAssetContributionDialog';
 import SharedLiveReports from './SharedLiveReports';
+import {creditAction,type CreditTarget} from '../BusinessCreditControls';
 import ExternalAccessRequests from './ExternalAccessRequests';
 import LeadDocuments from './LeadDocuments';
 import leadStyles from '../../app/leads/page.module.css';
@@ -38,10 +39,22 @@ import LeadActionDialog from '../leads/LeadActionDialog';
 import LeadReportDialog from '../leads/LeadReportDialog';
 import { createPortal } from '../WebsitePortal';
 import SharedEnquiryAccess from '../SharedEnquiryAccess';
-export default function ExternalLeadActions({ token, permissions: suppliedPermissions, reports, access, reply, assetTitle, assetId, serialNumber, replacementPrice, assetSubtitle = '', onDialogChange }: ExternalLeadActionData & {
+export default function ExternalLeadActions({ token, permissions: suppliedPermissions, reports, access, reply, assetTitle, assetId, serialNumber, replacementPrice, assetSubtitle = '', onDialogChange, creditVisit }: ExternalLeadActionData & {
+  creditVisit?:CreditTarget & {requestId:string};
   assetSubtitle?: string; onDialogChange?: (open: boolean) => void;
   assetIndex: number; assetId?: string; assetTitle: string; serialNumber: string; replacementPrice: number | null;
 }) {
+  const [messageId,setMessageId]=useState(''),[messageStatus,setMessageStatus]=useState('');
+  function openedReply(){
+    if(creditVisit){setMessageId(crypto.randomUUID());setMessageStatus('');}
+  }
+  async function confirmReply(){
+    if(!creditVisit||!messageId)return;
+    try{
+      await creditAction(creditVisit,'send','complete',messageId,creditVisit.requestId);
+      setMessageId('');setMessageStatus('Message recorded · Included in this Manage visit.');
+    }catch(e){setMessageStatus(e instanceof Error?e.message:'Please try again.');}
+  }
   const permissions = access === 'owner' ? {...suppliedPermissions,viewParts:true,addParts:true,history:true,suggestValue:true,updateDetails:true,location:true,yearModel:true,usage:true,condition:true,addMaintenance:true,addPhotos:true,addCosts:true,serialNumber:true,replacementPrice:true,maintenanceSchedules:true,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,directUpdates:true} : suppliedPermissions;
   const [action, setAction] = useState<ExternalSharePermission | 'access' | 'history' | 'maintenance' | null>(null);
   const sharedAsset = assetId ? {token,assetId} : undefined;
@@ -67,7 +80,9 @@ export default function ExternalLeadActions({ token, permissions: suppliedPermis
         {(permissions.addMaintenance || permissions.maintenanceSchedules || permissions.viewParts || permissions.addParts) && <button data-manage-action="maintenance" type="button" className={actionClassName} onClick={() => { setMaintenanceMenuOpen(true); setAction('maintenance'); }}><AssetActionIcon action="addMaintenance" className={assetStyles.buttonIcon}/><span><strong>Maintenance</strong><small>Add or review maintenance records.</small></span></button>}
       </ManageActionGrid>
     </div>
-    {reply && <div className={styles.actions}>{reply.email && <a className={styles.secondary} href={`mailto:${encodeURIComponent(reply.email)}?subject=${encodeURIComponent('Re: Aim4price asset enquiry')}`}>Email owner</a>}{reply.phone && <a className={styles.secondary} href={buildWhatsAppShareUrl({ subject: 'Asset enquiry', body: `Hello ${reply.name}, regarding your Aim4price asset enquiry.` }, reply.phone)} target="_blank" rel="noreferrer">WhatsApp owner</a>}</div>}
+    {reply && <div className={styles.actions}>{reply.email && <a onClick={openedReply} className={styles.secondary} href={`mailto:${encodeURIComponent(reply.email)}?subject=${encodeURIComponent('Re: Aim4price asset enquiry')}`}>Email owner</a>}{reply.phone && <a onClick={openedReply} className={styles.secondary} href={buildWhatsAppShareUrl({ subject: 'Asset enquiry', body: `Hello ${reply.name}, regarding your Aim4price asset enquiry.` }, reply.phone)} target="_blank" rel="noreferrer">WhatsApp owner</a>}</div>}
+    {messageId&&<button className={styles.secondary} onClick={()=>void confirmReply()}>Confirm I sent the message</button>}
+    {messageStatus&&<p role="status">{messageStatus}</p>}
     {!EXTERNAL_SHARE_OPTIONS.some(option=>permissions[option.key]) && <p className={styles.hint}>The sender shared read-only asset details. No additional actions are enabled.</p>}
     {action === 'maintenance' ? createPortal(<SharedMaintenanceMenu title={assetTitle} description={assetSubtitle} onClose={close}
       onRecord={permissions.addMaintenance ? () => setAction('addMaintenance') : undefined}

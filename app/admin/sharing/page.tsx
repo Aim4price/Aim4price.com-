@@ -1,3 +1,5 @@
+import {creditLimitsActive} from '../../../lib/business-credits';
+import AdminBusinessCredits from '../../../components/AdminBusinessCredits';
 import ListingReviews from './listing-reviews';
 import { requireAdminPageAccess } from '../../../lib/account-access';
 import { sharingAdminAccounts } from '../../../lib/sharing-admin';
@@ -9,8 +11,9 @@ export default async function SharingAdmin({searchParams}:{searchParams?:{period
  const period=searchParams?.period==='all'?'all':'month';
  const accounts=await sharingAdminAccounts(period);
  return <main className={styles.page}>
-  <header className={styles.heading}><div><h1>Sharing usage</h1><p>Track shared assets, link opens and account activity.</p></div><span className={styles.badge}>Usage tracking only</span></header>
+  <header className={styles.heading}><div><h1>Sharing usage</h1><p>Track shared assets, link opens and account activity.</p></div><span className={styles.badge}>{creditLimitsActive()?'Business credit limits active':'Business credit trial'}</span></header>
   <SharingUsage accounts={accounts} period={period} adminId={admin.user.id}/>
+  <AdminBusinessCredits period={period}/>
   <ListingReviews />
   <details className={styles.explanation}><summary>What do these numbers mean?</summary>
    <p><strong>Assets received:</strong> each asset counts once per account, even across different links. This month shows assets first received this month.</p>

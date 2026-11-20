@@ -208,12 +208,13 @@ export default function AssetExternalShare({
   shareName,
   messageBody,
   assets,
-  recipient,
+  recipient,onConfirmedShare,
   reportFiles = EMPTY_REPORT_FILES,
   onAddAim4priceReport,
   onRemoveAim4priceReport,
 }: {
   shareName: string;
+  onConfirmedShare?:()=>Promise<void>;
   messageBody?: string;
   recipient?: {name:string;email:string;phone:string};
   assets: ExternalAssetShareItem[];
@@ -221,6 +222,15 @@ export default function AssetExternalShare({
   onAddAim4priceReport: () => void;
   onRemoveAim4priceReport: (reportId: string) => void;
 }) {
+  const [awaitingConfirmation,setAwaitingConfirmation]=useState(false);
+  const [confirming,setConfirming]=useState(false);
+  async function confirmExternalDelivery(){
+    if(!onConfirmedShare||confirming)return;
+    setConfirming(true);
+    try{await onConfirmedShare();}
+    catch(e){setShareStatus(e instanceof Error?e.message:'Could not record your share. Please retry.');}
+    finally{setConfirming(false);}
+  }
   const [includePhotos, setIncludePhotos] = useState(false);
   const [editedMessage, setEditedMessage] = useState<{scope:string;body:string}|null>(null);
   const messageScope = JSON.stringify([shareName, assets, messageBody]);
@@ -369,6 +379,7 @@ export default function AssetExternalShare({
   }
 
   function openDisclosure(target: ShareTarget, trigger: HTMLButtonElement) {
+    setAwaitingConfirmation(false);
     shareTrigger.current = trigger;
     setShowRecovery(false);
     setShareStatus('');
@@ -393,6 +404,7 @@ export default function AssetExternalShare({
       } else {
         window.open(whatsappHref, '_blank', 'noopener,noreferrer');
       }
+      if(onConfirmedShare)setAwaitingConfirmation(true);
       return;
     }
 
@@ -435,7 +447,7 @@ export default function AssetExternalShare({
     try {
       await navigator.share(shareData);
       setShareStatus('Files handed to your device’s share menu. Complete sending in your chosen app.');
-      closeDisclosure();
+      if(onConfirmedShare)setAwaitingConfirmation(true);else closeDisclosure();
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         setShareStatus('Sharing cancelled. Your message and attachments are still ready.');
@@ -548,11 +560,11 @@ export default function AssetExternalShare({
         {accepted && pendingShare.key === consentKey && !isPreparing && preparation.status === 'ready' && downloadFiles.length > 0 && <div className={styles.recovery}>
           <p>{showRecovery ? 'Direct sharing is unavailable. ' : 'Prefer to attach files yourself? '}Download {downloadFiles.length === 1 ? 'the file' : 'each file'} below, then open {pendingShare.target === 'email' ? 'your email app' : 'WhatsApp'} and attach {downloadFiles.length === 1 ? 'it' : 'them'} manually.</p>
           {downloadFiles.map(({file, url}, index) => <a key={url} className={styles.messagePartLink} href={url} download={file.name}>Download {usePdf ? 'PDF' : `${index + 1}: ${file.name}`}</a>)}
-          <a className={styles.messagePartLink} href={pendingShare.target === 'email' ? emailHref : whatsappHref} target={pendingShare.target === 'whatsapp' ? '_blank' : undefined} rel="noopener noreferrer">Open {pendingShare.target === 'email' ? 'email draft' : 'WhatsApp'} · attach downloaded files</a>
+          <a onClick={()=>{if(onConfirmedShare)setAwaitingConfirmation(true);}} className={styles.messagePartLink} href={pendingShare.target === 'email' ? emailHref : whatsappHref} target={pendingShare.target === 'whatsapp' ? '_blank' : undefined} rel="noopener noreferrer">Open {pendingShare.target === 'email' ? 'email draft' : 'WhatsApp'} · attach downloaded files</a>
           <p>The message is included. Downloaded files are not attached automatically.</p>
         </div>}
         <div className={disclosureStyles.actions}>
-          <button type="button" className={disclosureStyles.continue} disabled={!accepted || pendingShare.key !== consentKey || isPreparing || isSending} onClick={() => void sendShare(pendingShare.target)}>{showRecovery ? 'Retry sharing with ' : 'Continue to '}{pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}</button>
+          {awaitingConfirmation&&onConfirmedShare?<button type="button" className={disclosureStyles.continue} disabled={confirming} onClick={()=>void confirmExternalDelivery()}>Confirm I shared it</button>:<button type="button" className={disclosureStyles.continue} disabled={!accepted || pendingShare.key !== consentKey || isPreparing || isSending} onClick={() => void sendShare(pendingShare.target)}>{showRecovery ? 'Retry sharing with ' : 'Continue to '}{pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}</button>}
         </div>
       </ShareDisclosureDialog>}
     </section>

@@ -1,6 +1,7 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import {CreditNotice,creditAction,type CreditTarget} from '../BusinessCreditControls';
+import { useEffect,useRef,useId, useMemo, useState } from 'react';
 import { createPortal } from '../WebsitePortal';
 import AssetExternalShare, { type ExternalShareFileSource } from '../asset-register/AssetExternalShare';
 import ShareModalCloseButton from '../asset-register/ShareModalCloseButton';
@@ -19,22 +20,48 @@ export type ExportAttachment = { url: string; name: string };
 type Props = { title: string; photos: string[]; details?: string; asset?: Partial<ExternalAssetShareItem>; attachments?: ExportAttachment[] };
 
 /** Recipient entry point to the same outside-sharing panel used by the Asset Register. */
-export default function SharedAssetExport({ signInReturnTo, ...props }: Props & { signInReturnTo?: string }) {
+export default function SharedAssetExport({ signInReturnTo,creditTarget,onDialogChange, ...props }: Props & { signInReturnTo?: string;creditTarget?:CreditTarget;onDialogChange?:(open:boolean)=>void }) {
   const [open, setOpen] = useState(false);
   const titleId = useId();
+  const pending=useRef<{target:CreditTarget;id:string}|null>(null);
+  const loading=useRef(false);
+  const [error,setError]=useState('');
+  function release(){
+    const reservation=pending.current;
+    pending.current=null;
+    if(reservation)void creditAction(reservation.target,'share','cancel',reservation.id).catch(()=>{});
+  }
+  useEffect(()=>release,[]);
+  async function begin(){
+    if(!creditTarget){setOpen(true);return;}
+    if(loading.current)return;
+    loading.current=true;
+    const reservation=pending.current||{target:creditTarget,id:crypto.randomUUID()};
+    pending.current=reservation;
+    try{await creditAction(reservation.target,'share','reserve',reservation.id);setOpen(true);onDialogChange?.(true);}
+    catch(e){setError(e instanceof Error?e.message:'Could not open Share.');}
+    finally{loading.current=false;}
+  }
+  async function confirm(){
+    const reservation=pending.current;
+    if(!reservation)throw Error('Reopen Share to try again.');
+    await creditAction(reservation.target,'share','complete',reservation.id);
+    pending.current=null;setOpen(false);onDialogChange?.(false);
+  }
   return <>
-    <button type="button" className={`${styles.optionsButton} ${styles.cardOptionsButton} ${styles.controlTooltip} ${triggerStyles.trigger}`} data-tooltip="Share asset" onClick={() => setOpen(true)}>
+    {error&&<CreditNotice message={error} onClose={()=>setError('')}/>}
+    <button type="button" className={`${styles.optionsButton} ${styles.cardOptionsButton} ${styles.controlTooltip} ${triggerStyles.trigger}`} data-tooltip="Share asset" onClick={() => void begin()}>
       <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.6 6.8-4.2m-6.8 7 6.8 4.2"/></svg>
       <span>Share</span>
     </button>
     {open && signInReturnTo && <ShareDisclosureDialog title="Sign in to share" titleId={titleId} closeLabel="Back to enquiry" onClose={() => setOpen(false)} className={gateStyles.dialog}>
       <SharedEnquiryAccess returnTo={signInReturnTo} access="sign-in" embedded />
     </ShareDisclosureDialog>}
-    {open && !signInReturnTo && createPortal(<OutsideShareDialog key={JSON.stringify(props)} {...props} onClose={() => setOpen(false)}/>, document.body)}
+    {open && !signInReturnTo && createPortal(<OutsideShareDialog key={JSON.stringify(props)} {...props} onConfirmedShare={creditTarget?confirm:undefined} onClose={() => {release();setOpen(false);onDialogChange?.(false);}}/>, document.body)}
   </>;
 }
 
-function OutsideShareDialog({ title, photos, details, asset, attachments = [], onClose }: Props & { onClose: () => void }) {
+function OutsideShareDialog({ title, photos, details, asset, attachments = [], onClose,onConfirmedShare }: Props & { onClose: () => void;onConfirmedShare?:()=>Promise<void> }) {
   const titleId = useId();
   const ref = useLeadDialog(onClose);
   const [choosingReports, setChoosingReports] = useState(false);
@@ -59,7 +86,7 @@ function OutsideShareDialog({ title, photos, details, asset, attachments = [], o
           <ShareModalCloseButton onClick={onClose} aria-label="Close outside sharing"/>
         </div>
         <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${styles.registerShareModalBody} ${externalStyles.accountShareTheme}`}>
-          <AssetExternalShare shareName={title} assets={assets}
+          <AssetExternalShare onConfirmedShare={onConfirmedShare} shareName={title} assets={assets}
             messageBody={details ? `AIM4PRICE ASSET DETAILS\n\n1. ${title}\n${details}\n\nShared from Aim4price. Values are saved estimates and remain subject to inspection.` : undefined}
             reportFiles={reportFiles} onAddAim4priceReport={() => setChoosingReports(true)}
             onRemoveAim4priceReport={id => setReportFiles(current => current.filter(file => file.id !== id))}/>

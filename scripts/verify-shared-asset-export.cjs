@@ -123,6 +123,28 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'Mobile has no horizontal overflow');
  await page.screenshot({path:'/tmp/shared-outside-mobile.png'});
  await page.click('[aria-label="Close outside sharing"]');await page.waitForSelector('[role="dialog"]',{hidden:true});
+ await page.evaluate(()=>{
+  window.creditWrites=[];
+  window.fetch=async(_,options)=>{
+   const body=JSON.parse(options.body);window.creditWrites.push(body);
+   return Response.json(window.blocked?{code:'BUSINESS_CREDIT_LIMIT'}:{ok:true},{status:window.blocked?402:200});
+  };
+  if(!crypto.randomUUID)crypto.randomUUID=()=> '10000000-0000-4000-8000-000000000001';
+  ReactDOM.flushSync(()=>window.fixtureRoot.render(React.createElement(require('components/leads/SharedAssetExport').default,{key:'credit-fixture',title:'Business asset',photos:[],creditTarget:{token:'t'.repeat(43),assetKey:'asset'}})));
+  window.blocked=true;
+ });
+ await click('Share');await page.waitForSelector('dialog[open] a[href="/account#business-credits"]');
+ await click('Continue viewing');await page.waitForSelector('dialog[open]',{hidden:true});
+ await page.evaluate(()=>{window.blocked=false;window.open=()=>null;});
+ await click('Share');await page.waitForSelector('[aria-label="Share outside Aim4price"]');
+ await page.click('[aria-label="Close outside sharing"]');
+ await page.waitForFunction(()=>window.creditWrites.at(-1).phase==='cancel');
+ await click('Share');await click('WhatsApp');await page.click('[data-share-consent]');
+ await click('Continue to WhatsApp');await click('Confirm I shared it');
+ await page.waitForFunction(()=>window.creditWrites.at(-1).phase==='complete');
+ const writes=await page.evaluate(()=>window.creditWrites);
+ assert.deepEqual(writes.map(w=>w.phase),['reserve','reserve','cancel','reserve','complete']);
+ assert.equal(writes[3].requestId,writes[4].requestId);
  assert.deepEqual(errors,[]);
  console.log('PASS direct outside-share modal, original asset copy, photo toggle, permitted report selection, return flow, consent and mobile layout');
  }finally{await browser.close();}

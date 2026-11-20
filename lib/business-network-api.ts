@@ -13,6 +13,7 @@ export function businessJson(data: unknown, status = 200) {
 }
 export function businessError(e: unknown) {
   const message = e instanceof Error ? e.message : "";
+  if (message === "Your monthly Business credits have been used.") return businessJson({error:message,code:"BUSINESS_CREDIT_LIMIT"},402);
   const safe =
     /^(Enter |Add |Choose |Confirm |Use |This |An asset|Too many|Refresh |The business)/.test(
       message,

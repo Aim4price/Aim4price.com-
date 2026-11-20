@@ -68,7 +68,7 @@ test('allowances and activation are admin-only and require same-origin explicit 
  session={user:{id:'ordinary',email:'user@example.test'}};assert.equal((await call({action:'sign-out',userId:'free-user'})).status,403);
 });
 
-test('free Dealer signup bypasses invoices but cannot request a free Owner account',async()=>{
+test('only Business signup can request free sharing',async()=>{
  let context,authCalls=0,billingCalls=0;
  const route=load('app/api/auth/[...all]/route.ts',{
  '../../../../lib/retired-workspaces':load('lib/retired-workspaces.ts',{}),
@@ -76,8 +76,8 @@ test('free Dealer signup bypasses invoices but cannot request a free Owner accou
  '../../../../lib/auth':{auth:{}},'better-auth/next-js':{toNextJsHandler:()=>({POST:async()=>{authCalls++;return Response.json({ok:true});}})},
  '../../../../lib/signup-workspace-context':{withSignupWorkspaceInput:async(input,fn)=>{context=input;return fn();}},
  });
- const call=accountType=>route.POST(new Request('https://aim4price.test/api/auth/sign-up/email',{method:'POST',body:JSON.stringify({accountType,accountAccess:'free',acceptedTerms:true})}));
- assert.equal((await call('dealer')).status,200);assert.equal(billingCalls,0);assert.equal(context.accountAccess,'free');
+ const call=accountType=>route.POST(new Request('https://aim4price.test/api/auth/sign-up/email',{method:'POST',body:JSON.stringify({accountType,accountAccess:'free',businessName:'Test Business',acceptedTerms:true})}));
+ assert.equal((await call('dealer')).status,400);assert.equal((await call('business')).status,200);assert.equal(billingCalls,0);assert.equal(context.accountAccess,'free');
  assert.equal((await call('owner')).status,400);assert.equal(authCalls,1);
 });
 
