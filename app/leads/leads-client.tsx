@@ -3821,17 +3821,17 @@ export default function LeadsClient({
                 const panelId = `shared-umbrella-${first.id}`;
                 return (
                   <div key={row.key} className={assetStyles.assetList}>
-                    <div className={assetStyles.assetGroupHeaderRow}>
-                      <section className={`${assetStyles.assetGroupHeader} ${assetStyles.cardToggleSurface} ${expanded ? '' : assetStyles.assetGroupHeaderCollapsed}`}
+                    <div className={`${assetStyles.assetGroupHeaderRow} ${sharedStyles.frame}`}>
+                      <section className={sharedStyles.card} data-expanded={expanded}
                         onClick={event => {
                           if (!(event.target as Element).closest('button') && !window.getSelection()?.toString()) toggle();
                         }}>
-                        <span className={assetStyles.assetGroupUmbrella} aria-hidden="true">
-                          <svg className={assetStyles.assetGroupUmbrellaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <span className={sharedStyles.icon} aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 12a9 9 0 0 1 18 0c-3-3-6 0-9 0s-6-3-9 0ZM12 3v15a3 3 0 0 0 6 0"/>
                           </svg>
                         </span>
-                        <div className={assetStyles.assetGroupIdentity}><div>
+                        <div className={sharedStyles.body}>
                           <div className={sharedStyles.heading}>
                             <h2>{row.name}</h2>
                             <span className={sharedStyles.count}>{row.members.length} {row.members.length === 1 ? 'asset' : 'assets'}</span>
@@ -3840,16 +3840,19 @@ export default function LeadsClient({
                             <strong>{first.ownerBusinessName || ownerDisplayName(first)}</strong>
                             <span>Received {formatDate(first.createdAtIso)}</span>
                           </div>
-                          {!expanded && <span className={assetStyles.assetGroupPreview}>{assetTitle(first)}{row.members.length > 1 && ` + ${row.members.length - 1} more`}</span>}
-                        </div></div>
-                        <div className={assetStyles.assetGroupSummary}>
-                          <div className={`${assetStyles.assetHeaderActions} ${assetStyles.assetGroupHeaderActions}`}>
-                            <button type="button" className={`${assetStyles.expandButton} ${assetStyles.cardViewDetailsButton}`} onClick={toggle} aria-expanded={expanded} aria-controls={panelId}>
-                              {expanded ? <ChevronUpIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`}/> : <ChevronDownIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`}/>}
-                              {expanded ? 'Hide details' : 'Open'}
-                            </button>
-                          </div>
+                          {!expanded && (
+                            <div className={sharedStyles.preview}>
+                              {row.members.slice(0, 2).map(member => (
+                                <span key={member.id} className={assetStyles.assetGroupPreview} title={assetTitle(member)}>{assetTitle(member)}</span>
+                              ))}
+                              {row.members.length > 2 && <span className={assetStyles.assetGroupPreview}>+{row.members.length - 2} more</span>}
+                            </div>
+                          )}
                         </div>
+                        <button type="button" className={sharedStyles.toggle} onClick={toggle} aria-expanded={expanded} aria-controls={panelId}>
+                          {expanded ? <ChevronUpIcon className={assetStyles.buttonIcon}/> : <ChevronDownIcon className={assetStyles.buttonIcon}/>}
+                          {expanded ? 'Hide details' : 'View assets'}
+                        </button>
                       </section>
                     </div>
                     <div id={panelId} hidden={!expanded} className={expanded ? assetStyles.assetList : undefined}>
