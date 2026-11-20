@@ -28,6 +28,20 @@
 .collapsed .group h2, .collapsed .item > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .collapsed .item { justify-content: center; padding: 10px; }
 .collapsed .group { border-top: 1px solid #edf1ee; padding-top: 10px; margin-top: 12px; }
+.sidebarFooter .collapseButton {
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  padding: 0;
+  border-radius: 10px;
+  border-color: #c7dbd0;
+  background: #edf5f0;
+  color: #185b44;
+}
+.sidebarFooter .collapseButton svg { display: block; }
+.sidebarFooter .collapseButton:hover { background: #dfeee5; border-color: #86aa97; }
+.sidebarFooter .collapseButton:focus-visible { outline: 2px solid #176b50; outline-offset: 2px; }
 .collapsed .sidebarFooter { justify-content: center; }
 .menuButton { display: none; border: 0; padding: 8px; background: transparent; color: #315646; cursor: pointer; }
 .skipLink { position: fixed; top: -80px; left: 16px; z-index: 2000; background: #174d3e; color: white; padding: 12px 20px; border-radius: 8px; }
