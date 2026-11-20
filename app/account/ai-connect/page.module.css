@@ -472,7 +472,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem 1.5rem;
-  padding: clamp(1rem, 2vw, 1.6rem);
+  padding: 1.25rem;
   background: var(--app-surface, #fff);
   border: 1px solid var(--app-line, #cddfd5);
   border-radius: 1rem;
