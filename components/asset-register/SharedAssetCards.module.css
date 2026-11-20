@@ -13,17 +13,32 @@
   margin-inline: auto;
   box-sizing: border-box;
 }
+.shareHeader {
+  margin-block: 1rem 1.25rem;
+  border: 1px solid var(--app-line, #b7d2c5);
+  border-radius: 1.25rem;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #173e32);
+  overflow: hidden;
+}
 .intro {
-  margin-block: 16px 24px;
+  display: grid;
+  gap: .45rem;
+  padding: 1.25rem 1.5rem;
 }
 .intro h1 {
-  font-size: 30px;
-  line-height: 1.2;
-  margin: 10px 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 .intro > span {
-  font-size: 13px;
-  color: #63786e;
+  color: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.45;
 }
 .businessDetails {
   margin-block: 24px;
@@ -67,7 +82,7 @@
 }
 @media (max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .intro {
-    margin-top: 32px;
+    padding: 1rem;
   }
   :global(:where(html:not(:has([data-website-canvas])))) .intro h1 {
     font-size: 25px;
@@ -81,8 +96,6 @@
 .manageDialog.manageDialog.manageDialog { position:fixed; inset:0; height:fit-content !important; min-height:0 !important; }
 
 /* Only text directly over the photograph switches to white. Cards retain their own contrast. */
-:global(html[data-background='dark']) .intro h1,
-:global(html[data-background='dark']) .intro > span,
 :global(html[data-background='dark']) .empty,
 :global(html[data-background='dark']) .page > section > .note {
   color: #fff;
