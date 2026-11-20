@@ -1,7 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),ts=require('typescript');
-function load(file,mocks){const exports={};mocks={ '../../components/AccountDirectoryListing':{default:'DirectoryListing'}, '../business/business-client':{default:'BusinessDetails'}, '../../lib/business-accounts':{readBusinessAccount:async()=>({review:{website:'',evidence:''}})}, '../business/page.module.css':{default:{}}, ...mocks};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(id=>id in mocks?mocks[id]:require(id),exports);return exports;}
+function load(file,mocks){const exports={};mocks={ '../../lib/accounting-pilot':{isAccountingPilotSession:()=>false}, '../../components/AccountDirectoryListing':{default:'DirectoryListing'}, '../business/business-client':{default:'BusinessDetails'}, '../../lib/business-accounts':{readBusinessAccount:async()=>({review:{website:'',evidence:''}})}, '../business/page.module.css':{default:{}}, ...mocks};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(id=>id in mocks?mocks[id]:require(id),exports);return exports;}
 const token='a'.repeat(43);
 const lead={share:{senderName:'Private sender',assets:[{title:'Private tractor',serialNumber:'PRIVATE-SERIAL'}]},details:{recipientEmail:'private@example.test',request:'Private request'},reports:[{id:'report',label:'Private report'}]};
 const mocks={

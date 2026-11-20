@@ -9,3 +9,33 @@
 .panel th { font-weight: 650; font-size: 0.95rem; background: #f8faf9; }
 .panel td { font-size: 0.95rem; padding: 1rem 1.2rem; }
 .toolbar input, .toolbar select { min-height: 40px; font-size: 0.95rem; border-color: #dfe7e2; }
+
+.heading { margin: 0 0 1.25rem; }
+.panel { overflow: hidden; border-radius: 1rem; }
+.tableHeading { gap: 1rem; flex-wrap: wrap; background: #f4f9f6; border-bottom: 1px solid #dce8e1; }
+.tableHeading h2 { color: #174836; font-size: 1.25rem; }
+.toolbar { gap: .9rem; flex-wrap: wrap; margin: 0; padding: 1.1rem 1.35rem .75rem; }
+.toolbar label:first-child { flex: 2 1 19rem; min-width: 0; }
+.toolbar label:last-child { flex: 1 1 12rem; min-width: 0; }
+.toolbar input { width: 100%; box-sizing: border-box; }
+.period { background: #fff; }
+.resultCount { padding: 0 1.35rem .75rem; color: #455f52; font-weight: 650; }
+.panel td, .panel th { padding: .78rem .9rem; }
+.panel td:first-child, .panel th:first-child { padding-left: 1.35rem; }
+.panel .plan { margin: 0; }
+.panel tbody tr:hover { background: #f6faf7; }
+.panel .button { background: #eef6f1; }
+.manageHeading { padding-bottom: 1rem; border-bottom: 1px solid #dce6e0; }
+.manageHeading > div { min-width: 0; }
+.manage h2 { font-size: 1.35rem; }
+.activitySummary h3 { margin: 1rem 0 .65rem; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,10rem),1fr)); gap: .55rem; margin: 0; }
+.metrics > div { padding: .72rem .9rem; border: 1px solid #dce8e0; border-radius: .68rem; background: #f4f8f5; }
+.metrics dt, .sessionInfo dt { color: #475f53; font-weight: 650; }
+.metrics dd { margin: .22rem 0 0; font-size: 1.45rem; color: #165940; font-weight: 750; }
+.sessionInfo { margin: 1rem 0; }
+.sessionInfo > div { display: flex; justify-content: space-between; gap: .4rem 1rem; flex-wrap: wrap; padding: .45rem 0; }
+.sessionInfo dd { margin: 0; font-weight: 650; }
+.actions { flex-wrap: wrap; padding-bottom: 0; }
+.actions + .confirm, .notice, .upgrade { margin-top: 1rem; }
+.explanation { border: 1px solid #dce6e0; border-radius: .85rem; background: white; padding: 1rem 1.25rem; }
