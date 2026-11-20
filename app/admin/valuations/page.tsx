@@ -34,7 +34,7 @@ export default async function AdminValuationsPage({
     period: first(searchParams.period),
     sort: first(searchParams.sort) as AdminValuationSort,
     page: Number(first(searchParams.page) || 1),
-    pageSize: Number(first(searchParams.pageSize) || 50),
+    pageSize: Number(first(searchParams.pageSize)),
   });
 
   return (
