@@ -1,10 +1,39 @@
-.bar { display:flex; align-items:center; gap:20px; box-sizing:border-box; width:100%; margin:0 0 24px; padding:24px 28px; border:1px solid var(--app-line,#cde1d7); border-radius:20px; background:linear-gradient(110deg,var(--app-surface,#fff),var(--app-surface-soft,#f4faf7)); color:var(--app-text,#153c31); box-shadow:0 8px 24px rgb(16 55 39 / 4%); }
-.icon { display:grid; place-items:center; flex:0 0 52px; height:52px; border:1px solid var(--app-line,#d4e5dc); border-radius:14px; background:var(--app-surface,#fff); color:var(--app-accent,#217957); }
-.icon svg { width:25px; height:25px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-.copy { flex:1; min-width:0; }
-.copy h2 { margin:0 0 7px; font-size:16px; font-weight:500; line-height:1.4; overflow-wrap:anywhere; }
-.copy strong { font-weight:800; }
-.copy p { margin:0; font-size:14px; line-height:1.6; white-space:pre-wrap; overflow-wrap:anywhere; }
-.recipient { max-width:30%; display:grid; gap:5px; padding-left:24px; border-left:1px solid var(--app-line,#d4e5dc); font-size:13px; overflow-wrap:anywhere; }
-.recipient small { color:var(--app-muted,#647c71); }
-@media(max-width:600px) { :global(body:not(:has([data-website-canvas]))) .bar { flex-wrap:wrap; padding:20px; gap:14px; } :global(body:not(:has([data-website-canvas]))) .recipient { max-width:100%; border:0; padding-left:0; } }
+.bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--app-line, #c7dcd1);
+  background: var(--app-surface-soft, #edf7f1);
+  color: var(--app-text, #173e32);
+  font-family: inherit;
+}
+.icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.75rem;
+  height: 2.75rem;
+  border-radius: .8rem;
+  background: var(--app-surface, #fff);
+  border: 1px solid var(--app-line, #b7d2c5);
+}
+.icon svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.copy { flex: 1; min-width: 0; }
+.copy h2, .copy p, .recipient { color: inherit; overflow-wrap: anywhere; }
+.copy h2 { margin: 0 0 .25rem; font-size: 1.1rem; font-weight: 800; line-height: 1.35; }
+.copy p { margin: 0; font-size: 1.05rem; font-weight: 650; line-height: 1.5; white-space: pre-wrap; }
+.recipient { display: grid; gap: .2rem; max-width: 30%; padding-left: 1rem; border-left: 1px solid var(--app-line, #b7d2c5); }
+.recipient small { font-size: 1rem; font-weight: 650; }
+.recipient strong { font-size: 1.05rem; font-weight: 800; }
+@media (max-width: 600px) {
+  :global(body:not(:has([data-website-canvas]))) .bar { flex-wrap: wrap; padding: 1rem; gap: .75rem; }
+  :global(body:not(:has([data-website-canvas]))) .recipient { flex-basis: 100%; max-width: 100%; padding-left: 0; border: 0; }
+}

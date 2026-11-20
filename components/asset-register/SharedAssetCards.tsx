@@ -116,21 +116,23 @@ export default function SharedAssetCards({
         </section>
       ) : (
         <>
-          <div className={styles.intro}>
-            <h1>
-              {example
-                ? "Example enquiry"
-                : senderName
-                  ? `Enquiry from ${senderName}`
-                  : "Your asset enquiry"}
-            </h1>
-            <span>
-              {example
-                ? "Fictional assets for illustration."
-                : `${share.assets.length} ${share.assets.length === 1 ? "asset" : "assets"} shared on ${date}.`}
-            </span>
-          </div>
-          {request}
+          <header className={styles.shareHeader}>
+            <div className={styles.intro}>
+              <h1>
+                {example
+                  ? "Example enquiry"
+                  : senderName
+                    ? `Enquiry from ${senderName}`
+                    : "Your asset enquiry"}
+              </h1>
+              <span>
+                {example
+                  ? "Fictional assets for illustration."
+                  : `${share.assets.length} ${share.assets.length === 1 ? "asset" : "assets"} shared on ${date}.`}
+              </span>
+            </div>
+            {request}
+          </header>
           <div className={`${leadStyles.leadStack} ${styles.assets}`}>
             {share.assets.map((item, index) => {
               const isOpen = opened === index;
