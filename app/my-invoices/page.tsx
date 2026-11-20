@@ -1,3 +1,4 @@
+import { isAccountingPilotSession } from '../../lib/accounting-pilot';
 import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
 import { getDesktopScope, desktopWorkspace } from '../../lib/desktop-workspace';
 import { redirect } from 'next/navigation';
@@ -52,7 +53,7 @@ export default async function MyInvoicesPage({ searchParams }: MyInvoicesPagePro
     || readSingleSearchParam(searchParams?.invoiceId)
     || readSingleSearchParam(searchParams?.budgetId)
     || readSingleSearchParam(searchParams?.captureRequestId);
-  const showAccounting = [process.env.ACCOUNTING_PILOT_OWNER_ID, process.env.SAGE_ZA_PILOT_OWNER_ID].includes(session.user.id);
+  const showAccounting = isAccountingPilotSession(session);
   if (readSingleSearchParam(searchParams?.view) !== 'costs' && !hasDirectTarget) {
     return <CostEntryChoices showAccounting={showAccounting} />;
   }
