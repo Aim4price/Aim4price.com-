@@ -45,8 +45,10 @@ test('umbrella children reuse the exact single-asset lead rendering and actions'
   assert.match(leadsClient, /maintenanceAccess\?\.permissions.canAddPhotos/);
   assert.match(leadsClient, /setContribution\(\{lead:managedLead,kind:'photos'\}\)/);
   assert.match(leadsClient, /<SharedAssetContributionDialog/);
-  assert.doesNotMatch(leadsClient, /Shared umbrella|umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
-  assert.doesNotMatch(leadsStyles, /umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
+  assert.match(leadsClient, /assetStyles\.assetGroupHeader/);
+  assert.match(leadsClient, /assetStyles\.assetGroupMemberRow/);
+  assert.match(leadsClient, /aria-expanded=\{expanded\}/);
+  assert.match(leadsClient, /renderLead\(member\)/);
 });
 
 test('legacy umbrella shares are recognised as independent asset leads without a data migration', () => {

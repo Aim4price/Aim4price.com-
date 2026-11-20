@@ -1,6 +1,7 @@
 'use client';
 import { PageHelpHeading } from '../../components/PageHelp';
 
+import { receivedUmbrella, sharedAssetRows } from './shared-asset-rows';
 import PartsInbox from "../../components/PartsInbox";
 import ListPagination from '../../components/ListPagination';
 import AssetPartsModal from '../../components/AssetPartsModal';
@@ -1758,6 +1759,7 @@ function searchTextForLead(lead: AssetLead): string {
   return [
     assetTitle(lead),
     assetDescription(lead),
+    receivedUmbrella(lead)?.name,
     leadAssetMeta(lead),
     searchableAssetSnapshotText(lead.assetSnapshot),
     ...registerLeadAssets(lead).map(searchableAssetSnapshotText),
@@ -1924,14 +1926,17 @@ export default function LeadsClient({
     () => summaryLeads.filter((lead) => isCompletedLead(lead)).length,
     [summaryLeads],
   );
-  const totalLeadPages = Math.max(1, Math.ceil(filteredLeads.length / LEADS_PER_PAGE));
+  const [openUmbrella, setOpenUmbrella] = useState<string | null>(null);
+  const rows = useMemo(() => sharedAssetRows(receivedLeads, filteredLeads, isDealerLeadsMode),
+    [receivedLeads, filteredLeads, isDealerLeadsMode]);
+  const totalLeadPages = Math.max(1, Math.ceil(rows.length / LEADS_PER_PAGE));
   const visibleLeadPage = Math.min(Math.max(currentPage, 1), totalLeadPages);
-  const paginatedLeads = useMemo(() => {
+  const pageRows = useMemo(() => {
     const startIndex = (visibleLeadPage - 1) * LEADS_PER_PAGE;
-    return filteredLeads.slice(startIndex, startIndex + LEADS_PER_PAGE);
-  }, [filteredLeads, visibleLeadPage]);
-  const leadRangeStart = filteredLeads.length ? (visibleLeadPage - 1) * LEADS_PER_PAGE + 1 : 0;
-  const leadRangeEnd = Math.min(visibleLeadPage * LEADS_PER_PAGE, filteredLeads.length);
+    return rows.slice(startIndex, startIndex + LEADS_PER_PAGE);
+  }, [rows, visibleLeadPage]);
+  const leadRangeStart = rows.length ? (visibleLeadPage - 1) * LEADS_PER_PAGE + 1 : 0;
+  const leadRangeEnd = Math.min(visibleLeadPage * LEADS_PER_PAGE, rows.length);
   const hasActiveLeadFilter = monthFilter !== 'all' || yearFilter !== 'all' || statusFilter !== 'all';
   const activeLeadFilterLabel = useMemo(() => {
     const labels: string[] = [];
@@ -3449,6 +3454,211 @@ export default function LeadsClient({
     );
   }
 
+  function renderLead(lead: AssetLead) {
+    const isLeadOpen = openLeadId === lead.id;
+    const showLeadDetails = !isDealerLeadsMode || expandedLeadDetailsId === lead.id;
+    const isLeadNew = isNewLead(lead);
+    const isLeadDone = !isDealerLeadsMode && isCompletedLead(lead);
+    const isLeadActive = !isLeadNew && !isLeadDone;
+    const isTrackingRequest = isTrackingLead(lead);
+    const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
+    const assetIdentifier = leadAssetIdentifier(lead);
+
+    return (
+      <article key={lead.id} ref={isLeadOpen ? openedCardRef : null}
+        onClick={(event) => {
+          if (event.defaultPrevented || window.getSelection()?.toString()) return;
+          const target = event.target;
+          if (!(target instanceof Element) || !event.currentTarget.contains(target)) return;
+          if (target.closest('button, a, input, select, textarea, label, summary, [role="button"], [contenteditable], [role="dialog"], [data-website-overlay]')) return;
+          if (isLeadOpen) setOpenLeadId(null);
+          else void openLead(lead);
+        }}
+        className={`${assetStyles.cardToggleSurface} ${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
+        <span aria-hidden="true" className={`${assetStyles.controlTooltip} ${assetStyles.cardToggleHint}`} data-tooltip={isLeadOpen ? 'Close lead' : 'Open lead'} />
+        <LeadCardSummary headerClassName={''} identityClassName={`${''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
+              <div className={styles.leadCardTitleRow}>
+                <h3>{assetTitle(lead)}</h3>
+              </div>
+              <div className={styles.leadAssetContext}>
+                <strong className={styles.leadAssetName}>{lead.ownerBusinessName || ownerDisplayName(lead)}</strong>
+                {assetIdentifier ? <span className={styles.leadAssetIdentifier}>{assetIdentifier}</span> : null}
+              </div>
+              <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
+              {null}
+              {lead.ownerMessage ? (
+                <span className={`${styles.trackingLeadPurpose} ${styles.leadOwnerMessagePreview}`}>
+                  <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
+                    <NoteIcon className={styles.trackingLeadPurposeIconGraphic} />
+                  </span>
+                  <span className={styles.trackingLeadPurposeCopy}>
+                    <strong>Owner message</strong>
+                    <small>{lead.ownerMessage}</small>
+                  </span>
+                </span>
+              ) : isTrackingRequest ? (
+                <span className={styles.trackingLeadPurpose}>
+                  <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
+                    <MaintenanceTrackingIcon className={styles.trackingLeadPurposeIconGraphic} />
+                  </span>
+                  <span className={styles.trackingLeadPurposeCopy}>
+                    <strong>Asset sent for tracking</strong>
+                    <small>Maintenance tracking access was shared with your dealership.</small>
+                  </span>
+                </span>
+              ) : null}
+        </>} actions={
+              <div
+                className={`${styles.clientActionRow} ${
+                  isTrackingRequest
+                    ? `${styles.trackingLeadActions} ${
+                        isLeadOpen ? styles.trackingLeadActionsOpen : styles.trackingLeadActionsClosed
+                      } ${lead.maintenanceAccess?.hasMaintenanceRecords ? '' : styles.trackingLeadActionsSingle}`
+                    : ''
+                }`}
+              >
+                {isTrackingRequest ? (
+                  <>
+                    {isLeadOpen ? (
+                      <button
+                        type="button" data-tooltip="Delete lead"
+                        className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`}
+                        onClick={() => setDeleteLeadTarget(lead)}
+                      >
+                        Delete
+                      </button>
+                    ) : null}
+                    {lead.maintenanceAccess?.hasMaintenanceRecords ? (
+                      <button
+                        type="button" data-tooltip="Open tracking"
+                        className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}
+                        onClick={() => openTracking(lead)}
+                      >
+                        Tracking
+                      </button>
+                    ) : null}
+                    <button
+                      type="button" data-tooltip={isLeadOpen ? 'Close lead' : 'Open lead'}
+                      className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${isLeadOpen ? assetStyles.secondaryButton : assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${isLeadOpen ? workspaceStyles.actionNeutral : workspaceStyles.actionGreen}` : ''} ${isLeadOpen ? styles.trackingCloseButton : styles.openLeadButton}`}
+                      onClick={() => {
+                        if (isLeadOpen) {
+                          setOpenLeadId(null);
+                        } else {
+                          void openLead(lead);
+                        }
+                      }}
+                    >
+                      {isLeadOpen ? 'Close' : 'Open'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {!isDealerLeadsMode ? <button
+                      type="button" data-tooltip={isLeadDone ? 'Return to open' : 'Mark handled'}
+                      className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
+                      onClick={() => void toggleLeadDone(lead)}
+                      disabled={Boolean(markingLeadDoneId)}
+                      aria-pressed={isLeadDone}
+                    >
+                      <CheckIcon className={assetStyles.buttonIcon} />
+                      <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Handled' : 'Mark handled'}</span>
+                    </button> : null}
+
+                    {isLeadOpen ? (
+                      <>
+                        <button type="button" data-tooltip="Delete lead" className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
+                          Delete
+                        </button>
+                        <button
+                          type="button" data-tooltip="Close lead"
+                          className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.closeLeadButton}`}
+                          onClick={() => {
+                            setOpenLeadId(null);
+                          }}
+                        >
+                          Close
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button" data-tooltip="Open lead"
+                        className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
+                        onClick={() => {
+                          void openLead(lead);
+                        }}
+                      >
+                        Open
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+        } />
+
+        {lead.maintenanceAccess?.isActive && lead.maintenanceAccess.permissions.canViewLoggedProblems && <SharedProblems endpoint={`/api/asset-leads/${lead.id}/problems`} assetTitle={assetTitle(lead)} notesOnly detailsVisible={isLeadOpen}/>}
+
+        {isLeadOpen ? (
+          <LeadAssetCard expanded={showLeadDetails} className={isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''}
+            identity={<>
+                <h2>{assetTitle(lead)}</h2>
+                {dealerAppMode && !isFullRegisterLead(lead) ? (
+                  <dl className={styles.expandedLeadFacts}>
+                    <div><dt>{asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year built' : 'Year'}</dt><dd>{lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : 'Not recorded'}</dd></div>
+                    <div><dt>Usage</dt><dd>{assetUsageValue(lead) === '—' ? 'Not recorded' : assetUsageValue(lead)}</dd></div>
+                    <div><dt>Condition</dt><dd>{asText(lead.assetSnapshot.condition) ? conditionLabel(asText(lead.assetSnapshot.condition)) : 'Not recorded'}</dd></div>
+                  </dl>
+                ) : <p>{leadAssetMeta(lead)}</p>}
+                <div className={assetStyles.assetMetaRow}>
+                  <span className={assetStyles.assetValueMethodLabel}>{isFullRegisterLead(lead) ? 'Register' : `${methodLabel(lead.assetSnapshot.selectedMethod)} value`}</span>
+                  <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
+                </div>
+            </>}
+            aside={<>
+                {(
+                  <SharedCardValue onOpen={lead.maintenanceAccess?.isActive&&lead.maintenanceAccess.permissions.canSuggestCurrentValue?()=>setValueLead(lead):undefined} value={assetValue(lead)} included={!!vatIncluded[lead.id]} onToggle={()=>setVatIncluded(current=>({...current,[lead.id]:!current[lead.id]}))}/>
+                )}
+
+                <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions} ${styles.exportHeaderActions}`}>
+                  <SharedAssetExport title={assetTitle(lead)} photos={[...assetPhotos(lead), ...leadSharedPhotoUrls(lead)]} asset={{serialNumber:asText(lead.assetSnapshot.serialNumber),yearModel:asNumber(lead.assetSnapshot.yearModel),usage:assetUsageValue(lead),condition:conditionLabel(lead.assetSnapshot.condition),valueExVat:assetValue(lead),replacementPriceExVat:snapshotReplacementPrice(lead.assetSnapshot)}}/>
+                  {isDealerLeadsMode ? (
+                    <button
+                      type="button"
+                      className={`${assetStyles.expandButton} ${assetStyles.cardViewDetailsButton} ${assetStyles.controlTooltip} ${styles.leadQuickActionButton}`}
+                      onClick={() => setExpandedLeadDetailsId(current => current === lead.id ? null : lead.id)}
+                      aria-expanded={showLeadDetails}
+                      aria-controls={`lead-details-${lead.id}`}
+                      data-tooltip={showLeadDetails ? 'Hide details' : 'View details'}
+                    >
+                      {showLeadDetails
+                        ? <ChevronUpIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`} />
+                        : <ChevronDownIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`} />}
+                      <span>{showLeadDetails ? 'Hide details' : 'View details'}</span>
+                    </button>
+                  ) : (
+                  <button
+                    type="button" data-tooltip="Send a note or quote"
+                    className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.leadQuickActionButton}`}
+                    onClick={() => openNoteModal(lead)}
+                    aria-label="Send a note or quote"
+                  >
+                    <NoteIcon className={assetStyles.buttonIcon} />
+                    <span>Send</span>
+                  </button>
+                  )}
+
+                  <LeadManageButton onClick={() => setManagedLead(lead)} />
+                </div>
+            </>}
+          >
+            <div id={`lead-details-${lead.id}`} hidden={!showLeadDetails}>
+              {showLeadDetails ? renderLeadDetails(lead) : null}
+            </div>
+          </LeadAssetCard>
+        ) : null}
+      </article>
+    );
+  }
+
   const assetPhotoModalIndex = assetPhotoModal
     ? Math.min(Math.max(assetPhotoModal.index, 0), assetPhotoModal.urls.length - 1)
     : 0;
@@ -3475,7 +3685,7 @@ export default function LeadsClient({
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
             <WorkspaceTitlePanel
-              title={dealerAppMode ? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'}
+              title="Assets Shared"
               helpTopic="partnerLeads"
               className={dealerAppMode ? styles.leadsTitlePanel : undefined}
             />
@@ -3608,216 +3818,55 @@ export default function LeadsClient({
 
           {!isLoading && filteredLeads.length ? (
             <div className={styles.leadStack}>
-              {paginatedLeads.map((lead) => {
-                const isLeadOpen = openLeadId === lead.id;
-                const showLeadDetails = !isDealerLeadsMode || expandedLeadDetailsId === lead.id;
-                const isLeadNew = isNewLead(lead);
-                const isLeadDone = !isDealerLeadsMode && isCompletedLead(lead);
-                const isLeadActive = !isLeadNew && !isLeadDone;
-                const isTrackingRequest = isTrackingLead(lead);
-                const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
-                const assetIdentifier = leadAssetIdentifier(lead);
-
+              {pageRows.map(row => {
+                if (!row.name) return renderLead(row.members[0]);
+                const expanded = openUmbrella === row.key;
+                const first = row.members[0];
+                const toggle = () => setOpenUmbrella(current => current === row.key ? null : row.key);
+                const panelId = `shared-umbrella-${first.id}`;
                 return (
-                  <article key={lead.id} ref={isLeadOpen ? openedCardRef : null}
-                    onClick={(event) => {
-                      if (event.defaultPrevented || window.getSelection()?.toString()) return;
-                      const target = event.target;
-                      if (!(target instanceof Element) || !event.currentTarget.contains(target)) return;
-                      if (target.closest('button, a, input, select, textarea, label, summary, [role="button"], [contenteditable], [role="dialog"], [data-website-overlay]')) return;
-                      if (isLeadOpen) setOpenLeadId(null);
-                      else void openLead(lead);
-                    }}
-                    className={`${assetStyles.cardToggleSurface} ${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
-                    <span aria-hidden="true" className={`${assetStyles.controlTooltip} ${assetStyles.cardToggleHint}`} data-tooltip={isLeadOpen ? 'Close lead' : 'Open lead'} />
-                    <LeadCardSummary headerClassName={''} identityClassName={`${''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
-                          <div className={styles.leadCardTitleRow}>
-                            <h3>{assetTitle(lead)}</h3>
+                  <div key={row.key}>
+                    <div className={assetStyles.assetGroupHeaderRow}>
+                      <section className={`${assetStyles.assetGroupHeader} ${assetStyles.cardToggleSurface} ${expanded ? '' : assetStyles.assetGroupHeaderCollapsed}`}
+                        onClick={event => {
+                          if (!(event.target as Element).closest('button') && !window.getSelection()?.toString()) toggle();
+                        }}>
+                        <span className={assetStyles.assetGroupUmbrella} aria-hidden="true">
+                          <svg className={assetStyles.assetGroupUmbrellaIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 12a9 9 0 0 1 18 0c-3-3-6 0-9 0s-6-3-9 0ZM12 3v15a3 3 0 0 0 6 0"/>
+                          </svg>
+                        </span>
+                        <div className={assetStyles.assetGroupIdentity}><div>
+                          <h2>{row.name}</h2>
+                          <p>{row.members.length} grouped {row.members.length === 1 ? 'asset' : 'assets'} · {first.ownerBusinessName || ownerDisplayName(first)}</p>
+                          {!expanded && <span className={assetStyles.assetGroupPreview}>{assetTitle(first)}{row.members.length > 1 && ` + ${row.members.length - 1} more`}</span>}
+                        </div></div>
+                        <div className={assetStyles.assetGroupSummary}>
+                          <div className={assetStyles.assetHeaderActions}>
+                            <button type="button" className={`${assetStyles.expandButton} ${assetStyles.cardViewDetailsButton}`} onClick={toggle} aria-expanded={expanded} aria-controls={panelId}>
+                              {expanded ? <ChevronUpIcon className={assetStyles.buttonIcon}/> : <ChevronDownIcon className={assetStyles.buttonIcon}/>}
+                              {expanded ? 'Hide details' : 'Open'}
+                            </button>
                           </div>
-                          <div className={styles.leadAssetContext}>
-                            <strong className={styles.leadAssetName}>{lead.ownerBusinessName || ownerDisplayName(lead)}</strong>
-                            {assetIdentifier ? <span className={styles.leadAssetIdentifier}>{assetIdentifier}</span> : null}
-                          </div>
-                          <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
-                          {null}
-                          {lead.ownerMessage ? (
-                            <span className={`${styles.trackingLeadPurpose} ${styles.leadOwnerMessagePreview}`}>
-                              <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
-                                <NoteIcon className={styles.trackingLeadPurposeIconGraphic} />
-                              </span>
-                              <span className={styles.trackingLeadPurposeCopy}>
-                                <strong>Owner message</strong>
-                                <small>{lead.ownerMessage}</small>
-                              </span>
-                            </span>
-                          ) : isTrackingRequest ? (
-                            <span className={styles.trackingLeadPurpose}>
-                              <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
-                                <MaintenanceTrackingIcon className={styles.trackingLeadPurposeIconGraphic} />
-                              </span>
-                              <span className={styles.trackingLeadPurposeCopy}>
-                                <strong>Asset sent for tracking</strong>
-                                <small>Maintenance tracking access was shared with your dealership.</small>
-                              </span>
-                            </span>
-                          ) : null}
-                    </>} actions={
-                          <div
-                            className={`${styles.clientActionRow} ${
-                              isTrackingRequest
-                                ? `${styles.trackingLeadActions} ${
-                                    isLeadOpen ? styles.trackingLeadActionsOpen : styles.trackingLeadActionsClosed
-                                  } ${lead.maintenanceAccess?.hasMaintenanceRecords ? '' : styles.trackingLeadActionsSingle}`
-                                : ''
-                            }`}
-                          >
-                            {isTrackingRequest ? (
-                              <>
-                                {isLeadOpen ? (
-                                  <button
-                                    type="button" data-tooltip="Delete lead"
-                                    className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`}
-                                    onClick={() => setDeleteLeadTarget(lead)}
-                                  >
-                                    Delete
-                                  </button>
-                                ) : null}
-                                {lead.maintenanceAccess?.hasMaintenanceRecords ? (
-                                  <button
-                                    type="button" data-tooltip="Open tracking"
-                                    className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}
-                                    onClick={() => openTracking(lead)}
-                                  >
-                                    Tracking
-                                  </button>
-                                ) : null}
-                                <button
-                                  type="button" data-tooltip={isLeadOpen ? 'Close lead' : 'Open lead'}
-                                  className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${isLeadOpen ? assetStyles.secondaryButton : assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${isLeadOpen ? workspaceStyles.actionNeutral : workspaceStyles.actionGreen}` : ''} ${isLeadOpen ? styles.trackingCloseButton : styles.openLeadButton}`}
-                                  onClick={() => {
-                                    if (isLeadOpen) {
-                                      setOpenLeadId(null);
-                                    } else {
-                                      void openLead(lead);
-                                    }
-                                  }}
-                                >
-                                  {isLeadOpen ? 'Close' : 'Open'}
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                {!isDealerLeadsMode ? <button
-                                  type="button" data-tooltip={isLeadDone ? 'Return to open' : 'Mark handled'}
-                                  className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
-                                  onClick={() => void toggleLeadDone(lead)}
-                                  disabled={Boolean(markingLeadDoneId)}
-                                  aria-pressed={isLeadDone}
-                                >
-                                  <CheckIcon className={assetStyles.buttonIcon} />
-                                  <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Handled' : 'Mark handled'}</span>
-                                </button> : null}
-
-                                {isLeadOpen ? (
-                                  <>
-                                    <button type="button" data-tooltip="Delete lead" className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
-                                      Delete
-                                    </button>
-                                    <button
-                                      type="button" data-tooltip="Close lead"
-                                      className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.closeLeadButton}`}
-                                      onClick={() => {
-                                        setOpenLeadId(null);
-                                      }}
-                                    >
-                                      Close
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button
-                                    type="button" data-tooltip="Open lead"
-                                    className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}` : ''} ${styles.openLeadButton}`}
-                                    onClick={() => {
-                                      void openLead(lead);
-                                    }}
-                                  >
-                                    Open
-                                  </button>
-                                )}
-                              </>
-                            )}
-                          </div>
-                    } />
-
-                    {lead.maintenanceAccess?.isActive && lead.maintenanceAccess.permissions.canViewLoggedProblems && <SharedProblems endpoint={`/api/asset-leads/${lead.id}/problems`} assetTitle={assetTitle(lead)} notesOnly detailsVisible={isLeadOpen}/>}
-
-                    {isLeadOpen ? (
-                      <LeadAssetCard expanded={showLeadDetails} className={isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''}
-                        identity={<>
-                            <h2>{assetTitle(lead)}</h2>
-                            {dealerAppMode && !isFullRegisterLead(lead) ? (
-                              <dl className={styles.expandedLeadFacts}>
-                                <div><dt>{asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year built' : 'Year'}</dt><dd>{lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : 'Not recorded'}</dd></div>
-                                <div><dt>Usage</dt><dd>{assetUsageValue(lead) === '—' ? 'Not recorded' : assetUsageValue(lead)}</dd></div>
-                                <div><dt>Condition</dt><dd>{asText(lead.assetSnapshot.condition) ? conditionLabel(asText(lead.assetSnapshot.condition)) : 'Not recorded'}</dd></div>
-                              </dl>
-                            ) : <p>{leadAssetMeta(lead)}</p>}
-                            <div className={assetStyles.assetMetaRow}>
-                              <span className={assetStyles.assetValueMethodLabel}>{isFullRegisterLead(lead) ? 'Register' : `${methodLabel(lead.assetSnapshot.selectedMethod)} value`}</span>
-                              <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
-                            </div>
-                        </>}
-                        aside={<>
-                            {(
-                              <SharedCardValue onOpen={lead.maintenanceAccess?.isActive&&lead.maintenanceAccess.permissions.canSuggestCurrentValue?()=>setValueLead(lead):undefined} value={assetValue(lead)} included={!!vatIncluded[lead.id]} onToggle={()=>setVatIncluded(current=>({...current,[lead.id]:!current[lead.id]}))}/>
-                            )}
-
-                            <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions} ${styles.exportHeaderActions}`}>
-                              <SharedAssetExport title={assetTitle(lead)} photos={[...assetPhotos(lead), ...leadSharedPhotoUrls(lead)]} asset={{serialNumber:asText(lead.assetSnapshot.serialNumber),yearModel:asNumber(lead.assetSnapshot.yearModel),usage:assetUsageValue(lead),condition:conditionLabel(lead.assetSnapshot.condition),valueExVat:assetValue(lead),replacementPriceExVat:snapshotReplacementPrice(lead.assetSnapshot)}}/>
-                              {isDealerLeadsMode ? (
-                                <button
-                                  type="button"
-                                  className={`${assetStyles.expandButton} ${assetStyles.cardViewDetailsButton} ${assetStyles.controlTooltip} ${styles.leadQuickActionButton}`}
-                                  onClick={() => setExpandedLeadDetailsId(current => current === lead.id ? null : lead.id)}
-                                  aria-expanded={showLeadDetails}
-                                  aria-controls={`lead-details-${lead.id}`}
-                                  data-tooltip={showLeadDetails ? 'Hide details' : 'View details'}
-                                >
-                                  {showLeadDetails
-                                    ? <ChevronUpIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`} />
-                                    : <ChevronDownIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`} />}
-                                  <span>{showLeadDetails ? 'Hide details' : 'View details'}</span>
-                                </button>
-                              ) : (
-                              <button
-                                type="button" data-tooltip="Send a note or quote"
-                                className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.leadQuickActionButton}`}
-                                onClick={() => openNoteModal(lead)}
-                                aria-label="Send a note or quote"
-                              >
-                                <NoteIcon className={assetStyles.buttonIcon} />
-                                <span>Send</span>
-                              </button>
-                              )}
-
-                              <LeadManageButton onClick={() => setManagedLead(lead)} />
-                            </div>
-                        </>}
-                      >
-                        <div id={`lead-details-${lead.id}`} hidden={!showLeadDetails}>
-                          {showLeadDetails ? renderLeadDetails(lead) : null}
                         </div>
-                      </LeadAssetCard>
-                    ) : null}
-                  </article>
+                      </section>
+                    </div>
+                    <div id={panelId} hidden={!expanded}>
+                      {expanded && row.members.map((member, index) => (
+                        <div key={member.id} className={`${assetStyles.assetCardRow} ${assetStyles.assetGroupMemberRow} ${index === row.members.length - 1 ? assetStyles.assetGroupMemberRowLast : ''}`}>
+                          {renderLead(member)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 );
               })}
             </div>
           ) : null}
 
-          {!isLoading && filteredLeads.length > LEADS_PER_PAGE ? (
+          {!isLoading && rows.length > LEADS_PER_PAGE ? (
             <ListPagination label="Lead pagination" page={visibleLeadPage} pageCount={totalLeadPages}
-              onPageChange={setCurrentPage} summary={<>Showing {leadRangeStart}–{leadRangeEnd} of {filteredLeads.length} leads</>} />
+              onPageChange={setCurrentPage} summary={<>Showing {leadRangeStart}–{leadRangeEnd} of {rows.length} {isDealerLeadsMode ? 'entries' : 'leads'}</>} />
           ) : null}
         </section>
       </section>
