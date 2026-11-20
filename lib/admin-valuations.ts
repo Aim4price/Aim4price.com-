@@ -103,7 +103,8 @@ const SAVED_SELECTED_VALUE_SQL = `coalesce(
   ${safeNumericSql("payload_document.payload #>> '{output,valuationMidExVat}'")}
 )`;
 
-const ADMIN_VALUATION_CTE = `
+function valuationHistorySql(pageOnly = false) {
+  return `
   with free_estimate_rows as (
     select
       'estimate:' || event.id::text as valuation_id,
@@ -287,6 +288,7 @@ const ADMIN_VALUATION_CTE = `
       )
     where event.event_type = 'free_estimate_completed'
       and event.created_at >= ${ADMIN_VALUATION_HISTORY_START_SQL}
+      ${pageOnly ? "and event.id in (select source_id::bigint from page_keys where record_type = 'estimate')" : ''}
   ),
   saved_valuation_rows as (
     select
@@ -471,6 +473,7 @@ const ADMIN_VALUATION_CTE = `
     left join public.brands brand
       on brand.id::text = nullif(valuation_document.row_json->>'brand_id', '')
     where valuation.created_at >= ${ADMIN_VALUATION_HISTORY_START_SQL}
+      ${pageOnly ? "and valuation.id in (select source_id::bigint from page_keys where record_type = 'saved')" : ''}
   ),
   valuation_history as (
     select * from free_estimate_rows
@@ -502,6 +505,7 @@ const ADMIN_VALUATION_CTE = `
     left join public."user" auth_user on auth_user.id = history.account_user_id
   )
 `;
+}
 
 function text(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -678,7 +682,7 @@ function normalizePeriod(value: unknown): string {
 export function normalizeAdminValuationFilters(
   input: Partial<AdminValuationFilters> = {},
 ): AdminValuationFilters {
-  const requestedPageSize = clampPositiveInteger(input.pageSize, 50);
+  const requestedPageSize = clampPositiveInteger(input.pageSize, ADMIN_VALUATION_PAGE_SIZES[0]);
   return {
     search: text(input.search).slice(0, 200),
     recordType: normalizeRecordFilter(input.recordType),
@@ -688,9 +692,9 @@ export function normalizeAdminValuationFilters(
     period: normalizePeriod(input.period),
     sort: normalizeSort(input.sort),
     page: Math.min(2147483647, clampPositiveInteger(input.page, 1)),
-    pageSize: ADMIN_VALUATION_PAGE_SIZES.includes(requestedPageSize as 25 | 50 | 100)
+    pageSize: ADMIN_VALUATION_PAGE_SIZES.includes(requestedPageSize as (typeof ADMIN_VALUATION_PAGE_SIZES)[number])
       ? requestedPageSize
-      : 50,
+      : ADMIN_VALUATION_PAGE_SIZES[0],
   };
 }
 
@@ -698,7 +702,7 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (character) => `\\${character}`);
 }
 
-function buildWhere(filters: AdminValuationFilters): { whereSql: string; params: unknown[] } {
+function buildFilterPredicate(filters: AdminValuationFilters): { predicate: string; params: unknown[] } {
   const where: string[] = [];
   const params: unknown[] = [];
 
@@ -735,7 +739,7 @@ function buildWhere(filters: AdminValuationFilters): { whereSql: string; params:
     where.push(`valuation_year = $${params.length}`);
   }
 
-  return { whereSql: where.length ? `where ${where.join(' and ')}` : '', params };
+  return { predicate: where.length ? where.join(' and ') : 'true', params };
 }
 
 function sortSql(sort: AdminValuationSort): string {
@@ -910,16 +914,26 @@ export async function getAdminValuationReport(
 ): Promise<AdminValuationReport> {
   await Promise.all([ensureAdminUsageTrackingSchema(), ensureAccountProfileColumns()]);
   const filters = normalizeAdminValuationFilters(input);
-  const { whereSql, params } = buildWhere(filters);
+  const { predicate, params } = buildFilterPredicate(filters);
   const limitParameter = `$${params.length + 1}`;
   const requestedPage = `$${params.length + 2}`;
   const offsetParameter = `(select least((${requestedPage}::bigint - 1) * ${limitParameter}::bigint,
     greatest(total_valuations - 1, 0) / ${limitParameter} * ${limitParameter}) from totals)`;
+  // Materialize only the columns needed to count, filter and order the ledger.
+  // The second projection reads full valuation payloads for the selected IDs.
+  const sortColumns = filters.sort === 'account' ? ', account_label'
+    : filters.sort === 'asset' ? ', brand_name, model_name' : '';
   const result = await getDb().query<{
     summary: SummaryRow; options: OptionRow[]; records: AdminValuationRow[];
   }>(`
-    ${ADMIN_VALUATION_CTE},
-    filtered as (select * from admin_valuations ${whereSql}),
+    ${valuationHistorySql()},
+    ledger as (
+      select valuation_id, source_id, record_type, created_at, account_user_id, has_account,
+        selected_value_ex_vat, sector_key, sector_label, valuation_year ${sortColumns},
+        ${predicate} as matches_filters
+      from admin_valuations
+    ),
+    filtered as (select * from ledger where matches_filters),
     totals as (
       select
           count(*)::bigint as total_valuations,
@@ -934,18 +948,22 @@ export async function getAdminValuationReport(
     options as (
       select 'sector'::text as option_group, sector_key as value,
       max(sector_label) as label, count(*)::bigint as count
-    from admin_valuations
+    from ledger
     group by sector_key
     union all
     select 'year', valuation_year::text, valuation_year::text, count(*)::bigint
-    from admin_valuations
+    from ledger
     where valuation_year is not null
     group by valuation_year
     order by option_group, label desc
     ),
-    page_rows as (
-      select * from filtered order by ${sortSql(filters.sort)}, valuation_id
+    page_keys as (
+      select source_id, record_type from filtered order by ${sortSql(filters.sort)}, valuation_id
       limit ${limitParameter} offset ${offsetParameter}
+    ),
+    page_rows as (
+      ${valuationHistorySql(true)}
+      select * from admin_valuations
     )
     select (select row_to_json(totals) from totals) as summary,
       (select coalesce(json_agg(options order by option_group, label desc), '[]') from options) as options,

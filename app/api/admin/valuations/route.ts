@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       period: searchParams.get('period') ?? 'all',
       sort: (searchParams.get('sort') ?? 'latest') as AdminValuationSort,
       page: Number(searchParams.get('page') ?? 1),
-      pageSize: Number(searchParams.get('pageSize') ?? 50),
+      pageSize: Number(searchParams.get('pageSize')),
     });
     return NextResponse.json({ ok: true, report });
   } catch (error) {

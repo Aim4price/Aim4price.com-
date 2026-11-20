@@ -107,7 +107,7 @@ export type AdminValuationReport = {
   };
 };
 
-export const ADMIN_VALUATION_PAGE_SIZES = [25, 50, 100] as const;
+export const ADMIN_VALUATION_PAGE_SIZES = [10, 25, 50, 100] as const;
 
 // The Admin valuation ledger was deliberately restarted at 02:00 SAST on
 // 26 August 2026. Earlier rows are permanently removed by migration 92 and

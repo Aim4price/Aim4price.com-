@@ -86,7 +86,7 @@ function buildQuery(filters: ValuationFilterState): string {
   if (filters.period !== 'all') params.set('period', filters.period);
   if (filters.sort !== 'latest') params.set('sort', filters.sort);
   if (filters.page > 1) params.set('page', String(filters.page));
-  if (filters.pageSize !== 50) params.set('pageSize', String(filters.pageSize));
+  if (filters.pageSize !== ADMIN_VALUATION_PAGE_SIZES[0]) params.set('pageSize', String(filters.pageSize));
   return params.toString();
 }
 
