@@ -1926,7 +1926,7 @@ export default function LeadsClient({
     () => summaryLeads.filter((lead) => isCompletedLead(lead)).length,
     [summaryLeads],
   );
-  const [openUmbrella, setOpenUmbrella] = useState<string | null>(null);
+  const [openUmbrellas, setOpenUmbrellas] = useState<Set<string>>(() => new Set());
   const rows = useMemo(() => sharedAssetRows(receivedLeads, filteredLeads, isDealerLeadsMode),
     [receivedLeads, filteredLeads, isDealerLeadsMode]);
   const totalLeadPages = Math.max(1, Math.ceil(rows.length / LEADS_PER_PAGE));
@@ -3820,12 +3820,17 @@ export default function LeadsClient({
             <div className={styles.leadStack}>
               {pageRows.map(row => {
                 if (!row.name) return renderLead(row.members[0]);
-                const expanded = openUmbrella === row.key;
+                const expanded = openUmbrellas.has(row.key);
                 const first = row.members[0];
-                const toggle = () => setOpenUmbrella(current => current === row.key ? null : row.key);
+                const toggle = () => setOpenUmbrellas(current => {
+                  const next = new Set(current);
+                  if (next.has(row.key)) next.delete(row.key);
+                  else next.add(row.key);
+                  return next;
+                });
                 const panelId = `shared-umbrella-${first.id}`;
                 return (
-                  <div key={row.key}>
+                  <div key={row.key} className={assetStyles.assetList}>
                     <div className={assetStyles.assetGroupHeaderRow}>
                       <section className={`${assetStyles.assetGroupHeader} ${assetStyles.cardToggleSurface} ${expanded ? '' : assetStyles.assetGroupHeaderCollapsed}`}
                         onClick={event => {
@@ -3842,16 +3847,16 @@ export default function LeadsClient({
                           {!expanded && <span className={assetStyles.assetGroupPreview}>{assetTitle(first)}{row.members.length > 1 && ` + ${row.members.length - 1} more`}</span>}
                         </div></div>
                         <div className={assetStyles.assetGroupSummary}>
-                          <div className={assetStyles.assetHeaderActions}>
+                          <div className={`${assetStyles.assetHeaderActions} ${assetStyles.assetGroupHeaderActions}`}>
                             <button type="button" className={`${assetStyles.expandButton} ${assetStyles.cardViewDetailsButton}`} onClick={toggle} aria-expanded={expanded} aria-controls={panelId}>
-                              {expanded ? <ChevronUpIcon className={assetStyles.buttonIcon}/> : <ChevronDownIcon className={assetStyles.buttonIcon}/>}
+                              {expanded ? <ChevronUpIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`}/> : <ChevronDownIcon className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`}/>}
                               {expanded ? 'Hide details' : 'Open'}
                             </button>
                           </div>
                         </div>
                       </section>
                     </div>
-                    <div id={panelId} hidden={!expanded}>
+                    <div id={panelId} hidden={!expanded} className={expanded ? assetStyles.assetList : undefined}>
                       {expanded && row.members.map((member, index) => (
                         <div key={member.id} className={`${assetStyles.assetCardRow} ${assetStyles.assetGroupMemberRow} ${index === row.members.length - 1 ? assetStyles.assetGroupMemberRowLast : ''}`}>
                           {renderLead(member)}
