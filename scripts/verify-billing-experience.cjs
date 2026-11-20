@@ -366,6 +366,32 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.ok(await page.$('[aria-labelledby="business-hosting-title"] a[href="/contact-us"]'));
      await page.screenshot({path:path.join(evidence,`business-access-options-${width}.png`)});
      await page.keyboard.press('Escape');
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent==='Middleman access').click());
+     await page.waitForSelector('[data-middleman-access]');
+     assert.match(await page.$eval('[data-middleman-access]',e=>e.textContent),/Free basic access.*Hosting referrals.*40%.*Asset recording.*R270\/hour.*Asset sales.*Agreed per sale/);
+     for(const height of [1000,600]){
+      await page.setViewport({width,height});
+      const fit=await page.$eval('[data-middleman-access]',e=>{
+       const body=e.parentElement,dialog=e.closest('[role="dialog"]'),action=e.querySelector('a');
+       const rect=dialog.getBoundingClientRect(),button=action.getBoundingClientRect();
+       return {scrolls:body.scrollHeight>body.clientHeight+1,horizontal:body.scrollWidth>body.clientWidth+1,top:rect.top,bottom:rect.bottom,actionBottom:button.bottom};
+      });
+      await page.screenshot({path:path.join(evidence,`middleman-access-${width}-${height}.png`)});
+      assert.equal(fit.scrolls,false,'Middleman overview fits without a scrollbar');
+      assert.equal(fit.horizontal,false,'Middleman overview has no horizontal overflow');
+      assert.ok(fit.top>=0&&fit.bottom<=height&&fit.actionBottom<=height,'Middleman contact action is visible');
+     }
+     await clickText('Commission terms');
+     await page.waitForFunction(()=>document.querySelector('[role="dialog"] h2')?.textContent==='Success fees & services');
+     assert.equal(await page.$eval('[role="dialog"] details',e=>e.open),true,'Commission terms open directly');
+     assert.equal(await page.$eval('[role="dialog"] details summary',e=>e.textContent),'Partner earnings');
+     assert.match(await page.$eval('[role="dialog"] details',e=>e.textContent),/R180\/hour.*Travel payments.*No referral commission.*30 days.*R500/);
+     await page.keyboard.press('Escape');
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent==='Success fees & services').click());
+     await page.waitForSelector('[role="dialog"]');
+     assert.equal(await page.$$eval('[role="dialog"] details[open]',els=>els.length),0,'General service fees still start collapsed');
+     await page.keyboard.press('Escape');
+     await page.setViewport({width,height:1000});
     }
     if(['guest','business-join','business-register'].includes(mode)){
      assert.equal(await page.$$eval('main',els=>els.length),1,'Onboarding has one page landmark');

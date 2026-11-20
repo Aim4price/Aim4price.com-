@@ -299,7 +299,27 @@
 .accessDetails[open] > summary .coverageToggle::after { display: none; }
 .accessDetails > summary:focus-visible { outline: 3px solid #438e70; outline-offset: 3px; border-radius: .5rem; }
 .accessFootnote { margin: 0; color: #52665c; font-size: .95rem; line-height: 1.6; }
+.middlemanAccess { display: grid; gap: .85rem; color: #244c3c; font-size: 1rem; line-height: 1.5; }
+.middlemanIntro, .middlemanNote { margin: 0; font-weight: 600; }
+.middlemanIntro strong { color: #173f31; font-weight: 800; }
+.middlemanEarnings { display: grid; gap: .65rem; margin: 0; }
+.middlemanEarnings > div { display: grid; grid-template-columns: 11rem minmax(0, 1fr); align-items: baseline; gap: .5rem 1rem; padding: .8rem 1rem; border: 1px solid #d3e3d9; border-radius: .85rem; background: #f4faf6; }
+.middlemanEarnings dt { font-weight: 750; color: #173f31; }
+.middlemanEarnings dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: .25rem .85rem; margin: 0; }
+.middlemanEarnings dd strong { font-size: 1.15rem; line-height: 1.4; font-weight: 800; color: #174d3a; white-space: nowrap; }
+.middlemanEarnings dd span { font-weight: 550; }
+.middlemanActions { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .65rem 1rem; padding-top: .2rem; }
+.middlemanActions button { padding: .5rem 0; border: 0; background: transparent; color: #24533e; font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: .25rem; cursor: pointer; }
+.middlemanActions .button { font-size: 1rem; font-weight: 750; white-space: nowrap; }
+.middlemanActions :is(a, button):focus-visible { outline: 3px solid #398d67; outline-offset: 3px; }
 @media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .middlemanAccess { gap: .5rem; }
+  :global(html:not(:has([data-website-canvas]))) .middlemanEarnings { gap: .4rem; }
+  :global(html:not(:has([data-website-canvas]))) .middlemanEarnings > div { grid-template-columns: minmax(0, 1fr) auto; gap: .1rem .5rem; padding: .4rem .65rem; }
+  :global(html:not(:has([data-website-canvas]))) .middlemanEarnings dd { display: contents; }
+  :global(html:not(:has([data-website-canvas]))) .middlemanEarnings dd span { grid-column: 1 / -1; }
+  :global(html:not(:has([data-website-canvas]))) .middlemanActions { gap: .5rem; }
+  :global(html:not(:has([data-website-canvas]))) .middlemanActions .button { padding: .6rem .85rem; }
   :global(html:not(:has([data-website-canvas]))) .accessOption { padding: 1.1rem; }
   :global(html:not(:has([data-website-canvas]))) .accessOption .button { width: 100%; box-sizing: border-box; }
 }
