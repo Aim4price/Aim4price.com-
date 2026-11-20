@@ -763,7 +763,8 @@
   padding: 0.42rem 0;
   border-top: 1px solid #e9eeec;
   display: grid;
-  grid-template-columns: minmax(7rem, 0.42fr) minmax(0, 1fr);
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   gap: 0.6rem;
 }
 
@@ -876,7 +877,8 @@
   padding: 0.45rem 0;
   border-top: 1px solid #edf1ef;
   display: grid;
-  grid-template-columns: minmax(9.5rem, 0.46fr) minmax(0, 1fr);
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   gap: 0.72rem;
 }
 
@@ -897,6 +899,32 @@
   font-size: 0.95rem;
   font-weight: 650;
   overflow-wrap: anywhere;
+}
+
+/* Share a label track across each card so longer labels reserve real space. */
+.detailsModal :is(.detailColumns, .payloadColumns, .flowSection) dl {
+  grid-template-columns: fit-content(66%) minmax(0, 1fr);
+  column-gap: 1rem;
+}
+
+.detailsModal dl > div {
+  column-gap: inherit;
+  align-items: baseline;
+}
+
+.detailsModal dl :is(dt, dd) {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  overflow: visible;
+}
+
+.detailsModal dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.flowSection:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .noRecordedDetails {
