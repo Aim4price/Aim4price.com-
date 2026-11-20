@@ -52,6 +52,13 @@
 
 .owner:has([data-pricing-view='question']) { width: min(58rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem)); }
 
+/* A short earning summary replaces the tall Middleman explanation card. */
+.dialog:has([data-middleman-access]) { width: min(58rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem)); }
+.dialog:has([data-middleman-access]) .header { align-items: center; padding-block: 1rem; }
+.dialog:has([data-middleman-access]) .header h2 { font-size: 1.65rem; line-height: 1.25; }
+.body:has([data-middleman-access]) { padding: 1rem 1.75rem 1.25rem; }
+
 @media (max-width: 640px) {
   :global(html:not(:has([data-website-canvas]))) .owner .body { padding: 0; }
+  :global(html:not(:has([data-website-canvas]))) .body:has([data-middleman-access]) { padding: .75rem 1rem 1rem; }
 }

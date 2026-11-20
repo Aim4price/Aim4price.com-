@@ -12,6 +12,7 @@ import { businessHosting, ownerHosting, rand, type HostingAudience } from '../..
 export default function PricingContent({ signedIn = false, initialAudience = null }: { signedIn?: boolean; initialAudience?: HostingAudience | null }) {
   const [audience, setAudience] = useState<HostingAudience | null>(initialAudience);
   const [feesOpen, setFeesOpen] = useState(false);
+  const [feesTopic, setFeesTopic] = useState<'commission' | undefined>();
   const [ownerTitle, setOwnerTitle] = useState('How many assets?');
   return (
     <div className={styles.photoSurface}>
@@ -65,14 +66,21 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
         </div>
       </PricingModal>
       <PricingModal open={audience === 'middleman'} title="Middleman access" onClose={() => setAudience(null)}>
-        <div className={styles.accessExplanation}>
-          <h2>Free basic access.</h2>
-          <p>Connect owners and opportunities. Paid assistance and client hosting are separate.</p>
-          <DealerDetails topic="commission" />
-          <Link className={styles.button} href="/contact-us">Discuss Middleman access</Link>
-        </div>
+        <section className={styles.middlemanAccess} data-middleman-access aria-label="Middleman access and earnings">
+          <p className={styles.middlemanIntro}><strong>Free basic access.</strong> Connect owners with opportunities.</p>
+          <dl className={styles.middlemanEarnings}>
+            <div><dt>Hosting referrals</dt><dd><strong>40%</strong><span>On eligible full-price paid hosting.</span></dd></div>
+            <div><dt>Asset recording</dt><dd><strong className={styles.rate}>R270/hour</strong><span>60% of approved on-site work.</span></dd></div>
+            <div><dt>Asset sales</dt><dd><strong>Agreed per sale</strong><span>Shared from the total sale fee.</span></dd></div>
+          </dl>
+          <p className={styles.middlemanNote}>Client hosting and assistance cost extra.</p>
+          <div className={styles.middlemanActions}>
+            <button type="button" onClick={() => { setFeesTopic('commission'); setAudience(null); setFeesOpen(true); }}>Commission terms</button>
+            <Link className={styles.button} href="/contact-us">Discuss access</Link>
+          </div>
+        </section>
       </PricingModal>
-      <PricingModal open={feesOpen} title="Success fees & services" onClose={() => setFeesOpen(false)}><ServiceFees /></PricingModal>
+      <PricingModal open={feesOpen} title="Success fees & services" onClose={() => setFeesOpen(false)}><ServiceFees initialTopic={feesTopic} /></PricingModal>
       <details className={styles.pricingIncluded}>
         <summary className={styles.coverageSummary}><h2>What your hosting covers</h2><span className={styles.coverageToggle} aria-hidden="true" /></summary>
         <div className={styles.subscriptionDetails}>
@@ -103,7 +111,7 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
           </article>
         </div>
       </details>
-      <p className={styles.additionalLinks}><button type="button" aria-haspopup="dialog" onClick={() => setAudience('middleman')}>Middleman access</button><button type="button" aria-haspopup="dialog" onClick={() => setFeesOpen(true)}>Success fees &amp; services</button></p>
+      <p className={styles.additionalLinks}><button type="button" aria-haspopup="dialog" onClick={() => setAudience('middleman')}>Middleman access</button><button type="button" aria-haspopup="dialog" onClick={() => { setFeesTopic(undefined); setFeesOpen(true); }}>Success fees &amp; services</button></p>
       <div className={styles.closing}>
         <div><h2>Still have a question?</h2><p>We’ll help you choose your hosting and support.</p></div>
         <Link className={styles.contactButton} href="/contact-us">
