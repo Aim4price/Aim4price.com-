@@ -5,6 +5,7 @@ dialog.dialog:not([open]) { display: none; }
 .options > div { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; padding: 1rem; border: 1px solid var(--app-line,#cbded4); border-radius: .9rem; background: var(--app-surface-soft,#eff6f2); }
 .options a { margin-inline-start: auto; color: var(--app-text,#123e31); font-weight: 750; }
 
-@media (min-width: 760px) {
-  .dialog .providerGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.dialog .providerGrid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .dialog .providerGrid { grid-template-columns: 1fr; }
 }
