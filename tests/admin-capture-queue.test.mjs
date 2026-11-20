@@ -16,7 +16,6 @@ const [
   targetStore,
   usersPage,
   dashboardPage,
-  lifecyclePage,
   adminNavigation,
   captureStore,
 ] = await Promise.all([
@@ -31,7 +30,6 @@ const [
   read("lib/admin-capture-targets.ts"),
   read("app/admin/admin-client.tsx"),
   read("app/admin/dashboard/page.tsx"),
-  read("app/admin/lifecycle-calculator/page.tsx"),
   read("components/AdminNavigation.tsx"),
   read("lib/capture-requests.ts"),
 ]);
@@ -54,7 +52,6 @@ test("all current admin navigation surfaces expose Capture Queue", () => {
   assert.match(page, /<AdminNavigation active="capture-queue" \/>/);
   assert.match(usersPage, /<AdminNavigation active="accounts"[^\n]* canGetEstimate=\{canGetEstimate\} \/>/);
   assert.match(dashboardPage, /<AdminNavigation active="dashboard" \/>/);
-  assert.match(lifecyclePage, /<AdminNavigation active="lifecycle" \/>/);
   assert.doesNotMatch(adminNavigation, /assistance-network/);
 });
 

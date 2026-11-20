@@ -4,8 +4,6 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-const lifecycle = read("app/admin/lifecycle-calculator/lifecycle-calculator-client.tsx");
-const lifecycleStyles = read("app/admin/lifecycle-calculator/page.module.css");
 const users = read("app/admin/admin-client.tsx");
 const userStyles = read("app/admin/page.module.css");
 const adminUsers = read("lib/admin-users.ts");
@@ -15,37 +13,6 @@ const dashboard = read("app/admin/dashboard/page.tsx");
 const dashboardStyles = read("app/admin/dashboard/page.module.css");
 const adminNavigation = read("components/AdminNavigation.tsx");
 const adminNavigationStyles = read("components/AdminNavigation.module.css");
-
-test("the one-page lifecycle flow has clear navigation and selectable structures", () => {
-  assert.match(lifecycle, /href="#lifecycle-setup"/);
-  assert.match(lifecycle, /href="#lifecycle-finance"/);
-  assert.match(lifecycle, /href="#lifecycle-provisions"/);
-  assert.match(lifecycle, /href="#lifecycle-results"/);
-  assert.match(lifecycle, /href="#lifecycle-planning"/);
-  assert.match(lifecycle, /aria-pressed=\{scenario\.id === state\.preferredScenario\}/);
-  assert.match(lifecycle, /<h3>Funding structure<\/h3>/);
-  assert.match(lifecycle, /<h2>Results<\/h2>/);
-  assert.match(lifecycleStyles, /\.workspaceNav \{[\s\S]*?position: sticky/);
-  assert.match(lifecycleStyles, /\.scenarioChoiceActive/);
-});
-
-test("numeric deal fields are readable and still update the live model", () => {
-  assert.match(lifecycle, /new Intl\.NumberFormat\("en-ZA"/);
-  assert.match(lifecycle, /inputMode="decimal"/);
-  assert.match(lifecycle, /onBlur=\{commitDraft\}/);
-  assert.match(lifecycle, /onChange\(parsed\)/);
-  assert.doesNotMatch(lifecycle, /<input[\s\S]{0,120}type="number"/);
-});
-
-test("service and maintenance choices use plain deal language", () => {
-  assert.match(lifecycle, /Use a quoted service-plan amount/);
-  assert.match(lifecycle, /Quoted \/ planned service provision/);
-  assert.match(lifecycle, /Planned maintenance reserve/);
-  assert.match(lifecycle, /Reserve vs future pay-as-you-go/);
-  assert.match(lifecycle, /Reserve is above estimated future spend/);
-  assert.doesNotMatch(lifecycle, /regression example/);
-  assert.doesNotMatch(lifecycle, /<details className=\{styles\.card\} open>/);
-});
 
 test("the users page separates navigation, account health and filtering", () => {
   assert.match(users, /<h1>Accounts<\/h1>/);
@@ -144,7 +111,6 @@ test("all Admin pages use one complete navigation without Assistance Network con
     "/admin/discovery",
     "/admin/work-tracker",
     "/admin/capture-queue",
-    "/admin/lifecycle-calculator",
   ]) {
     assert.match(adminNavigation, new RegExp(`href: "${path.replaceAll("/", "\\/")}"`));
   }
