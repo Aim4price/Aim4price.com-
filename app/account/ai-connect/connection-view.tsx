@@ -30,6 +30,7 @@ export type ConnectionViewProps = {
 
 function Icon({ kind = 'spark' }: { kind?: string }) {
   const paths: Record<string, string> = {
+    mail: 'M3 5h18v14H3z M3 6l9 7 9-7',
     spark: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z',
     chat: 'M4 4h16v12H9l-5 4V4Zm4 4h8m-8 4h5',
     link: 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2m3 6a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2',
@@ -181,7 +182,18 @@ export default function ConnectionView({ account, connections, resource, proof, 
             <PageHelpHeading topic="aiConnections" enabled={!admin}><h1 id="ai-connections-title">{admin ? 'Admin AI connections' : 'AI connections'}</h1></PageHelpHeading>
             <p>{proof ? 'Review your account and approve read-only access.' : admin ? 'Ask about assets across Aim4price accounts. Read-only oversight.' : partner ? 'Ask about your workspace and the client information shared with you.' : !account ? 'Connect your AI assistant to the Aim4price information you can access.' : 'Ask your AI assistant about your assets, costs, fuel and maintenance.'}</p>
           </div>
-          {message && !disabled && <div className={styles.notice} role="alert"><h2>Connection unavailable</h2><p>{message}</p>{needsVerification && <VerifyAdminEmail />}</div>}
+          {message && !disabled && (admin && needsVerification ? (
+            <section className={styles.verifyCard} aria-labelledby="verify-admin-heading">
+              <div className={styles.verifyHeading}>
+                <span className={styles.approvalIcon}><Icon kind="mail" /></span>
+                <div>
+                  <h2 id="verify-admin-heading">Verify your admin email</h2>
+                  <p>Send a verification link to <strong>aim4price@gmail.com</strong>.</p>
+                </div>
+              </div>
+              <VerifyAdminEmail />
+            </section>
+          ) : <div className={styles.notice} role="alert"><h2>Connection unavailable</h2><p>{message}</p></div>)}
           {proof ? <section className={styles.approval} aria-labelledby="approve-title">
             <div className={styles.approvalHeading}><span className={styles.approvalIcon}><Icon kind="link" /></span><div><h2 id="approve-title">{admin ? 'Allow read-only access to ' : 'Connect '}{providerName || 'this assistant'}?</h2></div></div>
             <div className={styles.approvalSafety}><Icon kind="shield" /><span>Allow read-only access to the information available to your account. Your assistant cannot change or delete anything.</span></div>
