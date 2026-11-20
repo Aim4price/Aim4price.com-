@@ -1,0 +1,41 @@
+.heading,
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: .8rem;
+  row-gap: .35rem;
+  min-width: 0;
+}
+
+.heading h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.count {
+  padding: .3rem .7rem;
+  border-radius: 999px;
+  background: var(--app-surface-soft, #e9f4ee);
+  color: var(--app-text, #153e31);
+  font-size: .95rem;
+  font-weight: 750;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.metadata {
+  margin-block: .45rem;
+  color: var(--app-muted, #52665c);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.metadata strong {
+  color: var(--app-text, #153e31);
+  overflow-wrap: anywhere;
+}
+
+.metadata span {
+  white-space: nowrap;
+}

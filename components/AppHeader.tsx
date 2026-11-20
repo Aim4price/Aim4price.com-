@@ -246,7 +246,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
   { href: '/ad-studio', label: 'Advert Studio', accountTypes: ['dealer'] },
   { href: '/my-showroom', label: 'My Showroom', accountTypes: ['dealer'] },
-  { href: '/leads', label: 'Assets Shared', accountTypes: ['dealer'] },
+  { href: '/leads', label: 'Shared Assets', accountTypes: ['dealer'] },
   { href: '/dealer-costs', label: 'Cost Ledger', accountTypes: ['dealer'] },
 ];
 
@@ -311,7 +311,7 @@ function buildNavItems(
     return [
       ...BASE_NAV_ITEMS,
       { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
-      { key: 'leads', href: '/leads', label: 'Assets Shared' },
+      { key: 'leads', href: '/leads', label: 'Shared Assets' },
       { key: 'tracking', href: '/tracking', label: 'Maintenance' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
       { key: 'ad-studio', href: '/ad-studio', label: 'Advert Studio' },
