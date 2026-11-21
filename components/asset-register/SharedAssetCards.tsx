@@ -130,7 +130,7 @@ export default function SharedAssetCards({
       <section className={assetStyles.shell}>
       {!share ? (
         <section className={styles.empty}>
-          <h1>This asset is no longer available</h1>
+          <h1>This link is no longer available</h1>
           <p>Ask the sender for a new asset link.</p>
         </section>
       ) : (
