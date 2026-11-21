@@ -3,8 +3,8 @@
   box-sizing: border-box;
   margin: clamp(1rem, 3vw, 3rem) auto;
   padding: clamp(1.2rem, 3.4vw, 3rem);
-  background: var(--surface, #fff);
-  color: var(--text, #15392e);
+  background: var(--app-surface, var(--surface-card));
+  color: var(--app-text, var(--brand-900));
   border: 1px solid rgba(80, 120, 102, .18);
   border-radius: 1.75rem;
   box-shadow: 0 1rem 3rem rgba(18, 54, 43, .09);

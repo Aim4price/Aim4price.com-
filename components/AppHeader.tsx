@@ -359,10 +359,10 @@ function isPathMatchingHref(pathname: string, href: string): boolean {
 function resolveActiveNavKey(pathname: string, items: NavItem[], active: ActivePage): ActivePage {
   const normalizedPath = pathname || '/';
 
-  if (normalizedPath === '/budgets' || normalizedPath.startsWith('/budgets/')) return 'cost';
+  if (!items.some(item => item.key === 'workspace') && (normalizedPath === '/budgets' || normalizedPath.startsWith('/budgets/'))) return 'cost';
 
   if (normalizedPath === '/asset-registers' || normalizedPath.startsWith('/asset-registers/')) {
-    return 'asset-register';
+    return items.some(item => item.key === 'workspace') && !items.some(item => item.key === 'asset-register') ? 'workspace' : 'asset-register';
   }
 
   const pathMatchedItem = items.find((item) => normalizedPath === (item.href.split(/[?#]/, 1)[0] || '/'))
@@ -378,7 +378,7 @@ function resolveActiveNavKey(pathname: string, items: NavItem[], active: ActiveP
     return active;
   }
 
-  return 'none';
+  return items.some(item => item.key === 'workspace') ? 'workspace' : 'none';
 }
 
 function SmartLink({ href, className, children, onClick }: SmartLinkProps) {
