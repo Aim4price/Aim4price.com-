@@ -76,9 +76,12 @@ test('only Business signup can request free sharing',async()=>{
  '../../../../lib/auth':{auth:{}},'better-auth/next-js':{toNextJsHandler:()=>({POST:async()=>{authCalls++;return Response.json({ok:true});}})},
  '../../../../lib/signup-workspace-context':{withSignupWorkspaceInput:async(input,fn)=>{context=input;return fn();}},
  });
- const call=accountType=>route.POST(new Request('https://aim4price.test/api/auth/sign-up/email',{method:'POST',body:JSON.stringify({accountType,accountAccess:'free',businessName:'Test Business',acceptedTerms:true})}));
+ const call=(accountType,accountAccess='free')=>route.POST(new Request('https://aim4price.test/api/auth/sign-up/email',{method:'POST',body:JSON.stringify({accountType,accountAccess,businessName:'Test Business',acceptedTerms:true})}));
  assert.equal((await call('dealer')).status,400);assert.equal((await call('business')).status,200);assert.equal(billingCalls,0);assert.equal(context.accountAccess,'free');
  assert.equal((await call('owner')).status,400);assert.equal(authCalls,1);
+ assert.equal(context.accountType,'business');
+ assert.equal((await call('business','desktop')).status,200);assert.equal(billingCalls,1);
+ assert.equal(context.accountType,'dealer');assert.equal(context.accountAccess,'desktop');
 });
 
 test('email costs distinguish provider acceptance from failure and use a distinct attempt id',async()=>{

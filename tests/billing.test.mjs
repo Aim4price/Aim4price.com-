@@ -134,7 +134,7 @@ test('recurring agreements are opt-in, audited, versioned and issue only once pe
   a=await billing.getBillingAgreement('one');assert.equal(a.enabled,false);assert.match(a.lastError,/Missed billing/);
   assert.equal((await billing.listBillingInvoices('one',false)).total,2);
   await pg.exec(`alter table account_profiles add column account_type text, add column account_subtype text;
-   insert into account_profiles(user_id,account_type,account_subtype) values('one','dealer','contributor');
+   insert into account_profiles(user_id,account_type,account_subtype,account_status) values('one','dealer','contributor','active');
    create table asset_registers(id int,user_id text,is_primary boolean);
    create table asset_register_items(id int,user_id text,register_id int,lifecycle_state text);
    insert into asset_registers values(1,'one',true),(2,'one',false),(3,'one',false),(4,'other',false);

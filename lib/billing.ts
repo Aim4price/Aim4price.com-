@@ -256,6 +256,8 @@ export async function pauseBillingAgreement(input: Record<string,unknown>, actor
  });
 }
 async function hostedRegisterLines(db: PoolClient, userId: string, interval: 'monthly' | 'annual') {
+ const holder = await db.query("select 1 from account_profiles where user_id=$1 and account_type='dealer' and account_subtype<>'equipment-middleman' and account_status='active'", [userId]);
+ if (!holder.rowCount) throw new BillingError('Hosted billing requires an active full Business account. Review the agreement.');
  const registers = await db.query<{ assets: number }>(`
    select count(i.id)::int as assets from asset_registers r
    left join asset_register_items i on i.register_id=r.id and i.user_id=r.user_id
@@ -295,7 +297,7 @@ export async function processRecurringInvoices(today=dateKey()) {
    if(invoice)await issueLocked(db,invoice,'recurring');
    await db.query('update aim4price_billing_agreements set next_invoice_date=$2,last_invoice_date=$3,last_error=null,version=version+1,updated_at=now() where user_id=$1',[item.user_id,next,a.nextInvoiceDate]);
   });}catch(error){
-   const reason=error instanceof RangeError ? error.message : 'Invoice preparation failed. Automatic retry pending.';
+   const reason=error instanceof RangeError || error instanceof BillingError ? error.message : 'Invoice preparation failed. Automatic retry pending.';
    await getDb().query('update aim4price_billing_agreements set last_error=$2 where user_id=$1',[item.user_id,reason]);
   }
  }
