@@ -55,7 +55,7 @@ export async function createGuestLead(ownerId:string,idsInput:unknown,includePho
 }
 export async function listOwnerGuestLeads(ownerId:string,idsInput:unknown){
  const ids=parseShareAssetIds(idsInput);await ensureGuestLeadSchema();
- return(await getDb().query(`SELECT token,created_at,revoked_at,lead_details->>'recipientName' as recipient_name,lead_details->>'recipientEmail' as recipient_email ,(SELECT count(*)::int FROM asset_share_submissions d WHERE d.token=asset_share_links.token AND d.status='pending') AS pending_documents,(SELECT count(*)::int FROM asset_share_access_requests r WHERE r.token=asset_share_links.token AND r.status='pending') AS pending_access FROM asset_share_links WHERE user_id=$1 AND asset_ids=$2::uuid[] AND lead_details IS NOT NULL ORDER BY created_at DESC,token`,[ownerId,ids])).rows;
+ return(await getDb().query(`SELECT token,created_at,revoked_at,lead_details->>'recipientName' as recipient_name,lead_details->>'recipientEmail' as recipient_email ,(SELECT count(*)::int FROM asset_share_submissions d WHERE d.token=asset_share_links.token AND d.status='pending') AS pending_documents,(SELECT count(*)::int FROM asset_share_access_requests r WHERE r.token=asset_share_links.token AND r.status='pending') AS pending_access FROM asset_share_links WHERE user_id=$1 AND asset_ids=$2::uuid[] AND lead_details IS NOT NULL ORDER BY created_at DESC LIMIT 50`,[ownerId,ids])).rows;
 }
 export async function readProtectedShareSenderName(token: string): Promise<string> {
   await ensureGuestLeadSchema();
@@ -105,7 +105,7 @@ export async function listReceivedSharedEnquiries(){
  const session=await getServerSession({requireActive:false,allowDealerApp:true});
  if(!session?.user?.email)return[];
  await ensureGuestLeadSchema();await ensureSharingFoundation();
- const candidates = (await getDb().query<{token:string;request:string;sender:string;created_at:string;viewed:string[]}>(`SELECT ARRAY(SELECT v.asset_id::text FROM shared_asset_views v WHERE v.account_id=$2 AND v.token=s.token) AS viewed,token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE (lower(lead_details->>'recipientEmail')=$1 OR EXISTS(SELECT 1 FROM sharing_usage_events e WHERE e.token=s.token AND e.account_id=$2 AND e.metric='enquiry_opened')) AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC LIMIT 50`,[session.user.email.toLowerCase(),session.user.id])).rows;
+ const candidates = (await getDb().query<{token:string;request:string;sender:string;created_at:string;viewed:string[]}>(`SELECT ARRAY(SELECT v.asset_id::text FROM shared_asset_views v WHERE v.account_id=$2 AND v.token=s.token) AS viewed,token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE (lower(lead_details->>'recipientEmail')=$1 OR EXISTS(SELECT 1 FROM sharing_usage_events e WHERE e.token=s.token AND e.account_id=$2 AND e.metric='enquiry_opened')) AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC,token`,[session.user.email.toLowerCase(),session.user.id])).rows;
  const {externalLeadAccess}=await import('./external-lead-access');
  const result = [];
  for(const candidate of candidates){
@@ -113,7 +113,9 @@ export async function listReceivedSharedEnquiries(){
   if(!lead||!['active','read-only','owner'].includes((await externalLeadAccess(lead)).access))continue;
   await recordDeliveredAssets(session.user.email,candidate.token,lead.share.assets.flatMap(asset=>asset.assetId?[asset.assetId]:[]));
   result.push({
-    ...candidate,
+    token: candidate.token,
+    created_at: candidate.created_at,
+    request: candidate.request,
     sender: lead.share.senderName || candidate.sender,
     title: lead.share.umbrellaName || (lead.share.assets.length === 1 ? lead.share.assets[0].title : 'Shared Assets'),
     umbrella: lead.share.umbrellaName || '',

@@ -24,6 +24,7 @@ export default function BusinessSharedAssets({shares,notice}:{shares:Share[];not
   const [open,setOpen] = useState<Set<string>>(new Set());
   useEffect(()=>{
     const refresh = () => router.refresh();
+    refresh();
     window.addEventListener('pageshow',refresh);
     window.addEventListener('focus',refresh);
     return () => {window.removeEventListener('pageshow',refresh);window.removeEventListener('focus',refresh);};
