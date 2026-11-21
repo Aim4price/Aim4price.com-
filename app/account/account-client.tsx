@@ -1648,7 +1648,7 @@ export default function AccountClient({
                     {!isFreeBusiness && !(isOwnerAccount || isDealerAccount) && <Link className={styles.quickActionButton} href="/team/access" data-tooltip="View the workspaces and assets shared with you." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>My access</strong></Link>}
                     {isFreeBusiness && <>
                       <LockedBusinessAction icon="connections" label="Desktop users" />
-                      <LockedBusinessAction icon="dealer" label="Manage Business App staff" />
+                      <LockedBusinessAction icon="dealer" label="Business App" />
                     </>}
                     {!isFreeBusiness && canManageDesktopUsers && !isMiddlemanAccount && <Link className={styles.quickActionButton} href="/account/team-access" data-tooltip="Manage who can use your desktop workspace and what they can access." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>Desktop users</strong></Link>}
 
@@ -1675,7 +1675,7 @@ export default function AccountClient({
                         data-tooltip-style="description"
                       >
                         <QuickActionIcon name="dealer" />
-                        <strong>{isMiddlemanAccount ? "Middleman app access" : "Manage Business App staff"}</strong>
+                        <strong>{isMiddlemanAccount ? "Middleman app access" : "Business App"}</strong>
                       </button>
                     ) : null}
 
