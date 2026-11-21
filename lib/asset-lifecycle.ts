@@ -341,6 +341,9 @@ export async function disposeOrDeleteAsset(input: {
       impactQuestionRequired ? outcomeInfluence : null],
   );
 
+  // Install the removal trigger even when deletion is the first sharing-related
+  // operation handled by this deployment. Revocation runs in the row update.
+  await (await import('./asset-share-links')).ensureAssetShareSchema();
   if (deleteRecord) {
     await getDb().query(
       `update public.asset_register_items

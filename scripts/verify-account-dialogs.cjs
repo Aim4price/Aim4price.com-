@@ -29,7 +29,7 @@ async function main(){
       // The native shell renews its session on mount. Stub that lifecycle call
       // separately; every business-data mutation must still fail this check.
       if(u.pathname==='/api/owner-app/session')return r.respond({status:200,contentType:'application/json',body:JSON.stringify({ok:true})});
-      if(r.method()!=='GET')mutations.push({path:u.pathname,method:r.method()});
+      if(!['GET','HEAD'].includes(r.method()))mutations.push({path:u.pathname,method:r.method()});
       // Leads mounts the private Parts inbox alongside asset leads. Keep its
       // response shape realistic so this read-only dialog fixture can render.
       if(u.pathname==='/api/parts-network' && r.method()==='GET')return r.respond({status:200,contentType:'application/json',body:JSON.stringify({invitations:[],enquiries:[],shared:[]})});
