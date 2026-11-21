@@ -1,7 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),ts=require('typescript');
-function load(file,mocks){const exports={};mocks={ '../../components/BusinessCredits':{default:'BusinessCredits'}, '../../lib/accounting-pilot':{isAccountingPilotSession:()=>false}, '../../components/AccountDirectoryListing':{default:'DirectoryListing'}, '../business/business-client':{default:'BusinessDetails'}, '../../lib/business-accounts':{readBusinessAccount:async()=>({review:{website:'',evidence:''}})}, '../business/page.module.css':{default:{}}, ...mocks};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(id=>id in mocks?mocks[id]:require(id),exports);return exports;}
+function load(file,mocks){const exports={};mocks={ '../../components/BusinessCredits':{default:'BusinessCredits',getBusinessCredits:async()=>({workspace:{role:'owner',paid_since:null,upgrade_requested_at:null},balance:{limit:500,used:82,held:1}})}, '../../lib/accounting-pilot':{isAccountingPilotSession:()=>false}, '../../components/AccountDirectoryListing':{default:'DirectoryListing'}, '../business/business-client':{default:'BusinessDetails'}, '../../lib/business-accounts':{readBusinessAccount:async()=>({review:{website:'',evidence:''}})}, '../business/page.module.css':{default:{}}, ...mocks};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(id=>id in mocks?mocks[id]:require(id),exports);return exports;}
 const token='a'.repeat(43);
 const lead={share:{senderName:'Private sender',assets:[{title:'Private tractor',serialNumber:'PRIVATE-SERIAL'}]},details:{recipientEmail:'private@example.test',request:'Private request'},reports:[{id:'report',label:'Private report'}]};
 const mocks={
@@ -112,7 +112,7 @@ test('free Business and Dealer account pages open the real account with invoices
    'next/navigation':{redirect:path=>{throw Error('redirect:'+path);}},
    './account-client':{default:'AccountClient'},
   });
-  const result=await page.default();assert.equal(result.type,'AccountClient');assert.equal(result.props.initialProfile,profile);assert.equal(result.props.sharedAccount,true);assert.equal(result.props.canManageDesktopUsers,false);assert.ok(result.props.sharedSettings);
+  const result=await page.default();assert.equal(result.type,'AccountClient');assert.equal(result.props.initialProfile,profile);assert.equal(result.props.sharedAccount,true);assert.equal(result.props.canManageDesktopUsers,false);assert.ok(result.props.sharedSettings);if(role==='business')assert.equal(result.props.subscription.remaining,417);
  }
 });
 test('suspended free accounts still follow the account access block',async()=>{
