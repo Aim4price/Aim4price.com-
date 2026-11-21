@@ -1118,8 +1118,7 @@ function leadAssetIdentifier(lead: AssetLead): string {
   if (registrationNumber) return `Registration ${registrationNumber.toUpperCase()}`;
   if (serialNumber) return `Serial / VIN ${serialNumber}`;
 
-  const publicAssetCode = asText(snapshot.publicAssetCode);
-  return publicAssetCode ? `Asset ${publicAssetCode}` : '';
+  return '';
 }
 
 function assetValue(lead: AssetLead): number {
@@ -3457,7 +3456,7 @@ export default function LeadsClient({
     );
   }
 
-  function renderLead(lead: AssetLead) {
+  function renderLead(lead: AssetLead, insideUmbrella = false) {
     const isLeadOpen = openLeadId === lead.id;
     const showLeadDetails = !isDealerLeadsMode || expandedLeadDetailsId === lead.id;
     const isLeadNew = isNewLead(lead);
@@ -3495,7 +3494,7 @@ export default function LeadsClient({
               </div>
               <div className={sharedStyles.preview}>
                 <span className={assetStyles.assetGroupPreview}>{isTrackingRequest ? 'Maintenance tracking' : formatLeadDisplayType(lead)}</span>
-                {assetIdentifier && !assetIdentifier.startsWith('Asset ') && <span className={assetStyles.assetGroupPreview} title={assetIdentifier}>{assetIdentifier}</span>}
+                {assetIdentifier && <span className={assetStyles.assetGroupPreview} title={assetIdentifier}>{assetIdentifier}</span>}
               </div>
               {lead.ownerMessage && <p className={sharedStyles.message}><strong>Owner message</strong> · {lead.ownerMessage}</p>}
             </div>
@@ -3506,7 +3505,7 @@ export default function LeadsClient({
               <button type="button" className={sharedStyles.toggle} onClick={() => void openLead(lead)}>Open</button>
             </div>
           </div>
-        ) : (<LeadCardSummary headerClassName={''} identityClassName={`${''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
+        ) : (<LeadCardSummary headerClassName={''} identityClassName={`${''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={isLeadOpen ? null : <>
               <div className={styles.leadCardTitleRow}>
                 <h3>{assetTitle(lead)}</h3>
               </div>
@@ -3620,6 +3619,9 @@ export default function LeadsClient({
           <LeadAssetCard expanded={showLeadDetails} className={isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''}
             identity={<>
                 <h2>{assetTitle(lead)}</h2>
+                {assetIdentifier && <p className={sharedStyles.detailIdentity}>{assetIdentifier}</p>}
+                {!insideUmbrella && <p className={sharedStyles.detailIdentity}>{lead.ownerBusinessName || ownerDisplayName(lead)}</p>}
+                {lead.ownerMessage && <p className={sharedStyles.message}><strong>Owner message</strong> · {lead.ownerMessage}</p>}
                 {dealerAppMode && !isFullRegisterLead(lead) ? (
                   <dl className={styles.expandedLeadFacts}>
                     <div><dt>{asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year built' : 'Year'}</dt><dd>{lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : 'Not recorded'}</dd></div>
@@ -3889,7 +3891,7 @@ export default function LeadsClient({
                     <div id={panelId} hidden={!expanded} className={expanded ? assetStyles.assetList : undefined}>
                       {expanded && row.members.map((member, index) => (
                         <div key={member.id} className={`${assetStyles.assetCardRow} ${assetStyles.assetGroupMemberRow} ${index === row.members.length - 1 ? assetStyles.assetGroupMemberRowLast : ''}`}>
-                          {renderLead(member)}
+                          {renderLead(member, true)}
                         </div>
                       ))}
                     </div>

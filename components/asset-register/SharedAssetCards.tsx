@@ -144,6 +144,12 @@ export default function SharedAssetCards({
                   ref={isOpen ? openedCardRef : null}
                   className={sharedStyles.frame}
                 >
+                  {isOpen ? (
+                    <div className={sharedStyles.detailActions}>
+                      <button type="button" className={`${sharedStyles.toggle} ${sharedStyles.secondary}`} aria-expanded={true}
+                        aria-controls={`${panelPrefix}-${index}`} aria-label={`Close ${item.title}`} onClick={() => setOpened(null)}>Close</button>
+                    </div>
+                  ) : (
                   <RecipientAssetSummary
                     title={item.title}
                     sender={senderName || share.senderName}
@@ -153,20 +159,23 @@ export default function SharedAssetCards({
                       <button
                         type="button"
                         className={sharedStyles.toggle}
-                        aria-expanded={isOpen}
+                        aria-expanded={false}
                         aria-controls={`${panelPrefix}-${index}`}
-                        aria-label={`${isOpen ? "Close" : "Open"} ${item.title}`}
-                        onClick={() => setOpened(isOpen ? null : index)}
+                        aria-label={`Open ${item.title}`}
+                        onClick={() => setOpened(index)}
                       >
-                        {isOpen ? "Close" : "Open"}
+                        Open
                       </button>
                     }
                   />
+                  )}
                   {isOpen && (
                     <LeadAssetCard
                       identity={
                         <>
                           <h2>{item.title}</h2>
+                          {item.serialNumber && <p className={sharedStyles.detailIdentity}>Serial / VIN {item.serialNumber}</p>}
+                          {(example || !senderName) && (senderName || share.senderName) && <p className={sharedStyles.detailIdentity}>{senderName || share.senderName}</p>}
                           <p>
                             Year Model: {item.yearModel || "Not saved"} · Usage:{" "}
                             {item.usage || "Not saved"} · Condition:{" "}

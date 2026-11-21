@@ -125,3 +125,17 @@
   inset: 0;
   border-radius: 1.45rem;
 }
+
+.detailActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .6rem;
+  padding: .6rem .8rem;
+}
+.detailIdentity.detailIdentity {
+  margin: .3rem 0;
+  color: var(--app-text, #123e32);
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
