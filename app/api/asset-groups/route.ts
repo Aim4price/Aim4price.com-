@@ -43,7 +43,7 @@ async function requireGroupWriteAccess(
 
   if (!isAssetRegisterAccountType(profile.accountType)) {
     return NextResponse.json(
-      { ok: false, error: 'Only Owner and Dealer inventory accounts can create or change asset groups.' },
+      { ok: false, error: 'Only Owner and Business inventory accounts can create or change asset groups.' },
       { status: 403 },
     );
   }

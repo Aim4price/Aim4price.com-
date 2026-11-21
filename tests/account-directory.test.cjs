@@ -12,7 +12,7 @@ test('listing lifecycle: explicit consent, review, publish, edits re-reviewed, h
  assert.equal((await x.pg.query('SELECT count(*) FROM business_network')).rows[0].count,1);
  }finally{await x.pg.close();}});
 test('verified active business/dealer accounts only; malformed logos cannot be persisted',async()=>{const x=await setup();try{
- await assert.rejects(x.api.saveAccountListing({...user,emailVerified:false},input),/verified email/);x.role('owner');await assert.rejects(x.api.saveAccountListing(user,input),/Business or Dealer/);x.role('dealer');x.active(false);await assert.rejects(x.api.saveAccountListing(user,input),/active/);x.active(true);
+ await assert.rejects(x.api.saveAccountListing({...user,emailVerified:false},input),/verified email/);x.role('owner');await assert.rejects(x.api.saveAccountListing(user,input),/Business account/);x.role('dealer');x.active(false);await assert.rejects(x.api.saveAccountListing(user,input),/active/);x.active(true);
  await assert.rejects(x.api.saveAccountListing(user,{...input,logoData:'data:image/svg+xml;base64,AAAA'}),/valid PNG/);
  await assert.rejects(x.api.saveAccountListing(user,{...input,logoData:'data:image/png;base64,AAAA'}),/valid PNG/);
  assert.equal(await x.api.readAccountListing(user.id),null);

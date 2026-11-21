@@ -23,7 +23,7 @@ export async function contributionScope(target: ContributionTarget, permission: 
   if (!session?.user?.id) throw new ExternalLeadAccessError('Sign in to add to this asset.',401);
   const user = session.user;
   const profile = await getAccountProfile(user);
-  if (!['dealer','business'].includes(profile.accountType) || profile.accountStatus !== 'active') throw new ExternalLeadAccessError('An active business or dealer account is required.',403);
+  if (!['dealer','business'].includes(profile.accountType) || profile.accountStatus !== 'active') throw new ExternalLeadAccessError('An active Business account is required.',403);
   const lead = await getAssetLeadForPartner({dealerUserId:user.id,leadId:target.leadId});
   if (!lead) throw new ExternalLeadAccessError('This asset is no longer shared with you.',403);
   await ensureDealerMaintenanceTrackerTables();

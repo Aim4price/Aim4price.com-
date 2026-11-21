@@ -22,7 +22,7 @@ function failure(error: unknown) {
 }
 export async function GET(request: NextRequest) {
   const user = await account();
-  if (!user) return json({ error: 'Sign in with an active owner or dealer account.' }, 403);
+  if (!user) return json({ error: 'Sign in with an active Owner or Business account.' }, 403);
   try {
     const year = liveReviewYear();
     if (!year) return json({ available: false, opensOn: '2027-01-01' });
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   try {
     requireBusinessOrigin(request);
     const user = await account();
-    if (!user) return json({ error: 'Sign in with an active owner or dealer account.' }, 403);
+    if (!user) return json({ error: 'Sign in with an active Owner or Business account.' }, 403);
     const body = await readAnnualReviewBody(request);
     const year = requireAnnualYear(body.year);
     if (body.action === 'apply') return json(await applyAnnualReview(user.id, body as unknown as AnnualConfirmation));

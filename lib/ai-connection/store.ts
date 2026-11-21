@@ -90,7 +90,7 @@ export async function eligibleAccount(
   if (isAim4priceAdminEmail(row.email))
     throw new ConnectionError(403, "admin_connection_required", "Use the Admin AI connections page for this administrator account.");
   if (!["owner", "dealer", "business"].includes(row.account_type) || isMiddlemanAccountSubtype(row.account_subtype))
-    throw new ConnectionError(403, "unsupported_account_type", "AI connections are available for Owner, Dealer and Business accounts. This account type is not supported yet.");
+    throw new ConnectionError(403, "unsupported_account_type", "AI connections are available for Owner and Business accounts. This account type is not supported yet.");
   if (row.account_status !== "active")
     throw new ConnectionError(403, "inactive_account", "Your Aim4price account is not active. Contact Aim4price Admin to review your account status.");
   if (row.account_type !== "business" && row.plan !== "desktop")

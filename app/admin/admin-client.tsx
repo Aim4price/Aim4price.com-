@@ -188,8 +188,8 @@ const NOTIFICATION_AUDIENCE_OPTIONS: Array<{
 }> = [
   { value: "all", label: "All accounts" },
   { value: "owner", label: "Owners" },
-  { value: "dealer", label: "Dealers" },
-  { value: "business", label: "Businesses" },
+  { value: "dealer", label: "Business desktop accounts" },
+  { value: "business", label: "Shared-access businesses" },
 ];
 
 function normalizeNotificationAudience(

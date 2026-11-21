@@ -702,7 +702,7 @@ test('Middleman cannot administer desktop users or use legacy grants after accou
    options.accountSubtype=subtype;
    f.setSession({user:owner});
    assert.equal(await f.service.canManageTeamAccess(),false);
-   await assert.rejects(()=>f.service.requireTeamOwner(),/active Owner, Dealer or Business/);
+   await assert.rejects(()=>f.service.requireTeamOwner(),/active Owner or Business/);
    await assert.rejects(()=>f.invite(),/Only the active desktop account holder/);
    f.setSession({user:member});
    await assert.rejects(()=>f.service.loadTeamScope(grant.id),/workspace is unavailable/);
