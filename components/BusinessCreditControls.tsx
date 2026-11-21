@@ -1,5 +1,5 @@
 'use client';
-import { useId,useState } from 'react';
+import { useId,useState,type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import ShareDisclosureDialog from './asset-register/ShareDisclosureDialog';
 import styles from '../app/business/page.module.css';
@@ -38,7 +38,7 @@ export function UpgradeBusiness({businessId}:{businessId?:string}) {
 
 export type BusinessSubscription = { fullAccess?:boolean; paidSince:string|null; pending:boolean; owner:boolean; remaining:number; limit:number };
 
-export function BusinessSubscriptionButton({plan,className}:{plan:BusinessSubscription;className:string}) {
+export function BusinessSubscriptionButton({plan,className,icon}:{plan:BusinessSubscription;className:string;icon:ReactNode}) {
  const router=useRouter(), titleId=useId();
  const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const fullAccess=plan.fullAccess ?? Boolean(plan.paidSince);
@@ -53,6 +53,7 @@ export function BusinessSubscriptionButton({plan,className}:{plan:BusinessSubscr
    finally{setBusy(false);}
  }
  return <><button type="button" className={className} onClick={()=>{setError('');setOpen(true);}}>
+   {icon}
    <span><strong>{label}</strong>{!fullAccess && <span style={{display:'block',fontWeight:650}}>{plan.remaining} of {plan.limit} credits remaining</span>}</span>
  </button>{open && <ShareDisclosureDialog title={label} titleId={titleId} closeLabel="Close" onClose={()=>setOpen(false)}>
  {fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>

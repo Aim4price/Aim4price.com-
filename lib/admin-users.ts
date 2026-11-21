@@ -24,6 +24,7 @@ export type AdminUserRow = {
   phone: string;
   accountType: string;
   accountSubtype: string;
+  paidBusiness?: boolean;
   province: string;
   introducedBy: string;
   introducedByOption: string;
@@ -54,6 +55,7 @@ type DbAdminUserRow = {
   phone: string | null;
   account_type: string | null;
   account_subtype: string | null;
+  paid_business: boolean;
   province: string | null;
   account_status: string | null;
   introduced_by_option: string | null;
@@ -114,6 +116,7 @@ function mapAdminUserRow(row: DbAdminUserRow): AdminUserRow {
     email: asText(row.email),
     phone: asText(row.phone),
     accountType: asText(row.account_type) || "owner",
+    paidBusiness: Boolean(row.paid_business),
     accountSubtype: asText(row.account_subtype) || "farmer",
     province: asText(row.province),
     introducedBy: resolveIntroducedByDisplay(
@@ -167,7 +170,8 @@ export async function listAdminUsers(onlyUserId?: string): Promise<AdminUserRow[
 
   const db = getDb();
   const { ensureSharingFoundation } = await import("./sharing-foundation");
-  await ensureSharingFoundation();
+  const { ensureBusinessWorkspaceSchema } = await import("./business-workspaces");
+  await Promise.all([ensureSharingFoundation(), ensureBusinessWorkspaceSchema()]);
   const logicalStorageSelect = await buildLogicalClientStorageSelect();
   const result = await db.query<DbAdminUserRow>(
     `
@@ -194,6 +198,7 @@ export async function listAdminUsers(onlyUserId?: string): Promise<AdminUserRow[
         ap.phone,
         ap.account_type,
         ap.account_subtype,
+        (to_jsonb(bw)->>'paid_since') is not null as paid_business,
         ap.province,
         sa.plan as sharing_plan, ap.partner_directory_enabled, ap.partner_directory_status,
         ap.account_status,
@@ -216,6 +221,7 @@ export async function listAdminUsers(onlyUserId?: string): Promise<AdminUserRow[
         coalesce(storage.bucket_storage_bytes, 0)::bigint as bucket_storage_bytes
       from "user" u
       left join account_profiles ap on ap.user_id = u.id
+      left join business_workspaces bw on bw.owner_user_id = u.id
       left join sharing_account_access sa on sa.user_id = u.id
       left join storage_by_user storage on storage.user_id = u.id
       where ($1::text is null or u.id = $1)

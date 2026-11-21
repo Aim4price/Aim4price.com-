@@ -2,7 +2,7 @@
 import {isMiddlemanAccountSubtype} from '../../lib/middleman-account';
 
 import AccountInvitation from "./account-invitation";
-import { workspaceLabel } from "../../lib/account-type-options";
+import { adminAccountLabel, adminCategoryLabel } from "../../lib/account-type-options";
 import type { AdminUserRow } from "../../lib/admin-users";
 import BusinessPlanAdmin from './business-plan-admin';
 import AccountEditor from "./account-editor";
@@ -385,8 +385,8 @@ function matchesSearch(user: AdminUserRow, searchTerm: string): boolean {
     user.name,
     user.email,
     user.phone,
-    user.accountType,
-    user.accountSubtype,
+    adminAccountLabel(user.accountType, user.accountSubtype, user.paidBusiness),
+    adminCategoryLabel(user.accountSubtype, user.accountSubtype),
     user.province,
     formatProvince(user.province),
     user.introducedBy,
@@ -1744,8 +1744,8 @@ export default function AdminClient({
                     </td>
                     <td>
                       <div className={styles.accountTypeCell}>
-                        <strong>{workspaceLabel(user.accountType,user.accountSubtype)}</strong>
-                        <span>{formatAccountValue(user.accountSubtype)}</span>
+                        <strong>{adminAccountLabel(user.accountType, user.accountSubtype, user.paidBusiness)}</strong>
+                        <span>{adminCategoryLabel(user.accountSubtype, formatAccountValue(user.accountSubtype))}</span>
                       </div>
                     </td>
                     <td>
@@ -2033,7 +2033,7 @@ export default function AdminClient({
                 <h2 id="admin-account-action-modal-title">
                   {accountActionModal.name || "Unnamed account"}
                 </h2>
-                <p className={styles.accountIdentity}>{workspaceLabel(accountActionModal.accountType,accountActionModal.accountSubtype)} · {accountActionModal.accountStatusLabel} · {accountActionModal.email || "No email saved"}</p>
+                <p className={styles.accountIdentity}>{adminAccountLabel(accountActionModal.accountType, accountActionModal.accountSubtype, accountActionModal.paidBusiness)} · {accountActionModal.accountStatusLabel} · {accountActionModal.email || "No email saved"}</p>
               </div>
 
               <button
@@ -2263,13 +2263,17 @@ export default function AdminClient({
 
               </section>
             </div>
-            {(accountActionModal.accountType==='business' || (accountActionModal.accountType==='dealer' && !isMiddlemanAccountSubtype(accountActionModal.accountSubtype))) && <BusinessPlanAdmin key={accountActionModal.userId} owner={accountActionModal.userId}/>}
+            {(accountActionModal.accountType==='business' || (accountActionModal.accountType==='dealer' && !isMiddlemanAccountSubtype(accountActionModal.accountSubtype))) && <BusinessPlanAdmin key={accountActionModal.userId} owner={accountActionModal.userId} onChanged={paid => {
+              const updated: AdminUserRow = { ...accountActionModal, paidBusiness: paid, accountType: paid ? "dealer" : "business", sharingPlan: paid ? "desktop" : "free" };
+              setUsers(current => current.map(user => user.userId === updated.userId ? updated : user));
+              setAccountActionModal(current => current?.userId === updated.userId ? updated : current);
+            }}/>}
             {!isAim4priceAdminEmail(accountActionModal.email) && <details className={styles.accountDisclosure}>
-              <summary>Change account type <span>{formatAccountValue(accountActionModal.accountSubtype)}</span></summary>
-              <AccountEditor key={accountActionModal.userId} account={accountActionModal} onSaved={user => {
+              <summary>Change account type <span>{adminCategoryLabel(accountActionModal.accountSubtype, formatAccountValue(accountActionModal.accountSubtype))}</span></summary>
+              <AccountEditor key={`${accountActionModal.userId}:${accountActionModal.accountType}`} account={accountActionModal} onSaved={user => {
                 setUsers(current => current.map(item => item.userId === user.userId ? user : item));
                 setAccountActionModal(current => current?.userId === user.userId ? user : current);
-                setNotice({tone:"success",message:`${user.name} updated to ${workspaceLabel(user.accountType,user.accountSubtype)}.`});
+                setNotice({tone:"success",message:`${user.name} updated to ${adminAccountLabel(user.accountType, user.accountSubtype, user.paidBusiness)}.`});
               }}/>
             </details>}
             <details className={styles.accountDisclosure}>
@@ -2279,8 +2283,8 @@ export default function AdminClient({
                 <div>
                   <span>Account</span>
                   <strong>
-                    {workspaceLabel(accountActionModal.accountType,accountActionModal.accountSubtype)} ·{" "}
-                    {formatAccountValue(accountActionModal.accountSubtype)}
+                    {adminAccountLabel(accountActionModal.accountType, accountActionModal.accountSubtype, accountActionModal.paidBusiness)} ·{" "}
+                    {adminCategoryLabel(accountActionModal.accountSubtype, formatAccountValue(accountActionModal.accountSubtype))}
                   </strong>
                 </div>
                 <div>
