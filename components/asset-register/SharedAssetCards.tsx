@@ -37,7 +37,7 @@ export default function SharedAssetCards({
   example = false,
   senderName = "",
   allowBusinessDetails = false,
-  guestReturnTo, creditToken, shareToken, initialAssetId, trackViews,
+  guestReturnTo, creditToken, shareToken, initialAssetId, trackViews, inline = false,
 }: {
   example?: boolean;
   share: PublicAssetShare | null;
@@ -46,7 +46,7 @@ export default function SharedAssetCards({
   enquiry?: ExternalLeadActionData;
   senderName?: string;
   allowBusinessDetails?: boolean;
-  initialAssetId?: string; trackViews?: boolean;
+  inline?: boolean; initialAssetId?: string; trackViews?: boolean;
   guestReturnTo?: string; creditToken?: string; shareToken?: string;
 }) {
   const router=useRouter();
@@ -98,7 +98,11 @@ export default function SharedAssetCards({
   const [valueAsset,setValueAsset]=useState<{id:string;title:string}|null>(null);
   const [vatIncluded,setVatIncluded]=useState<Record<string,boolean>>({});
   const [opened, setOpened] = useState<number | null>(null);
-  const openedCardRef = useOutsideCardDismiss(opened !== null, () => setOpened(null));
+  function closeCard() {
+    setOpened(null);
+    if (inline) router.replace('/business', {scroll:false});
+  }
+  const openedCardRef = useOutsideCardDismiss(opened !== null, closeCard);
   const [managed, setManaged] = useState<number | null>(null);
   const [photoIndexes, setPhotoIndexes] = useState<Record<number, number>>({});
   const [photoViewer, setPhotoViewer] = useState<{
@@ -115,8 +119,8 @@ export default function SharedAssetCards({
   },[selectionKey, initialAssetId]);
   const viewedId = opened === null ? undefined : share?.assets[opened]?.assetId;
   useEffect(()=>{
-    if (viewedId && viewedId === initialAssetId) document.getElementById('asset-'+viewedId)?.scrollIntoView({block:'center'});
-  },[viewedId,initialAssetId]);
+    if (!inline && viewedId && viewedId === initialAssetId) document.getElementById('asset-'+viewedId)?.scrollIntoView({block:'center'});
+  },[viewedId,initialAssetId,inline]);
   useEffect(()=>{
     if (trackViews && viewedId && shareToken) {
       void fetch(`/api/asset-share-links/${shareToken}/activity?asset=${encodeURIComponent(viewedId)}`, {method:'POST', keepalive:true}).catch(()=>{});
@@ -137,13 +141,14 @@ export default function SharedAssetCards({
         timeZone: "Africa/Johannesburg",
       })
     : "";
+  const Container = inline ? "div" : "main";
   return (
-    <main
-      className={`${assetStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${leadStyles.dealerDesktopLeads} ${styles.page}`}
+    <Container
+      className={inline ? undefined : `${assetStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${leadStyles.dealerDesktopLeads} ${styles.page}`}
     >
       {creditError&&<CreditNotice message={creditError} onClose={()=>setCreditError('')}/>}
       {valueAsset&&enquiry&&createPortal(<SharedAssetValueDialog endpoint={`/api/asset-share-links/${enquiry.token}/assets/${valueAsset.id}`} assetTitle={valueAsset.title} field="current" onClose={()=>setValueAsset(null)} onSaved={()=>router.refresh()}/>,document.body)}
-      <section className={assetStyles.shell}>
+      <section className={inline ? undefined : assetStyles.shell}>
       {!share ? (
         <section className={styles.empty}>
           <h1>This link is no longer available</h1>
@@ -151,7 +156,7 @@ export default function SharedAssetCards({
         </section>
       ) : (
         <>
-          <header className={styles.shareHeader}>
+          {!inline && <header className={styles.shareHeader}>
             <div className={styles.intro}>
               <h1>
                 {example
@@ -167,9 +172,10 @@ export default function SharedAssetCards({
               </span>
             </div>
             {request}
-          </header>
+          </header>}
           <div className={`${leadStyles.leadStack} ${styles.assets}`}>
             {share.assets.map((item, index) => {
+              if (inline && item.assetId !== initialAssetId) return null;
               const isOpen = opened === index;
               const photoIndex = photoIndexes[index] ?? 0;
               return (
@@ -182,7 +188,7 @@ export default function SharedAssetCards({
                   {isOpen ? (
                     <div className={sharedStyles.detailActions}>
                       <button type="button" className={`${sharedStyles.toggle} ${sharedStyles.secondary}`} aria-expanded={true}
-                        aria-controls={`${panelPrefix}-${index}`} aria-label={`Close ${item.title}`} onClick={() => setOpened(null)}>Close</button>
+                        aria-controls={`${panelPrefix}-${index}`} aria-label={`Close ${item.title}`} onClick={closeCard}>Close</button>
                     </div>
                   ) : (
                   <RecipientAssetSummary
@@ -297,10 +303,10 @@ export default function SharedAssetCards({
               <BusinessAcceptanceForm embedded />
             </details>
           )}
-          <p className={styles.note}>
+          {!inline && <p className={styles.note}>
             Only the details selected by the sender are shared. Values are saved
             estimates and remain subject to inspection.
-          </p>
+          </p>}
         </>
       )}
       </section>
@@ -339,6 +345,6 @@ export default function SharedAssetCards({
           </LeadManageDialog>,
           document.body,
         )}
-    </main>
+    </Container>
   );
 }
