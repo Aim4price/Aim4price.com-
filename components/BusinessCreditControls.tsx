@@ -54,8 +54,11 @@ export function BusinessSubscriptionButton({plan,className,icon}:{plan:BusinessS
  }
  return <><button type="button" className={className} onClick={()=>{setError('');setOpen(true);}}>
    {icon}
-   <span><strong>{label}</strong>{!fullAccess && plan.remaining !== null && plan.limit !== null && <span style={{display:'block',fontWeight:650}}>{plan.remaining} of {plan.limit} credits remaining</span>}</span>
+   <strong>{label}</strong>
  </button>{open && <ShareDisclosureDialog title={label} titleId={titleId} closeLabel="Close" onClose={()=>setOpen(false)}>
+ {!fullAccess && plan.remaining !== null && plan.limit !== null && (
+   <p><strong>{plan.remaining} of {plan.limit} credits remaining</strong></p>
+ )}
  {fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
  <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
  plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
