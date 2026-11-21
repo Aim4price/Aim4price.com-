@@ -32,6 +32,7 @@ import type {
   DealerMaintenanceTrackerStatus,
 } from '../lib/dealer-maintenance-tracker';
 import assetStyles from '../app/asset-register/page.module.css';
+import sharedStyles from '../app/leads/shared-assets.module.css';
 import leadStyles from '../app/leads/page.module.css';
 import styles from './DealerMaintenanceTrackerClient.module.css';
 
@@ -1244,6 +1245,31 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           <div className={leadStyles.leadStack}>
             {filteredCards.map((asset) => {
               const isOpen = openCardId === asset.trackerCardId;
+              if (!dealerAppMode && !isOpen) {
+                const identifier = asset.registrationNumber
+                  ? `Registration ${asset.registrationNumber}`
+                  : asset.serialNumber && `Serial / VIN ${asset.serialNumber}`;
+                return (
+                  <MaintenanceDetailsCard key={asset.trackerCardId} expanded={false} onToggle={() => openAsset(asset)} className={sharedStyles.frame}>
+                    <div className={sharedStyles.card}>
+                      <span className={sharedStyles.icon} aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round">
+                          <path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm-9 5 9 5 9-5M12 12v10"/>
+                        </svg>
+                      </span>
+                      <div className={sharedStyles.body}>
+                        <div className={sharedStyles.heading}><h3>{asset.assetTitle}</h3></div>
+                        <div className={sharedStyles.metadata}><strong>{asset.ownerName}</strong></div>
+                        <div className={sharedStyles.preview}>
+                          <span className={assetStyles.assetGroupPreview} title={maintenanceStatusGuidance(asset.status)}>{asset.statusLabel}</span>
+                          {identifier && <span className={assetStyles.assetGroupPreview} title={identifier}>{identifier}</span>}
+                        </div>
+                      </div>
+                      <button type="button" className={sharedStyles.toggle} aria-expanded={false} onClick={() => openAsset(asset)}>View maintenance</button>
+                    </div>
+                  </MaintenanceDetailsCard>
+                );
+              }
               const isCompletedCard = asset.trackerCardKind === 'done';
               const photoIndex = selectedPhotoIndex(asset);
               const activePhotoUrl = asset.photoUrls[photoIndex] ?? '';
