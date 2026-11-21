@@ -40,9 +40,8 @@ const cards = {
   fuel: ['Fuel Slips','/fuel?view=slips'],
   storage: ['Fuel Storage','/fuel?view=storage'],
   documents: ['Documents','/documents'],
-  annual: ['Annual Review','/annual-review'],
   shared: ['Shared Assets','/leads'],
-  parts: ['Parts','/parts'],
+  parts: ['Parts & Stock','/parts'],
   tracking: ['Maintenance Tracking','/tracking'],
   businessCosts: ['Cost Ledger','/dealer-costs'],
   showroom: ['My Showroom','/my-showroom'],
@@ -52,8 +51,8 @@ const cards = {
 } as const;
 type CardKey = keyof typeof cards;
 const inventories: Record<WorkspaceRole, CardKey[]> = {
-  owner: ['register','value','marketplace','map','maintenance','costs','budgets','fuel','storage','documents','annual','registers','account'],
-  business: ['shared','register','parts','value','marketplace','showroom','tracking','businessCosts','registers','template','advert','account'],
+  owner: ['registers','value','map','maintenance','fuel','storage','costs','budgets','documents','marketplace','account'],
+  business: ['shared','register','registers','parts','tracking','businessCosts','value','marketplace','showroom','template','advert','account'],
   middleman: ['marketplace','showroom','value','template','advert','account'],
 };
 const freeCards = new Set<CardKey>(['shared','value','marketplace','account']);
