@@ -943,6 +943,35 @@ function mapLeadRow(row: LeadRow): AssetLead {
   };
 }
 
+/** Project old register snapshots through the same live membership rules as individual leads. */
+export const liveLeadSourceSql = `
+  LEFT JOIN public.asset_register_items anchor ON anchor.id=l.asset_register_item_id
+    AND anchor.user_id=l.owner_user_id AND coalesce(to_jsonb(anchor)->>'lifecycle_state','active')='active'
+  CROSS JOIN LATERAL (SELECT coalesce(l.included_sections_json->'registerSnapshot',
+    l.asset_snapshot_json->'registerSnapshot') AS snapshot) original
+  CROSS JOIN LATERAL (SELECT
+    jsonb_agg(member.value ORDER BY member.ord) AS assets,
+    count(*) AS count,
+    sum(CASE WHEN member.value->>'countsInRegisterTotal'='false' THEN 0
+      WHEN jsonb_typeof(member.value->'value')='number' THEN (member.value->>'value')::numeric ELSE 0 END) AS total
+    FROM jsonb_array_elements(CASE WHEN jsonb_typeof(original.snapshot->'assets')='array'
+      THEN original.snapshot->'assets' ELSE '[]'::jsonb END) WITH ORDINALITY member(value,ord)
+    JOIN public.asset_register_items a ON a.id::text=member.value->>'id' AND a.user_id=l.owner_user_id
+      AND coalesce(to_jsonb(a)->>'lifecycle_state','active')='active') members
+  JOIN LATERAL (SELECT CASE WHEN original.snapshot IS NULL OR members.count=jsonb_array_length(original.snapshot->'assets')
+    THEN original.snapshot ELSE
+      (original.snapshot - ARRAY['assetGroups','replacementPricedAssetCount','totalReplacementValue',
+       'totalReplacementValueInclVat','aim4priceAssetCount','manualAssetCount','financedAssetCount',
+       'insuredAssetCount','licensedAssetCount']) || jsonb_build_object('assets',members.assets,
+       'assetCount',members.count,'totalAssets',members.count,'totalValue',members.total,
+       'registerValue',members.total,'totalValueInclVat',members.total*1.15) END AS snapshot) live
+    ON (original.snapshot IS NULL AND anchor.id IS NOT NULL) OR members.count>0
+`;
+export const liveLeadSnapshotSql = `CASE WHEN anchor.id IS NULL THEN '{}'::jsonb
+  ELSE l.asset_snapshot_json - 'registerSnapshot' - 'logoUrl' END`;
+export const liveLeadSectionsSql = `CASE WHEN live.snapshot IS NULL THEN l.included_sections_json
+  ELSE jsonb_set(coalesce(l.included_sections_json,'{}'::jsonb),'{registerSnapshot}',live.snapshot) END`;
+
 function leadSelectSql(whereClause: string): string {
   return `
     select
@@ -952,9 +981,9 @@ function leadSelectSql(whereClause: string): string {
       l.asset_register_item_id::text,
       l.lead_type,
       l.status,
-      l.asset_snapshot_json - 'logoUrl' as asset_snapshot_json,
+      ${liveLeadSnapshotSql} as asset_snapshot_json,
       nullif(l.asset_snapshot_json ->> 'logoUrl', '') is not null as has_asset_logo,
-      l.included_sections_json,
+      ${liveLeadSectionsSql} as included_sections_json,
       l.owner_message,
       l.owner_contact_name,
       l.owner_contact_phone,
@@ -978,9 +1007,7 @@ function leadSelectSql(whereClause: string): string {
       l.closed_at::text,
       l.updated_at::text
     from asset_leads l
-      inner join public.asset_register_items live_asset on live_asset.id = l.asset_register_item_id
-        and live_asset.user_id = l.owner_user_id
-        and coalesce(to_jsonb(live_asset)->>'lifecycle_state', 'active') = 'active'
+      ${liveLeadSourceSql}
     left join account_profiles owner on owner.user_id = l.owner_user_id
     left join account_profiles partner on partner.user_id = l.partner_user_id
     ${whereClause}
@@ -2016,13 +2043,11 @@ export async function deleteDeclinedAssetLead(input: {
 }
 
 export async function canViewLiveAssetLead(userId: string, leadId: string, memberId: string | null) {
+  if (![leadId, ...(memberId === null ? [] : [memberId])].every(id => /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id))) return false;
   const result = await getDb().query(`SELECT 1 FROM asset_leads l
-    JOIN asset_register_items a ON a.id=l.asset_register_item_id AND a.user_id=l.owner_user_id
+    ${liveLeadSourceSql}
     WHERE l.id=$1::uuid AND (l.partner_user_id=$2 OR l.owner_user_id=$2)
-      AND coalesce(to_jsonb(a)->>'lifecycle_state','active')='active'
-      AND ($3::uuid IS NULL OR EXISTS (SELECT 1 FROM asset_register_items m
-        WHERE m.id=$3 AND m.user_id=l.owner_user_id AND coalesce(to_jsonb(m)->>'lifecycle_state','active')='active'
-        AND l.included_sections_json->'registerSnapshot'->'assets' @> jsonb_build_array(jsonb_build_object('id',m.id::text))))`,
-    [leadId && /^[a-f0-9-]{36}$/i.test(leadId) ? leadId : null, userId, memberId]);
+      AND ($3::uuid IS NULL OR members.assets @> jsonb_build_array(jsonb_build_object('id',$3::text)))`,
+    [leadId, userId, memberId]);
   return result.rows.length > 0;
 }
