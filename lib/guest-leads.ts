@@ -57,6 +57,17 @@ export async function listOwnerGuestLeads(ownerId:string,idsInput:unknown){
  const ids=parseShareAssetIds(idsInput);await ensureGuestLeadSchema();
  return(await getDb().query(`SELECT token,created_at,revoked_at,lead_details->>'recipientName' as recipient_name,lead_details->>'recipientEmail' as recipient_email ,(SELECT count(*)::int FROM asset_share_submissions d WHERE d.token=asset_share_links.token AND d.status='pending') AS pending_documents,(SELECT count(*)::int FROM asset_share_access_requests r WHERE r.token=asset_share_links.token AND r.status='pending') AS pending_access FROM asset_share_links WHERE user_id=$1 AND asset_ids=$2::uuid[] AND lead_details IS NOT NULL ORDER BY created_at DESC LIMIT 50`,[ownerId,ids])).rows;
 }
+export async function readProtectedShareSenderName(token: string): Promise<string> {
+  await ensureGuestLeadSchema();
+  const result = await getDb().query(`
+    SELECT COALESCE(NULLIF(btrim(p.business_name), ''), s.lead_details->>'replyName') AS sender_name
+    FROM asset_share_links s
+    LEFT JOIN account_profiles p ON p.user_id = s.user_id
+    WHERE s.token = $1 AND s.revoked_at IS NULL AND s.password_hash IS NOT NULL
+  `, [token]);
+  return result.rows[0]?.sender_name || '';
+}
+
 export async function readLeadPage(token:string){
  await ensureGuestLeadSchema();const row=(await getDb().query('SELECT user_id,lead_details,password_hash FROM asset_share_links WHERE token=$1 AND revoked_at IS NULL',[token])).rows[0];
  if(!row||row.password_hash&&!await assetSharePasswordIsUnlocked(token,row.user_id,row.password_hash))return null;

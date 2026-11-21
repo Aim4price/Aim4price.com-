@@ -3,7 +3,7 @@ import SharedEnquiryLanding from '../../../components/SharedEnquiryLanding';
 import { Suspense } from 'react';
 import AppHeader from '../../../components/AppHeader';
 import type { Metadata } from 'next';
-import { readLeadPage } from '../../../lib/guest-leads';
+import { readLeadPage, readProtectedShareSenderName } from '../../../lib/guest-leads';
 import { externalLeadAccess, leadAllows } from '../../../lib/external-lead-access';
 import SharedEnquiryRequest from '../../../components/asset-register/SharedEnquiryRequest';
 import SharedAssetCards from '../../../components/asset-register/SharedAssetCards';
@@ -20,7 +20,10 @@ export default async function AssetSharePage({ params, searchParams }: { params:
   const header = <Suspense fallback={null}><AppHeader active="none" /></Suspense>;
   if (!/^[A-Za-z0-9_-]{43}$/.test(params.token)) return <>{header}<SharedAssetCards share={null}/></>;
   const passwordState = await getAssetSharePasswordState(params.token);
-  if (passwordState.exists && passwordState.protected && !passwordState.unlocked) return <><Suspense fallback={null}><AppHeader active="none" /></Suspense><SharedAssetPasswordGate token={params.token}/></>;
+  if (passwordState.exists && passwordState.protected && !passwordState.unlocked) {
+    const senderName = await readProtectedShareSenderName(params.token);
+    return <>{header}<SharedAssetPasswordGate token={params.token} senderName={senderName}/></>;
+  }
   const lead = await readLeadPage(params.token);
   if (!lead) return <>{header}<SharedAssetCards share={null}/></>;
   const {share,details,reports}=lead;
