@@ -507,7 +507,6 @@ export default function AccountClient({
   const [actionModalNotice, setActionModalNotice] =
     useState<AccountNotice | null>(null);
   const directory = useAccountDirectoryListing(sharedAccount, directoryEmailVerified, initialProfile?.userId);
-  const [serviceArea, setServiceArea] = useState("");
   const [isLoading, setIsLoading] = useState(!initialProfile);
   const [isLoadingScanPin, setIsLoadingScanPin] = useState(
     !sharedAccount && !initialScanPinStatus,
@@ -991,8 +990,11 @@ export default function AccountClient({
     try {
       await directory.save(profileDraft.partnerDirectoryEnabled ? {
         accepted:true, name:profileDraft.businessName, phone:profileDraft.phone, website:profileDraft.websiteUrl,
-        town:profileDraft.townCity, serviceArea, services:profileDraft.partnerServices.split(',').map(value => value.trim()).filter(Boolean),
-        logoData:profileDraft.logoUrl,
+        town:profileDraft.townCity, serviceArea:directory.listing?.details.serviceArea,
+        province:profileDraft.province, addressLine1:profileDraft.addressLine1, addressLine2:profileDraft.addressLine2,
+        contactEmail:profileDraft.marketplaceEmail, brandFocus:profileDraft.partnerBrandFocus, description:profileDraft.partnerDescription,
+        services:profileDraft.partnerServices.split(',').map(value => value.trim()).filter(Boolean),
+        ...(profileDraft.logoUrl.startsWith('data:image/') ? {logoData:profileDraft.logoUrl} : {}),
       } : {action:'hide'});
       setActiveAccountModal(null);
       if (profile) setProfileDraft(buildProfileDraft(profile));
@@ -1255,10 +1257,14 @@ export default function AccountClient({
         ...current, partnerDirectoryEnabled: listing?.status === 'active' || listing?.status === 'invited',
         businessName: listing?.name ?? current.businessName, townCity: listing?.details.town ?? current.townCity,
         phone: listing?.details.phone ?? current.phone, websiteUrl: listing?.details.website ?? current.websiteUrl,
-        partnerServices: listing?.details.services?.join(', ') ?? '', logoUrl: listing?.logo_data ?? '',
-        marketplaceEmail: profile?.email ?? '', partnerBrandFocus: '', partnerDescription: '', province: '',
+        partnerServices: listing?.details.services?.join(', ') ?? current.partnerServices, logoUrl: listing?.logo_data || current.logoUrl,
+        marketplaceEmail: listing?.details.contactEmail ?? (current.marketplaceEmail || profile?.email || ''),
+        partnerBrandFocus: listing?.details.brandFocus ?? current.partnerBrandFocus,
+        partnerDescription: listing?.details.description ?? current.partnerDescription,
+        province: listing?.details.province ?? current.province,
+        addressLine1: listing?.details.addressLine1 ?? current.addressLine1,
+        addressLine2: listing?.details.addressLine2 ?? current.addressLine2,
       }));
-      setServiceArea(listing?.details.serviceArea ?? '');
     }
   }
 
@@ -2728,11 +2734,11 @@ export default function AccountClient({
                       <p>Street details are optional and publicly visible.</p>
                     </div>
                     <div className={styles.wizardFieldGrid}>
-                      {([{ key: "province", label: "Province", placeholder: "Western Cape" }, { key: "townCity", label: "Town / city", placeholder: "George" }, { key: "addressLine1", label: "Street address (optional)", placeholder: "Street address" }, { key: "addressLine2", label: "Address line 2 (optional)", placeholder: "Building, unit or area" }] as const).filter(field => !sharedAccount || field.key === "townCity").map(field => (
+                      {([{ key: "province", label: "Province", placeholder: "Western Cape" }, { key: "townCity", label: "Town / city", placeholder: "George" }, { key: "addressLine1", label: "Street address (optional)", placeholder: "Street address" }, { key: "addressLine2", label: "Address line 2 (optional)", placeholder: "Building, unit or area" }] as const).map(field => (
                         <label className={styles.field} key={field.key}><span>{field.label}</span><span className={styles.settingsInput}><SettingsDetailIcon name="location" /><input value={profileDraft[field.key]} onChange={event => setProfileDraft(current => ({ ...current, [field.key]: event.target.value }))} placeholder={field.placeholder} /></span></label>
                       ))}
                     </div>
-                    {sharedAccount ? <label className={styles.field}><span>Areas served (optional)</span><input value={serviceArea} onChange={event => setServiceArea(event.target.value)} /></label> : <p className={styles.fieldHint}>Also updates your business address.</p>}
+                    <p className={styles.fieldHint}>Also updates your business address.</p>
                   </section>
                 ) : null}
 
@@ -2743,12 +2749,12 @@ export default function AccountClient({
                       <p>Contact details and services shown to owners.</p>
                     </div>
                     <div className={styles.wizardFieldGrid}>
-                      {([{ key: "businessName", label: "Business name", icon: "business", placeholder: "Your business name" }, { key: "phone", label: "Phone / WhatsApp", icon: "phone", placeholder: "Contact number" }, { key: "marketplaceEmail", label: "Business email", icon: "email", placeholder: "business@example.co.za" }, { key: "websiteUrl", label: "Website (optional)", icon: "globe", placeholder: "https://your-business.co.za" }, { key: "partnerBrandFocus", label: "Brands", icon: "listings", placeholder: "All brands, or specific brands" }, { key: "partnerServices", label: "Services", icon: "maintenance", placeholder: "Trade-ins, valuations, parts, repairs" }] as const).filter(field => !sharedAccount || (field.key !== "marketplaceEmail" && field.key !== "partnerBrandFocus")).map(field => (
+                      {([{ key: "businessName", label: "Business name", icon: "business", placeholder: "Your business name" }, { key: "phone", label: "Phone / WhatsApp", icon: "phone", placeholder: "Contact number" }, { key: "marketplaceEmail", label: "Business email", icon: "email", placeholder: "business@example.co.za" }, { key: "websiteUrl", label: "Website (optional)", icon: "globe", placeholder: "https://your-business.co.za" }, { key: "partnerBrandFocus", label: "Brands", icon: "listings", placeholder: "All brands, or specific brands" }, { key: "partnerServices", label: "Services", icon: "maintenance", placeholder: "Trade-ins, valuations, parts, repairs" }] as const).map(field => (
                         <label className={styles.field} key={field.key}><span>{field.label}</span><span className={styles.settingsInput}><SettingsDetailIcon name={field.icon} /><input value={profileDraft[field.key]} onChange={event => setProfileDraft(current => ({ ...current, [field.key]: event.target.value }))} placeholder={field.placeholder} /></span></label>
                       ))}
-                      {!sharedAccount && <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}><span>About your business (optional)</span><textarea value={profileDraft.partnerDescription} onChange={event => setProfileDraft(current => ({ ...current, partnerDescription: event.target.value }))} placeholder="Your services and areas covered." /><small className={styles.partnerDescriptionCount}>{profileDraft.partnerDescription.trim().length} characters</small></label>}
+                      <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}><span>About your business (optional)</span><textarea value={profileDraft.partnerDescription} onChange={event => setProfileDraft(current => ({ ...current, partnerDescription: event.target.value }))} placeholder="Your services and areas covered." /><small className={styles.partnerDescriptionCount}>{profileDraft.partnerDescription.trim().length} characters</small></label>
                     </div>
-                    {sharedAccount ? <><label className={styles.field}>Business logo (optional)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoFileChange} /></label>{logoUrl && <button type="button" onClick={handleRemoveLogo}>Remove logo</button>}<p className={styles.fieldHint}>Your verified email is used for enquiries. Aim4price reviews listings before publication.</p></> : <p className={styles.fieldHint}>Also updates your business contact details.</p>}
+                    <p className={styles.fieldHint}>{sharedAccount ? "Aim4price reviews your listing before publication." : "Also updates your business contact details."}</p>
                   </section>
                 ) : null}
 
@@ -2761,7 +2767,7 @@ export default function AccountClient({
                         <div><strong>{profileDraft.businessName.trim() || profileDraft.displayName.trim() || "Your business"}</strong><small>{[profileDraft.townCity, profileDraft.province].filter(Boolean).join(", ") || "Location not added"}</small></div>
                       </div>
                       <div className={styles.directoryPreviewGrid}>
-                        {([{ label: "Address", icon: "location", value: sharedAccount ? [profileDraft.townCity, serviceArea].filter(Boolean).join(", ") : [profileDraft.addressLine1, profileDraft.addressLine2, profileDraft.townCity, profileDraft.province].filter(Boolean).join(", ") }, { label: "Services", icon: "maintenance", value: profileDraft.partnerServices }, { label: "Phone", icon: "phone", value: profileDraft.phone }, { label: "Email", icon: "email", value: profileDraft.marketplaceEmail }, { label: "Brands", icon: "listings", value: profileDraft.partnerBrandFocus }, { label: "Website", icon: "globe", value: profileDraft.websiteUrl }] as const).filter(detail => detail.value.trim()).map(detail => (
+                        {([{ label: "Address", icon: "location", value: [profileDraft.addressLine1, profileDraft.addressLine2, profileDraft.townCity, profileDraft.province].filter(Boolean).join(", ") }, { label: "Services", icon: "maintenance", value: profileDraft.partnerServices }, { label: "Phone", icon: "phone", value: profileDraft.phone }, { label: "Email", icon: "email", value: profileDraft.marketplaceEmail }, { label: "Brands", icon: "listings", value: profileDraft.partnerBrandFocus }, { label: "Website", icon: "globe", value: profileDraft.websiteUrl }] as const).filter(detail => detail.value.trim()).map(detail => (
                           <div key={detail.label}><SettingsDetailIcon name={detail.icon} /><span><small>{detail.label}</small><strong>{detail.value}</strong></span></div>
                         ))}
                       </div>

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 type Listing = {
   name: string; email: string; status: string; logo_data: string;
-  details: { town?: string; serviceArea?: string; website?: string; phone?: string; services?: string[] };
+  details: { province?: string; addressLine1?: string; addressLine2?: string; contactEmail?: string; brandFocus?: string; description?: string; town?: string; serviceArea?: string; website?: string; phone?: string; services?: string[] };
 };
 
 export function useAccountDirectoryListing(enabled: boolean, verified: boolean, userId?: string) {

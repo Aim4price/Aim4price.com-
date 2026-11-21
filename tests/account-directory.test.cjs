@@ -26,3 +26,18 @@ test('logo upload survives review and edits, and can be removed',async()=>{const
  row=await x.api.saveAccountListing(user,input);assert.equal(row.logo_data,logo);
  row=await x.api.saveAccountListing(user,{...input,logoData:''});assert.equal(row.logo_data,'');
  }finally{await x.pg.close();}});
+
+test('Free Business directory keeps the full address and public contact details through review', async () => {
+ const x = await setup();
+ try {
+  await x.pg.exec('ALTER TABLE account_profiles ADD province text, ADD town_city text, ADD address_line_1 text, ADD address_line_2 text');
+  const fields = {province:'Western Cape',addressLine1:'14 Saffraan Ave',addressLine2:'Unit 2',contactEmail:'sales@example.com',brandFocus:'JCB',description:'Repairs and servicing'};
+  const row = await x.api.saveAccountListing(user,{...input,...fields});
+  await x.admin.saveAdminBusiness('admin',{id:row.id,action:'publish'});
+  const listed = await x.api.readAccountListing(user.id);
+  for (const [key,value] of Object.entries(fields)) assert.equal(listed.details[key],value);
+  assert.equal(listed.email,user.email);
+  assert.equal(listed.details.address,'14 Saffraan Ave, Unit 2');
+  assert.equal((await x.pg.query("SELECT province FROM account_profiles WHERE user_id='b'")).rows[0].province,'Western Cape');
+ } finally {await x.pg.close();}
+});

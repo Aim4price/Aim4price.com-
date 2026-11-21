@@ -32,6 +32,11 @@ export async function saveAccountListing(user:{id:string;email?:string|null;emai
    if(input.accepted!==true) throw new Error('Confirm that you want your business details published in the directory.');
    const details=validateBusinessDetails({...input,locationMode:'town'},String(user.email));
    if(!details.phone||!details.services.length) throw new Error('Add a contact number and at least one service.');
+   if (details.province !== undefined) {
+     details.address = [details.addressLine1, details.addressLine2].filter(Boolean).join(', ');
+     await db.query('UPDATE account_profiles SET province=$2,town_city=$3,address_line_1=$4,address_line_2=$5 WHERE user_id=$1',
+       [user.id,details.province,details.town,details.addressLine1,details.addressLine2]);
+   }
    const logo=input.logoData===undefined?prior?.logo_data||'':validateShowroomLogoDataUrl(String(input.logoData||''));
    const id=prior?.business_id||randomUUID();
    if(!prior) {

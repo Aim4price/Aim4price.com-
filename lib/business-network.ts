@@ -203,7 +203,7 @@ export async function listExternalBusinesses(input: {
       // Published businesses are recipients, not a category-based marketplace.
       if (query && !b.name.toLowerCase().includes(query)) return false;
       const areaParts = (input.area || '').toLowerCase().split(',').map(value => value.trim()).filter(Boolean);
-      if (!b.nationwide && !areaParts.every(area => `${b.town} ${b.address} ${b.serviceArea || ""}`.toLowerCase().includes(area))) return false;
+      if (!b.nationwide && !areaParts.every(area => `${b.town} ${b.province || ""} ${b.address} ${b.serviceArea || ""}`.toLowerCase().includes(area))) return false;
       const bounds = input.bounds;
       const latitude =
         input.latitude ?? (bounds ? (bounds.south + bounds.north) / 2 : null);
@@ -224,18 +224,18 @@ export async function listExternalBusinesses(input: {
       displayName: b.name,
       businessName: b.name,
       phone: b.phone,
-      email,
-      province: "",
+      email: b.contactEmail || email,
+      province: b.province || "",
       townCity: b.town,
       addressLine1: b.address,
       logoUrl: has_logo ? `/api/directory-logo/${id}` : "",
       websiteUrl: b.website,
       extraPhotoUrls: [],
-      description: "",
+      description: b.description || "",
       latitude: b.latitude,
       longitude: b.longitude,
       serviceRadiusKm: b.nationwide || b.locationMode === "town" ? null : b.radiusKm,
-      brandFocus: "",
+      brandFocus: b.brandFocus || "",
       services: (b.services || []).join(", "),
       isExternalBusiness: true,
       googleMapsUrl:

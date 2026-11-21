@@ -1,6 +1,12 @@
 import type { ExternalAssetShareItem } from './asset-external-share';
 
 export type BusinessDetails = {
+  province?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  contactEmail?: string;
+  brandFocus?: string;
+  description?: string;
   locationMode?: "town";
   serviceArea?: string;
   name: string;
@@ -95,6 +101,8 @@ export function validateBusinessDetails(
     value === "" || value == null ? NaN : Number(value);
   const details: BusinessDetails = {
     locationMode: input.locationMode === "town" ? "town" : undefined,
+    ...(typeof input.province === 'string' ? { province:businessText(input.province), addressLine1:businessText(input.addressLine1), addressLine2:businessText(input.addressLine2),
+      contactEmail:input.contactEmail ? businessEmail(input.contactEmail) : '', brandFocus:businessText(input.brandFocus), description:businessText(input.description,2000) } : {}),
     serviceArea: businessText(input.serviceArea, 300),
     name: businessText(input.name),
     email: businessEmail(email),
