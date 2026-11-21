@@ -1,5 +1,6 @@
 "use client";
 import { PageHelpHeading } from '../../components/PageHelp';
+import {BusinessSubscriptionButton, type BusinessSubscription} from '../../components/BusinessCreditControls';
 
 import QuickActionIcon from "./QuickActionIcon";
 import AccountModalScroller from "./account-modal-scroller";
@@ -96,6 +97,7 @@ type ScanPinApiResponse = {
 type AccountClientProps = {
   showAccounting?: boolean;
   canManageDesktopUsers?: boolean;
+  subscription?: BusinessSubscription;
   sharedAccount?: boolean;
   sharedSettings?: ReactNode;
   initialProfile?: AccountProfile | null;
@@ -470,6 +472,7 @@ function ModalInlineNotice({ notice }: { notice: AccountNotice | null }) {
 export default function AccountClient({
   showAccounting = false,
   canManageDesktopUsers = false,
+  subscription,
   sharedAccount = false,
   sharedSettings,
   initialProfile = null,
@@ -1480,7 +1483,7 @@ export default function AccountClient({
               <h1>{accountDisplayName}</h1>
               <p>{profile?.email || "Loading email"}</p>
               <small>
-                {accountTypeLabel} account&nbsp; • &nbsp;{memberSinceLabel}
+                {subscription ? (subscription.paidSince ? "Paid Business Account" : "Free Business Account") : accountTypeLabel + " account"}&nbsp; • &nbsp;{memberSinceLabel}
               </small>
             </div>
           </div>
@@ -1697,7 +1700,8 @@ export default function AccountClient({
                       </button>
                     ) : null}
 
-                    {sharedAccount ? <Link href="#directory-listing-title" data-tooltip="View and update your business directory listing." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="directory" /><strong>Directory listing</strong></Link> : null}
+                    {subscription && <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton}/>}
+                  {sharedAccount ? <Link href="#directory-listing-title" data-tooltip="View and update your business directory listing." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="directory" /><strong>Directory listing</strong></Link> : null}
                     {showPartnerDirectory ? (
                       <button
                         type="button"

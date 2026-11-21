@@ -1,7 +1,7 @@
 import { isAccountingPilotSession } from '../../lib/accounting-pilot';
 import { canManageTeamAccess } from '../../lib/team-access';
 import AccountDirectoryListing from '../../components/AccountDirectoryListing';
-import BusinessCredits from '../../components/BusinessCredits';
+import BusinessCredits, {getBusinessCredits} from '../../components/BusinessCredits';
 import BusinessDetails from '../business/business-client';
 import { readBusinessAccount } from '../../lib/business-accounts';
 import sharedStyles from '../business/page.module.css';
@@ -25,12 +25,14 @@ export default async function AccountPage() {
     if (profile.accountType === 'business' || await sharingPlan(signedIn.user.id, profile.accountType) === 'free') {
       if (profile.accountStatus !== 'active') redirect('/pending-payment');
       const business = profile.accountType === 'business' ? await readBusinessAccount(signedIn.user) : null;
+      const credits = business ? await getBusinessCredits(signedIn.user.id) : null;
+      const subscription = credits ? { paidSince: credits.workspace.paid_since ? new Date(credits.workspace.paid_since).toISOString() : null, pending: Boolean(credits.workspace.upgrade_requested_at), owner: credits.workspace.role==='owner', remaining: Math.max(0,credits.balance.limit-credits.balance.used-credits.balance.held), limit:credits.balance.limit } : undefined;
       const settings = <div className={sharedStyles.accountContent}>
-        {business && <BusinessCredits userId={signedIn.user.id}/>}
+        {business && <BusinessCredits data={credits} userId={signedIn.user.id}/>}
         {<details id="account-details" className={`${sharedStyles.panel} ${sharedStyles.details}`} open><summary>Business details</summary><BusinessDetails businessName={profile.businessName || ''} phone={profile.phone || ''} website={business?.review.website || profile.websiteUrl || ''} evidence={business?.review.evidence || ''} email={signedIn.user.email} emailVerified={signedIn.user.emailVerified === true}/></details>}
         <AccountDirectoryListing name={profile.businessName || ''} phone={profile.phone || ''} emailVerified={signedIn.user.emailVerified === true}/>
       </div>;
-      return <AccountClient canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} sharedAccount sharedSettings={settings} />;
+      return <AccountClient canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} sharedAccount subscription={subscription} sharedSettings={settings} />;
     }
   }
   const { session } = await requireActivePageAccess();

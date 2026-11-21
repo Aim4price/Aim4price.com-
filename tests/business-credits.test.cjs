@@ -56,7 +56,12 @@ test('Business credits pool across members and preserve trial, upgrade, retry an
   process.env.AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT='true';
   await pg.query('UPDATE business_credit_events SET created_at=now()-interval \'2 months\'');
   assert.equal((await balance()).used,0);
-  await pg.query('UPDATE business_workspaces SET paid_since=now()');
+  const setPlan=(plan)=>credits.creditTransaction(db=>credits.changeBusinessPlan(db,owner.business_id,'owner',plan));
+  await pg.query('UPDATE business_workspaces SET upgrade_requested_at=now()');
+  await setPlan('paid');await setPlan('paid');
   await save(event('send'));assert.equal((await balance()).used,0);
+  await setPlan('free');assert.equal((await pg.query('SELECT upgrade_requested_at FROM business_workspaces')).rows[0].upgrade_requested_at,null);
+  await save(event('send'));assert.equal((await balance()).used,1);
+  assert.deepEqual((await pg.query('SELECT plan,actor_id FROM business_plan_changes ORDER BY id')).rows,[{plan:'paid',actor_id:'owner'},{plan:'free',actor_id:'owner'}]);
  }finally{if(previous===undefined)delete process.env.AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT;else process.env.AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT=previous;await pg.close();}
 });

@@ -7,6 +7,10 @@ export const creditLimitsActive = () => process.env.AIM4PRICE_BUSINESS_CREDIT_EN
 export const CREDIT_SCHEMA = `
  ALTER TABLE business_workspaces ADD COLUMN IF NOT EXISTS upgrade_requested_at timestamptz,
  ADD COLUMN IF NOT EXISTS paid_since timestamptz, ADD COLUMN IF NOT EXISTS activated_by text;
+ CREATE TABLE IF NOT EXISTS business_plan_changes (
+   id bigserial PRIMARY KEY, business_id uuid NOT NULL REFERENCES business_workspaces(id) ON DELETE CASCADE,
+   actor_id text NOT NULL, plan text NOT NULL CHECK(plan IN ('free','paid')), changed_at timestamptz NOT NULL DEFAULT now()
+ );
  CREATE TABLE IF NOT EXISTS business_credit_events (
    business_id uuid NOT NULL REFERENCES business_workspaces(id) ON DELETE CASCADE,
    actor_id text NOT NULL, action text NOT NULL CHECK(action IN ('manage','send','share')),
@@ -104,4 +108,14 @@ export async function checkBusinessWrite(userId:string,token:string,assetKey?:st
       AND ($4::text IS NULL OR asset_key=$4) AND action='manage' AND closed_at IS NULL AND created_at>now()-interval '12 hours' LIMIT 1`,[workspace.id,userId,token,assetKey??null]);
     if(!visit.rowCount) throw new CreditLimitError();
   });
+}
+
+export async function changeBusinessPlan(db:PoolClient, businessId:string, actorId:string, plan:'free'|'paid', pendingOnly=false) {
+  const workspace=(await db.query('SELECT paid_since,upgrade_requested_at FROM business_workspaces WHERE id=$1 FOR UPDATE',[businessId])).rows[0];
+  if (!workspace) throw Error('Business workspace unavailable.');
+  if (Boolean(workspace.paid_since)===(plan==='paid')) return;
+  if (pendingOnly && !workspace.upgrade_requested_at) throw Error('This upgrade is no longer pending.');
+  await db.query(`UPDATE business_workspaces SET paid_since=CASE WHEN $2='paid' THEN now() END,
+    activated_by=CASE WHEN $2='paid' THEN $3 END,upgrade_requested_at=NULL WHERE id=$1`,[businessId,plan,actorId]);
+  await db.query('INSERT INTO business_plan_changes(business_id,actor_id,plan) VALUES($1,$2,$3)',[businessId,actorId,plan]);
 }

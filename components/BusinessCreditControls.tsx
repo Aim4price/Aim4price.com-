@@ -35,3 +35,29 @@ export function UpgradeBusiness({businessId}:{businessId?:string}) {
  {error&&<p role="alert">{error}</p>}<button disabled={busy} className={styles.button} onClick={()=>void submit()}>{busy?'Saving…':businessId?'Confirm subscription':'Request upgrade'}</button>
  </ShareDisclosureDialog>}</>;
 }
+
+export type BusinessSubscription = { paidSince:string|null; pending:boolean; owner:boolean; remaining:number; limit:number };
+
+export function BusinessSubscriptionButton({plan,className}:{plan:BusinessSubscription;className:string}) {
+ const router=useRouter(), titleId=useId();
+ const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const label=plan.paidSince?'Manage subscription':plan.pending?'Upgrade requested':'Upgrade subscription';
+ async function requestUpgrade(){
+   setBusy(true);setError('');
+   try {
+     const response=await fetch('/api/business-credits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'upgrade'})});
+     if(!response.ok) throw Error((await response.json()).error || 'Could not request upgrade.');
+     router.refresh();setOpen(false);
+   } catch(e){setError(e instanceof Error?e.message:'Could not request upgrade.');}
+   finally{setBusy(false);}
+ }
+ return <><button type="button" className={className} onClick={()=>{setError('');setOpen(true);}}>
+   <span><strong>{label}</strong>{!plan.paidSince && <span style={{display:'block',fontWeight:650}}>{plan.remaining} of {plan.limit} credits remaining</span>}</span>
+ </button>{open && <ShareDisclosureDialog title={label} titleId={titleId} closeLabel="Close" onClose={()=>setOpen(false)}>
+ {plan.paidSince ? <><p><strong>Paid Business Account</strong> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</p>
+ <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
+ plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
+ plan.owner ? <><p>Add team members with Paid Business. Aim4price will contact you to arrange activation.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
+ <p>Your business owner can request an upgrade.</p>}
+ {error && <p role="alert">{error}</p>}</ShareDisclosureDialog>}</>;
+}

@@ -3,6 +3,7 @@
 import AccountInvitation from "./account-invitation";
 import { workspaceLabel } from "../../lib/account-type-options";
 import type { AdminUserRow } from "../../lib/admin-users";
+import BusinessPlanAdmin from './business-plan-admin';
 import AccountEditor from "./account-editor";
 import AdminSelect from "../../components/AdminSelect";
 import AssetPickerDetail from '../../components/AssetPickerDetail';
@@ -2261,6 +2262,7 @@ export default function AdminClient({
 
               </section>
             </div>
+            {accountActionModal.accountType==='business' && <BusinessPlanAdmin key={accountActionModal.userId} owner={accountActionModal.userId}/>}
             {!isAim4priceAdminEmail(accountActionModal.email) && <details className={styles.accountDisclosure}>
               <summary>Change account type <span>{formatAccountValue(accountActionModal.accountSubtype)}</span></summary>
               <AccountEditor key={accountActionModal.userId} account={accountActionModal} onSaved={user => {
