@@ -69,7 +69,7 @@ const questionNotes: Record<string, string> = {
 const dealerPermissions = [
   ['asset', 'Stock & client registers', 'Your own stock and the client registers you manage, kept separate.', 'List my registers, then summarise my active assets and saved values.'],
   ['service', 'Authorised client records', 'Selected asset, maintenance, problem and cost information shared with your dealership.', 'Which client assets can I access, and what information is shared?'],
-  ['records', 'Shared enquiries', 'Enquiries addressed to your verified account. Sharing an asset does not automatically create a task.', 'Summarise the enquiries addressed to my account.'],
+  ['records', 'Shared Assets', 'Enquiries addressed to your verified account. Sharing an asset does not automatically create a task.', 'Summarise the enquiries addressed to my account.'],
   ['cost', 'Parts listings', 'Saved parts quantities and prices from networks you can access.', 'Find this part number in my accessible parts listings and show when the data was uploaded.'],
 ];
 const businessPermissions = [

@@ -291,7 +291,7 @@ function buildNavItems(
   if (accountType === 'business') return [
     { key: 'home', href: '/', label: 'Home' },
     { key: 'valuation', href: '/valuation', label: 'Value Asset' },
-    { key: 'leads', href: '/business', label: 'Shared enquiries' },
+    { key: 'leads', href: '/business', label: 'Shared Assets' },
     { key: 'account', href: '/account', label: 'Account' },
   ];
 
@@ -2541,7 +2541,7 @@ export default function AppHeader({
                                       { href: '/', label: 'Home' },
                                       { href: '/valuation', label: 'Value Asset' },
                                       { href: '/account', label: 'Account' },
-                                      { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared enquiries' },
+                                      { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared Assets' },
                                       { href: '/pricing', label: 'Subscriptions' },
                                       ...(partsAccess ? [{ href: '/parts', label: 'Parts Stock' }] : []),
                                     ]

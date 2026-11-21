@@ -15,8 +15,8 @@ export default function SharedAccountHero({count}:{count:number}) {
    </div>
    <Link href="#received-enquiries" className={`${hero.heroUploadAction} ${styles.heroLink}`}>
     <span className={hero.heroUploadIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 10h18M8 3v4m8-4v4m-7 8 2 2 4-4"/></svg></span>
-    <span className={hero.heroUploadLabel}>View enquiries</span>
-    <span className={hero.heroUploadHint}>{count ? `${count} shared ${count===1?'enquiry':'enquiries'}` : 'Your shared assets appear here'}</span>
+    <span className={hero.heroUploadLabel}>View assets</span>
+    <span className={hero.heroUploadHint}>{count ? `${count} ${count===1?'asset':'assets'} shared` : 'Your shared assets appear here'}</span>
    </Link>
   </div>
  </section>;

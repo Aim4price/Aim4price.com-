@@ -754,7 +754,7 @@ export const tutorials: Tutorial[] = [
     "note": "The shared link gives access only to the records and actions its owner selected.",
     "audience": "Owner",
     "href": "/shared-enquiries",
-    "action": "Open shared enquiries",
+    "action": "Open Shared Assets",
     "keywords": " Work with an asset shared with you",
     "question": "How do I work with an asset someone shared with me?",
     "guideTitle": "Open an asset shared with you",

@@ -121,14 +121,14 @@ export const pageHelp = {
     start: "Decide what the person needs to do, then create their login and share the app link.",
   },
   sharedEnquiries: {
-    title: "Shared Enquiries",
+    title: "Shared Assets",
     purpose: "Give you a place to respond to asset enquiries without needing access to the sender’s whole account.",
     actions: [
       "Open an enquiry to read the request and see the shared asset details.",
       "Use the actions the sender has enabled for that particular enquiry.",
       "Verify your email if prompted so Aim4price can identify enquiries shared with you.",
     ],
-    start: "Select Open enquiry, or open the link you received by email or WhatsApp.",
+    start: "Select Open, or open the link you received by email or WhatsApp.",
   },
   dealerAccount: {
     title: "Dealer Account",
@@ -156,7 +156,7 @@ export const pageHelp = {
     actions: [
       "Keep your profile and contact details current.",
       "Review notifications, account security and connections available to your account.",
-      "Open Shared enquiries for the assets and requests senders have authorised.",
+      "Open Shared Assets for the assets and requests senders have authorised.",
     ],
     start: "Check your email in Account, then open the enquiry or link you received.",
   },
