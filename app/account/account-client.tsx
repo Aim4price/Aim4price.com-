@@ -757,6 +757,9 @@ export default function AccountClient({
     () => formatAccountTypeLabel(profileDraft.accountType, profile?.accountSubtype),
     [profile?.accountSubtype, profileDraft.accountType],
   );
+  const businessPlanLabel = subscription
+    ? (subscription.fullAccess ?? Boolean(subscription.paidSince)) ? "Paid Business Account" : "Free Business Account"
+    : undefined;
   const normalizedAccountType = String(
     profile?.accountType || profileDraft.accountType || "owner",
   )
@@ -1483,7 +1486,7 @@ export default function AccountClient({
               <h1>{accountDisplayName}</h1>
               <p>{profile?.email || "Loading email"}</p>
               <small>
-                {subscription ? ((subscription.fullAccess ?? Boolean(subscription.paidSince)) ? "Paid Business Account" : "Free Business Account") : accountTypeLabel + " account"}&nbsp; • &nbsp;{memberSinceLabel}
+                {businessPlanLabel ?? accountTypeLabel + " account"}&nbsp; • &nbsp;{memberSinceLabel}
               </small>
             </div>
           </div>
@@ -1529,7 +1532,7 @@ export default function AccountClient({
             <div className={styles.metricGrid}>
               <div className={styles.metricTile}>
                 <span>Account type</span>
-                <strong>{accountTypeLabel}</strong>
+                <strong>{businessPlanLabel ?? accountTypeLabel}</strong>
               </div>
 
               <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={() => openOverviewDetails()} aria-label="Edit contact number" data-tooltip="Update the contact number saved on your profile." data-tooltip-style="description">
