@@ -55,7 +55,7 @@ export default async function DealerInventoryPage({
       <header className={styles.contextBar}>
         <div>
           <span>{registerMode === 'dealer' ? 'Dealer-owned assets' : 'Managed client assets'}</span>
-          <strong>{registerMode === 'dealer' ? 'Dealer Asset Register' : requestedRegister?.businessName || 'Client Asset Register'}</strong>
+          <strong>{registerMode === 'dealer' ? 'Business Asset Register' : requestedRegister?.businessName || 'Client Asset Register'}</strong>
           <p>{registerMode === 'dealer' ? 'Your own stock and trade-ins stay separate from the Asset Registers you manage for clients.' : 'Manage this client with the same complete Asset Register used by an owner account.'}</p>
         </div>
         <Link href={registerMode === 'dealer' ? '/dealer/inventory/transfers' : '/dealer/inventory/registers'} prefetch={false}>

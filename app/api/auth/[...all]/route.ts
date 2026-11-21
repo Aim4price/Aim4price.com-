@@ -28,9 +28,10 @@ export async function POST(request: Request): Promise<Response> {
 
   try {
     if (!isSupportedSignupAccountType(signupInput?.accountType)) {
-      return Response.json({ message: 'Choose an Owner, Dealer, Business or Middleman account.' }, { status: 400 });
+      return Response.json({ message: 'Choose an Owner or Business account, or Middleman access.' }, { status: 400 });
     }
-    const accountType = String(signupInput?.accountType ?? 'owner').trim().toLowerCase();
+    const requestedType = String(signupInput?.accountType ?? 'owner').trim().toLowerCase();
+    const accountType = requestedType === 'business' && signupInput?.accountAccess === 'desktop' ? 'dealer' : requestedType;
     if (accountType === 'business' && (typeof signupInput.businessName !== 'string' || !signupInput.businessName.trim() || signupInput.businessName.length > 200 || signupInput.acceptedTerms !== true)) {
       return Response.json({ message: 'Enter your business name and accept the terms.' }, { status: 400 });
     }
@@ -38,7 +39,7 @@ export async function POST(request: Request): Promise<Response> {
     if (accountAccess === 'free' && accountType !== 'business') {
       return Response.json({message:'Free sharing is available for Business accounts only.'},{status:400});
     }
-    const billingSignup = accountAccess === 'free' ? null : await validateSignupBilling(signupInput ?? {});
+    const billingSignup = accountAccess === 'free' ? null : await validateSignupBilling({ ...signupInput, accountType });
     return await withSignupWorkspaceInput({ ...signupInput, accountType, accountAccess, billingSignup }, () => authHandlers.POST(request));
   } catch (error) {
     if (error instanceof BillingError) return Response.json({ message: error.message }, { status: 400 });

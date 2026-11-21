@@ -11,14 +11,14 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Subscriptions',
-  description: 'Compare Aim4price Owner, Dealer, Business and Middleman subscriptions, client hosting and optional assistance fees.',
+  description: 'Compare Aim4price Owner and Business subscriptions, client hosting and optional assistance fees.',
   robots: { index: false, follow: false },
 };
 
 export default async function PricingPage({ searchParams }: { searchParams?: { audience?: string } }) {
   const session = await getAnyServerSession();
   const audience = searchParams?.audience;
-  const initialAudience = audience === 'owner' || audience === 'dealer' || audience === 'business' || audience === 'middleman' ? audience : null;
+  const initialAudience = audience === 'dealer' ? 'business' : audience === 'owner' || audience === 'business' || audience === 'middleman' ? audience : null;
   return (
     <main className={styles.page}>
       <AppHeader active="none" />

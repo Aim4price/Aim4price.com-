@@ -15,6 +15,7 @@ try {
   await client.query("SET LOCAL statement_timeout='60s'");
   await client.query("SELECT pg_advisory_xact_lock(hashtext('annual-review-schema'))");
   await client.query(await readFile(new URL('../database/migrations/151-annual-asset-reviews.sql', import.meta.url), 'utf8'));
+  await client.query(await readFile(new URL('../database/migrations/164-business-desktop.sql', import.meta.url), 'utf8'));
   await client.query('COMMIT');
   console.log('Annual review schema is ready.');
 } catch (error) {

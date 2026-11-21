@@ -1713,7 +1713,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     description: 'Share with a dealer.',
     mapTitle: 'Choose a dealer.',
     sendLabel: 'Send replacement price request',
-    emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
+    emptyPartnerText: 'No listed dealers found yet. Business accounts must enable their directory listing under Account details.',
   },
   {
     leadType: 'license_renewal',
@@ -7654,7 +7654,7 @@ export default function AssetRegisterClient({
     || (dealerRegisterMode === 'client'
       ? 'Client Asset Register'
       : dealerRegisterMode === 'dealer'
-        ? 'Dealer Asset Register'
+        ? 'Business Asset Register'
         : 'Asset Register');
   const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset);
@@ -15988,7 +15988,7 @@ export default function AssetRegisterClient({
   const registerPageTitle = isLoading
     ? 'Loading...'
     : dealerRegisterMode === 'dealer'
-      ? 'Dealer Asset Register'
+      ? 'Business Asset Register'
       : savedRegisterTitle;
 
   function renderRevalueLifetimeField(asset: RegisterAsset) {
@@ -21350,7 +21350,7 @@ export default function AssetRegisterClient({
                     <div className={`${disposalStyles.stepHeader} ${disposalLayout.stepHeader}`}><strong id="asset-register-transfer-title" tabIndex={-1} data-disposal-heading>Where should the portable asset record go?</strong><small>{disposalDraft.reason === 'traded_in' ? 'Keep the record on your account, or let the dealer claim it.' : 'Keep the record on your account, or let the buyer claim it.'}</small></div>
                     <div className={disposalLayout.destinationChoices} role="group" aria-label={disposalDraft.reason === 'traded_in' ? 'Choose what happens to the traded-in asset record' : 'Choose what happens to the sold asset record'}>
                       <button type="button" className={`${disposalLayout.transferOption} ${disposalDraft.transferAction === 'archive' ? disposalStyles.helpButtonSelected : ''}`} aria-pressed={disposalDraft.transferAction === 'archive'} onClick={() => setDisposalDraft((current) => ({ ...current, transferAction: 'archive' }))}><span className={disposalLayout.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="5" rx="1.5"/><path d="M5 8v12h14V8M9 12h6"/></svg></span><span className={disposalLayout.choiceCopy}><strong>{disposalDraft.reason === 'traded_in' ? 'Archive after trade-in' : 'Archive after sale'}</strong><small>Remove from active list; keep history.</small></span><span className={disposalLayout.selectionMark} aria-hidden="true">✓</span></button>
-                      <button type="button" className={`${disposalLayout.transferOption} ${disposalDraft.transferAction === 'claim_code' ? disposalStyles.helpButtonSelected : ''}`} aria-pressed={disposalDraft.transferAction === 'claim_code'} onClick={() => setDisposalDraft((current) => ({ ...current, transferAction: 'claim_code' }))}><span className={disposalLayout.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v6M20 4l-9 9M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></span><span className={disposalLayout.choiceCopy}><strong>{disposalDraft.reason === 'traded_in' ? 'Send to dealer inventory' : 'Send to buyer'}</strong><small>{disposalDraft.reason === 'traded_in' ? 'Create a one-time code that only an active Dealer account can claim.' : 'Let the buyer claim it with a code.'}</small></span><span className={disposalLayout.selectionMark} aria-hidden="true">✓</span></button>
+                      <button type="button" className={`${disposalLayout.transferOption} ${disposalDraft.transferAction === 'claim_code' ? disposalStyles.helpButtonSelected : ''}`} aria-pressed={disposalDraft.transferAction === 'claim_code'} onClick={() => setDisposalDraft((current) => ({ ...current, transferAction: 'claim_code' }))}><span className={disposalLayout.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h6v6M20 4l-9 9M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></svg></span><span className={disposalLayout.choiceCopy}><strong>{disposalDraft.reason === 'traded_in' ? 'Send to dealer inventory' : 'Send to buyer'}</strong><small>{disposalDraft.reason === 'traded_in' ? 'Create a one-time code that only an active Business account can claim.' : 'Let the buyer claim it with a code.'}</small></span><span className={disposalLayout.selectionMark} aria-hidden="true">✓</span></button>
                     </div>
                     {disposalDraft.transferAction === 'claim_code' ? <div className={disposalLayout.transferNote}><strong>What moves with the asset</strong><small>Asset details, valuation and maintenance history, scan history, photos and portable asset documents move to the receiving account. Private invoices, finance, insurance and account access stay with the current account.</small></div> : null}
                   </section> : null}

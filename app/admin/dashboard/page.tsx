@@ -16,7 +16,7 @@ const CARD_TITLES: Record<string, string> = {
   "total-accounts-created": "Accounts created",
   "free-estimate-users": "Free-estimate users",
   "owner-accounts-created": "Owner accounts",
-  "dealer-accounts-created": "Dealer accounts",
+  "dealer-accounts-created": "Business accounts",
   "business-accounts-created": "Business accounts",
   "middleman-accounts-created": "Middleman accounts",
   "average-user-time": "Estimated weekly user time",

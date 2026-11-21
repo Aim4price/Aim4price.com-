@@ -475,7 +475,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json<SaveValuationRunApiResponse>(
         {
           ok: false,
-          error: 'Only active Owner and Dealer accounts can save to an Asset Register.',
+          error: 'Only active Owner and Business accounts can save to an Asset Register.',
         },
         { status: 403 },
       );

@@ -251,7 +251,7 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
     .toLowerCase()
     .replace(/[\s_]+/g, "-");
   const allowedByType: Record<string, Set<string>> = {
-    business: new Set(["contributor", "finance-services", "insurance-services", "licensing-services", "accounting-services", "maintenance-services"]),
+    business: new Set(["machinery-dealer", "motor-dealer", "auctioneer", "contributor", "finance-services", "insurance-services", "licensing-services", "accounting-services", "maintenance-services"]),
     owner: new Set([
       "farmer",
       "contractor",
@@ -266,6 +266,7 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
       "insurance-broker",
     ]),
     dealer: new Set([
+      "contributor", "finance-services", "insurance-services", "licensing-services", "accounting-services", "maintenance-services",
       "machinery-dealer",
       "motor-dealer",
       "auctioneer",
@@ -480,7 +481,7 @@ async function ensureAccountRoleSchema(
           and pg_get_constraintdef(oid) ilike '%licensing%'
           and pg_get_constraintdef(oid) ilike '%licence-renewal-expert%'
           and pg_get_constraintdef(oid) ilike '%contributor%'
-          and pg_get_constraintdef(oid) ilike '%maintenance-services%'
+          and pg_get_constraintdef(oid) ilike '%equipment-middleman%contributor%'
       )
       and not exists (
         select 1
@@ -572,6 +573,7 @@ async function ensureAccountRoleSchema(
       update public.account_profiles
       set account_subtype = case account_type
         when 'business' then case
+          when account_subtype in ('machinery-dealer','motor-dealer','auctioneer') then account_subtype
           when lower(regexp_replace(trim(coalesce(account_subtype, '')), '[ _]+', '-', 'g')) in ('contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services')
             then lower(regexp_replace(trim(account_subtype), '[ _]+', '-', 'g'))
           else 'contributor'
@@ -591,7 +593,7 @@ async function ensureAccountRoleSchema(
         when 'insurance' then 'short-term-insurer'
         when 'dealer' then case
           when lower(regexp_replace(trim(coalesce(account_subtype, '')), '[ _]+', '-', 'g')) in
-            ('machinery-dealer', 'motor-dealer')
+            ('machinery-dealer', 'motor-dealer', 'contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services')
             then lower(regexp_replace(trim(account_subtype), '[ _]+', '-', 'g'))
           when lower(regexp_replace(trim(coalesce(account_subtype, '')), '[ _]+', '-', 'g')) in
             ('auction-house', 'auctioneer')
@@ -618,14 +620,14 @@ async function ensureAccountRoleSchema(
       alter table public.account_profiles
         add constraint account_profiles_account_role_check
         check (
-          (account_type = 'business' and account_subtype in ('contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services'))
+          (account_type = 'business' and account_subtype in ('contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services', 'machinery-dealer', 'motor-dealer', 'auctioneer'))
           or (account_type = 'owner' and account_subtype in
             ('farmer', 'contractor', 'construction-company', 'asset-owner'))
           or (account_type = 'finance' and account_subtype in
             ('bank', 'finance-house', 'accountant'))
           or (account_type = 'insurance' and account_subtype = 'short-term-insurer')
           or (account_type = 'dealer' and account_subtype in
-            ('machinery-dealer', 'motor-dealer', 'auctioneer', 'equipment-middleman'))
+            ('machinery-dealer', 'motor-dealer', 'auctioneer', 'equipment-middleman', 'contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services'))
           or (account_type = 'licensing' and account_subtype in
             ('licence-renewal-expert', 'fleet-licensing-service'))
         ) not valid;

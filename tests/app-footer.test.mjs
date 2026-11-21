@@ -7,7 +7,7 @@ const styles = readFileSync(new URL('../components/AppFooter.module.css', import
 
 test('footer links match the signed-in account type', () => {
   assert.match(footer, /label: 'Owner tools'[\s\S]*?\/asset-register[\s\S]*?\/maintenance[\s\S]*?\/fuel/);
-  assert.match(footer, /label: 'Dealer tools'[\s\S]*?\/leads[\s\S]*?\/tracking[\s\S]*?\/dealer-costs/);
+  assert.match(footer, /label: 'Business tools'[\s\S]*?\/leads[\s\S]*?\/tracking[\s\S]*?\/dealer-costs/);
   assert.match(footer, /const publicWorkspace[\s\S]*?label: 'Explore'[\s\S]*?\/marketplace/);
   assert.match(footer, /session\?\.accountType === 'owner'/);
   assert.match(footer, /session\?\.accountType === 'dealer'/);

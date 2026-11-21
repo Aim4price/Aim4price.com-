@@ -174,7 +174,7 @@ const ALLOWED_LOGO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   owner: "Owner",
-  dealer: "Dealer",
+  dealer: "Business",
   business: "Business",
   middleman: "Middleman",
   finance: "Finance — accountants, financiers and banks",
@@ -1483,7 +1483,7 @@ export default function AccountClient({
               <h1>{accountDisplayName}</h1>
               <p>{profile?.email || "Loading email"}</p>
               <small>
-                {subscription ? (subscription.paidSince ? "Paid Business Account" : "Free Business Account") : accountTypeLabel + " account"}&nbsp; • &nbsp;{memberSinceLabel}
+                {subscription ? ((subscription.fullAccess ?? Boolean(subscription.paidSince)) ? "Paid Business Account" : "Free Business Account") : accountTypeLabel + " account"}&nbsp; • &nbsp;{memberSinceLabel}
               </small>
             </div>
           </div>
@@ -1648,11 +1648,11 @@ export default function AccountClient({
                         type="button"
                         className={styles.quickActionButton}
                         onClick={openDealerAppAccessPage}
-                        data-tooltip={isMiddlemanAccount ? "Manage staff access and permissions for the Middleman App." : "Manage staff access and permissions for the Dealer App."}
+                        data-tooltip={isMiddlemanAccount ? "Manage staff access and permissions for the Middleman App." : "Manage staff access and permissions for the Business App."}
                         data-tooltip-style="description"
                       >
                         <QuickActionIcon name="dealer" />
-                        <strong>{isMiddlemanAccount ? "Middleman app access" : "Manage Dealer App staff"}</strong>
+                        <strong>{isMiddlemanAccount ? "Middleman app access" : "Manage Business App staff"}</strong>
                       </button>
                     ) : null}
 
@@ -2820,7 +2820,3 @@ export default function AccountClient({
     </main>
   );
 }
-
-
-
-

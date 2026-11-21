@@ -61,7 +61,7 @@ test('account app access headings stay clean and tile copy stays short', async (
     read('app/account/app-access-management.module.css'),
   ]);
 
-  assert.doesNotMatch(accessUi, /Dealer account access|Owner account access|Owner operations access/);
+  assert.doesNotMatch(accessUi, /Business account access|Owner account access|Owner operations access/);
   assert.doesNotMatch(accessUi, /modalEyebrow|styles\.eyebrow/);
   assert.match(accessUi, /newDescription: 'Create a separate app login\.'/);
   assert.match(accessUi, /manageDescription: 'Review permissions or deactivate a login\.'/);

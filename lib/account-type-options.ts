@@ -22,8 +22,8 @@ export type SignupAccountSubtype =
 
 export const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
   { value: "owner", label: "Owner" },
-  { value: "dealer", label: "Dealer" },
-  { value: "business", label: "Business" },
+  { value: "dealer", label: "Business" },
+  { value: "business", label: "Free Business" },
   { value: "middleman", label: "Middleman" },
 ];
 
@@ -45,6 +45,7 @@ export const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
     { value: "machinery-dealer", label: "Machinery dealer" },
     { value: "motor-dealer", label: "Motor dealer" },
     { value: "auctioneer", label: "Auctioneer / broker" },
+    ...BUSINESS_SERVICE_OPTIONS,
   ],
 };
 

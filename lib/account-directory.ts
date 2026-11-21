@@ -11,7 +11,7 @@ export const ACCOUNT_DIRECTORY_SCHEMA = `CREATE TABLE IF NOT EXISTS account_dire
 async function ensure() { await ensureBusinessNetwork(); await getDb().query(ACCOUNT_DIRECTORY_SCHEMA); }
 export async function directoryIdentity(user: {id:string;email?:string|null;emailVerified?:boolean|null}) {
  const profile=await getAccountProfile(user);
- if(!['business','dealer'].includes(profile.accountType)||profile.accountStatus!=='active'||user.emailVerified!==true) throw new Error('This action requires an active Business or Dealer account with a verified email.');
+ if(!['business','dealer'].includes(profile.accountType)||profile.accountStatus!=='active'||user.emailVerified!==true) throw new Error('This action requires an active Business account with a verified email.');
  return profile;
 }
 export async function readAccountListing(userId:string) {

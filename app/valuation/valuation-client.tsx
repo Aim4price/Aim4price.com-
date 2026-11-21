@@ -2915,7 +2915,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (!dealerSaveTargetRegisterId || !dealerAssetRegisters.length) return;
     const target = dealerAssetRegisters.find((register) => register.id === dealerSaveTargetRegisterId);
     if (!target) return;
-    setDealerSaveTargetRegisterName(target.businessName || (target.isPrimary ? 'Dealer Asset Register' : 'Client Asset Register'));
+    setDealerSaveTargetRegisterName(target.businessName || (target.isPrimary ? 'Business Asset Register' : 'Client Asset Register'));
     setDealerSaveTargetMode(target.id === dealerOwnedRegister?.id ? 'dealer' : 'client');
   }, [dealerAssetRegisters, dealerOwnedRegister?.id, dealerSaveTargetRegisterId]);
 
@@ -4738,7 +4738,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function chooseDealerRegisterForSave(register: DealerAssetRegisterSummary, mode: 'dealer' | 'client') {
     setDealerSaveTargetRegisterId(register.id);
-    setDealerSaveTargetRegisterName(register.businessName || (mode === 'dealer' ? 'Dealer Asset Register' : 'Client Asset Register'));
+    setDealerSaveTargetRegisterName(register.businessName || (mode === 'dealer' ? 'Business Asset Register' : 'Client Asset Register'));
     setDealerSaveTargetMode(mode);
     dealerRegisterDestinationRestoreFocusRef.current = false;
     setIsDealerRegisterDestinationOpen(false);
@@ -4769,7 +4769,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   function saveToDealerAssetRegister() {
     if (!dealerOwnedRegister) {
       setIsDealerRegisterDestinationOpen(false);
-      setMessage('Create the Dealer Asset Register before saving this estimate.');
+      setMessage('Create the Business Asset Register before saving this estimate.');
       return;
     }
     chooseDealerRegisterForSave(dealerOwnedRegister, 'dealer');
@@ -4841,7 +4841,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     if (intent === 'asset-register' && !canSaveToAssetRegister) {
-      setMessage('Only Owner and Dealer accounts can save estimates to an Asset Register.');
+      setMessage('Only Owner and Business accounts can save estimates to an Asset Register.');
       return;
     }
 
@@ -4931,7 +4931,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         return null;
       }
     } else if (!canSaveToAssetRegister) {
-      setError('Only Owner and Dealer accounts can save estimates to an Asset Register.');
+      setError('Only Owner and Business accounts can save estimates to an Asset Register.');
       return null;
     }
 
@@ -9622,7 +9622,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     : ownerAppMode
       ? 'Save to My Assets'
       : isDealerAccount
-        ? `Save to ${dealerSaveTargetRegisterName || (dealerSaveTargetMode === 'client' ? 'Client Asset Register' : 'Dealer Asset Register')}`
+        ? `Save to ${dealerSaveTargetRegisterName || (dealerSaveTargetMode === 'client' ? 'Client Asset Register' : 'Business Asset Register')}`
         : 'Save to Asset Register';
   const finalSaveDescription = finalSaveIntent === 'marketplace'
     ? 'Check your values before creating the advert.'
@@ -9827,11 +9827,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 disabled={!dealerOwnedRegister}
               >
                 <span className={styles.dealerRegisterDestinationOptionCopy}>
-                  <strong>Dealer Asset Register</strong>
+                  <strong>Business Asset Register</strong>
                   <small>
                     {dealerOwnedRegister
                       ? `Save to ${dealerOwnedRegister.businessName || "your dealership's own Asset Register"}.`
-                      : 'Create a Dealer Asset Register before saving here.'}
+                      : 'Create a Business Asset Register before saving here.'}
                   </small>
                 </span>
                 <span className={styles.dealerRegisterDestinationArrow} aria-hidden="true">→</span>

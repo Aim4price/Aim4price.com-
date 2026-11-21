@@ -76,7 +76,7 @@ export async function requireTeamOwner() {
     if (actor.managedGrantId) throw new TeamAccessError('Only the business owner can manage desktop users.');
     const profile = await getAccountProfile(actor);
     if (!await teamIssuerAvailable(actor.id, profile))
-        throw new TeamAccessError(profile.accountType === 'business' ? 'Desktop users are available to the owner of an active Paid Business workspace.' : 'Team access requires an active Owner, Dealer or Business desktop account managed by its account holder.');
+        throw new TeamAccessError(profile.accountType === 'business' ? 'Desktop users are available to the owner of an active Paid Business workspace.' : 'Team access requires an active Owner or Business desktop account managed by its account holder.');
     await ensureTeamAccessSchema();
     return { actor, profile };
 }

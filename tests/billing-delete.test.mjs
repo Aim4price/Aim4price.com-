@@ -13,7 +13,7 @@ test('hard deletion removes invoice data atomically, retires identifiers, and sc
  const pg=new PGlite();let failDelete=false;
  const query=async(sql,values)=>{if(sql===schema.BILLING_SCHEMA_SQL){await pg.exec(sql);return {rows:[],rowCount:0};}if(sql.includes('pg_advisory_xact_lock'))return {rows:[],rowCount:1};if(failDelete&&sql==='delete from aim4price_billing_invoices where id=$1')throw Error('Delete failed');const r=await pg.query(sql,values);return {...r,rowCount:r.rows.length||r.affectedRows||0};};
  const db={query,connect:async()=>({query,release(){}})};
- const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
+ const billing=load('lib/billing.ts',{'./hosting-pricing':load('lib/hosting-pricing.ts',{}),'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
  const deletion=load('lib/billing-delete.ts',{'./db':{getDb:()=>db},'./account-profile':{ensureAccountProfileColumns:async()=>{}},'./billing':billing});
  const notifications=load('lib/billing-notifications.ts',{'./db':{getDb:()=>db},'./billing':billing,'./billing-shared':shared});
  const customer={name:'Customer',email:'customer@example.test',address:'George'};

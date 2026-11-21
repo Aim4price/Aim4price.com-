@@ -3279,7 +3279,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!isAssetRegisterAccountType(profile.accountType)) {
-      return NextResponse.json({ ok: false, error: 'Asset Register export is only available to Owner and Dealer inventory accounts.' }, { status: 403 });
+      return NextResponse.json({ ok: false, error: 'Asset Register export is only available to Owner and Business inventory accounts.' }, { status: 403 });
     }
 
     const scopeParam = cleanText(params.get('scope')).toLowerCase();

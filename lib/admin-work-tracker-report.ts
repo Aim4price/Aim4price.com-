@@ -45,7 +45,7 @@ function displayAccountType(value: string): string {
   if (clean === "finance") return "Finance / Accounting";
   if (clean === "insurance") return "Insurance";
   if (clean === "licensing") return "Licensing";
-  if (clean === "dealer") return "Dealer";
+  if (clean === "dealer") return "Business";
   return "Owner";
 }
 

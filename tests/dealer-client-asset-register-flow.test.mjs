@@ -40,7 +40,7 @@ test('dealer Asset Register sends client management directly to the registers pa
   assert.match(registerPage, /requestedView === "dealer"/);
   assert.match(registerPage, /requestedView === "client"/);
   assert.match(registerPage, /requestedView === "client"\)[\s\S]*?redirect\("\/asset-registers"\)/);
-  assert.match(registerGateway, /Dealer Asset Register/);
+  assert.match(registerGateway, /Business Asset Register/);
   assert.match(registerGateway, /Client Asset Registers/);
   assert.match(registerGateway, /href=\{registerManagementHref\}[\s\S]*?aria-label="Manage Client Asset Registers"/);
   assert.doesNotMatch(registerGateway, /Choose a client register|openClientPicker|isClientPickerOpen/);
@@ -78,7 +78,7 @@ test('dealer estimates use one owner-style register action and route through a d
   assert.match(valuationClient, /normalizedSignedInAccountType === 'owner'[\s\S]*normalizedSignedInAccountType === 'dealer'/);
   assert.match(valuationClient, /onClick=\{openDealerRegisterDestination\}[\s\S]*Save to Asset Register/);
   assert.match(valuationClient, /Where should this asset be saved\?/);
-  assert.match(valuationClient, /onClick=\{saveToDealerAssetRegister\}[\s\S]*Dealer Asset Register/);
+  assert.match(valuationClient, /onClick=\{saveToDealerAssetRegister\}[\s\S]*Business Asset Register/);
   assert.match(valuationClient, /onClick=\{openDealerClientRegisterPicker\}[\s\S]*Client Asset Register/);
   assert.match(valuationClient, /setIsDealerRegisterDestinationOpen\(false\);[\s\S]*setIsDealerClientRegisterPickerOpen\(true\)/);
   assert.match(valuationClient, /Choose a client Asset Register/);
@@ -93,7 +93,7 @@ test('dealer estimates use one owner-style register action and route through a d
   assert.match(valuationClient, /aria-describedby="final-save-description"/);
   assert.match(valuationClient, /styles\.dealerClientRegisterPickerAction/);
   assert.match(valuationClient, /styles\.finalSaveDestination/);
-  assert.doesNotMatch(valuationClient, /Add to Dealer Asset Register|Add to Client Asset Register|Client destination|Final save step/);
+  assert.doesNotMatch(valuationClient, /Add to Business Asset Register|Add to Client Asset Register|Client destination|Final save step/);
   assert.doesNotMatch(valuationClient, /data-result-action="(?:dealer-register|client-register)"|styles\.resultClientRegisterActionButton/);
 
   for (const action of ['create-ad', 'download-pdf']) {

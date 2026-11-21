@@ -29,7 +29,7 @@ export default function BusinessPlanAdmin({owner}:{owner:string}){
  return <details className={styles.accountDisclosure}><summary>Business plan <span>{plan?(plan.paid?'Paid Business':'Free Business'):'Plan details'}</span></summary>
  {plan && <div className={styles.accountActionSummary}>
  {plan.pending && !plan.paid && <p>Upgrade requested</p>}
- {confirm ? <><p>{plan.paid?'Switch to Free? Staff access will pause. Team assignments and the owner’s Shared Assets are preserved.':'Activate Paid Business? The owner will be able to add desktop users.'}</p>
+ {confirm ? <><p>{plan.paid?'Switch to Free? Staff access will pause. Team assignments and the owner’s Shared Assets are preserved.':'Activate Paid Business? This unlocks Business stock, Parts Stock, hosted client registers and staff access.'}</p>
  <button type="button" className={styles.accountActionButton} disabled={busy} onClick={()=>void save()}>{busy?'Saving…':'Confirm change'}</button>
  <button type="button" className={styles.accountActionButton} disabled={busy} onClick={()=>setConfirm(false)}>Cancel</button></> :
  <button type="button" className={styles.accountActionButton} onClick={()=>setConfirm(true)}>Switch to {plan.paid?'Free':'Paid'} Business</button>}

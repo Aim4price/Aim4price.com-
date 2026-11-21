@@ -1177,7 +1177,7 @@ export default function PartsClient({
                       {!recipientsLoading && recipients.map(r=><button type="button" key={r.email} className={styles.shareRecipientCard} aria-pressed={inviteEmail===r.email} onClick={()=>{setInviteEmail(r.email);setInviteRole("viewer");}}>
                         <span className={styles.shareAccountIcon} aria-hidden="true"><Icon kind="share"/></span>
                         <span><strong>{r.business_name || r.email}</strong><small>{r.email}</small></span>
-                        <span><strong>{r.town_city || "Location not provided"}</strong><small>{r.account_type === "business" ? "Business account" : "Dealer account"}</small></span>
+                        <span><strong>{r.town_city || "Location not provided"}</strong><small>Business account</small></span>
                         <span className={styles.shareSelectBadge}>{inviteEmail===r.email ? "Selected" : "Select"}</span>
                       </button>)}
                       {!recipientsLoading && !recipients.length && <p>No matching dealer or business accounts. Try another name or town, or use Send link.</p>}

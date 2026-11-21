@@ -100,7 +100,7 @@ function primaryClaimRegisterId(registers: ClaimRegister[]): string {
 }
 
 function claimRegisterTypeLabel(register: ClaimRegister): string {
-  return register.isPrimary ? 'Dealer Asset Register' : 'Client Asset Register';
+  return register.isPrimary ? 'Business Asset Register' : 'Client Asset Register';
 }
 
 function claimRegisterAssetCountLabel(register: ClaimRegister): string {
@@ -311,7 +311,7 @@ function ClaimRegisterPicker({
   }, [listboxId, open, safeActiveIndex, visibleRegisters.length]);
 
   const helper = selected?.isPrimary
-    ? 'Your Dealer Asset Register is the safe default for incoming stock and trade-ins.'
+    ? 'Your Business Asset Register is the safe default for incoming stock and trade-ins.'
     : selected
       ? `This asset will be allocated to ${selected.businessName}.`
       : 'Choose the exact Asset Register that should receive this asset.';
@@ -579,7 +579,7 @@ export default function AssetTransfersClient({
       const registers = Array.isArray(payload.registers)
         ? [...payload.registers].sort((left, right) => Number(right.isPrimary) - Number(left.isPrimary))
         : [];
-      if (!registers.length) throw new Error('No Asset Register is available for this Dealer account.');
+      if (!registers.length) throw new Error('No Asset Register is available for this Business account.');
       setClaimRegisters(registers);
       setClaimRegisterId((current) => (
         registers.some((register) => register.id === current)

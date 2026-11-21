@@ -50,5 +50,5 @@ export default function SharedEnquiryAccess({returnTo,access,embedded=false}: {r
   </div>
   {notice&&<p role="status" className={styles.notice}>{notice}</p>}
  </>;
- return embedded ? <><p className={styles.notice}>{access==='sign-in' ? 'Use your existing Aim4price account, including an Owner or Dealer account. After signing in, you’ll return to this enquiry.' : description}</p>{content}</> : <SignupFlow title={title} description={description} returnTo={returnTo}>{content}</SignupFlow>;
+ return embedded ? <><p className={styles.notice}>{access==='sign-in' ? 'Use your existing Aim4price account, including an Owner or Business account. After signing in, you’ll return to this enquiry.' : description}</p>{content}</> : <SignupFlow title={title} description={description} returnTo={returnTo}>{content}</SignupFlow>;
 }

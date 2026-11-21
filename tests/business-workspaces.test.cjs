@@ -8,7 +8,7 @@ test('business identity is stable, claims only verified email and preserves gues
  const query=(s,p)=>p?pg.query(s,p):pg.exec(s).then(r=>r.at(-1));
  const db={query,connect:async()=>({query,release(){}})};
  try{
-  await pg.exec(`CREATE TABLE "user"(id text PRIMARY KEY,email text,"emailVerified" boolean);CREATE TABLE account_profiles(user_id text PRIMARY KEY,account_type text);CREATE TABLE guest_businesses(email text PRIMARY KEY,suspended boolean);CREATE TABLE guest_enquiry_usage(email text,token text);INSERT INTO "user" VALUES('b','first@example.test',false),('o','owner@example.test',true);INSERT INTO account_profiles VALUES('b','business'),('o','owner');INSERT INTO guest_businesses VALUES('first@example.test',true);INSERT INTO guest_enquiry_usage VALUES('first@example.test','old-link');`);
+  await pg.exec(`CREATE TABLE "user"(id text PRIMARY KEY,email text,"emailVerified" boolean);CREATE TABLE account_profiles(user_id text PRIMARY KEY,account_type text,account_subtype text);CREATE TABLE guest_businesses(email text PRIMARY KEY,suspended boolean);CREATE TABLE guest_enquiry_usage(email text,token text);INSERT INTO "user" VALUES('b','first@example.test',false),('o','owner@example.test',true);INSERT INTO account_profiles VALUES('b','business'),('o','owner');INSERT INTO guest_businesses VALUES('first@example.test',true);INSERT INTO guest_enquiry_usage VALUES('first@example.test','old-link');`);
   const m=load('lib/business-workspaces.ts',{'./db':{getDb:()=>db},'./guest-lead-schema':{ensureGuestLeadSchema:async()=>{}}});
   assert.equal(await m.ensureBusinessWorkspace('o'),null,'Owner asset identity is not converted');
   const first=await m.ensureBusinessWorkspace('b');

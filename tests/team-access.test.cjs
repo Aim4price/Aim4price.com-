@@ -499,6 +499,7 @@ test('My access lists only the signed-in grant and projects safe summaries acros
 test('Account sends managed staff to My access without reading the main account profile',async()=>{
  let session=null,managed={id:'desktop:grant',email:'staff@example.com'},profileReads=0,managedReads=0;
  const page=load('app/account/page.tsx',{
+  '../../lib/middleman-account':load('lib/middleman-account.ts',{}),
   '../../lib/accounting-pilot':{isAccountingPilotSession:()=>false},
   '../../components/BusinessCredits':()=>null,
   '../../lib/team-access':{canManageTeamAccess:async()=>false},
@@ -702,7 +703,7 @@ test('Middleman cannot administer desktop users or use legacy grants after accou
    options.accountSubtype=subtype;
    f.setSession({user:owner});
    assert.equal(await f.service.canManageTeamAccess(),false);
-   await assert.rejects(()=>f.service.requireTeamOwner(),/active Owner, Dealer or Business/);
+   await assert.rejects(()=>f.service.requireTeamOwner(),/active Owner or Business/);
    await assert.rejects(()=>f.invite(),/Only the active desktop account holder/);
    f.setSession({user:member});
    await assert.rejects(()=>f.service.loadTeamScope(grant.id),/workspace is unavailable/);

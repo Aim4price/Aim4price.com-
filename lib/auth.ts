@@ -28,6 +28,8 @@ function readSignupField(
     return readSignupWorkspaceField(fieldName);
   }
 
+  if (fieldName === "accountType" && readSignupWorkspaceField(fieldName) != null) return readSignupWorkspaceField(fieldName);
+
   const body = (context as { body?: unknown }).body;
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {

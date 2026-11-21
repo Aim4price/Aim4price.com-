@@ -36,12 +36,13 @@ export function UpgradeBusiness({businessId}:{businessId?:string}) {
  </ShareDisclosureDialog>}</>;
 }
 
-export type BusinessSubscription = { paidSince:string|null; pending:boolean; owner:boolean; remaining:number; limit:number };
+export type BusinessSubscription = { fullAccess?:boolean; paidSince:string|null; pending:boolean; owner:boolean; remaining:number; limit:number };
 
 export function BusinessSubscriptionButton({plan,className}:{plan:BusinessSubscription;className:string}) {
  const router=useRouter(), titleId=useId();
  const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const label=plan.paidSince?'Manage subscription':plan.pending?'Upgrade requested':'Upgrade subscription';
+ const fullAccess=plan.fullAccess ?? Boolean(plan.paidSince);
+ const label=fullAccess?'Manage subscription':plan.pending?'Upgrade requested':'Upgrade subscription';
  async function requestUpgrade(){
    setBusy(true);setError('');
    try {
@@ -52,12 +53,12 @@ export function BusinessSubscriptionButton({plan,className}:{plan:BusinessSubscr
    finally{setBusy(false);}
  }
  return <><button type="button" className={className} onClick={()=>{setError('');setOpen(true);}}>
-   <span><strong>{label}</strong>{!plan.paidSince && <span style={{display:'block',fontWeight:650}}>{plan.remaining} of {plan.limit} credits remaining</span>}</span>
+   <span><strong>{label}</strong>{!fullAccess && <span style={{display:'block',fontWeight:650}}>{plan.remaining} of {plan.limit} credits remaining</span>}</span>
  </button>{open && <ShareDisclosureDialog title={label} titleId={titleId} closeLabel="Close" onClose={()=>setOpen(false)}>
- {plan.paidSince ? <><p><strong>Paid Business Account</strong> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</p>
+ {fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
  <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
  plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
- plan.owner ? <><p>Add team members with Paid Business. Aim4price will contact you to arrange activation.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
+ plan.owner ? <><p>Paid Business includes your stock, Parts Stock, hosted client registers and staff access. Aim4price will contact you to arrange activation.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
  <p>Your business owner can request an upgrade.</p>}
  {error && <p role="alert">{error}</p>}</ShareDisclosureDialog>}</>;
 }

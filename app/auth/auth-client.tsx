@@ -420,6 +420,8 @@ function getSignupAccountTypeFromSearch(
 ): Extract<SignupAccountType, "owner" | "dealer" | "middleman"> | null {
   const accountType = new URLSearchParams(search).get("accountType");
 
+  // Paid Business uses the existing desktop account and invoice plan.
+  if (accountType === "business") return "dealer";
   return accountType === "owner" || accountType === "dealer" || accountType === "middleman"
     ? accountType
     : null;
@@ -816,7 +818,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     return true;
   };
 
-  const selectedBillingPlan = (accountAccess === "free" || signupForm.accountType === "middleman" || signupForm.accountType === "business") ? undefined : billingPlans.find(plan=>plan.accountType===signupForm.accountType);
+  const selectedBillingPlan = (accountAccess === "free" || signupForm.accountType === "middleman" || signupForm.accountType === "business") ? undefined : billingPlans.find(plan=>plan.accountType===(signupForm.accountType==="dealer"?"business":signupForm.accountType));
   useEffect(()=>{setBilling(current=>({...current,accepted:false}));},[selectedBillingPlan?.accountType,selectedBillingPlan?.version]);
 
   const handleSignupSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -861,7 +863,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         phone,
         businessName: signupForm.businessName.trim(),
         acceptedTerms: signupForm.acceptTerms,
-        accountType: signupForm.accountType === "middleman" ? "dealer" : signupForm.accountType,
+        accountType: signupForm.accountType === "middleman" ? "dealer" : signupForm.accountType === "dealer" ? "business" : signupForm.accountType,
         accountSubtype: signupForm.accountSubtype,
         accountAccess,
         province,
@@ -1180,7 +1182,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                                 }));
                               }}
                             />
-                            <small>{signupForm.accountType === 'owner' ? 'For farms, companies and individuals managing their own assets.' : signupForm.accountType === 'dealer' ? 'For dealerships managing stock, client registers and enquiries. Client registers are billed separately.' : signupForm.accountType === 'business' ? 'For service providers working with assets shared by clients, such as repairers, insurers and financiers.' : 'For intermediaries connecting asset owners with buyers and service providers.'}</small>
+                            <small>{signupForm.accountType === 'owner' ? 'For farms, companies and individuals managing their own assets.' : signupForm.accountType === 'dealer' ? 'For businesses managing stock, client registers and enquiries. Client registers are billed separately.' : signupForm.accountType === 'business' ? 'For service providers working with assets shared by clients, such as repairers, insurers and financiers.' : 'For intermediaries connecting asset owners with buyers and service providers.'}</small>
                           </div>
 
                           <div className={styles.field}>
@@ -1206,12 +1208,12 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                             <button type="button" className={styles.dealerRegisterInfo} aria-haspopup="dialog" onClick={() => setShowDealerRegisterInfo(true)}>Client register information</button>
                             <PricingModal compact open={showDealerRegisterInfo} title="Manage client asset registers" closeLabel="Close client register information" onClose={() => setShowDealerRegisterInfo(false)}>
                               <div className={styles.dealerRegisterDetails}>
-                                <p>As a Dealer, you can create and manage asset registers for your clients directly inside your Aim4price account.</p>
+                                <p>With Business hosting, you can create and manage asset registers for your clients directly inside your Aim4price account.</p>
                                 <div className={styles.dealerRegisterPrice}>
-                                  <strong>50% of the standard Owner plan price</strong>
-                                  <p>Client-register hosting is based on the number of assets and the corresponding Owner plan. It is billed separately from your R199/month Dealer subscription.</p>
+                                  <strong>25% of the standard Owner plan price</strong>
+                                  <p>Client-register hosting is based on the number of assets and the corresponding Owner plan. It is billed separately from your R199/month Business subscription.</p>
                                 </div>
-                                <p>Your dealership controls these registers and receives the invoices. Clients have no login or access.</p>
+                                <p>Your business controls these registers and receives the invoices. Clients have no login or access.</p>
                                 <p className={styles.dealerRegisterNote}>Aim4price confirms the applicable asset band, charges and billing start date before activation.</p>
                               </div>
                             </PricingModal>

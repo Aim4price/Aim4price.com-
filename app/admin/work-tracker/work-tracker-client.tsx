@@ -55,7 +55,7 @@ function formatAccountType(value: string): string {
   if (clean === "licensing") return "Licensing";
   if (clean === "business") return "Business";
   if (clean === "middleman") return "Middleman";
-  if (clean === "dealer") return "Dealer";
+  if (clean === "dealer") return "Business";
   return "Owner";
 }
 

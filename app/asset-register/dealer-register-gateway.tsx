@@ -48,7 +48,7 @@ export default function DealerRegisterGateway({
                 <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
                   <PageHelpHeading topic="dealerRegisterChoice"><h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Choose an Asset Register</h1></PageHelpHeading>
                   <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>
-                    Work with the dealership&apos;s own assets or open an Asset Register managed for a client.
+                    Work with your business&apos;s own assets or open an Asset Register managed for a client.
                   </p>
                 </div>
 
@@ -58,13 +58,13 @@ export default function DealerRegisterGateway({
                       href={registerHref(dealerRegister, 'dealer', workspacePath)}
                       className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`}
                       style={{ textDecoration: 'none' }}
-                      aria-label="Open Dealer Asset Register"
+                      aria-label="Open Business Asset Register"
                     >
                       <span className={valuationStyles.sectorVideoOverlay} />
                       <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
                         <span className={valuationStyles.sectorLabelWrap}>
-                          <strong className={valuationStyles.sectorLabel}>Dealer Asset Register</strong>
-                          <span className={valuationStyles.sectorCardHint}>Manage dealership assets</span>
+                          <strong className={valuationStyles.sectorLabel}>Business Asset Register</strong>
+                          <span className={valuationStyles.sectorCardHint}>Manage business assets</span>
                         </span>
                       </span>
                     </Link>
@@ -73,13 +73,13 @@ export default function DealerRegisterGateway({
                       href={registerManagementHref}
                       className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`}
                       style={{ textDecoration: 'none' }}
-                      aria-label="Create Dealer Asset Register"
+                      aria-label="Create Business Asset Register"
                     >
                       <span className={valuationStyles.sectorVideoOverlay} />
                       <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
                         <span className={valuationStyles.sectorLabelWrap}>
-                          <strong className={valuationStyles.sectorLabel}>Create Dealer Asset Register</strong>
-                          <span className={valuationStyles.sectorCardHint}>Create the dealership register</span>
+                          <strong className={valuationStyles.sectorLabel}>Create Business Asset Register</strong>
+                          <span className={valuationStyles.sectorCardHint}>Create the business register</span>
                         </span>
                       </span>
                     </Link>

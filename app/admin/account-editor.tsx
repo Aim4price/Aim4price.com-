@@ -66,7 +66,7 @@ export default function AccountEditor({account, onSaved, onCancel, onExisting}: 
         {SIGNUP_ACCOUNT_TYPE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
       </AdminSelect></label>
     {type === "middleman" ? <div className={styles.fixedCategory}><strong>Middleman category</strong><span>Equipment middleman</span></div> :
-    <label className={styles.notificationField}><span>{type === "business" ? "Business service" : type === "owner" ? "Owner category" : "Dealer category"}</span>
+    <label className={styles.notificationField}><span>{type === "business" ? "Business service" : type === "owner" ? "Owner category" : "Business category"}</span>
       <AdminSelect value={subtype} disabled={busy} onChange={event => setSubtype(event.target.value)}>
         {options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
       </AdminSelect></label>}

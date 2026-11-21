@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { ensureSharingFoundation } from './sharing-foundation';
 import { getDb } from './db';
 import { ensureBusinessWorkspaceSchema, ensureBusinessMembership } from './business-workspaces';
 
@@ -24,7 +25,7 @@ export const CREDIT_SCHEMA = `
 `;
 let ready: Promise<void> | undefined;
 export function ensureCreditSchema() {
-  return ready ??= ensureBusinessWorkspaceSchema().then(() => getDb().query(CREDIT_SCHEMA)).then(() => {}).catch(e => { ready = undefined; throw e; });
+  return ready ??= Promise.all([ensureBusinessWorkspaceSchema(),ensureSharingFoundation()]).then(() => getDb().query(CREDIT_SCHEMA)).then(() => {}).catch(e => { ready = undefined; throw e; });
 }
 export async function creditTransaction<T>(work: (db: PoolClient) => Promise<T>) {
   await ensureCreditSchema();
@@ -44,7 +45,7 @@ export class CreditLimitError extends Error {
 export async function workspaceForCredits(db: PoolClient, userId: string) {
   const member = await ensureBusinessMembership(db,userId);
   if (!member) throw Error('This Business workspace is unavailable.');
-  const row = (await db.query('SELECT id,paid_since,upgrade_requested_at FROM business_workspaces WHERE id=$1 FOR UPDATE',[member.business_id])).rows[0];
+  const row = (await db.query(`SELECT w.id,w.paid_since,w.upgrade_requested_at, EXISTS(SELECT 1 FROM account_profiles p WHERE p.user_id=w.owner_user_id AND p.account_type='dealer') AS desktop FROM business_workspaces w WHERE w.id=$1 FOR UPDATE`,[member.business_id])).rows[0];
   return {...member,...row};
 }
 export async function creditBalance(db: PoolClient, businessId: string) {
@@ -87,10 +88,10 @@ export async function recordCredit(db: PoolClient,input: CreditInput, phase:'com
     included=true;
   }
   const balance=await creditBalance(db,workspace.id);
-  if(!included && !workspace.paid_since && creditLimitsActive() && balance.used+balance.held>=MONTHLY_BUSINESS_CREDITS) throw new CreditLimitError();
+  if(!included && !workspace.desktop && !workspace.paid_since && creditLimitsActive() && balance.used+balance.held>=MONTHLY_BUSINESS_CREDITS) throw new CreditLimitError();
   await db.query(`INSERT INTO business_credit_events(business_id,actor_id,action,request_id,token,asset_key,state,units,expires_at)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,CASE WHEN $7='reserved' THEN LEAST(now()+interval '30 minutes',((${monthStart}+interval '1 month') AT TIME ZONE 'Africa/Johannesburg')) END)`,
-    [...keys,input.token,input.assetKey,phase==='reserve'?'reserved':'complete',workspace.paid_since||included?0:1]);
+    [...keys,input.token,input.assetKey,phase==='reserve'?'reserved':'complete',workspace.desktop||workspace.paid_since||included?0:1]);
 }
 export async function creditHistory(db: PoolClient,businessId:string) {
   return (await db.query(`SELECT e.action,e.units,e.created_at,u.name FROM business_credit_events e
@@ -101,7 +102,7 @@ export async function checkBusinessWrite(userId:string,token:string,assetKey?:st
   if(!creditLimitsActive()) return;
   await creditTransaction(async db=>{
     const workspace=await workspaceForCredits(db,userId);
-    if(workspace.paid_since) return;
+    if(workspace.desktop || workspace.paid_since) return;
     const balance=await creditBalance(db,workspace.id);
     if(balance.used+balance.held<MONTHLY_BUSINESS_CREDITS) return;
     const visit=await db.query(`SELECT 1 FROM business_credit_events WHERE business_id=$1 AND actor_id=$2 AND token=$3
@@ -111,11 +112,18 @@ export async function checkBusinessWrite(userId:string,token:string,assetKey?:st
 }
 
 export async function changeBusinessPlan(db:PoolClient, businessId:string, actorId:string, plan:'free'|'paid', pendingOnly=false) {
-  const workspace=(await db.query('SELECT paid_since,upgrade_requested_at FROM business_workspaces WHERE id=$1 FOR UPDATE',[businessId])).rows[0];
+  const workspace=(await db.query('SELECT w.paid_since,w.upgrade_requested_at,w.owner_user_id,p.account_type,p.account_status FROM business_workspaces w JOIN account_profiles p ON p.user_id=w.owner_user_id WHERE w.id=$1 FOR UPDATE OF w,p',[businessId])).rows[0];
   if (!workspace) throw Error('Business workspace unavailable.');
-  if (Boolean(workspace.paid_since)===(plan==='paid')) return;
+  if (!['business','dealer'].includes(workspace.account_type)) throw Error('Select a Business account.');
+  if (workspace.account_type === (plan==='paid'?'dealer':'business') && (plan==='paid'||!workspace.paid_since)) return;
+  if (plan==='paid' && workspace.account_status!=='active') throw Error('Only an active Business account can be upgraded.');
   if (pendingOnly && !workspace.upgrade_requested_at) throw Error('This upgrade is no longer pending.');
   await db.query(`UPDATE business_workspaces SET paid_since=CASE WHEN $2='paid' THEN now() END,
     activated_by=CASE WHEN $2='paid' THEN $3 END,upgrade_requested_at=NULL WHERE id=$1`,[businessId,plan,actorId]);
+  await db.query('UPDATE account_profiles SET account_type=$2,updated_at=now() WHERE user_id=$1',
+    [workspace.owner_user_id,plan==='paid'?'dealer':'business']);
+  await db.query(`INSERT INTO sharing_account_access(user_id,plan,updated_by) VALUES($1,$2,$3)
+    ON CONFLICT(user_id) DO UPDATE SET plan=excluded.plan,updated_by=excluded.updated_by,updated_at=now()`,
+    [workspace.owner_user_id,plan==='paid'?'desktop':'free',actorId]);
   await db.query('INSERT INTO business_plan_changes(business_id,actor_id,plan) VALUES($1,$2,$3)',[businessId,actorId,plan]);
 }

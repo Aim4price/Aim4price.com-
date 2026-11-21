@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation';
 import { getAccountProfile, getAccountScanPinStatus } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
 import { getManagedTeamActor } from "../../lib/team-login";
+import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
 import AccountClient from "./account-client";
 
 export const runtime = "nodejs";
@@ -45,5 +46,7 @@ export default async function AccountPage() {
     getAccountScanPinStatus(session.user.id),
   ]);
 
-  return <AccountClient showAccounting={profile.accountType === "owner" && isAccountingPilotSession(session)} canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
+  const fullBusiness = profile.accountType === 'dealer' && !isMiddlemanAccountSubtype(profile.accountSubtype);
+  const subscription = fullBusiness ? { fullAccess:true, paidSince:null, pending:false, owner:true, remaining:0, limit:0 } : undefined;
+  return <AccountClient subscription={subscription} showAccounting={profile.accountType === "owner" && isAccountingPilotSession(session)} canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
 }

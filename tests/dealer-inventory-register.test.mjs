@@ -72,7 +72,7 @@ test('sold and traded-in assets both offer a deliberate destination step', () =>
     assert.match(source, /disposalTransferAvailable/);
     assert.match(source, /Send to dealer inventory/);
     assert.match(source, /Save trade-in & create code/);
-    assert.match(source, /only an active Dealer account can claim/);
+    assert.match(source, /only an active Business account can claim/);
   }
   assert.match(lifecycle, /\['sold', 'traded_in'\]\.includes\(input\.reason\)/);
   assert.match(lifecycle, /transferReason: input\.reason/);
@@ -98,7 +98,7 @@ test('dealer claims choose an owned register and safely default to dealer stock'
   assert.match(transferPage, /fetch\('\/api\/asset-registers'/);
   assert.match(transferPage, /registers\.find\(\(register\) => register\.isPrimary\)/);
   assert.match(transferPage, /targetRegisterId: claimRegisterId/);
-  assert.match(transferPage, /Dealer Asset Register/);
+  assert.match(transferPage, /Business Asset Register/);
   assert.match(transferPage, /Client Asset Register/);
   assert.match(transferPage, /isDealerAccount/);
 
@@ -181,8 +181,8 @@ test('migration records transfer intent and recipient type', () => {
   assert.match(migration, /'owner_or_dealer', 'dealer'/);
 });
 
-test('admin allocation can target active Owner or Dealer accounts', () => {
+test('admin allocation can target active Owner or Business accounts', () => {
   assert.match(adminSales, /in \('owner', 'dealer'\)/);
   assert.match(adminSales, /const accountType = text\(row\.account_type\) === 'dealer'/);
-  assert.match(adminRoute, /active Owner or Dealer account/);
+  assert.match(adminRoute, /active Owner or Business account/);
 });

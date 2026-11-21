@@ -90,11 +90,11 @@ export async function eligibleAccount(
   if (isAim4priceAdminEmail(row.email))
     throw new ConnectionError(403, "admin_connection_required", "Use the Admin AI connections page for this administrator account.");
   if (!["owner", "dealer", "business"].includes(row.account_type) || isMiddlemanAccountSubtype(row.account_subtype))
-    throw new ConnectionError(403, "unsupported_account_type", "AI connections are available for Owner, Dealer and Business accounts. This account type is not supported yet.");
+    throw new ConnectionError(403, "unsupported_account_type", "AI connections are available for Owner and Business accounts. This account type is not supported yet.");
   if (row.account_status !== "active")
     throw new ConnectionError(403, "inactive_account", "Your Aim4price account is not active. Contact Aim4price Admin to review your account status.");
   if (row.account_type !== "business" && row.plan !== "desktop")
-    throw new ConnectionError(403, "desktop_required", "Your Owner or Dealer account needs desktop access to connect an AI assistant.");
+    throw new ConnectionError(403, "desktop_required", "Your Owner or Business account needs desktop access to connect an AI assistant.");
   if (row.account_type === "business") {
     // Mirror canBusinessRead without schema writes inside an AI read transaction.
     const membership = (await db.query(`SELECT m.business_id FROM public.business_workspace_members m

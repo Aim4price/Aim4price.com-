@@ -1,4 +1,5 @@
 "use client";
+import {isMiddlemanAccountSubtype} from '../../lib/middleman-account';
 
 import AccountInvitation from "./account-invitation";
 import { workspaceLabel } from "../../lib/account-type-options";
@@ -188,8 +189,8 @@ const NOTIFICATION_AUDIENCE_OPTIONS: Array<{
 }> = [
   { value: "all", label: "All accounts" },
   { value: "owner", label: "Owners" },
-  { value: "dealer", label: "Dealers" },
-  { value: "business", label: "Businesses" },
+  { value: "dealer", label: "Business desktop accounts" },
+  { value: "business", label: "Shared-access businesses" },
 ];
 
 function normalizeNotificationAudience(
@@ -2262,7 +2263,7 @@ export default function AdminClient({
 
               </section>
             </div>
-            {accountActionModal.accountType==='business' && <BusinessPlanAdmin key={accountActionModal.userId} owner={accountActionModal.userId}/>}
+            {(accountActionModal.accountType==='business' || (accountActionModal.accountType==='dealer' && !isMiddlemanAccountSubtype(accountActionModal.accountSubtype))) && <BusinessPlanAdmin key={accountActionModal.userId} owner={accountActionModal.userId}/>}
             {!isAim4priceAdminEmail(accountActionModal.email) && <details className={styles.accountDisclosure}>
               <summary>Change account type <span>{formatAccountValue(accountActionModal.accountSubtype)}</span></summary>
               <AccountEditor key={accountActionModal.userId} account={accountActionModal} onSaved={user => {

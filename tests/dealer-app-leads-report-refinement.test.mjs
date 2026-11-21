@@ -35,7 +35,7 @@ test('Dealer App report choices use short titles without descriptions', () => {
   assert.equal((leads.match(/pdfOnly=\{dealerAppMode\}/g) ?? []).length, 2);
 });
 
-test('Dealer App report modals skip format selection but Dealer Account keeps it', () => {
+test('Dealer App report modals skip format selection but Business Account keeps it', () => {
   for (const source of [costReport, maintenanceReport]) {
     assert.match(source, /pdfOnly\?: boolean/);
     assert.match(source, /pdfOnly = false/);

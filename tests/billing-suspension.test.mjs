@@ -20,7 +20,7 @@ test('billing suspension is atomic, invoice-linked, audited and cleared on admin
  const query=async(sql,values)=>{if(failAudit&&sql.includes('insert into aim4price_billing_events'))throw Error('Audit failed');const result=await pg.query(sql,values);return {...result,rowCount:result.rows.length||result.affectedRows||0};};
  const db={query,connect:async()=>({query,release(){}})};
  const schema=load('lib/billing-schema.ts');
- const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
+ const billing=load('lib/billing.ts',{'./hosting-pricing':load('lib/hosting-pricing.ts',{}),'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
  const access=load('lib/billing-suspension.ts',{'./db':{getDb:()=>db},'./account-profile':{ensureAccountProfileColumns:async()=>{}},'./account-constants':constants,'./billing':{...billing,ensureBillingSchema:async()=>{}}});
  const admin=load('lib/admin-users.ts',{'./db':{getDb:()=>db},'./account-profile':{ensureAccountProfileColumns:async()=>{}},'./account-constants':constants,'./account-deletion':{},'./admin-storage-usage':{}});
  const id='10000000-0000-4000-8000-000000000001';

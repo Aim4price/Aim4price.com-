@@ -168,7 +168,7 @@
 .shell { max-width:78rem; width:var(--shell-width,min(calc(100% - 40px),78rem)); }
 .hero { padding:3.5rem 0 2.5rem; }
 .hero h1 { font-size:clamp(2.4rem,calc(var(--website-design-vw,1vw)*4),3.6rem); }
-.pricingChoices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(1rem,calc(var(--website-design-vw,1vw)*1.4),1.2rem); }
+.pricingChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(1rem,calc(var(--website-design-vw,1vw)*1.4),1.2rem); }
 .accountCard { display:flex; flex-direction:column; align-items:stretch; min-width:0; gap:1.15rem; padding:1.8rem; border:1px solid #d2e4da; border-radius:1.35rem; color:#0c4637; background:#fff; box-shadow:0 8px 24px rgba(20,64,50,.06); font:inherit; text-align:left; text-decoration:none; cursor:pointer; transition:background-color 160ms ease,border-color 160ms ease,box-shadow 160ms ease; }
 .accountCard:hover { background:#fbfdfb; border-color:#82b59f; box-shadow:0 12px 30px rgba(20,64,50,.11); }
 .accountCard:focus-visible { outline:3px solid #438e70; outline-offset:4px; }

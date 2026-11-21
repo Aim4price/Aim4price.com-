@@ -47,7 +47,7 @@ const ownerWorkspace: FooterWorkspace = {
 };
 
 const dealerWorkspace: FooterWorkspace = {
-  label: 'Dealer tools',
+  label: 'Business tools',
   links: [
     { href: '/leads', label: 'Leads' },
     { href: '/tracking', label: 'Maintenance' },
