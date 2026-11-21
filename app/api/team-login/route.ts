@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { getAnyServerSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
-import { sharingPlan } from '../../../lib/sharing-foundation';
+import { teamIssuerAvailable } from '../../../lib/team-access';
 import { getDb } from '../../../lib/db';
 import { ensureTeamAccessSchema } from '../../../lib/team-access-schema';
 import { authenticateTeamLogin, TEAM_LOGIN_COOKIE, TEAM_LOGIN_AGE, teamTokenHash } from '../../../lib/team-login';
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       business = row.owner_id;
     }
     const profile = await getAccountProfile({ id: business });
-    if (!['owner', 'dealer'].includes(profile.accountType) || profile.accountStatus !== 'active' || await sharingPlan(business, profile.accountType) !== 'desktop') {
+    if (!await teamIssuerAvailable(business, profile)) {
       await getDb().query('DELETE FROM team_access_sessions WHERE token_hash=$1', [teamTokenHash(token)]);
       throw new TeamAccessError('Desktop access is unavailable.', 403);
     }

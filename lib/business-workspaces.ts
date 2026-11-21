@@ -64,8 +64,9 @@ export async function businessWorkspaceSummary(userId: string) {
  const membership = await ensureBusinessWorkspace(userId);
  if (!membership) return null;
  await ensureGuestLeadSchema();
- const row = (await getDb().query<{legacy_opened:number;suspended:boolean}>(`SELECT
+ const row = (await getDb().query<{legacy_opened:number;suspended:boolean;paid:boolean}>(`SELECT
   (SELECT count(DISTINCT usage.token)::int FROM guest_enquiry_usage usage JOIN business_verified_identities identity ON identity.email=usage.email WHERE identity.business_id=$1) AS legacy_opened,
-  EXISTS(SELECT 1 FROM guest_businesses guest JOIN business_verified_identities identity ON identity.email=guest.email WHERE identity.business_id=$1 AND guest.suspended) AS suspended`,[membership.business_id])).rows[0];
- return {...membership,legacyOpened:row.legacy_opened,suspended:row.suspended};
+  EXISTS(SELECT 1 FROM guest_businesses guest JOIN business_verified_identities identity ON identity.email=guest.email WHERE identity.business_id=$1 AND guest.suspended) AS suspended,
+  (to_jsonb(w)->>'paid_since') IS NOT NULL AS paid FROM business_workspaces w WHERE w.id=$1`,[membership.business_id])).rows[0];
+ return {...membership,legacyOpened:row.legacy_opened,suspended:row.suspended,paid:row.paid};
 }

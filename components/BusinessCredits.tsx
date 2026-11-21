@@ -19,6 +19,7 @@ export default async function BusinessCredits({userId}:{userId:string}){
  <p><strong>{Math.max(0,MONTHLY_BUSINESS_CREDITS-balance.used-balance.held)} of {MONTHLY_BUSINESS_CREDITS} credits available</strong> · Resets {date(balance.resets)}</p>
  <p>{creditLimitsActive()?'One credit per Manage visit, sent message or completed share.':'Trial period · Usage is tracked and access stays open.'}</p>
  {balance.held>0&&<p>{balance.held} reserved for sharing in progress.</p>}
+ <p><strong>Add team members with Paid Business.</strong></p>
  {workspace.upgrade_requested_at?<p role="status">Upgrade requested · Awaiting Aim4price confirmation</p>:workspace.role==='owner'?<UpgradeBusiness/>:<p>Your business owner can request an upgrade.</p>}</>}
  <h3>Your usage</h3><dl className={styles.usageStats}>{([['Assets received',usage.asset_received],['Uploads',usage.upload],['Contributions',usage.contribution]] as const).map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value?.count || 0}</dd></div>)}</dl>
  <details className={styles.details}><summary>Recent credit activity</summary>{history.length?<ul>{history.map((entry,index)=><li key={index}>{date(entry.created_at,true)} · {entry.name||'Account member'} · {{manage:'Opened Manage',send:'Sent message',share:'Shared asset'}[entry.action as 'manage'|'send'|'share']} · {entry.units} credit{entry.units===1?'':'s'}</li>)}</ul>:<p>No credit activity yet.</p>}</details></section>;
