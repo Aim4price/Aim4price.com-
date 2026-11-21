@@ -457,7 +457,8 @@ test('desktop directory returns only owned umbrella assets and names the affecte
  });
 
 test('My access lists only the signed-in grant and projects safe summaries across account types',async()=>{
- const f=await setup();
+ const options={paid:false};
+ const f=await setup(options);
  try {
  const grant=await f.active({documentIds:[docId]});
  const other=await f.invite({email:'',username:'second.staff',loginType:'managed',password:'Initial-password-123'});
@@ -472,8 +473,8 @@ test('My access lists only the signed-in grant and projects safe summaries acros
   '../../../lib/team-access-http':{teamJson:b=>b,teamError:e=>{throw e}},
   '../../../lib/business-network-api':{},
  });
- for(const account of [{type:'owner',allowed:true},{type:'dealer',allowed:true},{type:'dealer',subtype:'middleman',allowed:false},{type:'business',allowed:true}]){
-   type=account.type;subtype=account.subtype||'';
+ for(const account of [{type:'owner',allowed:true},{type:'dealer',allowed:true},{type:'dealer',subtype:'middleman',allowed:false},{type:'business',allowed:false},{type:'business',paid:true,allowed:true}]){
+   type=account.type;subtype=account.subtype||'';options.paid=account.paid === true;
    const response=await route.GET();
    assert.equal(response.workspaces.length,1);
    const item=response.workspaces[0];
