@@ -2515,6 +2515,7 @@ export async function getAssetRegisterItemById(userId: string, assetId: string, 
 
 export async function getAssetRegisterItemsByRefs(
   refs: Array<{ userId: string; assetId: string }>,
+  activeOnly = false,
 ): Promise<AssetRegisterItem[]> {
   if (!refs.length) return [];
 
@@ -2538,7 +2539,7 @@ export async function getAssetRegisterItemsByRefs(
       select
         ${buildSelectList(schema)}
       from asset_register_items
-      where (user_id::text, id) in (
+      where ${activeOnly && schema.columnNames.has('lifecycle_state') ? "coalesce(lifecycle_state, 'active') = 'active' and" : ''} (user_id::text, id) in (
         select requested.user_id, requested.asset_id
         from unnest($1::text[], $2::uuid[]) as requested(user_id, asset_id)
       )

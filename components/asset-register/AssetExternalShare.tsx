@@ -208,12 +208,13 @@ export default function AssetExternalShare({
   shareName,
   messageBody,
   assets,
-  recipient,onConfirmedShare,
+  recipient,onConfirmedShare,availabilityUrl,
   reportFiles = EMPTY_REPORT_FILES,
   onAddAim4priceReport,
   onRemoveAim4priceReport,
 }: {
   shareName: string;
+  availabilityUrl?: string;
   onConfirmedShare?:()=>Promise<void>;
   messageBody?: string;
   recipient?: {name:string;email:string;phone:string};
@@ -393,8 +394,15 @@ export default function AssetExternalShare({
     shareTrigger.current?.focus();
   }
 
+  async function checkAvailability() {
+    const response = await fetch(availabilityUrl!, {method:'HEAD',cache:'no-store'}).catch(() => null);
+    if (response?.ok) return true;
+    setShareStatus(response?.status === 404 ? 'This asset is no longer available.' : 'Could not verify access. Please try again.');
+    return false;
+  }
   async function sendShare(target: ShareTarget) {
     if (!accepted || !pendingShare || pendingShare.key !== consentKey || pendingShare.target !== target || isSending) return;
+    if (availabilityUrl && !await checkAvailability()) return;
     setShareStatus('');
     setShowRecovery(false);
 
@@ -559,7 +567,14 @@ export default function AssetExternalShare({
         {shareStatus && <p role="status" aria-live="polite">{shareStatus}</p>}
         {accepted && pendingShare.key === consentKey && !isPreparing && preparation.status === 'ready' && downloadFiles.length > 0 && <div className={styles.recovery}>
           <p>{showRecovery ? 'Direct sharing is unavailable. ' : 'Prefer to attach files yourself? '}Download {downloadFiles.length === 1 ? 'the file' : 'each file'} below, then open {pendingShare.target === 'email' ? 'your email app' : 'WhatsApp'} and attach {downloadFiles.length === 1 ? 'it' : 'them'} manually.</p>
-          {downloadFiles.map(({file, url}, index) => <a key={url} className={styles.messagePartLink} href={url} download={file.name}>Download {usePdf ? 'PDF' : `${index + 1}: ${file.name}`}</a>)}
+          {downloadFiles.map(({file, url}, index) => <a key={url} className={styles.messagePartLink} href={availabilityUrl ? undefined : url} download={file.name} role="link" tabIndex={0}
+            onKeyDown={event=>{if(availabilityUrl && event.key==='Enter')event.currentTarget.click();}}
+            onClick={async event=>{
+              if (!availabilityUrl) return;
+              event.preventDefault();
+              if (!await checkAvailability()) return;
+              const link=document.createElement('a'); link.href=url; link.download=file.name; link.click();
+            }}>Download {usePdf ? 'PDF' : `${index + 1}: ${file.name}`}</a>)}
           <a onClick={()=>{if(onConfirmedShare)setAwaitingConfirmation(true);}} className={styles.messagePartLink} href={pendingShare.target === 'email' ? emailHref : whatsappHref} target={pendingShare.target === 'whatsapp' ? '_blank' : undefined} rel="noopener noreferrer">Open {pendingShare.target === 'email' ? 'email draft' : 'WhatsApp'} · attach downloaded files</a>
           <p>The message is included. Downloaded files are not attached automatically.</p>
         </div>}

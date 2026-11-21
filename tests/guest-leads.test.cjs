@@ -77,6 +77,16 @@ test('each lead and report is owner/recipient scoped; payment never bypasses own
  guest={email:details.recipientEmail,active:false};assert.equal(await mod.resolveLeadAccess('owner',details.recipientEmail),'sign-in');assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);
  guest={email:'second@example.com',active:true};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);
  guest={email:details.recipientEmail,active:true};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);session={user:{id:'recipient',email:details.recipientEmail,emailVerified:true}};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);assert.equal((await mod.loadProtectedLeadReport(one.token,other.reports[0].id)).status,404);assert.equal((await mod.loadProtectedLeadReport(two.token,other.reports[0].id)).status,403);
+ // One removed member must invalidate the old bundled report while leaving the other member open.
+ const extra='30000000-0000-4000-8000-000000000003';
+ await pg.query('INSERT INTO asset_register_items(id,user_id) VALUES($1,$2)',[extra,'owner']);
+ const bundle=await mod.createGuestLead('owner',[A,extra],false,details,[pdf]);
+ const bundleReport=(await mod.readLeadPage(bundle.token)).reports[0];
+ await pg.query('DELETE FROM asset_register_items WHERE id=$1',[extra]);
+ const surviving=await mod.readLeadPage(bundle.token);
+ assert.deepEqual(surviving.share.assets.map(item=>item.assetId),[A]);
+ assert.deepEqual(surviving.reports,[]);
+ assert.equal((await mod.loadProtectedLeadReport(bundle.token,bundleReport.id)).status,403);
  guest=null;session={user:{id:'other',email:details.recipientEmail,emailVerified:false}};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);session.user.emailVerified=true;assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);
  session={user:{id:'owner'}};assert.equal(await mod.resolveLeadAccess('owner',details.recipientEmail),'owner');session=null;
  await base.revokeAssetShareLink('other',one.token);assert.ok(await mod.readLeadPage(one.token));await base.revokeAssetShareLink('owner',one.token);assert.equal(await mod.readLeadPage(one.token),null);assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,404);

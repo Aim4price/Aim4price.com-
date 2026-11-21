@@ -15,7 +15,7 @@ import DateInput from './DateInput';
 import FilterFlow, { FilterQuestion, FilterThresholdQuestion } from './FilterFlow';
 
 import DropdownOverlay from './DropdownOverlay';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import DealerCostOfOwnershipReportModal from './DealerCostOfOwnershipReportModal';
 import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
 import DealerMaintenanceScheduleModal from './DealerMaintenanceScheduleModal';
@@ -977,7 +977,16 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     clearHistoryFilters();
   }
 
-  function openAsset(asset: TrackerMaintenanceCard) {
+  const openAttempt = useRef(0);
+  async function openAsset(asset: TrackerMaintenanceCard) {
+    const attempt = ++openAttempt.current;
+    const response = await fetch(`/api/dealer/maintenance/${asset.accessId}`, {cache:'no-store'}).catch(() => null);
+    if (attempt !== openAttempt.current) return;
+    if (!response?.ok) {
+      if (response?.status === 404) setAssets(current => current.filter(item => item.accessId !== asset.accessId));
+      setNotice({tone:'error',text: response?.status === 404 ? 'This asset is no longer available.' : 'Could not check access. Please try again.'});
+      return;
+    }
     setOpenCardId(asset.trackerCardId);
     if (maintenanceViewAccessId !== asset.accessId) {
       setMaintenanceViewAccessId(null);
@@ -986,6 +995,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   }
 
   function closeAsset() {
+    openAttempt.current++;
     setOpenCardId(null);
     setMaintenanceViewAccessId(null);
     setManagedAccessId(null);

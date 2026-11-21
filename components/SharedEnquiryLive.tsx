@@ -2,8 +2,9 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 /** Mounted only after an authorised enquiry has been opened, never for previews. */
-export default function SharedEnquiryLive({ token }: {
+export default function SharedEnquiryLive({ token, recordActivity = true }: {
     token: string;
+    recordActivity?: boolean;
 }) {
     const router = useRouter();
     useEffect(() => {
@@ -12,13 +13,13 @@ export default function SharedEnquiryLive({ token }: {
             router.refresh(); }).catch(() => { });
         const refresh = () => { if (document.visibilityState === 'visible') {
             router.refresh();
-            void record();
+            if (recordActivity) void record();
         } };
-        void record();
+        if (recordActivity) void record();
         const interval = setInterval(refresh, 30000);
         window.addEventListener('focus', refresh);
         document.addEventListener('visibilitychange', refresh);
         return () => { stopped = true; clearInterval(interval); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
-    }, [token, router]);
+    }, [token, router, recordActivity]);
     return null;
 }

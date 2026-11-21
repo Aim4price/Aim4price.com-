@@ -38,11 +38,12 @@ test('database connections fail promptly instead of leaving pages spinning forev
 test('lead list removes embedded logos and hydrates independent data concurrently', async () => {
   const partnerAccess = await read('lib/partner-access.ts');
 
-  assert.match(partnerAccess, /asset_snapshot_json - 'logoUrl' as asset_snapshot_json/);
+  assert.match(partnerAccess, /l\.asset_snapshot_json - 'registerSnapshot' - 'logoUrl'/);
+  assert.match(partnerAccess, /\$\{liveLeadSnapshotSql\} as asset_snapshot_json/);
   assert.match(partnerAccess, /assetSnapshot\.logoUrl = `\/api\/asset-leads\/\$\{row\.id\}\/logo`/);
   assert.match(partnerAccess, /const \[attachmentLeads, correctionLeads, maintenanceLeads\] = await Promise\.all/);
   assert.match(partnerAccess, /getAssetLeadLogoForUser/);
-  assert.match(partnerAccess, /owner_user_id = \$2 or partner_user_id = \$2/);
+  assert.match(partnerAccess, /l\.owner_user_id = \$2 or l\.partner_user_id = \$2/);
   assert.match(partnerAccess, /asset_register_item_id = any\(\$2::uuid\[\]\)/);
 });
 

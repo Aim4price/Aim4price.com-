@@ -1,5 +1,6 @@
 import { getDb } from './db';
 import {
+  liveLeadSourceSql, liveLeadSnapshotSql, liveLeadSectionsSql,
   ensurePartnerAccessTables,
   normalizeLeadStatus,
   normalizeLeadType,
@@ -120,9 +121,9 @@ export async function listInitialDealerReceivedLeads(
         l.asset_register_item_id::text,
         l.lead_type,
         l.status,
-        l.asset_snapshot_json - 'logoUrl' as asset_snapshot_json,
+        ${liveLeadSnapshotSql} as asset_snapshot_json,
         nullif(l.asset_snapshot_json ->> 'logoUrl', '') is not null as has_asset_logo,
-        l.included_sections_json,
+        ${liveLeadSectionsSql} as included_sections_json,
         l.owner_message,
         l.owner_contact_name,
         l.owner_contact_phone,
@@ -146,6 +147,7 @@ export async function listInitialDealerReceivedLeads(
         l.closed_at::text,
         l.updated_at::text
       from public.asset_leads l
+      ${liveLeadSourceSql}
       left join public.account_profiles owner on owner.user_id = l.owner_user_id
       left join public.account_profiles partner on partner.user_id = l.partner_user_id
       where l.partner_user_id = $1

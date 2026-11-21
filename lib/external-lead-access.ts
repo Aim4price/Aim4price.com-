@@ -42,8 +42,11 @@ export async function externalLeadAccess(lead: Lead) {
     return result(active?.user.id === user.id && profile.accountStatus === 'active' ? 'active' : 'approval-required');
 }
 export function leadAllows(lead: Lead, permission: ExternalSharePermission): boolean {
-    if (lead.details?.permissions)
-        return normalizeExternalPermissions(lead.details.permissions)[permission] === true;
+    if (lead.details?.permissions) {
+        const permissions = normalizeExternalPermissions(lead.details.permissions);
+        if (permission === 'reports' && !permissions.allReports && !lead.reports.length) return false;
+        return permissions[permission] === true;
+    }
     // Older links retain their chosen reports/documents, but now require signed-in account access.
     return permission === 'reports' ? lead.reports.length > 0 : permission === 'documents' && lead.details?.allowSubmissions === true;
 }

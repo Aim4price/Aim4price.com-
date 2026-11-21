@@ -37,9 +37,9 @@ test('SQL reuses live links, enforces owner scope, revocation and asset lifecycl
     './shared-market-assessment':{sharedMarketAssessments:async(owner,assets,shared)=>shared?Object.fromEntries(assets.map(asset=>[asset.id,{priceExVat:50000,assessedAt:'2026-10-22T10:00:00Z',needsReview:false}])):{}},
     './asset-groups':{getAssetGroupById:async()=>({id:'30000000-0000-4000-8000-000000000001',name:'Tractor fleet',members:[{assetId:A}]})},
     './db': { getDb: () => db }, './asset-share-snapshot': snapshot,
-    './asset-register-db': { getAssetRegisterItemsByRefs: async refs => {
+    './asset-register-db': { getAssetRegisterItemsByRefs: async (refs, activeOnly) => {
       const rows = (await pg.query('SELECT * FROM asset_register_items')).rows;
-      return rows.filter(row => refs.some(ref => ref.userId === row.user_id && ref.assetId === row.id)).map(row => ({ ...asset, id: row.id, userId: row.user_id, title }));
+      return rows.filter(row => (!activeOnly || !row.lifecycle_state || row.lifecycle_state==='active') && refs.some(ref => ref.userId === row.user_id && ref.assetId === row.id)).map(row => ({ ...asset, id: row.id, userId: row.user_id, title }));
     } },
   });
   try {
@@ -75,6 +75,15 @@ test('SQL reuses live links, enforces owner scope, revocation and asset lifecycl
     await pg.query('UPDATE asset_register_items SET user_id=$1 WHERE id=$2', ['bob', A]);
     assert.equal(await mod.readPublicAssetShare(second.token), null);
     const third = await mod.createAssetShareLink('bob', [A], true);
+    await pg.exec("ALTER TABLE asset_register_items ADD COLUMN lifecycle_state text DEFAULT 'active'");
+    const multiple = await mod.createAssetShareLink('bob', [A,B], false, undefined, 'workshop-pass');
+    await pg.query("UPDATE asset_register_items SET lifecycle_state='archived' WHERE id=$1",[A]);
+    assert.deepEqual((await mod.readPublicAssetShare(multiple.token)).assets.map(item=>item.assetId),[B]);
+    assert.equal(await mod.readPublicAssetShare(third.token),null);
+    await pg.query("UPDATE asset_register_items SET lifecycle_state='archived' WHERE id=$1",[B]);
+    assert.equal((await mod.getAssetSharePasswordState(multiple.token)).exists,false);
+    assert.ok((await pg.query('SELECT revoked_at FROM asset_share_links WHERE token=$1',[multiple.token])).rows[0].revoked_at);
+    assert.equal(await mod.readPublicAssetShare(multiple.token),null);
     await pg.query('DELETE FROM asset_register_items WHERE id=$1', [A]);
     assert.equal(await mod.readPublicAssetShare(third.token), null);
     assert.equal(await mod.readPublicAssetShare('bad-token'), null);
@@ -116,4 +125,31 @@ test('link appears in email and WhatsApp copy only when selected', () => {
   const copy = mod.buildExternalAssetShareCopy('Tractor', [saved], { shareUrl: 'https://www.aim4price.com/asset-share/example' });
   assert.match(decodeURIComponent(mod.buildEmailShareUrl(copy)), /View asset details:\nhttps:\/\/www.aim4price.com\/asset-share\/example/);
   assert.match(decodeURIComponent(mod.buildWhatsAppShareUrl(copy)), /asset-share\/example/);
+});
+
+test('a legacy register lead keeps its surviving members when its original anchor is removed', async () => {
+  const pg = new PGlite();
+  const mocks = new Proxy({'./db':{getDb:()=>pg}}, {has:()=>true, get:(obj,key)=>obj[key] ?? {}});
+  const leads = load('lib/partner-access.ts', mocks);
+  const leadId='40000000-0000-4000-8000-000000000004';
+  try {
+    await pg.exec(`CREATE TABLE asset_register_items(id uuid primary key,user_id text,lifecycle_state text);
+      CREATE TABLE asset_leads(id uuid,owner_user_id text,partner_user_id text,asset_register_item_id uuid,
+        asset_snapshot_json jsonb,included_sections_json jsonb)`);
+    await pg.query("INSERT INTO asset_register_items VALUES($1,'owner','active'),($2,'owner','active')",[A,B]);
+    const members=[{id:A,title:'Tractor',value:100},{id:B,title:'Trailer',value:30}];
+    await pg.query("INSERT INTO asset_leads VALUES($1,'owner','dealer',$2,$3,$4)",[leadId,A,{title:'Tractor'},
+      {registerSnapshot:{assets:members,assetCount:2,totalValue:130}}]);
+    await pg.query("UPDATE asset_register_items SET lifecycle_state='archived' WHERE id=$1",[A]);
+    const projection=await pg.query(`SELECT ${leads.liveLeadSnapshotSql} AS anchor,
+      ${leads.liveLeadSectionsSql} AS sections FROM asset_leads l ${leads.liveLeadSourceSql}`);
+    assert.deepEqual(projection.rows[0].anchor,{});
+    assert.deepEqual(projection.rows[0].sections.registerSnapshot.assets,[members[1]]);
+    assert.equal(projection.rows[0].sections.registerSnapshot.totalValue,30);
+    assert.equal(await leads.canViewLiveAssetLead('dealer',leadId,B),true);
+    assert.equal(await leads.canViewLiveAssetLead('dealer',leadId,A),false);
+    assert.equal(await leads.canViewLiveAssetLead('other',leadId,B),false);
+    await pg.query('DELETE FROM asset_register_items WHERE id=$1',[B]);
+    assert.equal(await leads.canViewLiveAssetLead('dealer',leadId,null),false);
+  } finally { await pg.close(); }
 });
