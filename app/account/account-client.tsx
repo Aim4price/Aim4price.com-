@@ -2,6 +2,7 @@
 import { PageHelpHeading } from '../../components/PageHelp';
 import {BusinessSubscriptionButton, type BusinessSubscription} from '../../components/BusinessCreditControls';
 
+import { DirectoryStatusReporter } from "../../components/AccountDirectoryListing";
 import QuickActionIcon, { type QuickActionIconName } from "./QuickActionIcon";
 import AccountModalScroller from "./account-modal-scroller";
 
@@ -504,6 +505,7 @@ export default function AccountClient({
   const [notice, setNotice] = useState<AccountNotice | null>(null);
   const [actionModalNotice, setActionModalNotice] =
     useState<AccountNotice | null>(null);
+  const [sharedDirectoryStatus, setSharedDirectoryStatus] = useState("Loading…");
   const [isLoading, setIsLoading] = useState(!initialProfile);
   const [isLoadingScanPin, setIsLoadingScanPin] = useState(
     !sharedAccount && !initialScanPinStatus,
@@ -1185,7 +1187,7 @@ export default function AccountClient({
   }
 
   function openOverviewAccess() {
-    if (sharedAccount) { window.location.hash='business-credits'; return; }
+    if (sharedAccount) { window.location.hash='directory-listing-title'; return; }
     if (isOwnerAccount) openScanPinEditor();
     else if (showPartnerDirectory) openPartnerDirectory();
     else openBusinessEditor();
@@ -1570,12 +1572,12 @@ export default function AccountClient({
                 </div>
               </button>
 
-              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={openOverviewAccess} data-tooltip={sharedAccount ? "View Business credits and upgrade options." : isOwnerAccount ? "Manage the PIN used for QR access to your assets." : showPartnerDirectory ? "Manage how your business appears in the partner directory." : "Review and update your business details."} data-tooltip-style="description">
+              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={openOverviewAccess} data-tooltip={sharedAccount ? "View and update your business directory listing." : isOwnerAccount ? "Manage the PIN used for QR access to your assets." : showPartnerDirectory ? "Manage how your business appears in the partner directory." : "Review and update your business details."} data-tooltip-style="description">
                 <span>
-                  {sharedAccount ? "Account access" : isOwnerAccount ? "QR PIN status" : "Directory status"}
+                  {isOwnerAccount ? "QR PIN status" : "Directory status"}
                 </span>
                 <strong>
-                  {sharedAccount ? "Business sharing account" : isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
+                  {sharedAccount ? sharedDirectoryStatus : isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
                 </strong>
               </button>
             </div>
@@ -1768,7 +1770,9 @@ export default function AccountClient({
             </div>
           </section>
 
-          {sharedSettings && <div className={styles.sharedAccountSettings}>{sharedSettings}</div>}
+          {sharedSettings && <DirectoryStatusReporter.Provider value={setSharedDirectoryStatus}>
+            <div className={styles.sharedAccountSettings}>{sharedSettings}</div>
+          </DirectoryStatusReporter.Provider>}
 
           <section
             className={`${styles.card} ${styles.securityCard}`}
