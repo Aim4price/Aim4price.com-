@@ -102,7 +102,7 @@ export async function listBusinessAccounts() {
     await ensureBusinessAccounts();
     return (await getDb().query(`SELECT p.user_id,p.business_name,p.phone,p.account_status,u.email,u."emailVerified" AS email_verified,
     r.website,r.evidence,CASE WHEN r.verified_email=lower(u.email) AND u."emailVerified" THEN r.verified_at END AS verified_at,r.review_note FROM account_profiles p JOIN "user" u ON u.id=p.user_id
-    LEFT JOIN business_account_reviews r ON r.user_id=p.user_id WHERE p.account_type='business' ORDER BY p.created_at DESC LIMIT 500`)).rows;
+    LEFT JOIN business_account_reviews r ON r.user_id=p.user_id WHERE (p.account_type='business' OR (p.account_type='dealer' AND (to_jsonb(p)->>'account_subtype') IN ('contributor','finance-services','insurance-services','licensing-services','accounting-services','maintenance-services'))) ORDER BY p.created_at DESC LIMIT 500`)).rows;
 }
 export async function verifyBusinessAccount(actorId: string, input: Record<string, unknown>) {
     if (typeof input.verified !== 'boolean' || typeof input.userId !== 'string')
@@ -114,7 +114,7 @@ export async function verifyBusinessAccount(actorId: string, input: Record<strin
     const db = await getDb().connect();
     try {
         await db.query('BEGIN');
-        const row = (await db.query(`SELECT u.email,u."emailVerified" AS verified,p.account_status FROM account_profiles p JOIN "user" u ON u.id=p.user_id WHERE p.user_id=$1 AND p.account_type='business' FOR UPDATE OF p,u`, [input.userId])).rows[0];
+        const row = (await db.query(`SELECT u.email,u."emailVerified" AS verified,p.account_status FROM account_profiles p JOIN "user" u ON u.id=p.user_id WHERE p.user_id=$1 AND (p.account_type='business' OR (p.account_type='dealer' AND (to_jsonb(p)->>'account_subtype') IN ('contributor','finance-services','insurance-services','licensing-services','accounting-services','maintenance-services'))) FOR UPDATE OF p,u`, [input.userId])).rows[0];
         if (!row || (input.verified && (!row.verified || row.account_status !== 'active')))
             throw new Error('This business needs a verified email and an active account before approval.');
         await db.query(`INSERT INTO business_account_reviews(user_id,verified_at,verified_by,review_note,verified_email) VALUES($1,CASE WHEN $2 THEN now() END,CASE WHEN $2 THEN $3 END,$4,CASE WHEN $2 THEN $5 END)
