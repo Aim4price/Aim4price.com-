@@ -183,3 +183,28 @@ test('Business opens its inbox directly and only reads shares for active verifie
  paused=true;verified=true;assert.match((await inbox()).notice,/paused/);
  assert.equal(reads,1);
 });
+
+test('Admin opening a Free Business account sees that user’s subscription and credits', async () => {
+  const profile = {accountType:'business', accountStatus:'active'};
+  const page = load('app/account/page.tsx', {
+    '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'admin'}})},
+    '../../lib/account-access':{requireActivePageAccess:async()=>({session:{user:{id:'client'}}})},
+    '../../lib/account-profile':{getAccountProfile:async user=>user.id==='client'?profile:{accountType:'owner'}},
+    '../../lib/team-login':{getManagedTeamActor:async()=>null},
+    '../../lib/team-access':{canManageTeamAccess:async()=>true},
+    '../../lib/sharing-foundation':{sharingPlan:async()=> 'desktop'},
+    '../../lib/middleman-account':load('lib/middleman-account.ts',{}),
+    '../../components/BusinessCredits':{default:'Credits',getBusinessCredits:async id=>{
+      assert.equal(id,'client');
+      return {workspace:{role:'owner'},balance:{limit:500,used:3,held:2}};
+    }},
+    'next/navigation':{redirect:path=>assert.fail(path)},
+    './account-client':{default:'AccountClient'},
+  });
+  const {props} = await page.default();
+  assert.equal(props.initialProfile,profile);
+  assert.equal(props.sharedAccount,true);
+  assert.equal(props.canManageDesktopUsers,false);
+  assert.equal(props.subscription.fullAccess,false);
+  assert.equal(props.subscription.remaining,495);
+});
