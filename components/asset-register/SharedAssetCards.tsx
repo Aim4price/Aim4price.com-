@@ -115,6 +115,9 @@ export default function SharedAssetCards({
   },[selectionKey, initialAssetId]);
   const viewedId = opened === null ? undefined : share?.assets[opened]?.assetId;
   useEffect(()=>{
+    if (viewedId && viewedId === initialAssetId) document.getElementById('asset-'+viewedId)?.scrollIntoView({block:'center'});
+  },[viewedId,initialAssetId]);
+  useEffect(()=>{
     if (trackViews && viewedId && shareToken) {
       void fetch(`/api/asset-share-links/${shareToken}/activity?asset=${encodeURIComponent(viewedId)}`, {method:'POST', keepalive:true}).catch(()=>{});
     }
