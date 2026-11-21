@@ -1,6 +1,7 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {createContext,useContext,useEffect,useState} from 'react';
 import styles from '../app/business/page.module.css';
+export const DirectoryStatusReporter = createContext<((status: string) => void) | null>(null);
 type Listing={id:string;name:string;email:string;status:string;logo_data:string;details:{phone?:string;website?:string;town?:string;serviceArea?:string;services?:string[]}};
 export default function AccountDirectoryListing({name='',phone='',emailVerified}:{name?:string;phone?:string;emailVerified:boolean}) {
  const [listing,setListing]=useState<Listing|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[failed,setFailed]=useState(false),[editing,setEditing]=useState(false),[logo,setLogo]=useState('');
@@ -8,8 +9,13 @@ export default function AccountDirectoryListing({name='',phone='',emailVerified}
  useEffect(()=>{if(emailVerified)void load();else setLoading(false);},[emailVerified]);
  async function save(body:Record<string,unknown>){setBusy(true);setNotice('');try{const r=await fetch('/api/account-directory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.error);setListing(d.listing);setEditing(false);setNotice(body.action==='hide'?'Your listing is hidden.':'Request sent. Aim4price will review your listing.');}catch(e){setNotice(e instanceof Error?e.message:'Unable to save.');}finally{setBusy(false);}}
  const status=listing?.status==='active'?'Listed':listing?.status==='invited'?'Pending review':'Not listed';
+ const reportStatus = useContext(DirectoryStatusReporter);
+ const displayStatus = loading ? 'Loading…' : failed ? 'Unavailable' : status;
+ useEffect(() => {
+   reportStatus?.(displayStatus === 'Listed' ? 'Visible' : displayStatus === 'Not listed' ? 'Hidden' : displayStatus);
+ }, [displayStatus, reportStatus]);
  return <section className={`${styles.panel} ${styles.directoryPanel}`} aria-labelledby="directory-listing-title">
-  <div className={styles.directoryHeading}><div><h2 id="directory-listing-title">Directory listing</h2><p className={styles.muted}>Help asset owners find your business. A basic listing is free.</p></div><span className={listing?.status==='active'?styles.verifiedBadge:styles.pendingBadge}>{loading?'Loading…':failed?'Unavailable':status}</span></div>
+  <div className={styles.directoryHeading}><div><h2 id="directory-listing-title">Directory listing</h2><p className={styles.muted}>Help asset owners find your business. A basic listing is free.</p></div><span className={listing?.status==='active'?styles.verifiedBadge:styles.pendingBadge}>{displayStatus}</span></div>
   {!emailVerified?<p>Verify your email to request a listing.</p>:loading?<p>Loading your listing…</p>:failed?<button className={styles.secondaryButton} onClick={()=>void load()}>Try again</button>:editing?<form className={`${styles.form} ${styles.businessForm}`} onSubmit={e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.currentTarget));void save({...data,accepted:data.accepted==='on',services:String(data.services||'').split(',').map(v=>v.trim()).filter(Boolean),logoData:logo});}}>
    <div className={styles.directoryLogo}><div>{logo?<img src={logo} alt="Business logo preview"/>:<span>Logo</span>}</div><label>Business logo · optional<input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={async e=>{const file=e.target.files?.[0];if(!file)return;if(file.size>2000000||!['image/png','image/jpeg','image/webp'].includes(file.type)){setNotice('Choose a PNG, JPEG or WebP logo under 2 MB.');return;}setBusy(true);try{const data=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=()=>reject(Error('Unable to read logo.'));reader.readAsDataURL(file);});setLogo(data);setNotice('');}catch(e){setNotice(e instanceof Error?e.message:'Unable to read logo.');}finally{setBusy(false);}}}/><small>PNG, JPEG or WebP · up to 2 MB</small></label>{logo&&<button type="button" className={styles.secondaryButton} disabled={busy} onClick={()=>setLogo('')}>Remove</button>}</div>
    <label>Business name<input name="name" required maxLength={200} defaultValue={listing?.name||name}/></label>
