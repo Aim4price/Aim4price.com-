@@ -1,6 +1,5 @@
 import { isAccountingPilotSession } from '../../lib/accounting-pilot';
 import { canManageTeamAccess } from '../../lib/team-access';
-import AccountDirectoryListing from '../../components/AccountDirectoryListing';
 import BusinessCredits, {getBusinessCredits} from '../../components/BusinessCredits';
 import BusinessDetails from '../business/business-client';
 import { readBusinessAccount } from '../../lib/business-accounts';
@@ -25,9 +24,8 @@ async function sharedAccountPage(user: NonNullable<Awaited<ReturnType<typeof get
   const settings = <div className={sharedStyles.accountContent}>
     {business && <BusinessCredits data={credits} userId={user.id}/>}
     {<details id="account-details" className={`${sharedStyles.panel} ${sharedStyles.details}`} open><summary>Business details</summary><BusinessDetails businessName={profile.businessName || ''} phone={profile.phone || ''} website={business?.review.website || profile.websiteUrl || ''} evidence={business?.review.evidence || ''} email={user.email} emailVerified={user.emailVerified === true}/></details>}
-    <AccountDirectoryListing name={profile.businessName || ''} phone={profile.phone || ''} emailVerified={user.emailVerified === true}/>
   </div>;
-  return <AccountClient canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} sharedAccount subscription={subscription} sharedSettings={settings} />;
+  return <AccountClient canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} sharedAccount directoryEmailVerified={user.emailVerified === true} subscription={subscription} sharedSettings={settings} />;
 }
 
 export default async function AccountPage() {

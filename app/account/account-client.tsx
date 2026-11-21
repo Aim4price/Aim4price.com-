@@ -2,7 +2,7 @@
 import { PageHelpHeading } from '../../components/PageHelp';
 import {BusinessSubscriptionButton, type BusinessSubscription} from '../../components/BusinessCreditControls';
 
-import { DirectoryStatusReporter } from "../../components/AccountDirectoryListing";
+import { useAccountDirectoryListing } from "../../components/AccountDirectoryListing";
 import QuickActionIcon, { type QuickActionIconName } from "./QuickActionIcon";
 import AccountModalScroller from "./account-modal-scroller";
 
@@ -101,6 +101,7 @@ type AccountClientProps = {
   subscription?: BusinessSubscription;
   sharedAccount?: boolean;
   sharedSettings?: ReactNode;
+  directoryEmailVerified?: boolean;
   initialProfile?: AccountProfile | null;
   initialScanPinStatus?: AccountScanPinStatus | null;
 };
@@ -485,6 +486,7 @@ export default function AccountClient({
   canManageDesktopUsers = false,
   subscription,
   sharedAccount = false,
+  directoryEmailVerified = false,
   sharedSettings,
   initialProfile = null,
   initialScanPinStatus = null,
@@ -505,7 +507,8 @@ export default function AccountClient({
   const [notice, setNotice] = useState<AccountNotice | null>(null);
   const [actionModalNotice, setActionModalNotice] =
     useState<AccountNotice | null>(null);
-  const [sharedDirectoryStatus, setSharedDirectoryStatus] = useState("Loading…");
+  const directory = useAccountDirectoryListing(sharedAccount, directoryEmailVerified, initialProfile?.userId);
+  const [serviceArea, setServiceArea] = useState("");
   const [isLoading, setIsLoading] = useState(!initialProfile);
   const [isLoadingScanPin, setIsLoadingScanPin] = useState(
     !sharedAccount && !initialScanPinStatus,
@@ -785,7 +788,7 @@ export default function AccountClient({
   const isAssetRegisterAccount = isOwnerAccount || (isDealerAccount && !isMiddlemanAccount);
   const isPartnerAccount = !sharedAccount && !isOwnerAccount && !isMiddlemanAccount;
   const showScanPinControls = !isLoading && isOwnerAccount;
-  const showPartnerDirectory = !isLoading && isPartnerAccount;
+  const showPartnerDirectory = !isLoading && (isPartnerAccount || sharedAccount);
   const showMarketplaceContact = isLoading || isOwnerAccount || isDealerAccount;
   const accountDisplayName =
     profileDraft.displayName.trim() || profile?.name || "Aim4price user";
@@ -867,7 +870,7 @@ export default function AccountClient({
       setProfileDraft((current) => ({ ...current, logoUrl: dataUrl }));
       setActionModalNotice({
         tone: "success",
-        message: "Logo ready. Save the business details to apply it.",
+        message: activeAccountModal === "partnerDirectory" ? "Logo ready. Submit your listing to apply it." : "Logo ready. Save the business details to apply it.",
       });
     } catch (error) {
       setActionModalNotice({
@@ -964,16 +967,40 @@ export default function AccountClient({
     void handleProfileSubmit(event);
   }
 
-  function handlePartnerDirectorySubmit(event: FormEvent<HTMLFormElement>) {
+  async function handlePartnerDirectorySubmit(event: FormEvent<HTMLFormElement>) {
     if (profileDraft.partnerDirectoryEnabled && partnerDirectoryStep < 4) {
       event.preventDefault();
+      if (sharedAccount && ((partnerDirectoryStep === 2 && !profileDraft.townCity.trim()) ||
+          (partnerDirectoryStep === 3 && (profileDraft.businessName.trim().length < 2 || !profileDraft.phone.trim() || !profileDraft.partnerServices.split(',').some(value => value.trim()))))) {
+        setActionModalNotice({tone:'error', message:partnerDirectoryStep === 2 ? 'Enter your town or city.' : 'Enter your business name, contact number and at least one service.'});
+        return;
+      }
+      setActionModalNotice(null);
       goToPartnerDirectoryStep(
         (partnerDirectoryStep + 1) as PartnerDirectoryStep,
       );
       return;
     }
 
-    void handleProfileSubmit(event);
+    if (!sharedAccount) return handleProfileSubmit(event);
+    event.preventDefault();
+    if (!directoryEmailVerified || directory.loading || directory.error || isSavingProfile) return;
+    setIsSavingProfile(true);
+    setActionModalNotice(null);
+    try {
+      await directory.save(profileDraft.partnerDirectoryEnabled ? {
+        accepted:true, name:profileDraft.businessName, phone:profileDraft.phone, website:profileDraft.websiteUrl,
+        town:profileDraft.townCity, serviceArea, services:profileDraft.partnerServices.split(',').map(value => value.trim()).filter(Boolean),
+        logoData:profileDraft.logoUrl,
+      } : {action:'hide'});
+      setActiveAccountModal(null);
+      if (profile) setProfileDraft(buildProfileDraft(profile));
+      setNotice({tone:'success',message:profileDraft.partnerDirectoryEnabled ? 'Listing submitted for review.' : 'Your listing is hidden.'});
+    } catch (cause) {
+      setActionModalNotice({tone:'error',message:cause instanceof Error ? cause.message : 'Unable to save listing.'});
+    } finally {
+      setIsSavingProfile(false);
+    }
   }
 
   async function handleScanPinSubmit(event: FormEvent<HTMLFormElement>) {
@@ -1174,7 +1201,7 @@ export default function AccountClient({
     if (sharedAccount) {
       const section = document.getElementById('account-details');
       if (section instanceof HTMLDetailsElement) section.open = true;
-      const target = section || document.getElementById('directory-listing-title');
+      const target = section;
       target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       const input = section?.querySelector<HTMLInputElement>(progress && profile?.businessName?.trim() ? 'input[name="phone"]' : progress ? 'input[name="businessName"]' : 'input[name="phone"]');
       input?.focus({ preventScroll: true });
@@ -1187,7 +1214,6 @@ export default function AccountClient({
   }
 
   function openOverviewAccess() {
-    if (sharedAccount) { window.location.hash='directory-listing-title'; return; }
     if (isOwnerAccount) openScanPinEditor();
     else if (showPartnerDirectory) openPartnerDirectory();
     else openBusinessEditor();
@@ -1222,8 +1248,25 @@ export default function AccountClient({
     window.location.assign("/account/owner-app");
   }
 
+  useEffect(() => {
+    if (!sharedAccount || directory.loading || window.location.hash !== '#directory-listing-title') return;
+    window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search);
+    openPartnerDirectory();
+  }, [sharedAccount, directory.loading]);
+
   function openPartnerDirectory() {
     openActionModal("partnerDirectory");
+    if (sharedAccount) {
+      const listing = directory.listing;
+      setProfileDraft(current => ({
+        ...current, partnerDirectoryEnabled: listing?.status === 'active' || listing?.status === 'invited',
+        businessName: listing?.name ?? current.businessName, townCity: listing?.details.town ?? current.townCity,
+        phone: listing?.details.phone ?? current.phone, websiteUrl: listing?.details.website ?? current.websiteUrl,
+        partnerServices: listing?.details.services?.join(', ') ?? '', logoUrl: listing?.logo_data ?? '',
+        marketplaceEmail: profile?.email ?? '', partnerBrandFocus: '', partnerDescription: '', province: '',
+      }));
+      setServiceArea(listing?.details.serviceArea ?? '');
+    }
   }
 
   function openPasswordEditor() {
@@ -1572,12 +1615,12 @@ export default function AccountClient({
                 </div>
               </button>
 
-              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={openOverviewAccess} data-tooltip={sharedAccount ? "View and update your business directory listing." : isOwnerAccount ? "Manage the PIN used for QR access to your assets." : showPartnerDirectory ? "Manage how your business appears in the partner directory." : "Review and update your business details."} data-tooltip-style="description">
+              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={openOverviewAccess} disabled={sharedAccount && directory.loading} data-tooltip={sharedAccount ? "View and update your business directory listing." : isOwnerAccount ? "Manage the PIN used for QR access to your assets." : showPartnerDirectory ? "Manage how your business appears in the partner directory." : "Review and update your business details."} data-tooltip-style="description">
                 <span>
                   {isOwnerAccount ? "QR PIN status" : "Directory status"}
                 </span>
                 <strong>
-                  {sharedAccount ? sharedDirectoryStatus : isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
+                  {sharedAccount ? directory.status : isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
                 </strong>
               </button>
             </div>
@@ -1726,12 +1769,11 @@ export default function AccountClient({
                       </button>
                     ) : null}
 
-                  {sharedAccount ? <Link href="#directory-listing-title" data-tooltip="View and update your business directory listing." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="directory" /><strong>Directory listing</strong></Link> : null}
                     {showPartnerDirectory ? (
                       <button
                         type="button"
                         className={styles.quickActionButton}
-                        onClick={openPartnerDirectory} data-tooltip="Choose your directory visibility and update your services and contact details." data-tooltip-style="description"
+                        onClick={openPartnerDirectory} disabled={sharedAccount && directory.loading} data-tooltip="Choose your directory visibility and update your services and contact details." data-tooltip-style="description"
                       >
                         <QuickActionIcon name="directory" />
                         <strong>Partner directory</strong>
@@ -1770,9 +1812,7 @@ export default function AccountClient({
             </div>
           </section>
 
-          {sharedSettings && <DirectoryStatusReporter.Provider value={setSharedDirectoryStatus}>
-            <div className={styles.sharedAccountSettings}>{sharedSettings}</div>
-          </DirectoryStatusReporter.Provider>}
+          {sharedSettings && <div className={styles.sharedAccountSettings}>{sharedSettings}</div>}
 
           <section
             className={`${styles.card} ${styles.securityCard}`}
@@ -2646,6 +2686,8 @@ export default function AccountClient({
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor" data-modal-close="true">×</button>
               </div>
 
+              {sharedAccount && !directoryEmailVerified && <p>Verify your email to manage your directory listing.</p>}
+              {sharedAccount && directory.error && <p role="alert">{directory.error} <button type="button" onClick={() => { closeActionModal(); directory.retry(); }}>Try again</button></p>}
               <ModalInlineNotice notice={actionModalNotice} />
 
               <ModalStepProgress
@@ -2682,11 +2724,11 @@ export default function AccountClient({
                       <p>Street details are optional and publicly visible.</p>
                     </div>
                     <div className={styles.wizardFieldGrid}>
-                      {([{ key: "province", label: "Province", placeholder: "Western Cape" }, { key: "townCity", label: "Town / city", placeholder: "George" }, { key: "addressLine1", label: "Street address (optional)", placeholder: "Street address" }, { key: "addressLine2", label: "Address line 2 (optional)", placeholder: "Building, unit or area" }] as const).map(field => (
+                      {([{ key: "province", label: "Province", placeholder: "Western Cape" }, { key: "townCity", label: "Town / city", placeholder: "George" }, { key: "addressLine1", label: "Street address (optional)", placeholder: "Street address" }, { key: "addressLine2", label: "Address line 2 (optional)", placeholder: "Building, unit or area" }] as const).filter(field => !sharedAccount || field.key === "townCity").map(field => (
                         <label className={styles.field} key={field.key}><span>{field.label}</span><span className={styles.settingsInput}><SettingsDetailIcon name="location" /><input value={profileDraft[field.key]} onChange={event => setProfileDraft(current => ({ ...current, [field.key]: event.target.value }))} placeholder={field.placeholder} /></span></label>
                       ))}
                     </div>
-                    <p className={styles.fieldHint}>Also updates your business address.</p>
+                    {sharedAccount ? <label className={styles.field}><span>Areas served (optional)</span><input value={serviceArea} onChange={event => setServiceArea(event.target.value)} /></label> : <p className={styles.fieldHint}>Also updates your business address.</p>}
                   </section>
                 ) : null}
 
@@ -2697,12 +2739,12 @@ export default function AccountClient({
                       <p>Contact details and services shown to owners.</p>
                     </div>
                     <div className={styles.wizardFieldGrid}>
-                      {([{ key: "businessName", label: "Business name", icon: "business", placeholder: "Your business name" }, { key: "phone", label: "Phone / WhatsApp", icon: "phone", placeholder: "Contact number" }, { key: "marketplaceEmail", label: "Business email", icon: "email", placeholder: "business@example.co.za" }, { key: "websiteUrl", label: "Website (optional)", icon: "globe", placeholder: "https://your-business.co.za" }, { key: "partnerBrandFocus", label: "Brands", icon: "listings", placeholder: "All brands, or specific brands" }, { key: "partnerServices", label: "Services", icon: "maintenance", placeholder: "Trade-ins, valuations, parts, repairs" }] as const).map(field => (
+                      {([{ key: "businessName", label: "Business name", icon: "business", placeholder: "Your business name" }, { key: "phone", label: "Phone / WhatsApp", icon: "phone", placeholder: "Contact number" }, { key: "marketplaceEmail", label: "Business email", icon: "email", placeholder: "business@example.co.za" }, { key: "websiteUrl", label: "Website (optional)", icon: "globe", placeholder: "https://your-business.co.za" }, { key: "partnerBrandFocus", label: "Brands", icon: "listings", placeholder: "All brands, or specific brands" }, { key: "partnerServices", label: "Services", icon: "maintenance", placeholder: "Trade-ins, valuations, parts, repairs" }] as const).filter(field => !sharedAccount || (field.key !== "marketplaceEmail" && field.key !== "partnerBrandFocus")).map(field => (
                         <label className={styles.field} key={field.key}><span>{field.label}</span><span className={styles.settingsInput}><SettingsDetailIcon name={field.icon} /><input value={profileDraft[field.key]} onChange={event => setProfileDraft(current => ({ ...current, [field.key]: event.target.value }))} placeholder={field.placeholder} /></span></label>
                       ))}
-                      <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}><span>About your business (optional)</span><textarea value={profileDraft.partnerDescription} onChange={event => setProfileDraft(current => ({ ...current, partnerDescription: event.target.value }))} placeholder="Your services and areas covered." /><small className={styles.partnerDescriptionCount}>{profileDraft.partnerDescription.trim().length} characters</small></label>
+                      {!sharedAccount && <label className={`${styles.field} ${styles.fullWidth} ${styles.partnerDescriptionField}`}><span>About your business (optional)</span><textarea value={profileDraft.partnerDescription} onChange={event => setProfileDraft(current => ({ ...current, partnerDescription: event.target.value }))} placeholder="Your services and areas covered." /><small className={styles.partnerDescriptionCount}>{profileDraft.partnerDescription.trim().length} characters</small></label>}
                     </div>
-                    <p className={styles.fieldHint}>Also updates your business contact details.</p>
+                    {sharedAccount ? <><label className={styles.field}>Business logo (optional)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoFileChange} /></label>{logoUrl && <button type="button" onClick={handleRemoveLogo}>Remove logo</button>}<p className={styles.fieldHint}>Your verified email is used for enquiries. Aim4price reviews listings before publication.</p></> : <p className={styles.fieldHint}>Also updates your business contact details.</p>}
                   </section>
                 ) : null}
 
@@ -2715,7 +2757,7 @@ export default function AccountClient({
                         <div><strong>{profileDraft.businessName.trim() || profileDraft.displayName.trim() || "Your business"}</strong><small>{[profileDraft.townCity, profileDraft.province].filter(Boolean).join(", ") || "Location not added"}</small></div>
                       </div>
                       <div className={styles.directoryPreviewGrid}>
-                        {([{ label: "Address", icon: "location", value: [profileDraft.addressLine1, profileDraft.addressLine2, profileDraft.townCity, profileDraft.province].filter(Boolean).join(", ") }, { label: "Services", icon: "maintenance", value: profileDraft.partnerServices }, { label: "Phone", icon: "phone", value: profileDraft.phone }, { label: "Email", icon: "email", value: profileDraft.marketplaceEmail }, { label: "Brands", icon: "listings", value: profileDraft.partnerBrandFocus }, { label: "Website", icon: "globe", value: profileDraft.websiteUrl }] as const).filter(detail => detail.value.trim()).map(detail => (
+                        {([{ label: "Address", icon: "location", value: sharedAccount ? [profileDraft.townCity, serviceArea].filter(Boolean).join(", ") : [profileDraft.addressLine1, profileDraft.addressLine2, profileDraft.townCity, profileDraft.province].filter(Boolean).join(", ") }, { label: "Services", icon: "maintenance", value: profileDraft.partnerServices }, { label: "Phone", icon: "phone", value: profileDraft.phone }, { label: "Email", icon: "email", value: profileDraft.marketplaceEmail }, { label: "Brands", icon: "listings", value: profileDraft.partnerBrandFocus }, { label: "Website", icon: "globe", value: profileDraft.websiteUrl }] as const).filter(detail => detail.value.trim()).map(detail => (
                           <div key={detail.label}><SettingsDetailIcon name={detail.icon} /><span><small>{detail.label}</small><strong>{detail.value}</strong></span></div>
                         ))}
                       </div>
@@ -2738,8 +2780,8 @@ export default function AccountClient({
                   {partnerDirectoryStep > 1 ? (
                     <button type="button" className={styles.secondaryButton} onClick={() => goToPartnerDirectoryStep((partnerDirectoryStep - 1) as PartnerDirectoryStep)} disabled={isSavingProfile}>Back</button>
                   ) : null}
-                  <button type="submit" form="partner-directory-form" className={styles.primaryButton} disabled={isSavingProfile}>
-                    {isSavingProfile ? "Saving..." : !profileDraft.partnerDirectoryEnabled ? "Save as hidden" : partnerDirectoryStep === 4 ? "Save directory" : "Next"}
+                  <button type="submit" form="partner-directory-form" className={styles.primaryButton} disabled={isSavingProfile || isReadingLogo || (sharedAccount && (!directoryEmailVerified || directory.loading || Boolean(directory.error)))}>
+                    {isSavingProfile ? "Saving..." : !profileDraft.partnerDirectoryEnabled ? "Save as hidden" : partnerDirectoryStep === 4 ? (sharedAccount ? "Submit for review" : "Save directory") : "Next"}
                   </button>
                 </div>
 
