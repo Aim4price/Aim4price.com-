@@ -300,7 +300,6 @@ export default function AssetExternalShare({
   useEffect(() => {
     let cancelled = false;
 
-    if (availabilityUrl && !await checkAvailability()) return;
     if (!selectedAttachmentCount) {
       setPreparation({ status: 'idle', files: [], error: '' });
       return () => {
@@ -403,6 +402,7 @@ export default function AssetExternalShare({
   }
   async function sendShare(target: ShareTarget) {
     if (!accepted || !pendingShare || pendingShare.key !== consentKey || pendingShare.target !== target || isSending) return;
+    if (availabilityUrl && !await checkAvailability()) return;
     setShareStatus('');
     setShowRecovery(false);
 
