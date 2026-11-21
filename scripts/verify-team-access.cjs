@@ -237,7 +237,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
    ]})});window.dispatchEvent(new Event('focus'));
  });
  await page.waitForFunction(()=>document.body.textContent.includes('Middleman workspace'));
- assert(await page.evaluate(()=>document.body.textContent.includes('Manage Dealer App staff')));
+ assert(await page.evaluate(()=>document.body.textContent.includes('Manage Business App staff')));
  assert(await page.evaluate(()=>document.body.textContent.includes('Middleman app access')));
  await click('Permissions');await page.waitForSelector('[role="dialog"]');
  assert(await page.evaluate(()=>document.querySelector('[role="dialog"]').textContent.includes('Your invitation is pending')));
