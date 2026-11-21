@@ -78,19 +78,19 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     if (error instanceof Error && error.message === 'LEAD_NOT_FOUND') {
-      return NextResponse.json({ ok: false, error: 'Lead not found.' }, { status: 404 });
+      return NextResponse.json({ ok: false, error: 'Shared asset not found.' }, { status: 404 });
     }
 
     if (error instanceof Error && error.message === 'LEAD_FORBIDDEN') {
-      return NextResponse.json({ ok: false, error: 'You cannot delete this lead.' }, { status: 403 });
+      return NextResponse.json({ ok: false, error: 'You cannot remove this shared asset.' }, { status: 403 });
     }
 
     if (error instanceof Error && error.message === 'LEAD_DELETE_REQUIRES_DECLINED') {
-      return NextResponse.json({ ok: false, error: 'Only declined leads can be deleted.' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: 'The share must be declined before it can be removed.' }, { status: 400 });
     }
 
     console.error('asset lead DELETE failed', error);
-    return NextResponse.json({ ok: false, error: 'Failed to delete lead.' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'Could not remove the shared asset.' }, { status: 500 });
   }
 }
 
