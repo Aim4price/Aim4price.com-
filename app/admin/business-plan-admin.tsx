@@ -9,7 +9,7 @@ async function readPlan(owner:string,signal?:AbortSignal):Promise<Plan>{
  if(!response.ok) throw Error(result.error || 'Could not load the plan.');
  return result;
 }
-export default function BusinessPlanAdmin({owner}:{owner:string}){
+export default function BusinessPlanAdmin({owner,onChanged}:{owner:string;onChanged:(paid:boolean)=>void}){
  const [plan,setPlan]=useState<Plan|null>(null),[confirm,setConfirm]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  useEffect(()=>{
    const controller=new AbortController();
@@ -22,11 +22,12 @@ export default function BusinessPlanAdmin({owner}:{owner:string}){
    try{
      const response=await fetch('/api/admin/business-credits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({businessId:plan.businessId,confirmed:true,plan:plan.paid?'free':'paid'})});
      if(!response.ok)throw Error((await response.json()).error || 'Could not change the plan.');
-     setPlan(await readPlan(owner));setConfirm(false);
+     const updated = await readPlan(owner);
+     setPlan(updated);setConfirm(false);onChanged(updated.paid);
    }catch(e){setError(e instanceof Error?e.message:'Could not save the plan.');}
    finally{setBusy(false);}
  }
- return <details className={styles.accountDisclosure}><summary>Business plan <span>{plan?(plan.paid?'Paid Business':'Free Business'):'Plan details'}</span></summary>
+ return <details className={styles.accountDisclosure}><summary>Business plan <span>{plan?(plan.paid?'Paid Business Account':'Free Business Account'):'Plan details'}</span></summary>
  {plan && <div className={styles.accountActionSummary}>
  {plan.pending && !plan.paid && <p>Upgrade requested</p>}
  {confirm ? <><p>{plan.paid?'Switch to Free? Staff access will pause. Team assignments and the owner’s Shared Assets are preserved.':'Activate Paid Business? This unlocks Business stock, Parts Stock, hosted client registers and staff access.'}</p>

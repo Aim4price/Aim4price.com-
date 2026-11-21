@@ -53,3 +53,18 @@ export function workspaceLabel(type: string, subtype: string) {
   if (type === "dealer" && ["equipment-middleman", "machinery-middleman", "middleman"].includes(subtype)) return "Middleman";
   return SIGNUP_ACCOUNT_TYPE_OPTIONS.find(option => option.value === type)?.label ?? type;
 }
+
+export function adminAccountLabel(type: string, subtype: string, paidBusiness = false) {
+  const workspace = workspaceLabel(type, subtype);
+  if (workspace === "Middleman") return workspace;
+  if (type === "dealer" || type === "business") {
+    return type === "dealer" || paidBusiness ? "Paid Business Account" : "Free Business Account";
+  }
+  return workspace;
+}
+
+export function adminCategoryLabel(subtype: string, fallback: string) {
+  if (subtype === "machinery-dealer") return "Machinery business";
+  if (subtype === "motor-dealer") return "Motor business";
+  return fallback;
+}

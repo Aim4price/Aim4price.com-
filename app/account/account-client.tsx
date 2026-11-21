@@ -1700,7 +1700,6 @@ export default function AccountClient({
                       </button>
                     ) : null}
 
-                    {subscription && <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton}/>}
                   {sharedAccount ? <Link href="#directory-listing-title" data-tooltip="View and update your business directory listing." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="directory" /><strong>Directory listing</strong></Link> : null}
                     {showPartnerDirectory ? (
                       <button
@@ -1732,6 +1731,8 @@ export default function AccountClient({
                     <QuickActionIcon name="business" />
                     <strong>Edit business details</strong>
                   </button>}
+
+                  {subscription && <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />}
 
                   <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")} data-tooltip="View and download your Aim4price invoices." data-tooltip-style="description">
                     <QuickActionIcon name="invoices" />

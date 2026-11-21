@@ -1,6 +1,7 @@
 import styles from "./page.module.css";
 export type QuickActionIconName =
   | "connections"
+  | "subscription"
   | "invoices"
   | "notifications"
   | "business"
@@ -56,6 +57,8 @@ export default function QuickActionIcon({ name }: { name: QuickActionIconName })
           <path {...strokeProps} d="M14.8 10.1h.02" />
         </svg>
       ) : null}
+
+      {name === "subscription" && <svg {...svgProps}><rect {...strokeProps} x="3" y="5" width="18" height="14" rx="3" /><path {...strokeProps} d="M3 10h18M7 15h4" /></svg>}
 
       {name === "invoices" ? (
         <svg {...svgProps}><path {...strokeProps} d="M6 3h9l4 4v14H6V3Z M14 3v5h5 M9 12h7 M9 16h7" /></svg>
