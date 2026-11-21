@@ -39,6 +39,7 @@ import entryStyles from '../app/marketplace/marketplace-entry.module.css';
 import SettingsDetailIcon from './SettingsDetailIcon';
 
 type AdStudioClientProps = {
+  initialMode?: 'home' | 'style' | 'creator';
   dealerAppMode?: boolean;
   middlemanMode?: boolean;
 };
@@ -160,11 +161,11 @@ function createPreviewPhotoId(): string {
   return `studio-preview-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export default function AdStudioClient({ dealerAppMode = false, middlemanMode = false }: AdStudioClientProps) {
+export default function AdStudioClient({ initialMode = 'home', dealerAppMode = false, middlemanMode = false }: AdStudioClientProps) {
   const dealerAppRoot = useDealerAppRoot();
   const brandKitsEndpoint = dealerAppMode ? `/api${dealerAppRoot}/ad-studio/brand-kits` : '/api/ad-studio/brand-kits';
-  const [studioMode, setStudioMode] = useState<'home' | 'style' | 'creator'>('home');
-  const [creatorStarted, setCreatorStarted] = useState(false);
+  const [studioMode, setStudioMode] = useState<'home' | 'style' | 'creator'>(initialMode);
+  const [creatorStarted, setCreatorStarted] = useState(initialMode === 'creator');
   const [creatorTemplate, setCreatorTemplate] = useState({ id: '', revision: 0 });
   const [kits, setKits] = useState<AdBrandKit[]>([]);
   const [draft, setDraft] = useState<EditableBrandKit>(EMPTY_KIT);

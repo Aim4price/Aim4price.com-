@@ -3,6 +3,9 @@ name: Website header and zoom validation
 on:
   pull_request:
     paths:
+      - 'app/workspace/**'
+      - 'lib/workspace-navigation.ts'
+      - 'tests/workspace-navigation.test.cjs'
       - 'components/AppHeader*'
       - 'components/NotificationInboxModal.module.css'
       - 'components/AppPatternBackground*'
@@ -45,6 +48,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: node --test tests/workspace-navigation.test.cjs
       - name: Website layout regressions
         run: node --test tests/website-phone.test.mjs tests/site-workspace-zoom.test.mjs tests/header-manage-layout.test.mjs tests/header-nav-drag.test.mjs
       - name: Homepage playback and swipe regressions

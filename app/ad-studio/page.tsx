@@ -8,7 +8,7 @@ import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function AdStudioPage() {
+export default async function AdStudioPage({searchParams}: {searchParams?: {mode?: string}}) {
   const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) redirect('/auth#login');
   if (isDealerAppSession(session)) redirect('/dealer/ad-studio');
@@ -26,7 +26,7 @@ export default async function AdStudioPage() {
   return (
     <main>
       <AppHeader active="ad-studio" />
-      <AdStudioClient middlemanMode={isMiddlemanAccountSubtype(profile.accountSubtype)} />
+      <AdStudioClient key={searchParams?.mode} initialMode={searchParams?.mode === 'template' ? 'style' : searchParams?.mode === 'create' ? 'creator' : 'home'} middlemanMode={isMiddlemanAccountSubtype(profile.accountSubtype)} />
     </main>
   );
 }
