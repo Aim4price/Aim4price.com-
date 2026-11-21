@@ -2138,7 +2138,7 @@ export default function LeadsClient({
         const declineData = (await declineResponse.json()) as LeadsResponse;
 
         if (!declineResponse.ok || !declineData.ok) {
-          throw new Error(declineData.error ?? 'Failed to prepare lead for deletion.');
+          throw new Error(declineData.error ?? 'Could not prepare the shared asset for removal.');
         }
       }
 
@@ -2149,7 +2149,7 @@ export default function LeadsClient({
       const data = (await response.json()) as { ok: boolean; error?: string };
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? 'Failed to delete lead.');
+        throw new Error(data.error ?? 'Could not remove the shared asset.');
       }
 
       setLeads((current) => current.filter((lead) => lead.id !== leadToDelete.id));
@@ -2160,10 +2160,10 @@ export default function LeadsClient({
         delete next[leadToDelete.id];
         return next;
       });
-      setNotice({ tone: 'success', message: 'Lead deleted.' });
+      setNotice({ tone: 'success', message: 'Asset removed from Shared Assets.' });
       return true;
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete lead.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Could not remove the shared asset.' });
       return false;
     }
   }
@@ -3550,11 +3550,11 @@ export default function LeadsClient({
                   <>
                     {isLeadOpen ? (
                       <button
-                        type="button" data-tooltip="Delete lead"
+                        type="button" data-tooltip="Remove from Shared Assets"
                         className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`}
                         onClick={() => setDeleteLeadTarget(lead)}
                       >
-                        Delete
+                        Remove
                       </button>
                     ) : null}
                     {lead.maintenanceAccess?.hasMaintenanceRecords ? (
@@ -3595,8 +3595,8 @@ export default function LeadsClient({
 
                     {isLeadOpen ? (
                       <>
-                        <button type="button" data-tooltip="Delete lead" className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
-                          Delete
+                        <button type="button" data-tooltip="Remove from Shared Assets" className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`} onClick={() => setDeleteLeadTarget(lead)}>
+                          Remove
                         </button>
                         <button
                           type="button" data-tooltip="Close lead"
@@ -4311,8 +4311,8 @@ export default function LeadsClient({
             <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
               <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''} ${styles.leadDeleteHeader} ${isDealerLeadsMode ? dialogStyles.inset : ''}`}>
                 <div>
-                  <h3 id="delete-lead-confirm-title">{'Delete lead?'}</h3>
-                  <p id="delete-lead-confirm-copy">{'This permanently removes the lead from your My Leads inbox.'}</p>
+                  <h3 id="delete-lead-confirm-title">Remove shared asset?</h3>
+                  <p id="delete-lead-confirm-copy">This permanently removes this asset from your Shared Assets inbox.</p>
                 </div>
 
                 <button
@@ -4328,17 +4328,17 @@ export default function LeadsClient({
               </div>
 
               <div className={`${assetStyles.deleteConfirmAsset} ${styles.leadDeleteSummary}`}>
-                <span>Selected lead</span>
-                <strong>{deleteLeadTarget.ownerBusinessName || ownerDisplayName(deleteLeadTarget)}</strong>
-                <small>{assetTitle(deleteLeadTarget)} · {formatCurrency(assetValue(deleteLeadTarget))} excl. VAT</small>
+                <span>Selected asset</span>
+                <strong>{assetTitle(deleteLeadTarget)}</strong>
+                <small>Shared by {deleteLeadTarget.ownerBusinessName || ownerDisplayName(deleteLeadTarget)} · {formatCurrency(assetValue(deleteLeadTarget))} excl. VAT</small>
               </div>
 
               <div className={styles.leadDeleteWarning}>
                 <strong>{isTrackingLead(deleteLeadTarget) ? 'Maintenance tracking will remain active.' : 'This action cannot be undone.'}</strong>
                 <span>
                   {isTrackingLead(deleteLeadTarget)
-                    ? 'Delete the asset separately from Tracking if you also want to stop maintenance tracking access.'
-                    : 'The owner will need to send a new lead if you need this information again.'}
+                    ? 'To stop tracking this asset, remove it from Tracking as well.'
+                    : 'To see this asset here again, ask the owner to share it again.'}
                 </span>
               </div>
 
@@ -4353,7 +4353,7 @@ export default function LeadsClient({
                   onClick={() => void confirmDeleteLead()}
                   disabled={isDeletingLead}
                 >
-                  <span>{isDeletingLead ? 'Deleting...' : 'Delete lead'}</span>
+                  <span>{isDeletingLead ? 'Removing…' : 'Remove asset'}</span>
                 </button>
               </div>
             </div>
