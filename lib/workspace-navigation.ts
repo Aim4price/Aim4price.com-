@@ -29,26 +29,26 @@ export function workspaceHeader(role: WorkspaceRole, receivedHref: string) {
 }
 
 const cards = {
-  register: ['Asset Register','/asset-register','agriculture'],
-  value: ['Value Asset','/valuation','construction'],
-  marketplace: ['Marketplace','/marketplace','motor'],
-  registers: ['Manage Registers','/asset-registers','industrial'],
-  map: ['Asset Map','/asset-map','motor'],
-  maintenance: ['Maintenance','/maintenance','construction'],
-  costs: ['Cost Ledger','/my-invoices','industrial'],
-  budgets: ['Budgets','/budgets','agriculture'],
-  fuel: ['Fuel Slips','/fuel?view=slips','motor'],
-  storage: ['Fuel Storage','/fuel?view=storage','industrial'],
-  documents: ['Documents','/documents','construction'],
-  annual: ['Annual Review','/annual-review','agriculture'],
-  shared: ['Shared Assets','/leads','agriculture'],
-  parts: ['Parts','/parts','industrial'],
-  tracking: ['Maintenance Tracking','/tracking','construction'],
-  businessCosts: ['Cost Ledger','/dealer-costs','industrial'],
-  showroom: ['My Showroom','/my-showroom','agriculture'],
-  template: ['Advert Template','/ad-studio?mode=template','construction'],
-  advert: ['Create Advert','/ad-studio?mode=create','motor'],
-  account: ['Account','/account','industrial'],
+  register: ['Asset Register','/asset-register'],
+  value: ['Value Asset','/valuation'],
+  marketplace: ['Marketplace','/marketplace'],
+  registers: ['Manage Registers','/asset-registers'],
+  map: ['Asset Map','/asset-map'],
+  maintenance: ['Maintenance','/maintenance'],
+  costs: ['Cost Ledger','/my-invoices'],
+  budgets: ['Budgets','/budgets'],
+  fuel: ['Fuel Slips','/fuel?view=slips'],
+  storage: ['Fuel Storage','/fuel?view=storage'],
+  documents: ['Documents','/documents'],
+  annual: ['Annual Review','/annual-review'],
+  shared: ['Shared Assets','/leads'],
+  parts: ['Parts','/parts'],
+  tracking: ['Maintenance Tracking','/tracking'],
+  businessCosts: ['Cost Ledger','/dealer-costs'],
+  showroom: ['My Showroom','/my-showroom'],
+  template: ['Advert Template','/ad-studio?mode=template'],
+  advert: ['Create Advert','/ad-studio?mode=create'],
+  account: ['Account','/account'],
 } as const;
 type CardKey = keyof typeof cards;
 const inventories: Record<WorkspaceRole, CardKey[]> = {
@@ -60,7 +60,7 @@ const freeCards = new Set<CardKey>(['shared','value','marketplace','account']);
 
 export function workspaceCards(role: WorkspaceRole, free: boolean, receivedHref: string) {
   return inventories[role].map(key => {
-    const [label,href,sector] = cards[key];
-    return {key,label,href:key === 'shared' ? receivedHref : href,sector,locked:free && !freeCards.has(key)};
+    const [label,href] = cards[key];
+    return {key,label,href:key === 'shared' ? receivedHref : href,locked:free && !freeCards.has(key)};
   });
 }
