@@ -2,7 +2,7 @@
 import { PageHelpHeading } from '../../components/PageHelp';
 import {BusinessSubscriptionButton, type BusinessSubscription} from '../../components/BusinessCreditControls';
 
-import QuickActionIcon from "./QuickActionIcon";
+import QuickActionIcon, { type QuickActionIconName } from "./QuickActionIcon";
 import AccountModalScroller from "./account-modal-scroller";
 
 import Link from "next/link";
@@ -469,6 +469,16 @@ function ModalInlineNotice({ notice }: { notice: AccountNotice | null }) {
   );
 }
 
+function LockedBusinessAction({ icon, label }: { icon: QuickActionIconName; label: string }) {
+  return (
+    <button type="button" disabled className={`${styles.quickActionButton} ${styles.lockedBusinessAction}`} aria-label={`${label} — Paid Business`}>
+      <QuickActionIcon name={icon} />
+      <strong>{label}</strong>
+      <span className={styles.businessLock} aria-hidden="true"><QuickActionIcon name="security" /></span>
+    </button>
+  );
+}
+
 export default function AccountClient({
   showAccounting = false,
   canManageDesktopUsers = false,
@@ -757,6 +767,7 @@ export default function AccountClient({
     () => formatAccountTypeLabel(profileDraft.accountType, profile?.accountSubtype),
     [profile?.accountSubtype, profileDraft.accountType],
   );
+  const isFreeBusiness = Boolean(subscription && !(subscription.fullAccess ?? subscription.paidSince));
   const businessPlanLabel = subscription
     ? (subscription.fullAccess ?? Boolean(subscription.paidSince)) ? "Paid Business Account" : "Free Business Account"
     : undefined;
@@ -1532,7 +1543,7 @@ export default function AccountClient({
             <div className={styles.metricGrid}>
               <div className={styles.metricTile}>
                 <span>Account type</span>
-                <strong>{businessPlanLabel ?? accountTypeLabel}</strong>
+                <strong>{subscription ? "Business" : accountTypeLabel}</strong>
               </div>
 
               <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={() => openOverviewDetails()} aria-label="Edit contact number" data-tooltip="Update the contact number saved on your profile." data-tooltip-style="description">
@@ -1582,7 +1593,7 @@ export default function AccountClient({
 
             <div className={styles.quickActionGroups}>
               {/* Task order is shared by every account: daily work, access, visibility, then administration. */}
-              {isOwnerAccount || isDealerAccount ? (
+              {isOwnerAccount || isDealerAccount || isFreeBusiness ? (
                 <section
                   className={styles.quickActionGroup}
                   aria-labelledby="assets-activity-actions-title"
@@ -1591,6 +1602,11 @@ export default function AccountClient({
                     <h3 id="assets-activity-actions-title">Assets &amp; activity</h3>
                   </div>
                   <div className={styles.quickActionList}>
+                    {isFreeBusiness && <>
+                      <LockedBusinessAction icon="registers" label="Manage asset registers" />
+                      <LockedBusinessAction icon="claim" label="Claim or send an asset" />
+                      <LockedBusinessAction icon="notifications" label="Notifications" />
+                    </>}
                     {isAssetRegisterAccount ? (
                       <button
                         type="button"
@@ -1629,8 +1645,12 @@ export default function AccountClient({
                     <h3 id="apps-connections-actions-title">Apps &amp; connections</h3>
                   </div>
                   <div className={styles.quickActionList}>
-                    {!(isOwnerAccount || isDealerAccount) && <Link className={styles.quickActionButton} href="/team/access" data-tooltip="View the workspaces and assets shared with you." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>My access</strong></Link>}
-                    {canManageDesktopUsers && !isMiddlemanAccount && <Link className={styles.quickActionButton} href="/account/team-access" data-tooltip="Manage who can use your desktop workspace and what they can access." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>Desktop users</strong></Link>}
+                    {!isFreeBusiness && !(isOwnerAccount || isDealerAccount) && <Link className={styles.quickActionButton} href="/team/access" data-tooltip="View the workspaces and assets shared with you." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>My access</strong></Link>}
+                    {isFreeBusiness && <>
+                      <LockedBusinessAction icon="connections" label="Desktop users" />
+                      <LockedBusinessAction icon="dealer" label="Manage Business App staff" />
+                    </>}
+                    {!isFreeBusiness && canManageDesktopUsers && !isMiddlemanAccount && <Link className={styles.quickActionButton} href="/account/team-access" data-tooltip="Manage who can use your desktop workspace and what they can access." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>Desktop users</strong></Link>}
 
                     {isOwnerAccount ? (
                       <button
@@ -1680,7 +1700,8 @@ export default function AccountClient({
                       </Link>
                     ) : null}
 
-                    {showMarketplaceContact ? (
+                    {isFreeBusiness && <LockedBusinessAction icon="marketplace" label="Marketplace contact" />}
+                    {!isFreeBusiness && showMarketplaceContact ? (
                       <button
                         type="button"
                         className={styles.quickActionButton}
