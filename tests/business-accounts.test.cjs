@@ -104,23 +104,26 @@ test('Dealer contact edits preserve account type and cannot self-approve',async(
  await pg.query("UPDATE account_profiles SET account_status='suspended' WHERE user_id='dealer'");await assert.rejects(mod.saveBusinessDetails('dealer',{businessName:'Changed',phone:'123'}),/unavailable/);
 }finally{await pg.close();}});
 
-test('existing active businesses gain desktop access once without enabling invoicing',async()=>{
+test('only activated Paid Business owners gain desktop access on migration; free, pending and suspended accounts stay restricted',async()=>{
  const pg=new PGlite();
  try {
   await pg.exec(`create table "user"(id text primary key,email text);
     create table account_profiles(user_id text primary key, account_type text,account_subtype text,account_status text,updated_at timestamptz);
     create table sharing_account_access(user_id text primary key,plan text,updated_at timestamptz);
+    create table business_workspaces(owner_user_id text primary key,paid_since timestamptz,upgrade_requested_at timestamptz);
+    insert into business_workspaces values ('b',now(),null),('f',null,now()),('s',now(),null),('g',now(),null);
     insert into account_profiles values ('b','business','insurance-services','active',null),
-      ('s','business','maintenance-services','suspended',null),('d','dealer','motor-dealer','active',null);
-    insert into sharing_account_access values ('b','free',null),('s','free',null);
+      ('f','business','contributor','active',null),('s','business','maintenance-services','suspended',null),('d','dealer','motor-dealer','active',null);
+    insert into sharing_account_access values ('b','free',null),('s','free',null),('f','free',null);
     create table guest_businesses(email text,suspended boolean);
     insert into account_profiles values ('g','business','contributor','active',null);
     insert into "user" values ('g','guest@test');insert into guest_businesses values('guest@test',true);`);
   const migration=fs.readFileSync('database/migrations/164-business-desktop.sql','utf8');
   await pg.exec('begin;'+migration+'commit;');
   await pg.exec('begin;'+migration+'commit;');
-  assert.deepEqual((await pg.query("select user_id,account_type from account_profiles order by user_id")).rows.map(r=>[r.user_id,r.account_type]),[['b','dealer'],['d','dealer'],['g','business'],['s','business']]);
+  assert.deepEqual((await pg.query("select user_id,account_type from account_profiles order by user_id")).rows.map(r=>[r.user_id,r.account_type]),[['b','dealer'],['d','dealer'],['f','business'],['g','business'],['s','business']]);
   assert.equal((await pg.query("select account_subtype from account_profiles where user_id='b'")).rows[0].account_subtype,'insurance-services');
   assert.equal((await pg.query("select plan from sharing_account_access where user_id='b'")).rows[0].plan,'desktop');
+  assert.equal((await pg.query("select plan from sharing_account_access where user_id='f'")).rows[0].plan,'free');
  } finally {await pg.close();}
 });

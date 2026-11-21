@@ -22,8 +22,11 @@ begin
         ) not valid;
   alter table account_profiles validate constraint account_profiles_account_role_check;
 
+  -- A request to upgrade, credits used, or a verified email never activates Desktop.
+  if to_regclass('business_workspaces') is null then return; end if;
   create temporary table converting_business_accounts on commit drop as
     select p.user_id from account_profiles p
+    join business_workspaces w on w.owner_user_id=p.user_id and (to_jsonb(w)->>'paid_since') is not null
     where p.account_type='business' and p.account_status='active'
       and p.user_id not like 'aim4price-assistance-%'
 ;
