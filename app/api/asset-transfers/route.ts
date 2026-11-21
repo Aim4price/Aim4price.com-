@@ -83,13 +83,13 @@ function errorResponse(error: unknown) {
   }
   if (code === 'ASSET_TRANSFER_DEALER_ACCOUNT_REQUIRED') {
     return NextResponse.json(
-      { ok: false, error: 'This trade-in code can only be claimed by an active Dealer account.' },
+      { ok: false, error: 'This trade-in code can only be claimed by an active Business account.' },
       { status: 400 },
     );
   }
   if (code === 'ASSET_TRANSFER_ACCOUNT_REQUIRED') {
     return NextResponse.json(
-      { ok: false, error: 'Use an active Owner or Dealer account to claim this asset.' },
+      { ok: false, error: 'Use an active Owner or Business account to claim this asset.' },
       { status: 403 },
     );
   }

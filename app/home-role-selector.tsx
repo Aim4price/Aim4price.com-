@@ -55,14 +55,8 @@ export default function HomeRoleSelector() {
             <Link href="/pricing?audience=owner" className={styles.roleAction}>Find my package</Link>
           </article>
           <article className={styles.roleCard}>
-            <h3>Dealer</h3>
-            <p>For dealerships managing stock, client registers and asset enquiries.</p>
-            <Link href="/pricing?audience=dealer" className={styles.rolePricing} aria-label="See Dealer subscriptions">Subscriptions</Link>
-            <Link href="/pricing?audience=dealer" className={styles.roleAction}>Find my package</Link>
-          </article>
-          <article className={styles.roleCard}>
             <h3>Business</h3>
-            <p>For service providers, such as repairers, insurers and financiers, working with assets shared by clients.</p>
+            <p>Manage stock, parts, shared assets and hosted client registers for your business.</p>
             <Link href="/pricing?audience=business" className={styles.rolePricing} aria-label="See Business subscriptions">Subscriptions</Link>
             <Link href="/pricing?audience=business" className={styles.roleAction}>Find my package</Link>
           </article>

@@ -11,7 +11,7 @@ function value(body: Record<string, unknown>, key: string): string {
 
 function errorResponse(error: unknown) {
   const code = error instanceof Error ? error.message : '';
-  if (code === 'ADMIN_ASSET_ALLOCATION_ACCOUNT_REQUIRED') return NextResponse.json({ ok: false, error: 'Assets can only be allocated to an active Owner or Dealer account.' }, { status: 400 });
+  if (code === 'ADMIN_ASSET_ALLOCATION_ACCOUNT_REQUIRED') return NextResponse.json({ ok: false, error: 'Assets can only be allocated to an active Owner or Business account.' }, { status: 400 });
   if (code === 'ADMIN_ASSET_ALLOCATION_NOT_FOUND' || code === 'ADMIN_DISPOSED_ASSET_NOT_FOUND') return NextResponse.json({ ok: false, error: 'This asset outcome record could not be found.' }, { status: 404 });
   if (code === 'ADMIN_ASSET_ALLOCATION_NOT_AVAILABLE') return NextResponse.json({ ok: false, error: 'This asset has already moved or is no longer available to allocate.' }, { status: 409 });
   if (code === 'ADMIN_DISPOSED_ASSET_DELETE_NOT_AVAILABLE') return NextResponse.json({ ok: false, error: 'An allocated or already moved asset cannot be deleted from its source account.' }, { status: 409 });

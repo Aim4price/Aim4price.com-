@@ -4,6 +4,10 @@ export const ownerHosting = [
   { range: '26–100', monthly: 19900, annually: 199900 },
   { range: '101–300', monthly: 39900, annually: 399900 },
 ] as const;
+export function hostedRegisterBand(assets: number) {
+  if (!Number.isSafeInteger(assets) || assets < 0 || assets > 300) throw new RangeError('Review custom client hosting before invoicing.');
+  return assets <= 25 ? 0 : assets <= 100 ? 1 : 2;
+}
 export const businessHosting = { monthly: 19900, annually: 199900 } as const;
 export const adminRetainers = [
   { hours: 2, cents: 39900 }, { hours: 5, cents: 89900 }, { hours: 10, cents: 159900 },

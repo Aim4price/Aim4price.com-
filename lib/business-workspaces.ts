@@ -42,7 +42,7 @@ export async function ensureBusinessWorkspace(userId: string) {
 }
 
 export async function ensureBusinessMembership(db: import('pg').PoolClient, userId: string) {
-  const profile = (await db.query("SELECT user_id FROM account_profiles WHERE user_id=$1 AND account_type='business' FOR UPDATE", [userId])).rows[0];
+  const profile = (await db.query("SELECT user_id FROM account_profiles WHERE user_id=$1 AND (account_type='business' OR (account_type='dealer' AND account_subtype IN ('contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services'))) FOR UPDATE", [userId])).rows[0];
   if (!profile) return null;
   await db.query(`INSERT INTO business_workspaces(id,owner_user_id)
    SELECT $2,$1 WHERE NOT EXISTS(SELECT 1 FROM business_workspace_members WHERE user_id=$1)

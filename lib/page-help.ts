@@ -31,10 +31,10 @@ export const pageHelp = {
     start: "Start with Needs attention and open the item you want to follow up.",
   },
   dealerRegisterChoice: {
-    title: "Dealer Asset Registers",
+    title: "Business Asset Registers",
     purpose: "Keep your dealership’s equipment separate from the assets you manage for clients.",
     actions: [
-      "Open Dealer Asset Register to work with your own equipment.",
+      "Open Business Asset Register to work with your own equipment.",
       "Open Client Asset Registers to find registers you manage for clients.",
       "Check the register name before saving new assets or making changes.",
     ],
@@ -131,7 +131,7 @@ export const pageHelp = {
     start: "Select Open on an asset, or follow the link you received from its sender.",
   },
   dealerAccount: {
-    title: "Dealer Account",
+    title: "Business Account",
     purpose: "Give dealerships one place to manage their profile, asset activity and staff access.",
     actions: [
       "Use Assets & activity for registers, transfers and notifications.",

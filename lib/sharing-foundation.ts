@@ -117,10 +117,10 @@ export async function activateSharingDesktop(actorId: string, userId: string) {
         await db.query('BEGIN');
         const account = (await db.query("SELECT account_type,account_status FROM account_profiles WHERE user_id=$1 AND account_type IN ('dealer','business') FOR UPDATE", [userId])).rows[0];
         if (!account || account.account_status === 'suspended')
-            throw Error('Choose a non-suspended Dealer or Business account.');
+            throw Error('Choose a non-suspended Business account.');
         // Business accounts use the existing Dealer Desktop; preserve their identity,
         // workspace memberships, verification and contributions under the same user ID.
-        await db.query("UPDATE account_profiles SET account_type='dealer',account_subtype=CASE WHEN account_type='business' THEN 'machinery-dealer' ELSE account_subtype END,account_status='active',updated_at=now() WHERE user_id=$1", [userId]);
+        await db.query("UPDATE account_profiles SET account_type='dealer',account_status='active',updated_at=now() WHERE user_id=$1", [userId]);
         await db.query("INSERT INTO sharing_account_access(user_id,plan,updated_by) VALUES($1,'desktop',$2) ON CONFLICT(user_id) DO UPDATE SET plan='desktop',updated_by=$2,updated_at=now()", [userId, actorId]);
         await db.query("INSERT INTO sharing_admin_events(actor_id,account_id,action,detail) VALUES($1,$2,'desktop_activated',$3::jsonb)", [actorId, userId, JSON.stringify(account)]);
         await db.query('COMMIT');

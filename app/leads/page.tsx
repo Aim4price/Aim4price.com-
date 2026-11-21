@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { isBusinessService } from "../../lib/business-service-options";
 import { redirect } from "next/navigation";
 import { getAccountProfile } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
@@ -34,6 +36,6 @@ export default async function LeadsPage() {
       initialLeads={initialLeads.slice(0, INITIAL_LEAD_BATCH_SIZE)}
       initialLeadsHaveMore={initialLeads.length > INITIAL_LEAD_BATCH_SIZE}
       initialSessionUserId={session.user.id}
-    /></>
+    />{isBusinessService(profile.accountSubtype) && <p><Link href="/business">View assets received by shared link</Link></p>}</>
   );
 }

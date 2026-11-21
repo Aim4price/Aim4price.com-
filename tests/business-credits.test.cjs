@@ -13,7 +13,7 @@ test('Business credits pool across members and preserve trial, upgrade, retry an
  const pg=new PGlite(), previous=process.env.AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT;
  try{
   await pg.exec(`CREATE TABLE "user"(id text PRIMARY KEY,name text,email text,"emailVerified" boolean);
-   CREATE TABLE account_profiles(user_id text PRIMARY KEY,account_type text);
+   CREATE TABLE account_profiles(user_id text PRIMARY KEY,account_type text,account_subtype text);
    INSERT INTO "user" VALUES('owner','Owner','owner@test',true),('member','Member','member@test',true);
    INSERT INTO account_profiles VALUES('owner','business'),('member','business');`);
   const query=async(sql,args)=>{

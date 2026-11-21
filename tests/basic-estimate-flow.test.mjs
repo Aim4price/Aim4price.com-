@@ -351,7 +351,7 @@ test('the final result renderer and save destinations remain shared with the exi
   assert.match(client, /if \(basicEstimateActive\) \{[\s\S]*?if \(step === 5\) return renderBasicReplacementStep\(\);[\s\S]*?return renderResultStep\(\);/);
   assert.match(client, /Save to Asset Register/);
   assert.match(client, /Save to My Assets/);
-  assert.match(client, /Dealer Asset Register/);
+  assert.match(client, /Business Asset Register/);
   assert.match(client, /Marketplace/);
   assert.match(client, /downloadValuationPdf/);
 });

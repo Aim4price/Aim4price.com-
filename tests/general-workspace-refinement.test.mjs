@@ -53,13 +53,13 @@ test('dealer Asset Register gateway reuses the Marketplace entry design without 
   assert.match(registerGateway, /entryStyles\.entryContainer/);
   assert.match(registerGateway, /valuationStyles\.sectorBigCard/);
   assert.match(registerGateway, /entryStyles\.entryChoiceCard/);
-  assert.match(registerGateway, /Dealer Asset Register/);
+  assert.match(registerGateway, /Business Asset Register/);
   assert.match(registerGateway, /Client Asset Registers/);
   assert.doesNotMatch(registerGateway, /<video/);
 });
 
 test('dealer registers use meaningful titles without decorative pills or combined-register controls', () => {
-  assert.match(registerClient, /dealerRegisterMode === 'dealer'[\s\S]*?\? 'Dealer Asset Register'/);
+  assert.match(registerClient, /dealerRegisterMode === 'dealer'[\s\S]*?\? 'Business Asset Register'/);
   assert.match(registerClient, /const registerPageTitle = isLoading[\s\S]*?: savedRegisterTitle;/);
   assert.doesNotMatch(registerClient, /`\$\{savedRegisterTitle\} Asset Register`/);
   assert.doesNotMatch(registerClient, /styles\.dealerRegisterContextPill/);

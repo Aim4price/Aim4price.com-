@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const ts = require('typescript');
 const { PGlite } = require('@electric-sql/pglite');
 function load(path, mocks) { const exports = {}; new Function('require', 'exports', ts.transpileModule(fs.readFileSync(path, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(n => n in mocks ? mocks[n] : require(n), exports); return exports; }
-async function setup() { const pg = new PGlite(); await pg.exec(`CREATE TABLE account_profiles(user_id text PRIMARY KEY,account_type text,account_status text,business_name text,phone text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());CREATE TABLE "user"(id text PRIMARY KEY,email text,"emailVerified" boolean);INSERT INTO account_profiles VALUES('business','business','active','Workshop','123',now(),now()),('owner','owner','active','Owner','',now(),now());INSERT INTO "user" VALUES('business','workshop@example.com',false),('owner','owner@example.com',true);`); const query = (sql, p) => p ? pg.query(sql, p) : pg.exec(sql).then(r => r.at(-1)); const db = { query, connect: async () => ({ query, release() { } }) }; const profile = { getAccountProfile: async (u) => { const r = (await pg.query('SELECT * FROM account_profiles WHERE user_id=$1', [u.id])).rows[0]; return { accountType: r.account_type, accountStatus: r.account_status, businessName: r.business_name, phone: r.phone }; } }; const mod = load('lib/business-accounts.ts', { './asset-share-links': {liveShareOwnershipSql:()=> 'true'}, './db': { getDb: () => db }, './account-profile': profile, './business-workspaces': {businessWorkspaceSummary:async()=>({suspended:false})} }); return { pg, mod }; }
+async function setup() { const pg = new PGlite(); await pg.exec(`CREATE TABLE account_profiles(user_id text PRIMARY KEY,account_type text,account_status text,business_name text,phone text,created_at timestamptz DEFAULT now(),updated_at timestamptz DEFAULT now());CREATE TABLE "user"(id text PRIMARY KEY,email text,"emailVerified" boolean);INSERT INTO account_profiles VALUES('business','business','active','Workshop','123',now(),now()),('owner','owner','active','Owner','',now(),now());INSERT INTO "user" VALUES('business','workshop@example.com',false),('owner','owner@example.com',true);`); const query = (sql, p) => p ? pg.query(sql, p) : pg.exec(sql).then(r => r.at(-1)); const db = { query, connect: async () => ({ query, release() { } }) }; const profile = { getAccountProfile: async (u) => { const r = (await pg.query('SELECT * FROM account_profiles WHERE user_id=$1', [u.id])).rows[0]; return { accountType: r.account_type, accountStatus: r.account_status, businessName: r.business_name, phone: r.phone }; } }; const mod = load('lib/business-accounts.ts', { './business-service-options':load('lib/business-service-options.ts',{}), './asset-share-links': {liveShareOwnershipSql:()=> 'true'}, './db': { getDb: () => db }, './account-profile': profile, './business-workspaces': {businessWorkspaceSummary:async()=>({suspended:false})} }); return { pg, mod }; }
 test('manual verification requires verified email, is audited, and cannot approve owners', async () => { const { pg, mod } = await setup(); try {
     assert.equal(await mod.canBusinessContribute({ id: 'business', email: 'workshop@example.com', emailVerified: false }), false);
     await assert.rejects(mod.verifyBusinessAccount('admin', { userId: 'business', verified: true, note: 'Checked business' }), /verified email/);
@@ -56,7 +56,7 @@ test('role migration preserves existing roles and the new business role on repea
 finally {
     await pg.close();
 } });
-test('free business signup never reads a billing plan or creates a charge', async () => { const shared = load('lib/billing-shared.ts', {}); const billing = load('lib/billing.ts', { './db': { getDb: () => { throw Error('Billing must not be consulted'); } }, './billing-schema': {}, './billing-shared': shared, './billing-report': {}, './admin-work-tracker': {} }); assert.equal(await billing.validateSignupBilling({ accountType: 'business', billingAccepted: true, billingPlanVersion: 999 }), null); });
+test('free business signup never reads a billing plan or creates a charge', async () => { const shared = load('lib/billing-shared.ts', {}); const billing = load('lib/billing.ts', { './hosting-pricing':load('lib/hosting-pricing.ts',{}), './db': { getDb: () => { throw Error('Billing must not be consulted'); } }, './billing-schema': {}, './billing-shared': shared, './billing-report': {}, './admin-work-tracker': {} }); assert.equal(await billing.validateSignupBilling({ accountType: 'business', billingAccepted: true, billingPlanVersion: 999 }), null); });
 test('active business accounts do not pass the paid API session gate', async () => { let role = 'business'; const profile = load('lib/account-profile.ts', { './sharing-foundation': {sharingPlan:async()=>role==='business'?'free':'desktop'}, './account-entitlements': load('lib/account-entitlements.ts', {}), './retired-workspaces': load('lib/retired-workspaces.ts', {}), './db': { getDb: () => ({ query: async (sql) => ({ rows: sql.trim().toLowerCase().startsWith('select') ? [{ user_id: 'b', account_type: role, account_subtype: role === 'business' ? 'contributor' : 'farmer', account_status: 'active' }] : [] }) }) }, './account-constants': load('lib/account-constants.ts', {}), './asset-registers': {}, './database-schema-readiness': { isDatabaseSchemaReady: async () => true }, './middleman-account': { isMiddlemanAccountSubtype: () => false } }); assert.equal(await profile.isAccountActive({ id: 'b', email: 'b@example.com' }), false); role = 'owner'; assert.equal(await profile.isAccountActive({ id: 'b', email: 'b@example.com' }), true); });
 test('Admin verification endpoints reject non-admin reads and foreign-origin writes', async () => {
     let session = null, writes = 0, reads = 0, schemaCalls = 0;
@@ -103,3 +103,24 @@ test('Dealer contact edits preserve account type and cannot self-approve',async(
  assert.equal((await pg.query("SELECT verified_at FROM business_account_reviews WHERE user_id='dealer'")).rows[0].verified_at,null);
  await pg.query("UPDATE account_profiles SET account_status='suspended' WHERE user_id='dealer'");await assert.rejects(mod.saveBusinessDetails('dealer',{businessName:'Changed',phone:'123'}),/unavailable/);
 }finally{await pg.close();}});
+
+test('existing active businesses gain desktop access once without enabling invoicing',async()=>{
+ const pg=new PGlite();
+ try {
+  await pg.exec(`create table "user"(id text primary key,email text);
+    create table account_profiles(user_id text primary key, account_type text,account_subtype text,account_status text,updated_at timestamptz);
+    create table sharing_account_access(user_id text primary key,plan text,updated_at timestamptz);
+    insert into account_profiles values ('b','business','insurance-services','active',null),
+      ('s','business','maintenance-services','suspended',null),('d','dealer','motor-dealer','active',null);
+    insert into sharing_account_access values ('b','free',null),('s','free',null);
+    create table guest_businesses(email text,suspended boolean);
+    insert into account_profiles values ('g','business','contributor','active',null);
+    insert into "user" values ('g','guest@test');insert into guest_businesses values('guest@test',true);`);
+  const migration=fs.readFileSync('database/migrations/164-business-desktop.sql','utf8');
+  await pg.exec('begin;'+migration+'commit;');
+  await pg.exec('begin;'+migration+'commit;');
+  assert.deepEqual((await pg.query("select user_id,account_type from account_profiles order by user_id")).rows.map(r=>[r.user_id,r.account_type]),[['b','dealer'],['d','dealer'],['g','business'],['s','business']]);
+  assert.equal((await pg.query("select account_subtype from account_profiles where user_id='b'")).rows[0].account_subtype,'insurance-services');
+  assert.equal((await pg.query("select plan from sharing_account_access where user_id='b'")).rows[0].plan,'desktop');
+ } finally {await pg.close();}
+});

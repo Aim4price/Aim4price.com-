@@ -733,7 +733,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     },
     {
       id: 'dealer-accounts-created',
-      title: 'Dealer accounts created',
+      title: 'Business accounts created',
       values: monthYearValues(dealerAccounts),
     },
     {

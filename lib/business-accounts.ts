@@ -1,4 +1,5 @@
 import { liveShareOwnershipSql } from './asset-share-links';
+import { isBusinessService } from './business-service-options';
 import { businessWorkspaceSummary } from './business-workspaces';
 import { getDb } from './db';
 import { getAccountProfile } from './account-profile';
@@ -33,7 +34,7 @@ export async function readBusinessAccount(user: {
     email?: string | null;
 }) {
     const profile = await getAccountProfile(user);
-    if (profile.accountType !== 'business')
+    if ((profile.accountType !== 'business' && !(profile.accountType === 'dealer' && isBusinessService(profile.accountSubtype))))
         return null;
     await ensureBusinessAccounts();
     const row = (await getDb().query<BusinessReview>('SELECT website,evidence,verified_at,verified_by,verified_email,review_note FROM business_account_reviews WHERE user_id=$1', [user.id])).rows[0];
@@ -43,7 +44,7 @@ export async function readBusinessAccount(user: {
 export async function canBusinessRead(user: {id:string;email?:string|null;emailVerified?:boolean|null}) {
     if (user.emailVerified !== true) return false;
     const profile = await getAccountProfile(user);
-    if (profile.accountType !== 'business' || profile.accountStatus !== 'active') return false;
+    if ((profile.accountType !== 'business' && !(profile.accountType === 'dealer' && isBusinessService(profile.accountSubtype))) || profile.accountStatus !== 'active') return false;
     const workspace = await businessWorkspaceSummary(user.id);
     return Boolean(workspace && !workspace.suspended);
 }

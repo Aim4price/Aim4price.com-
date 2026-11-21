@@ -199,13 +199,13 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      // website's root scrollbar visible behind an open pricing dialog.
      await page.addStyleTag({content:'html{overflow:auto;scrollbar-gutter:stable}'+fs.readFileSync(path.join(root,'app/modal-scrollbars.css'),'utf8')});
      const annualRate=await page.$$eval('button[aria-haspopup="dialog"] span',els=>{
-      const rate=els.find(e=>e.textContent==='R1 999/year.');
+      const rate=els.find(e=>e.textContent==='R24.75 per client/month.');
       const rect=rate.getBoundingClientRect(),card=rate.closest('button').getBoundingClientRect();
       return {lines:rate.getClientRects().length,fits:rect.left>=card.left&&rect.right<=card.right};
      });
-     assert.equal(annualRate.lines,1,'Business annual amount and period stay on one line');
+     assert.equal(annualRate.lines,1,'Hosted client rate stays on one line');
      assert.ok(annualRate.fits,'Unbroken annual price still fits the card');
-     const prices=await page.$$eval('button[aria-haspopup="dialog"]',els=>els.slice(0,3).map(e=>{const amount=[...e.querySelectorAll('strong')].find(n=>/^(R99|R199|Free)$/.test(n.textContent));return {top:amount.getBoundingClientRect().top,size:parseFloat(getComputedStyle(amount).fontSize)};}));
+     const prices=await page.$$eval('button[aria-haspopup="dialog"]',els=>els.slice(0,2).map(e=>{const amount=[...e.querySelectorAll('strong')].find(n=>/^(R99|R199|Free)$/.test(n.textContent));return {top:amount.getBoundingClientRect().top,size:parseFloat(getComputedStyle(amount).fontSize)};}));
      assert(prices.every(p=>p.size>=40),'Subscription prices are prominent');
      if(width===1440)assert(Math.max(...prices.map(p=>p.top))-Math.min(...prices.map(p=>p.top))<2,'Subscription prices align across cards');
 
@@ -220,7 +220,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$eval('details',e=>e.open),false,'Coverage closes from the keyboard');
 
      assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent.includes('R199')),true);
-     assert.match(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent),/Shared access.*Free/);
+     assert.deepEqual(await page.$$eval('section[aria-label="Choose your account"] button',els=>els.map(e=>e.querySelector('strong').textContent)),['Owner','Business']);
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
@@ -337,7 +337,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.keyboard.press('Escape');
      await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
      assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'auto','Document scrolling returns after closing pricing');
-     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Dealer')).click());
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/customers.*asset registers/);
      assert.match(await page.$eval('[aria-label="Customer registers"]',e=>e.textContent),/R24.75 per client\/month/);
@@ -386,22 +386,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.screenshot({path:path.join(evidence,`dealer-compact-summary-${width}.png`)});
      await page.setViewport({width,height:1000});
      await page.keyboard.press('Escape');
-     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).click());
-     await page.waitForSelector('[role="dialog"]');
-     assert.match(await page.$eval('[aria-labelledby="business-shared-title"]',e=>e.textContent),/Shared access.*Free/);
-     assert.match(await page.$eval('[aria-labelledby="business-hosting-title"]',e=>e.textContent),/R199\/month.*R1 999\/year.*R24.75 per client\/month/);
-     assert.ok(await page.$('[aria-labelledby="business-shared-title"] a[href="/business/join"]'));
-     assert.ok(await page.$('[aria-labelledby="business-hosting-title"] a[href="/contact-us"]'));
-     if(width===1440){
-      await page.setViewport({width,height:700});
-      assert.equal(await page.$eval('[data-business-access]',e=>e.parentElement.scrollHeight>e.parentElement.clientHeight+1),false,'Business comparison fits without an inner scrollbar');
-     }
-     await page.screenshot({path:path.join(evidence,`business-access-options-${width}.png`)});
-     await page.setViewport({width,height:1000});
-     await page.click('[data-business-access] summary');
-     assert.match(await page.$eval('[data-business-access] details',e=>e.textContent),/R24.75\/month.*R249.75\/year/);
-     assert.equal(await page.$eval('[data-business-access]',e=>e.scrollWidth>e.clientWidth+1),false,'Business access stays within the dialog width');
-     await page.keyboard.press('Escape');
+     assert.ok(await page.$('a[href="/business/join"]'));
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent==='Middleman access').click());
      await page.waitForSelector('[data-middleman-access]');
      assert.match(await page.$eval('[data-middleman-access]',e=>e.textContent),/Free basic access.*Hosting referrals.*40%.*Asset recording.*R270\/hour.*Asset sales.*Agreed per sale/);
@@ -492,7 +477,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
        await page.waitForSelector('[role="dialog"]');
        const notice=await page.$eval('[role="dialog"]',e=>e.textContent);
        assert.match(notice,/Manage client asset registers/);
-       assert.match(notice,/50% of the standard Owner plan price/);
+       assert.match(notice,/25% of the standard Owner plan price/);
        assert.match(notice,/number of assets and the corresponding Owner plan/);
        assert.match(notice,/Clients have no login or access/);
        assert.match(notice,/billed separately.*R199\/month/);
@@ -505,13 +490,13 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
        await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
        await select('What would you like to use Aim4price for?','Owner');
        assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
-       await select('What would you like to use Aim4price for?','Dealer');
+       await select('What would you like to use Aim4price for?','Business');
        assert.ok(await page.$('button[aria-haspopup="dialog"]'));
       }else assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
      }
      await page.click('button[aria-label^="Which best describes your work?"]');await page.waitForSelector('[role="option"]');
      const options=await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent));
-     assert.ok(options.every(t=>!/(Insurance|Finance|Licensing|Other business)/.test(t)),mode+' excludes business services');
+     assert.equal(options.includes('Other business'),mode==='signup-dealer',mode+' shows the applicable business categories');
      await page.keyboard.press('Escape');
      await clickText('Next');await page.waitForSelector('input[name="name"]');await settledStep('signup-step-details');
      assert.ok(await page.$('#signup-step-details'),'Every account uses the same second step');

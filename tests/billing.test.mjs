@@ -22,7 +22,7 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
  const pg=new PGlite();
  const query=async(sql,values)=>{if(sql===schema.BILLING_SCHEMA_SQL){await pg.exec(sql);return {rows:[],rowCount:0};}if(sql.includes('pg_advisory_xact_lock'))return {rows:[],rowCount:1};const result=await pg.query(sql,values);return {...result,rowCount:result.rows.length||result.affectedRows||0};};
  const db={query,connect:async()=>({query,release(){}})};
- const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
+ const billing=load('lib/billing.ts',{'./hosting-pricing':load('lib/hosting-pricing.ts'),'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
  const oldFetch=global.fetch,oldKey=process.env.RESEND_API_KEY;
  try{
   await pg.exec('create table "user"(id text primary key,name text,email text); create table account_profiles(user_id text primary key,business_name text,address_line_1 text,address_line_2 text,town_city text,province text,phone text,account_status text); create table admin_work_sessions(id text primary key,client_user_id text,started_at timestamptz default now(),stopped_at timestamptz,duration_seconds integer,note text);');
@@ -106,7 +106,7 @@ test('recurring agreements are opt-in, audited, versioned and issue only once pe
  const pg=new PGlite();
  const query=async(sql,values)=>{if(sql===schema.BILLING_SCHEMA_SQL){await pg.exec(sql);return {rows:[],rowCount:0};}if(sql.includes('pg_advisory_xact_lock'))return {rows:[],rowCount:1};const r=await pg.query(sql,values);return {...r,rowCount:r.rows.length||r.affectedRows||0};};
  const db={query,connect:async()=>({query,release(){}})};
- const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
+ const billing=load('lib/billing.ts',{'./hosting-pricing':load('lib/hosting-pricing.ts'),'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
  try {
   await pg.exec('create table "user"(id text primary key,name text,email text); insert into "user" values(\'one\',\'Example\',\'one@example.test\');');
   await pg.exec('create table account_profiles(user_id text primary key,phone text,account_status text)');
@@ -133,6 +133,19 @@ test('recurring agreements are opt-in, audited, versioned and issue only once pe
   await billing.processRecurringInvoices('2090-05-01');
   a=await billing.getBillingAgreement('one');assert.equal(a.enabled,false);assert.match(a.lastError,/Missed billing/);
   assert.equal((await billing.listBillingInvoices('one',false)).total,2);
+  await pg.exec(`alter table account_profiles add column account_type text, add column account_subtype text;
+   insert into account_profiles(user_id,account_type,account_subtype) values('one','dealer','contributor');
+   create table asset_registers(id int,user_id text,is_primary boolean);
+   create table asset_register_items(id int,user_id text,register_id int,lifecycle_state text);
+   insert into asset_registers values(1,'one',true),(2,'one',false),(3,'one',false),(4,'other',false);
+   insert into asset_register_items select i,'one',3,'active' from generate_series(1,26) i;`);
+  await billing.saveBillingAgreement({...input,version:a.version,nextInvoiceDate:'2090-06-01',enabled:true,approved:true,includeHostedRegisters:true},'admin');
+  await billing.processRecurringInvoices('2090-06-01');
+  await billing.processRecurringInvoices('2090-06-01');
+  const hosted=await pg.query("select total_cents,lines from aim4price_billing_invoices where generation_key='recurring:one:2090-06-01'");
+  assert.equal(hosted.rows.length,1);
+  assert.equal(Number(hosted.rows[0].total_cents),25000+2475+4975);
+  assert.deepEqual(hosted.rows[0].lines.slice(1).map(l=>l.quantity),[1,1]);
   const events=await pg.query('select actor_id,action from aim4price_billing_agreement_events');
   assert.ok(events.rows.some(e=>e.actor_id==='admin'&&e.action==='paused'));
   assert.ok(events.rows.some(e=>e.action==='review_required'));

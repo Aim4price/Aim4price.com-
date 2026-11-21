@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const source = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('Dealer Account staff role controls use a fully custom shared dropdown', async () => {
+test('Business Account staff role controls use a fully custom shared dropdown', async () => {
   const [client, styles] = await Promise.all([
     source('app/account/dealer-app/dealer-access-client.tsx'),
     source('app/account/dealer-app/page.module.css'),
@@ -33,7 +33,7 @@ test('Dealer Account staff role controls use a fully custom shared dropdown', as
   assert.match(styles, /\.roleSelectChevron \{[\s\S]*?pointer-events: none/);
 });
 
-test('Dealer Account staff roles use a polished green badge', async () => {
+test('Business Account staff roles use a polished green badge', async () => {
   const [client, styles] = await Promise.all([
     source('app/account/dealer-app/dealer-access-client.tsx'),
     source('app/account/dealer-app/page.module.css'),

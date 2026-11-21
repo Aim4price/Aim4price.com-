@@ -25,8 +25,8 @@ function Choice({ selected, onClick, title, children, icon }: { selected: boolea
   </button>;
 }
 
-export default function PackageJourney({ onTitleChange, audience = 'owner', signedIn = false }: { signedIn?: boolean; onTitleChange?: (title: string) => void; audience?: 'owner' | 'dealer' }) {
-  const dealer = audience === 'dealer';
+export default function PackageJourney({ onTitleChange, audience = 'owner', signedIn = false }: { signedIn?: boolean; onTitleChange?: (title: string) => void; audience?: 'owner' | 'business' }) {
+  const dealer = audience === 'business';
   const firstStep = dealer ? 6 : 0;
   const [step, setStep] = useState(firstStep);
   const [detail, setDetail] = useState<'funding' | 'commission' | 'setup' | 'admin' | 'billing' | null>(null);
@@ -39,11 +39,11 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
   const [customers, setCustomers] = useState<'self' | 'customers' | null>(null);
   const [admin, setAdmin] = useState<Admin | null>(dealer ? null : 'self');
   const heading = useRef<HTMLHeadingElement>(null);
-  const plan = dealer ? { name: 'Dealer Partner', monthly: businessHosting.monthly / 100, yearly: businessHosting.annually / 100, limit: 0 } : assetBand !== null ? plans[assetBand] : undefined;
+  const plan = dealer ? { name: 'Business', monthly: businessHosting.monthly / 100, yearly: businessHosting.annually / 100, limit: 0 } : assetBand !== null ? plans[assetBand] : undefined;
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
   const packagePrice = plan ? (yearly ? plan.yearly : plan.monthly + (adminPlan?.price ?? 0)) : null;
   const ready = step === 7 ? help !== null : step === 8 ? setup !== null : step === 6 ? customers !== null : step === 0 ? assetBand !== null : step === 5 ? setup === 'visit' || setup === 'inspection' || setup === 'assisted' : step === 1 ? setup !== null : admin !== null;
-  const titles = ['How many assets?', dealer ? 'How will you add your stock?' : 'How will you add your assets?', dealer ? 'Who will manage the records?' : 'Who will manage your register?', dealer ? 'Your Dealer package' : 'Your Owner package', dealer ? 'Choose monthly admin help' : 'How much admin help do you need?', 'What help do you need?', 'Manage client registers?', 'Choose your support', 'Choose setup help'];
+  const titles = ['How many assets?', dealer ? 'How will you add your stock?' : 'How will you add your assets?', dealer ? 'Who will manage the records?' : 'Who will manage your register?', dealer ? 'Your Business package' : 'Your Owner package', dealer ? 'Choose monthly admin help' : 'How much admin help do you need?', 'What help do you need?', 'Manage client registers?', 'Choose your support', 'Choose setup help'];
   const detailTitles = { funding: 'Client hosting rates', commission: 'Partner commission', setup: 'Setup details', admin: 'Monthly admin help', billing: 'What your hosting includes' };
   useEffect(() => { onTitleChange?.(detail ? detailTitles[detail] : titles[step]); }, [step, detail, onTitleChange, dealer]);
   const move = (next: number) => {
@@ -74,7 +74,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
     }
     return step === 3 ? 0 : 3;
   };
-  const billing = <div className={styles.billing} role="group" aria-label={`${dealer ? 'Dealer' : 'Owner'} billing period`}>
+  const billing = <div className={styles.billing} role="group" aria-label={`${dealer ? 'Business' : 'Owner'} billing period`}>
     <button type="button" aria-pressed={!yearly} onClick={() => setYearly(false)}>Monthly</button>
     <button type="button" aria-pressed={yearly} onClick={() => setYearly(true)}>Yearly</button>
   </div>;
@@ -91,10 +91,10 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
 
   const dealerStage = step === 6 ? 0 : step === 3 ? 2 : 1;
 
-  return <section className={`${styles.journey} ${styles.simpleOwner} ${dealer ? styles.dealerJourney : ''}`} data-dealer-journey={dealer || undefined} data-pricing-view={detail ? 'details' : step === 3 ? 'summary' : 'question'} aria-label={`Build your ${dealer ? 'Dealer' : 'Owner'} package`}>
+  return <section className={`${styles.journey} ${styles.simpleOwner} ${dealer ? styles.dealerJourney : ''}`} data-dealer-journey={dealer || undefined} data-pricing-view={detail ? 'details' : step === 3 ? 'summary' : 'question'} aria-label={`Build your ${dealer ? 'Business' : 'Owner'} package`}>
     <div className={styles.panel}>
       <div className={styles.content} data-pricing-content tabIndex={0} role="region" aria-label="Package options and details" key={detail ?? step}>
-      {dealer && !detail && <ol className={styles.dealerProgress} aria-label="Dealer package steps">
+      {dealer && !detail && <ol className={styles.dealerProgress} aria-label="Business package steps">
         {['Clients', 'Support', 'Package'].map((label, index) => <li key={label} aria-current={dealerStage === index ? 'step' : undefined} data-complete={index < dealerStage || undefined}><span>{index < dealerStage ? '✓' : index + 1}</span>{label}</li>)}
       </ol>}
       <div className={styles.heading}>
@@ -180,7 +180,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
       {!detail && dealer && step === 3 && <div className={styles.review}>
         <div className={styles.reviewTotal}>
           <div aria-live="polite">
-            <p className={styles.label}>Dealer Partner</p>
+            <p className={styles.label}>Business</p>
             <p className={styles.price} data-dealer-package-price>{money(packagePrice ?? 0)}<span>/{yearly ? 'year hosting' : adminPlan ? 'month total' : 'month hosting'}</span></p>
             {adminPlan && (yearly || !plan) && <p className={styles.annualAdmin} data-recurring-admin>+ {money(adminPlan.price)}/month admin</p>}
             {adminPlan && plan && !yearly && <p className={styles.totalCaption}>{money(plan.monthly)}/month hosting + {money(adminPlan.price)}/month admin</p>}
@@ -192,7 +192,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
         </div>
         <div className={styles.reviewRows}>
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Once-off setup</span><strong>{setupLabel}</strong></div><span>{setup === 'self' ? 'No setup fee' : setup === 'assisted' ? 'R250/hour · once-off' : setup === 'visit' ? 'R450/hour + travel' : 'Separate quote'}</span><button type="button" aria-label="Change setup" onClick={() => { setEditing(true); move(dealer ? 7 : 1); }}>Edit</button></div>
-          {dealer && <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Client registers</span><strong>{customers === 'customers' ? 'Controlled by our dealership' : 'Add customers later'}</strong></div><span>{customers === 'customers' ? `From ${rand(ownerHosting[0][yearly ? 'annually' : 'monthly'] / 4)}/client/${yearly ? 'year' : 'month'}` : 'No client hosting fee'}</span><button type="button" aria-label="Change customer registers" onClick={() => { setEditing(true); move(6); }}>Edit</button></div>}
+          {dealer && <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Client registers</span><strong>{customers === 'customers' ? 'Controlled by our business' : 'Add customers later'}</strong></div><span>{customers === 'customers' ? `From ${rand(ownerHosting[0][yearly ? 'annually' : 'monthly'] / 4)}/client/${yearly ? 'year' : 'month'}` : 'No client hosting fee'}</span><button type="button" aria-label="Change customer registers" onClick={() => { setEditing(true); move(6); }}>Edit</button></div>}
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Admin help</span><strong>{adminLabel}</strong></div><span>{adminPlan ? `+ ${money(adminPlan.price)}/month` : admin === 'self' ? 'No admin fee' : '+ Custom quote'}</span><button type="button" aria-label="Change help" onClick={() => { setEditing(true); move(dealer ? 7 : 2); }}>Edit</button></div>
         </div>
         <div className={styles.detailLinks}>
@@ -247,20 +247,20 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
             <div><dt>Return travel</dt><dd>R7.50/km</dd></div>
           </dl>
           <p>Remote help has a 15-minute minimum, then R62.50 per 15 minutes. On-site recording has a one-hour minimum, then 15-minute increments; routine office uploading and checking are included.</p>
-          <p>Travel is charged once per visit. Longer trips, formal inspections and professional valuations are quoted separately. The same assistance rates apply to owners, dealers and businesses.</p>
+          <p>Travel is charged once per visit. Longer trips, formal inspections and professional valuations are quoted separately. The same assistance rates apply to owners and businesses.</p>
           {!dealer && <button type="button" className={styles.secondary} onClick={() => { setEditing(true); move(5); }}>Explore help options</button>}
         </>}
         {detail === 'admin' && <>
           <p>We capture supplied records, organise documents and keep {dealer ? 'your agreed records' : 'your asset register'} up to date.</p>
           <dl className={styles.dealerRates}>{admin === 'self' || admin === null ? adminPlans.map(item => <div key={item.hours}><dt>Up to {item.hours} hours / month</dt><dd>{money(item.price)}/month</dd></div>) : <><div><dt>Your monthly help</dt><dd>{adminLabel}</dd></div><div><dt>Monthly fee</dt><dd>{adminPlan ? money(adminPlan.price) : 'Custom quote'}</dd></div></>}<div><dt>Once-off remote help</dt><dd>R250/hour</dd></div></dl>
-          {dealer && <p>We agree which records the work covers before starting. Your dealership authorises work on its client registers. Admin help covers the agreed scope and hours.</p>}
+          {dealer && <p>We agree which records the work covers before starting. Your business authorises work on its client registers. Admin help covers the agreed scope and hours.</p>}
           <p>Hours expire monthly and do not roll over. If you need more capacity, we agree a higher retainer before extra work starts. No automatic hourly overages. Admin stays monthly when hosting is yearly.</p><p>Travel, formal inspections and professional valuation research are excluded.</p>
         </>}
       </div>}
       </div>
       <div className={styles.navigation}>
         {detail ? <button type="button" className={styles.secondary} onClick={() => move(detailReturn)}>{detailReturn === 3 ? 'Back to package' : 'Back to choices'}</button> : <>
-        {(dealer ? step !== firstStep && !editing : step === 5 || step === 4 || (!editing && step > firstStep)) ? <button type="button" className={styles.secondary} onClick={() => move(previousStep())}>Back</button> : <span className={styles.note}>{editing ? 'Adjust your choice, then update.' : dealer ? 'Dealer Partner · R199/month' : ready ? 'Your base plan is selected.' : 'Choose your asset range.'}</span>}
+        {(dealer ? step !== firstStep && !editing : step === 5 || step === 4 || (!editing && step > firstStep)) ? <button type="button" className={styles.secondary} onClick={() => move(previousStep())}>Back</button> : <span className={styles.note}>{editing ? 'Adjust your choice, then update.' : dealer ? 'Business · R199/month' : ready ? 'Your base plan is selected.' : 'Choose your asset range.'}</span>}
         {step !== 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => { const next = editing && !dealer ? 3 : nextStep(); if (next === 3) setEditing(false); move(next); }}>{(editing && !dealer) || nextStep() === 3 ? editing ? 'Update package' : 'See my package' : 'Continue'} </button> : <div className={styles.finalActions}>{!dealer && <button type="button" className={styles.restart} onClick={restart}>Start again</button>}<Link href={signedIn || !plan ? "/contact-us" : `/auth?accountType=${audience}#signup`} className={styles.primary}>{signedIn || !plan ? "Discuss my package" : "Sign up"}</Link></div>}
         </>}
       </div>

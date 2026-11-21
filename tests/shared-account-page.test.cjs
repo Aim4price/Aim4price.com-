@@ -99,7 +99,7 @@ test('resend verification uses the signed-in email and a safe return destination
  assert.equal(sent.callbackURL,returnTo);assert.equal(limited,2);
 });
 
-test('free Business and Dealer account pages open the real account with invoices without Desktop access',async()=>{
+test('free Business and Business account pages open the real account with invoices without Desktop access',async()=>{
  for(const role of ['business','dealer']) {
   const profile={accountType:role,accountStatus:'active',userId:'shared-user'};
   const page=load('app/account/page.tsx',{
