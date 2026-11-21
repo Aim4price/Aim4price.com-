@@ -15,6 +15,9 @@ export async function requireLiveSharedAsset(token: string, assetId: string, per
 
 /** Recheck the token and current umbrella membership inside any write transaction. */
 export async function lockLiveSharedAsset(client: Pick<PoolClient,'query'>, scope: Omit<Awaited<ReturnType<typeof requireLiveSharedAsset>>, 'business'>) {
+  const live = await client.query(`SELECT id FROM asset_register_items a WHERE id=$1::uuid AND user_id=$2
+    AND coalesce(to_jsonb(a)->>'lifecycle_state','active')='active' FOR SHARE`, [scope.assetId, scope.lead.ownerId]);
+  if (!live.rows.length) throw new ExternalLeadAccessError('This asset is no longer available.',403);
   const result = await client.query(`SELECT token, umbrella_id FROM asset_share_links s WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL
     AND ($3=$2 OR ($5='reply' AND lead_details->>'allowReply'='true') OR ($5<>'reply' AND lead_details->'permissions'->>$5='true'))
     AND ($3=$2 OR (coalesce(lead_details->>'recipientUserId','')='' AND coalesce(lead_details->>'recipientEmail','')='' AND (lead_details->>'accessMode' IN ('signed-in','owner-approval') OR coalesce(lead_details->>'recipientWhatsApp','')<>'')) OR lead_details->>'recipientUserId'=$3 OR (coalesce(lead_details->>'recipientUserId','')='' AND lower(lead_details->>'recipientEmail')=lower($6)))

@@ -2224,7 +2224,16 @@ export default function LeadsClient({
     }
   }
 
+  const openAttempt = useRef(0);
   async function openLead(leadToOpen: AssetLead) {
+    const attempt = ++openAttempt.current;
+    const response = await fetch(`/api/asset-leads/${leadToOpen.id}`, {method:'HEAD', cache:'no-store'}).catch(() => null);
+    if (attempt !== openAttempt.current) return;
+    if (!response?.ok) {
+      if (response?.status === 404) setLeads(current => current.filter(item => item.id !== leadToOpen.id));
+      setNotice({tone:'error',message: response?.status === 404 ? 'This asset is no longer available.' : 'Could not check access. Please try again.'});
+      return;
+    }
     setNotice(null);
     // Open immediately so a slow viewed-status request cannot reopen a dismissed card.
     setExpandedLeadDetailsId(null);
@@ -3194,7 +3203,7 @@ export default function LeadsClient({
           </div>
         </header>
 
-        <SharedAssetExport title={snapshotTitle(asset)} photos={photos} asset={{serialNumber,yearModel:asNumber(asset.yearModel),usage:snapshotUsageValue(asset),condition:conditionLabel(asset.condition),valueExVat:snapshotAssetValue(asset),replacementPriceExVat:replacementPrice}} attachments={documents.map((document, index) => ({url:normalizeLeadPhotoUrl(document.url ?? document.href),name:asText(document.fileName) || asText(document.name) || `Document ${index + 1}`})).filter(document => !!document.url)}/>
+        <SharedAssetExport availabilityUrl={`/api/asset-leads/${lead.id}?asset=${encodeURIComponent(asText(asset.id))}`} title={snapshotTitle(asset)} photos={photos} asset={{serialNumber,yearModel:asNumber(asset.yearModel),usage:snapshotUsageValue(asset),condition:conditionLabel(asset.condition),valueExVat:snapshotAssetValue(asset),replacementPriceExVat:replacementPrice}} attachments={documents.map((document, index) => ({url:normalizeLeadPhotoUrl(document.url ?? document.href),name:asText(document.fileName) || asText(document.name) || `Document ${index + 1}`})).filter(document => !!document.url)}/>
 
         <div className={styles.fullRegisterAssetBody}>
           <div className={`${assetStyles.previewWrap} ${styles.leadPreviewWrap} ${styles.fullRegisterAssetPreview}`}>
@@ -3640,7 +3649,7 @@ export default function LeadsClient({
                 )}
 
                 <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions} ${styles.exportHeaderActions}`}>
-                  <SharedAssetExport title={assetTitle(lead)} photos={[...assetPhotos(lead), ...leadSharedPhotoUrls(lead)]} asset={{serialNumber:asText(lead.assetSnapshot.serialNumber),yearModel:asNumber(lead.assetSnapshot.yearModel),usage:assetUsageValue(lead),condition:conditionLabel(lead.assetSnapshot.condition),valueExVat:assetValue(lead),replacementPriceExVat:snapshotReplacementPrice(lead.assetSnapshot)}}/>
+                  <SharedAssetExport availabilityUrl={`/api/asset-leads/${lead.id}`} title={assetTitle(lead)} photos={[...assetPhotos(lead), ...leadSharedPhotoUrls(lead)]} asset={{serialNumber:asText(lead.assetSnapshot.serialNumber),yearModel:asNumber(lead.assetSnapshot.yearModel),usage:assetUsageValue(lead),condition:conditionLabel(lead.assetSnapshot.condition),valueExVat:assetValue(lead),replacementPriceExVat:snapshotReplacementPrice(lead.assetSnapshot)}}/>
                   {isDealerLeadsMode ? (
                     <button
                       type="button"

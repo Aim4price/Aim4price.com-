@@ -37,9 +37,9 @@ test('SQL reuses live links, enforces owner scope, revocation and asset lifecycl
     './shared-market-assessment':{sharedMarketAssessments:async(owner,assets,shared)=>shared?Object.fromEntries(assets.map(asset=>[asset.id,{priceExVat:50000,assessedAt:'2026-10-22T10:00:00Z',needsReview:false}])):{}},
     './asset-groups':{getAssetGroupById:async()=>({id:'30000000-0000-4000-8000-000000000001',name:'Tractor fleet',members:[{assetId:A}]})},
     './db': { getDb: () => db }, './asset-share-snapshot': snapshot,
-    './asset-register-db': { getAssetRegisterItemsByRefs: async refs => {
+    './asset-register-db': { getAssetRegisterItemsByRefs: async (refs, activeOnly) => {
       const rows = (await pg.query('SELECT * FROM asset_register_items')).rows;
-      return rows.filter(row => refs.some(ref => ref.userId === row.user_id && ref.assetId === row.id)).map(row => ({ ...asset, id: row.id, userId: row.user_id, title }));
+      return rows.filter(row => (!activeOnly || !row.lifecycle_state || row.lifecycle_state==='active') && refs.some(ref => ref.userId === row.user_id && ref.assetId === row.id)).map(row => ({ ...asset, id: row.id, userId: row.user_id, title }));
     } },
   });
   try {
@@ -75,6 +75,14 @@ test('SQL reuses live links, enforces owner scope, revocation and asset lifecycl
     await pg.query('UPDATE asset_register_items SET user_id=$1 WHERE id=$2', ['bob', A]);
     assert.equal(await mod.readPublicAssetShare(second.token), null);
     const third = await mod.createAssetShareLink('bob', [A], true);
+    await pg.exec("ALTER TABLE asset_register_items ADD COLUMN lifecycle_state text DEFAULT 'active'");
+    const multiple = await mod.createAssetShareLink('bob', [A,B], false, undefined, 'workshop-pass');
+    await pg.query("UPDATE asset_register_items SET lifecycle_state='archived' WHERE id=$1",[A]);
+    assert.deepEqual((await mod.readPublicAssetShare(multiple.token)).assets.map(item=>item.assetId),[B]);
+    assert.equal(await mod.readPublicAssetShare(third.token),null);
+    await pg.query("UPDATE asset_register_items SET lifecycle_state='archived' WHERE id=$1",[B]);
+    assert.equal((await mod.getAssetSharePasswordState(multiple.token)).exists,false);
+    assert.equal(await mod.readPublicAssetShare(multiple.token),null);
     await pg.query('DELETE FROM asset_register_items WHERE id=$1', [A]);
     assert.equal(await mod.readPublicAssetShare(third.token), null);
     assert.equal(await mod.readPublicAssetShare('bad-token'), null);

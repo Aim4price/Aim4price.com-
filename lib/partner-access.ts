@@ -978,6 +978,9 @@ function leadSelectSql(whereClause: string): string {
       l.closed_at::text,
       l.updated_at::text
     from asset_leads l
+      inner join public.asset_register_items live_asset on live_asset.id = l.asset_register_item_id
+        and live_asset.user_id = l.owner_user_id
+        and coalesce(to_jsonb(live_asset)->>'lifecycle_state', 'active') = 'active'
     left join account_profiles owner on owner.user_id = l.owner_user_id
     left join account_profiles partner on partner.user_id = l.partner_user_id
     ${whereClause}
@@ -2010,4 +2013,16 @@ export async function deleteDeclinedAssetLead(input: {
     entityType: 'asset_lead',
     entityId: lead.id,
   });
+}
+
+export async function canViewLiveAssetLead(userId: string, leadId: string, memberId: string | null) {
+  const result = await getDb().query(`SELECT 1 FROM asset_leads l
+    JOIN asset_register_items a ON a.id=l.asset_register_item_id AND a.user_id=l.owner_user_id
+    WHERE l.id=$1::uuid AND (l.partner_user_id=$2 OR l.owner_user_id=$2)
+      AND coalesce(to_jsonb(a)->>'lifecycle_state','active')='active'
+      AND ($3::uuid IS NULL OR EXISTS (SELECT 1 FROM asset_register_items m
+        WHERE m.id=$3 AND m.user_id=l.owner_user_id AND coalesce(to_jsonb(m)->>'lifecycle_state','active')='active'
+        AND l.included_sections_json->'registerSnapshot'->'assets' @> jsonb_build_array(jsonb_build_object('id',m.id::text))))`,
+    [leadId && /^[a-f0-9-]{36}$/i.test(leadId) ? leadId : null, userId, memberId]);
+  return result.rows.length > 0;
 }

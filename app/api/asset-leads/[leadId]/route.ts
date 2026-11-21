@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
-import { deleteDeclinedAssetLead, normalizeLeadStatus, updateAssetLeadStatus } from '../../../../lib/partner-access';
+import { canViewLiveAssetLead, deleteDeclinedAssetLead, normalizeLeadStatus, updateAssetLeadStatus } from '../../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -92,4 +92,11 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     console.error('asset lead DELETE failed', error);
     return NextResponse.json({ ok: false, error: 'Failed to delete lead.' }, { status: 500 });
   }
+}
+
+export async function HEAD(request: NextRequest, { params }: RouteContext) {
+  const session = await getServerSession({ allowBusiness: true, allowDealerApp: true, allowOwnerApp: true });
+  if (!session?.user?.id) return new NextResponse(null, {status: 401});
+  const allowed = await canViewLiveAssetLead(session.user.id, params.leadId, request.nextUrl.searchParams.get('asset'));
+  return new NextResponse(null, {status: allowed ? 204 : 404, headers: {'Cache-Control':'private, no-store'}});
 }

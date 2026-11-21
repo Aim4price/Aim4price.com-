@@ -700,6 +700,9 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         dealer.business_name as dealer_business_name,
         dealer.logo_url as dealer_logo_url
       from public.dealer_maintenance_access access
+      inner join public.asset_register_items live_asset on live_asset.id = access.asset_register_item_id
+        and live_asset.user_id = access.owner_user_id
+        and coalesce(to_jsonb(live_asset)->>'lifecycle_state', 'active') = 'active'
       left join public.account_profiles owner on owner.user_id = access.owner_user_id
       left join public."user" owner_user on owner_user.id = access.owner_user_id
       left join public.account_profiles dealer on dealer.user_id = access.dealer_user_id

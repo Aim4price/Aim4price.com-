@@ -7,7 +7,7 @@ import { ensureGuestLeadSchema } from './guest-lead-schema';
 import { businessEmail,businessText } from './business-network-shared';
 import { getAssetRegisterItemsByRefs } from './asset-register-db';
 import { assetShareSnapshot,parseShareAssetIds } from './asset-share-snapshot';
-import { readPublicAssetShare, liveShareOwnershipSql, hashAssetSharePassword, assetSharePasswordIsUnlocked } from './asset-share-links';
+import { readPublicAssetShare, liveShareOwnershipSql, originalReportAssetsLiveSql, hashAssetSharePassword, assetSharePasswordIsUnlocked } from './asset-share-links';
 import { getServerSession } from './auth-session';
 import { getAssetRegisterAccountAccess } from './asset-register-account-access';
 export type LeadDetails={accessMode?:'owner-approval'|'signed-in';recipientUserId?:string;permissions?:ExternalSharePermissions;recipientName:string;recipientEmail:string;recipientWhatsApp?:string;allowSubmissions?:boolean;request:string;replyName:string;replyEmail:string;replyPhone:string;allowReply:boolean};
@@ -43,7 +43,7 @@ export async function createGuestLead(ownerId:string,idsInput:unknown,includePho
  if(reports.length&&!safe.recipientEmail&&!['owner-approval','signed-in'].includes(safe.accessMode || ''))throw new Error('Enter the recipient email to restrict report access to their verified account.');
  if(reports.length>6||reports.reduce((n,r)=>n+r.data.length,0)>30*1024*1024||reports.some(r=>r.data.length>8*1024*1024||r.data.length<5||!r.label||r.label.length>200||r.fileName.length>200))throw new Error('Choose up to six PDF or Excel reports, each under 8 MB and 30 MB in total.');
  reports.forEach(sharedReportContentType);
- const assets=await getAssetRegisterItemsByRefs(ids.map(assetId=>({userId:ownerId,assetId})));
+ const assets=await getAssetRegisterItemsByRefs(ids.map(assetId=>({userId:ownerId,assetId})),true);
  if(assets.length!==ids.length)throw new Error('This account does not own all the selected assets.');
  await ensureGuestLeadSchema();await ensureSharingFoundation();const passwordHash=password===undefined?null:await hashAssetSharePassword(password);const db=await getDb().connect(),token=randomBytes(32).toString('base64url');
  try{await db.query('BEGIN');
@@ -73,7 +73,7 @@ export async function readLeadPage(token:string){
  if(!row||row.password_hash&&!await assetSharePasswordIsUnlocked(token,row.user_id,row.password_hash))return null;
  const share=await readPublicAssetShare(token);if(!share)return null;
  if(!row?.lead_details)return{token,share,details:null,reports:[] as LeadReport[],ownerId:row?.user_id||''};
- const reports=(await getDb().query<LeadReport>('SELECT id,label FROM asset_share_reports WHERE token=$1 ORDER BY label,id',[token])).rows;
+ const reports=(await getDb().query<LeadReport>(`SELECT r.id,r.label FROM asset_share_reports r JOIN asset_share_links s ON s.token=r.token WHERE r.token=$1 AND ${originalReportAssetsLiveSql()} ORDER BY r.label,r.id`,[token])).rows;
  return{token,share,details:row.lead_details as LeadDetails,reports,ownerId:row.user_id as string};
 }
 export async function resolveLeadAccess(ownerId:string,recipientEmail:string):Promise<LeadAccess>{
@@ -92,7 +92,7 @@ export async function loadProtectedLeadReport(token:string,reportId:string){
  if(!leadAllows(lead,'reports'))return{status:403 as const};
  const { access }=await externalLeadAccess(lead);
  if(access!=='active'&&access!=='owner'&&access!=='read-only')return{status:403 as const};
- const report=(await getDb().query(`SELECT r.pdf,r.file_name,r.content_type FROM asset_share_reports r JOIN asset_share_links s ON s.token=r.token WHERE r.id=$1 AND r.token=$2 AND s.revoked_at IS NULL AND ${liveShareOwnershipSql()}`,[reportId,token])).rows[0];
+ const report=(await getDb().query(`SELECT r.pdf,r.file_name,r.content_type FROM asset_share_reports r JOIN asset_share_links s ON s.token=r.token WHERE r.id=$1 AND r.token=$2 AND s.revoked_at IS NULL AND ${liveShareOwnershipSql()} AND ${originalReportAssetsLiveSql()}`,[reportId,token])).rows[0];
  return report?{status:200 as const,report}:{status:404 as const};
 }
 

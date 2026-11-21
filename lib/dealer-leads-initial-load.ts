@@ -146,6 +146,9 @@ export async function listInitialDealerReceivedLeads(
         l.closed_at::text,
         l.updated_at::text
       from public.asset_leads l
+      inner join public.asset_register_items live_asset on live_asset.id = l.asset_register_item_id
+        and live_asset.user_id = l.owner_user_id
+        and coalesce(to_jsonb(live_asset)->>'lifecycle_state', 'active') = 'active'
       left join public.account_profiles owner on owner.user_id = l.owner_user_id
       left join public.account_profiles partner on partner.user_id = l.partner_user_id
       where l.partner_user_id = $1

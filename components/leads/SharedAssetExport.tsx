@@ -17,7 +17,7 @@ import accountStyles from '../../app/account/page.module.css';
 import externalStyles from '../asset-register/AssetExternalShare.module.css';
 
 export type ExportAttachment = { url: string; name: string };
-type Props = { title: string; photos: string[]; details?: string; asset?: Partial<ExternalAssetShareItem>; attachments?: ExportAttachment[] };
+type Props = { availabilityUrl?: string; title: string; photos: string[]; details?: string; asset?: Partial<ExternalAssetShareItem>; attachments?: ExportAttachment[] };
 
 /** Recipient entry point to the same outside-sharing panel used by the Asset Register. */
 export default function SharedAssetExport({ signInReturnTo,creditTarget,onDialogChange, ...props }: Props & { signInReturnTo?: string;creditTarget?:CreditTarget;onDialogChange?:(open:boolean)=>void }) {
@@ -61,7 +61,7 @@ export default function SharedAssetExport({ signInReturnTo,creditTarget,onDialog
   </>;
 }
 
-function OutsideShareDialog({ title, photos, details, asset, attachments = [], onClose,onConfirmedShare }: Props & { onClose: () => void;onConfirmedShare?:()=>Promise<void> }) {
+function OutsideShareDialog({ availabilityUrl, title, photos, details, asset, attachments = [], onClose,onConfirmedShare }: Props & { onClose: () => void;onConfirmedShare?:()=>Promise<void> }) {
   const titleId = useId();
   const ref = useLeadDialog(onClose);
   const [choosingReports, setChoosingReports] = useState(false);
@@ -86,7 +86,7 @@ function OutsideShareDialog({ title, photos, details, asset, attachments = [], o
           <ShareModalCloseButton onClick={onClose} aria-label="Close outside sharing"/>
         </div>
         <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${styles.registerShareModalBody} ${externalStyles.accountShareTheme}`}>
-          <AssetExternalShare onConfirmedShare={onConfirmedShare} shareName={title} assets={assets}
+          <AssetExternalShare availabilityUrl={availabilityUrl} onConfirmedShare={onConfirmedShare} shareName={title} assets={assets}
             messageBody={details ? `AIM4PRICE ASSET DETAILS\n\n1. ${title}\n${details}\n\nShared from Aim4price. Values are saved estimates and remain subject to inspection.` : undefined}
             reportFiles={reportFiles} onAddAim4priceReport={() => setChoosingReports(true)}
             onRemoveAim4priceReport={id => setReportFiles(current => current.filter(file => file.id !== id))}/>
