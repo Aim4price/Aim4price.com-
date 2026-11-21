@@ -10,8 +10,8 @@ export async function PATCH(request: NextRequest) {
         const session = await getServerSession({ requireActive: false });
         if (!session?.user || !['business','dealer'].includes((await getAccountProfile(session.user)).accountType))
             return businessJson({ error: 'Business account required.' }, 403);
-        await saveBusinessDetails(session.user.id, await businessBody(request));
-        return businessJson({ ok: true });
+        await saveBusinessDetails(session.user.id, await businessBody(request, 3_100_000));
+        return businessJson({ ok: true, profile: await getAccountProfile(session.user) });
     }
     catch (e) {
         return businessError(e);

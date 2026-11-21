@@ -113,7 +113,7 @@ test('free Business and Business account pages open the real account with invoic
    'next/navigation':{redirect:path=>{throw Error('redirect:'+path);}},
    './account-client':{default:'AccountClient'},
   });
-  const result=await page.default();assert.equal(result.type,'AccountClient');assert.equal(result.props.initialProfile,profile);assert.equal(result.props.sharedAccount,true);assert.equal(result.props.canManageDesktopUsers,false);assert.ok(result.props.sharedSettings);if(role==='business')assert.equal(result.props.subscription.remaining,417);
+  const result=await page.default();assert.equal(result.type,'AccountClient');assert.equal(result.props.initialProfile,profile);assert.equal(result.props.sharedAccount,true);assert.equal(result.props.canManageDesktopUsers,false);assert.equal(result.props.sharedSettings,undefined);if(role==='business')assert.equal(result.props.subscription.remaining,417);
  }
 });
 test('suspended free accounts still follow the account access block',async()=>{
