@@ -17,6 +17,7 @@ import {
   type HeaderSessionUser,
 } from '../lib/header-session-cache';
 import { isMiddlemanAccountSubtype } from '../lib/middleman-account';
+import { workspaceHeader, workspaceRole, receivedAssetsHref } from '../lib/workspace-navigation';
 import { isViewportScrollbarInteraction } from '../lib/viewport-scrollbar';
 import { attachHeaderNavDrag, getHeaderNavScrollTolerance, snapHeaderNav } from '../lib/header-nav-drag';
 import DealerCostDecisionModal from './DealerCostDecisionModal';
@@ -28,6 +29,7 @@ const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLa
 
 type ActivePage =
   | 'home'
+  | 'workspace'
   | 'valuation'
   | 'invoices'
   | 'asset-register'
@@ -1030,16 +1032,17 @@ export default function AppHeader({
 
   const partsAccess = isDealerAccount && !isMiddlemanAccount;
   const navAccountType = isLoadingSession ? null : (session?.sharingPlan === 'free' ? 'business' : session?.accountType ?? 'public');
-  const navItems = useMemo(
-    () => [...buildNavItems(navAccountType, session?.accountSubtype), ...(partsAccess ? [{ key: 'parts' as const, href: '/parts', label: 'Parts Stock' }] : [])].map(item => item.key === 'leads' && session?.sharingPlan === 'free' && session?.accountType !== 'business' ? { ...item, href: '/shared-enquiries' } : item),
-    [navAccountType, session?.accountSubtype, session?.sharingPlan, session?.accountType, partsAccess],
-  );
-  const mobileNavItems = useMemo(
-    () => (session?.sharingPlan === 'free' || session?.accountType === 'business' ? navItems : session?.accountType
-      ? [...buildMobileNavItems(session.accountType, session.accountSubtype, ), ...(partsAccess ? [{ key: 'parts' as const, href: '/parts', label: 'Parts Stock' }] : [])]
-      : navItems),
-    [navItems, session?.accountType, session?.accountSubtype, session?.sharingPlan],
-  );
+  const role = desktopContext || isLoadingSession ? null : workspaceRole(session?.accountType, session?.accountSubtype, session?.sharingPlan);
+  const navItems = useMemo<NavItem[]>(() => {
+    if (role) return [...workspaceHeader(role, receivedAssetsHref(session?.accountType, session?.sharingPlan))];
+    const items = buildNavItems(navAccountType, session?.accountSubtype);
+    return partsAccess ? [...items, {key:'parts', href:'/parts', label:'Parts Stock'}] : items;
+  }, [role, navAccountType, partsAccess, session?.accountType, session?.accountSubtype, session?.sharingPlan]);
+  const mobileNavItems = useMemo(() => {
+    if (role || !session?.accountType) return navItems;
+    const items = buildMobileNavItems(session.accountType, session.accountSubtype);
+    return partsAccess ? [...items, {key:'parts' as const, href:'/parts', label:'Parts Stock'}] : items;
+  }, [role, navItems, session?.accountType, session?.accountSubtype, partsAccess]);
   const activeNavKey = useMemo(
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],

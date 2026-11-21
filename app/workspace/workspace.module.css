@@ -1,0 +1,28 @@
+.shell {
+  width: min(92%, 76rem);
+  box-sizing: border-box;
+  margin: clamp(1rem, 3vw, 3rem) auto;
+  padding: clamp(1.2rem, 3.4vw, 3rem);
+  background: var(--surface, #fff);
+  color: var(--text, #15392e);
+  border: 1px solid rgba(80, 120, 102, .18);
+  border-radius: 1.75rem;
+  box-shadow: 0 1rem 3rem rgba(18, 54, 43, .09);
+}
+.shell h1 { margin: 0 0 1.25rem; font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1.05; letter-spacing: -.045em; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .85rem; }
+.card { position: relative; isolation: isolate; overflow: hidden; display: flex; gap: .75rem; align-items: flex-end; justify-content: space-between; min-height: 8.75rem; padding: 1.2rem; box-sizing: border-box; border-radius: 1.15rem; background: #23493c; color: white; text-decoration: none; }
+.card[data-account] { grid-column: -2 / -1; }
+.surface, .surface video, .card::after { position: absolute; inset: 0; width: 100%; height: 100%; }
+.surface { z-index: -2; background-position: center; background-size: cover; }
+.surface video { object-fit: cover; }
+.card::after { content: ''; z-index: -1; background: linear-gradient(180deg, rgba(12, 34, 28, .08), rgba(7, 29, 23, .9)); }
+.card strong { line-height: 1.15; font-size: clamp(1.15rem, 2vw, 1.65rem); }
+.card:hover, .card:focus-visible { outline: 3px solid #39a775; outline-offset: 2px; }
+.card[data-locked] .surface { filter: blur(3px) saturate(.55); transform: scale(1.04); }
+.card[data-locked] strong { filter: blur(.8px); }
+.lock { align-self: center; display: grid; place-items: center; flex-shrink: 0; width: 2.35rem; height: 2.35rem; background: #173d32; border: 1px solid rgba(255,255,255,.7); border-radius: 50%; }
+.lock svg { width: 1.15rem; height: 1.15rem; }
+@media (max-width: 54rem) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 34rem) { .grid { grid-template-columns: 1fr; } .card { min-height: 6.75rem; } }
+@media (prefers-reduced-motion: reduce) { .surface video { display: none; } }
