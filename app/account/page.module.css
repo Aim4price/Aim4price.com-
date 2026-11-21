@@ -4557,3 +4557,25 @@
 @media (max-width: 640px) {
  :global(:where(html:not(:has([data-website-canvas])))) .businessDetailsModalCard.polishedSettingsModal[data-business-step="1"] .wizardFieldGrid { grid-template-columns: 1fr; }
 }
+
+.quickActionGroup .lockedBusinessAction:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.lockedBusinessAction > strong,
+.lockedBusinessAction > span:first-child {
+  filter: blur(1px);
+}
+
+.businessLock {
+  margin-inline-start: auto;
+}
+
+.businessLock > span {
+  width: 1.5rem;
+  height: 1.5rem;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
