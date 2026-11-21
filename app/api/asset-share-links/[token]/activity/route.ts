@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readLeadPage } from '../../../../../lib/guest-leads';
+import { markSharedAssetViewed, readLeadPage } from '../../../../../lib/guest-leads';
 import { externalLeadAccess } from '../../../../../lib/external-lead-access';
 import { getServerSession } from '../../../../../lib/auth-session';
 import { recordSharingUsage } from '../../../../../lib/sharing-foundation';
@@ -18,6 +18,12 @@ export async function POST(request: NextRequest, { params }: {
     const { access, user } = await externalLeadAccess(lead);
     if (!user || !['active', 'read-only', 'owner'].includes(access))
         return NextResponse.json({ error: 'Sign in with authorised access.' }, { status: 403 });
+    const selected = request.nextUrl.searchParams.get('asset');
+    if (selected) {
+        if (!lead.share.assets.some(asset => asset.assetId === selected)) return NextResponse.json({error:'Share unavailable.'},{status:404});
+        await markSharedAssetViewed(user.id, params.token, selected);
+        return NextResponse.json({ok:true});
+    }
     if (access !== 'owner') {
         const session = await getServerSession({ requireActive: false });
         if (!session || session.user.id !== user.id)

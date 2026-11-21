@@ -135,7 +135,13 @@ test('incoming documents are opt-in, owner-private, review-only and respect link
   assert.equal((await docs.listLeadSubmissions('owner',one.token))[0].status,'accepted');
   assert.equal((await pg.query('SELECT user_id FROM asset_register_items WHERE id=$1',[A])).rows[0].user_id,'owner');
   session={user:{id:'receiver',email:details.recipientEmail,emailVerified:true}};
-  assert.equal((await lead.listReceivedSharedEnquiries()).length,2);
+  const delivered = await lead.listReceivedSharedEnquiries();
+  assert.equal(delivered.length,2);
+  assert.ok(delivered.every(share=>share.assets.every(asset=>!asset.viewed)));
+  await lead.markSharedAssetViewed('receiver',one.token,A);
+  await lead.markSharedAssetViewed('receiver',one.token,A);
+  const refreshed=await lead.listReceivedSharedEnquiries();
+  assert.deepEqual(refreshed.flatMap(share=>share.assets.filter(asset=>asset.viewed).map(asset=>[share.token,asset.id])),[[one.token,A]]);
   session={user:{id:'receiver',email:details.recipientEmail,emailVerified:false}};assert.equal((await lead.listReceivedSharedEnquiries()).length,2);
   await base.revokeAssetShareLink('owner',one.token);
   await assert.rejects(docs.submitLeadDocument(one.token,input,file,'receiver'),/no longer available/);
