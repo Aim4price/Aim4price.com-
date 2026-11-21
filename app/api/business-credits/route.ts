@@ -25,7 +25,7 @@ export async function POST(req:NextRequest) {
       await creditTransaction(async db=>{
         const workspace=await workspaceForCredits(db,userId);
         const balance=await creditBalance(db,workspace.id);
-        if(!workspace.paid_since&&creditLimitsActive()&&balance.used+balance.held>=MONTHLY_BUSINESS_CREDITS)throw new CreditLimitError();
+        if(!workspace.desktop&&!workspace.paid_since&&creditLimitsActive()&&balance.used+balance.held>=MONTHLY_BUSINESS_CREDITS)throw new CreditLimitError();
       });
       return businessJson({ok:true});
     }

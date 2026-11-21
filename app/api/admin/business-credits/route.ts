@@ -14,7 +14,7 @@ export async function GET(req:NextRequest) {
      if(workspace.role!=='owner') throw Error('Manage the plan on the business owner’s account.');
      const changes=(await db.query(`SELECT c.plan,c.changed_at,u.email AS actor FROM business_plan_changes c
        LEFT JOIN "user" u ON u.id=c.actor_id WHERE c.business_id=$1 ORDER BY c.id DESC LIMIT 10`,[workspace.id])).rows;
-     return {businessId:workspace.id,paid:Boolean(workspace.paid_since),pending:Boolean(workspace.upgrade_requested_at),changes};
+     return {businessId:workspace.id,paid:Boolean(workspace.desktop || workspace.paid_since),pending:Boolean(workspace.upgrade_requested_at),changes};
    });
    return businessJson(data);
  }catch(e){return businessError(e);}

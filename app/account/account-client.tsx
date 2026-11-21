@@ -1483,7 +1483,7 @@ export default function AccountClient({
               <h1>{accountDisplayName}</h1>
               <p>{profile?.email || "Loading email"}</p>
               <small>
-                {subscription ? (subscription.paidSince ? "Paid Business Account" : "Free Business Account") : accountTypeLabel + " account"}&nbsp; • &nbsp;{memberSinceLabel}
+                {subscription ? ((subscription.fullAccess ?? Boolean(subscription.paidSince)) ? "Paid Business Account" : "Free Business Account") : accountTypeLabel + " account"}&nbsp; • &nbsp;{memberSinceLabel}
               </small>
             </div>
           </div>

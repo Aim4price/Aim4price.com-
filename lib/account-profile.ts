@@ -251,7 +251,7 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
     .toLowerCase()
     .replace(/[\s_]+/g, "-");
   const allowedByType: Record<string, Set<string>> = {
-    business: new Set(["contributor", "finance-services", "insurance-services", "licensing-services", "accounting-services", "maintenance-services"]),
+    business: new Set(["machinery-dealer", "motor-dealer", "auctioneer", "contributor", "finance-services", "insurance-services", "licensing-services", "accounting-services", "maintenance-services"]),
     owner: new Set([
       "farmer",
       "contractor",
@@ -573,6 +573,7 @@ async function ensureAccountRoleSchema(
       update public.account_profiles
       set account_subtype = case account_type
         when 'business' then case
+          when account_subtype in ('machinery-dealer','motor-dealer','auctioneer') then account_subtype
           when lower(regexp_replace(trim(coalesce(account_subtype, '')), '[ _]+', '-', 'g')) in ('contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services')
             then lower(regexp_replace(trim(account_subtype), '[ _]+', '-', 'g'))
           else 'contributor'
@@ -619,7 +620,7 @@ async function ensureAccountRoleSchema(
       alter table public.account_profiles
         add constraint account_profiles_account_role_check
         check (
-          (account_type = 'business' and account_subtype in ('contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services'))
+          (account_type = 'business' and account_subtype in ('contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services', 'machinery-dealer', 'motor-dealer', 'auctioneer'))
           or (account_type = 'owner' and account_subtype in
             ('farmer', 'contractor', 'construction-company', 'asset-owner'))
           or (account_type = 'finance' and account_subtype in

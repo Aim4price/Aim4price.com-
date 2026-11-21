@@ -1,4 +1,5 @@
 import type { PoolClient } from 'pg';
+import { ensureSharingFoundation } from './sharing-foundation';
 import { getDb } from './db';
 import { ensureBusinessWorkspaceSchema, ensureBusinessMembership } from './business-workspaces';
 
@@ -24,7 +25,7 @@ export const CREDIT_SCHEMA = `
 `;
 let ready: Promise<void> | undefined;
 export function ensureCreditSchema() {
-  return ready ??= ensureBusinessWorkspaceSchema().then(() => getDb().query(CREDIT_SCHEMA)).then(() => {}).catch(e => { ready = undefined; throw e; });
+  return ready ??= Promise.all([ensureBusinessWorkspaceSchema(),ensureSharingFoundation()]).then(() => getDb().query(CREDIT_SCHEMA)).then(() => {}).catch(e => { ready = undefined; throw e; });
 }
 export async function creditTransaction<T>(work: (db: PoolClient) => Promise<T>) {
   await ensureCreditSchema();
@@ -111,11 +112,18 @@ export async function checkBusinessWrite(userId:string,token:string,assetKey?:st
 }
 
 export async function changeBusinessPlan(db:PoolClient, businessId:string, actorId:string, plan:'free'|'paid', pendingOnly=false) {
-  const workspace=(await db.query('SELECT paid_since,upgrade_requested_at FROM business_workspaces WHERE id=$1 FOR UPDATE',[businessId])).rows[0];
+  const workspace=(await db.query('SELECT w.paid_since,w.upgrade_requested_at,w.owner_user_id,p.account_type,p.account_status FROM business_workspaces w JOIN account_profiles p ON p.user_id=w.owner_user_id WHERE w.id=$1 FOR UPDATE OF w,p',[businessId])).rows[0];
   if (!workspace) throw Error('Business workspace unavailable.');
-  if (Boolean(workspace.paid_since)===(plan==='paid')) return;
+  if (!['business','dealer'].includes(workspace.account_type)) throw Error('Select a Business account.');
+  if (workspace.account_type === (plan==='paid'?'dealer':'business') && (plan==='paid'||!workspace.paid_since)) return;
+  if (plan==='paid' && workspace.account_status!=='active') throw Error('Only an active Business account can be upgraded.');
   if (pendingOnly && !workspace.upgrade_requested_at) throw Error('This upgrade is no longer pending.');
   await db.query(`UPDATE business_workspaces SET paid_since=CASE WHEN $2='paid' THEN now() END,
     activated_by=CASE WHEN $2='paid' THEN $3 END,upgrade_requested_at=NULL WHERE id=$1`,[businessId,plan,actorId]);
+  await db.query('UPDATE account_profiles SET account_type=$2,updated_at=now() WHERE user_id=$1',
+    [workspace.owner_user_id,plan==='paid'?'dealer':'business']);
+  await db.query(`INSERT INTO sharing_account_access(user_id,plan,updated_by) VALUES($1,$2,$3)
+    ON CONFLICT(user_id) DO UPDATE SET plan=excluded.plan,updated_by=excluded.updated_by,updated_at=now()`,
+    [workspace.owner_user_id,plan==='paid'?'desktop':'free',actorId]);
   await db.query('INSERT INTO business_plan_changes(business_id,actor_id,plan) VALUES($1,$2,$3)',[businessId,actorId,plan]);
 }

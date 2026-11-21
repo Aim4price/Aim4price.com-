@@ -9,7 +9,7 @@ begin
   alter table account_profiles drop constraint if exists account_profiles_account_role_check;
   alter table account_profiles add constraint account_profiles_account_role_check
         check (
-          (account_type = 'business' and account_subtype in ('contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services'))
+          (account_type = 'business' and account_subtype in ('contributor', 'finance-services', 'insurance-services', 'licensing-services', 'accounting-services', 'maintenance-services', 'machinery-dealer', 'motor-dealer', 'auctioneer'))
           or (account_type = 'owner' and account_subtype in
             ('farmer', 'contractor', 'construction-company', 'asset-owner'))
           or (account_type = 'finance' and account_subtype in
