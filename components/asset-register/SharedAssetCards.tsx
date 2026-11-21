@@ -9,7 +9,8 @@ import ExternalLeadActions, { type ExternalLeadActionData } from "./ExternalLead
 import LeadManageDialog from "../leads/LeadManageDialog";
 import BusinessAcceptanceForm from "../business-network/BusinessAcceptanceForm";
 import { createPortal } from "../WebsitePortal";
-import LeadCardSummary from "../leads/LeadCardSummary";
+import RecipientAssetSummary from "../leads/RecipientAssetSummary";
+import sharedStyles from "../../app/leads/shared-assets.module.css";
 import SharedAssetExport from "../leads/SharedAssetExport";
 import SharedAssetSend from "./SharedAssetSend";
 import LeadManageButton from "../leads/LeadManageButton";
@@ -141,51 +142,40 @@ export default function SharedAssetCards({
                 <article
                   key={item.assetId || index}
                   ref={isOpen ? openedCardRef : null}
-                  className={`${leadStyles.leadThread} ${leadStyles.leadThreadTracking} ${isOpen ? leadStyles.leadThreadOpen : ""}`}
+                  className={sharedStyles.frame}
                 >
-                  <LeadCardSummary
-                    identity={
-                      <>
-                        <div className={leadStyles.leadCardTitleRow}>
-                          <h3>{item.title}</h3>
-                        </div>
-                        <div className={leadStyles.leadAssetContext}>
-                          {senderName && (
-                            <strong className={leadStyles.leadAssetName}>
-                              {senderName}
-                            </strong>
-                          )}
-                          {item.serialNumber && (
-                            <span className={leadStyles.leadAssetIdentifier}>
-                              Serial / VIN {item.serialNumber}
-                            </span>
-                          )}
-                        </div>
-                        <span className={leadStyles.clientKicker}>
-                          Asset enquiry · Shared {date}
-                        </span>
-                      </>
-                    }
-                    actions={
-                      <div className={leadStyles.clientActionRow}>
-                        <button
-                          type="button"
-                          className={`${isOpen ? assetStyles.secondaryButton : assetStyles.primaryButton} ${isOpen ? leadStyles.closeLeadButton : leadStyles.openLeadButton}`}
-                          aria-expanded={isOpen}
-                          aria-controls={`${panelPrefix}-${index}`}
-                          aria-label={`${isOpen ? "Close" : "Open"} ${item.title}`}
-                          onClick={() => setOpened(isOpen ? null : index)}
-                        >
-                          {isOpen ? "Close" : "Open"}
-                        </button>
-                      </div>
+                  {isOpen ? (
+                    <div className={sharedStyles.detailActions}>
+                      <button type="button" className={`${sharedStyles.toggle} ${sharedStyles.secondary}`} aria-expanded={true}
+                        aria-controls={`${panelPrefix}-${index}`} aria-label={`Close ${item.title}`} onClick={() => setOpened(null)}>Close</button>
+                    </div>
+                  ) : (
+                  <RecipientAssetSummary
+                    title={item.title}
+                    sender={senderName || share.senderName}
+                    date={date}
+                    pills={item.serialNumber ? ["Shared asset", `Serial / VIN ${item.serialNumber}`] : ["Shared asset"]}
+                    action={
+                      <button
+                        type="button"
+                        className={sharedStyles.toggle}
+                        aria-expanded={false}
+                        aria-controls={`${panelPrefix}-${index}`}
+                        aria-label={`Open ${item.title}`}
+                        onClick={() => setOpened(index)}
+                      >
+                        Open
+                      </button>
                     }
                   />
+                  )}
                   {isOpen && (
                     <LeadAssetCard
                       identity={
                         <>
                           <h2>{item.title}</h2>
+                          {item.serialNumber && <p className={sharedStyles.detailIdentity}>Serial / VIN {item.serialNumber}</p>}
+                          {(example || !senderName) && (senderName || share.senderName) && <p className={sharedStyles.detailIdentity}>{senderName || share.senderName}</p>}
                           <p>
                             Year Model: {item.yearModel || "Not saved"} · Usage:{" "}
                             {item.usage || "Not saved"} · Condition:{" "}

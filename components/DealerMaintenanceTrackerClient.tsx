@@ -1245,10 +1245,10 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           <div className={leadStyles.leadStack}>
             {filteredCards.map((asset) => {
               const isOpen = openCardId === asset.trackerCardId;
+              const identifier = asset.registrationNumber
+                ? `Registration ${asset.registrationNumber}`
+                : asset.serialNumber && `Serial / VIN ${asset.serialNumber}`;
               if (!dealerAppMode && !isOpen) {
-                const identifier = asset.registrationNumber
-                  ? `Registration ${asset.registrationNumber}`
-                  : asset.serialNumber && `Serial / VIN ${asset.serialNumber}`;
                 return (
                   <MaintenanceDetailsCard key={asset.trackerCardId} expanded={false} onToggle={() => openAsset(asset)} className={sharedStyles.frame}>
                     <div className={sharedStyles.card}>
@@ -1279,14 +1279,14 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               const isHistoryChecking = historyAccessCheckId === asset.accessId;
               return (
                 <MaintenanceDetailsCard expanded={isOpen} onToggle={() => isOpen ? closeAsset() : openAsset(asset)} key={asset.trackerCardId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${trackerCardStatusClass(asset.status)} ${isOpen ? leadStyles.leadThreadOpen : ''} ${openCardId && !isOpen ? styles.trackerCardMuted : ''}`}>
-                  <div className={leadStyles.clientPanel}>
-                    <div className={leadStyles.clientPanelHeader}>
-                      <div className={leadStyles.clientIdentity}>
+                  <div className={isOpen ? sharedStyles.detailActions : leadStyles.clientPanel}>
+                    <div className={isOpen ? undefined : leadStyles.clientPanelHeader}>
+                      {!isOpen && <div className={leadStyles.clientIdentity}>
                         <div className={leadStyles.leadCardTitleRow}><h3>{asset.ownerName}</h3></div>
                         <strong className={leadStyles.leadAssetName}>{asset.assetTitle}</strong>
                         <span className={leadStyles.clientKicker}>{[asset.brandName, asset.modelName, asset.yearModel].filter(Boolean).join(' · ') || maintenanceLabel(asset.assetKind)} · {asset.statusLabel}</span>
                         <span className={styles.trackerNextStep}>{maintenanceStatusGuidance(asset.status)}</span>
-                      </div>
+                      </div>}
                       <div className={leadStyles.clientDecisionArea}>
                         <div className={leadStyles.clientActionRow}>
                           {isOpen ? (
@@ -1313,6 +1313,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader} ${styles.trackerExpandedHeader}`}>
                         <div className={`${assetStyles.assetTitleBlock} ${styles.trackerAssetIdentity}`}>
                           <h2>{asset.assetTitle}</h2>
+                          {identifier && <p className={sharedStyles.detailIdentity}>{identifier}</p>}
+                          <p className={sharedStyles.detailIdentity}>{asset.ownerName}</p>
                           {dealerAppMode ? (
                             <dl className={styles.trackerAssetFacts}>
                               <div><dt>Year</dt><dd>{asset.yearModel ?? 'Not recorded'}</dd></div>
@@ -1320,7 +1322,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               <div><dt>Condition</dt><dd>{asset.condition || 'Not recorded'}</dd></div>
                             </dl>
                           ) : <p>{trackingAssetMeta(asset)}</p>}
-                          <div className={assetStyles.assetMetaRow}><span className={assetStyles.assetSavedDateLabel}>Tracking shared by {asset.grantedByName || 'the asset owner'}</span></div>
+                          {asset.grantedByName && asset.grantedByName !== asset.ownerName && <div className={assetStyles.assetMetaRow}><span className={assetStyles.assetSavedDateLabel}>Tracking shared by {asset.grantedByName}</span></div>}
                         </div>
                         <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside} ${styles.trackerExpandedAside}`}>
                           <div className={`${assetStyles.valueBlock} ${leadStyles.leadValueBlock} ${styles.trackerStatusValue}`}>

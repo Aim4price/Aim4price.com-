@@ -48,7 +48,7 @@ test('umbrella children reuse the exact single-asset lead rendering and actions'
   assert.match(leadsClient, /assetStyles\.assetGroupHeader/);
   assert.match(leadsClient, /assetStyles\.assetGroupMemberRow/);
   assert.match(leadsClient, /aria-expanded=\{expanded\}/);
-  assert.match(leadsClient, /renderLead\(member\)/);
+  assert.match(leadsClient, /renderLead\(member, true\)/);
 });
 
 test('legacy umbrella shares are recognised as independent asset leads without a data migration', () => {
