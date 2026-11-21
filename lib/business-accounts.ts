@@ -2,7 +2,7 @@ import { liveShareOwnershipSql } from './asset-share-links';
 import { isBusinessService } from './business-service-options';
 import { businessWorkspaceSummary } from './business-workspaces';
 import { getDb } from './db';
-import { getAccountProfile } from './account-profile';
+import { getAccountProfile, sanitizeLogoUrl } from './account-profile';
 export const BUSINESS_ACCOUNT_SCHEMA = `
 CREATE TABLE IF NOT EXISTS business_account_reviews (
  user_id text PRIMARY KEY REFERENCES account_profiles(user_id) ON DELETE CASCADE,
@@ -60,8 +60,9 @@ export async function canBusinessContribute(user: {
 }
 export async function saveBusinessDetails(userId: string, input: Record<string, unknown>) {
     const name = String(input.businessName || '').trim(), phone = String(input.phone || '').trim();
-    const website = String(input.website || '').trim(), evidence = String(input.evidence || '').trim();
-    if (!name || name.length > 200 || phone.length > 40 || website.length > 500 || evidence.length > 2000)
+    const website = String(input.website || '').trim();
+    const submittedEvidence = String(input.evidence || '').trim();
+    if (!name || name.length > 200 || phone.length > 40 || website.length > 500 || submittedEvidence.length > 2000)
         throw new Error('Enter valid business and contact details.');
     if (website) {
         try {
@@ -80,8 +81,18 @@ export async function saveBusinessDetails(userId: string, input: Record<string, 
         if (!existing)
             throw new Error('This business account is unavailable.');
         const prior = (await db.query('SELECT website,evidence FROM business_account_reviews WHERE user_id=$1', [userId])).rows[0];
+        const evidence = input.evidence === undefined ? prior?.evidence || '' : submittedEvidence;
         const changed = name !== (existing.business_name || '') || phone !== (existing.phone || '') || website !== (prior?.website || '') || evidence !== (prior?.evidence || '');
         await db.query('UPDATE account_profiles SET business_name=$2,phone=$3,updated_at=now() WHERE user_id=$1', [userId, name, phone]);
+        if (input.editProfile === true) {
+            const field = (key: string) => String(input[key] ?? '').trim();
+            const logo = sanitizeLogoUrl(input.logoUrl);
+            if (input.logoUrl && !logo) throw new Error('Choose a valid business logo.');
+            await db.query(`UPDATE account_profiles SET display_name=$2,marketplace_email=$3,
+                province=$4,town_city=$5,address_line_1=$6,address_line_2=$7,logo_url=$8,website_url=$9
+                WHERE user_id=$1`, [userId, field('displayName'), field('marketplaceEmail').toLowerCase(),
+                field('province'), field('townCity'), field('addressLine1'), field('addressLine2'), logo, website]);
+        }
         await db.query(`INSERT INTO business_account_reviews(user_id,website,evidence) VALUES($1,$2,$3)
       ON CONFLICT(user_id) DO UPDATE SET website=$2,evidence=$3,
       verified_at=CASE WHEN $4 THEN NULL ELSE business_account_reviews.verified_at END,

@@ -14,7 +14,6 @@ import {
   useState,
   type ChangeEvent,
   type FormEvent,
-  type ReactNode,
 } from "react";
 import SettingsDetailIcon from "../../components/SettingsDetailIcon";
 import DesktopNotificationSettings from "./notifications/notification-settings-client";
@@ -100,7 +99,7 @@ type AccountClientProps = {
   canManageDesktopUsers?: boolean;
   subscription?: BusinessSubscription;
   sharedAccount?: boolean;
-  sharedSettings?: ReactNode;
+  canEditSignInSettings?: boolean;
   directoryEmailVerified?: boolean;
   initialProfile?: AccountProfile | null;
   initialScanPinStatus?: AccountScanPinStatus | null;
@@ -487,7 +486,7 @@ export default function AccountClient({
   subscription,
   sharedAccount = false,
   directoryEmailVerified = false,
-  sharedSettings,
+  canEditSignInSettings = true,
   initialProfile = null,
   initialScanPinStatus = null,
 }: AccountClientProps) {
@@ -906,13 +905,15 @@ export default function AccountClient({
     );
 
     try {
-      const response = await fetch("/api/account-profile", {
-        method: "PUT",
+      const response = await fetch(sharedAccount ? "/api/business-account" : "/api/account-profile", {
+        method: sharedAccount ? "PATCH" : "PUT",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
+        body: JSON.stringify(sharedAccount ? {
+          ...nextDraft, website:nextDraft.websiteUrl, editProfile:true,
+        } : {
           ...nextDraft,
           discoveryParticipationEnabled: isOwnerAccount
             ? nextDraft.discoveryParticipationEnabled
@@ -1266,7 +1267,7 @@ export default function AccountClient({
   }
 
   useEffect(() => {
-    if (sharedAccount || activeAccountModal !== "business") return;
+    if (!canEditSignInSettings || activeAccountModal !== "business") return;
     let mounted = true;
     setBillingEmails(null);
     fetch("/api/account-profile/billing-preferences", { cache: "no-store" })
@@ -1276,7 +1277,7 @@ export default function AccountClient({
         if (mounted) { setBillingEmails(data.useBusinessEmail); setBillingDestination(data.billingEmail); setSavedBillingBusinessEmail(data.businessEmail); }
       }).catch(error => { if (mounted) setBillingEmailNotice({ tone: "error", message: error.message }); });
     return () => { mounted = false; };
-  }, [activeAccountModal, sharedAccount]);
+  }, [activeAccountModal, canEditSignInSettings]);
 
   async function toggleBillingEmails() {
     if (billingEmails === null || isSavingBillingEmails) return;
@@ -1300,7 +1301,7 @@ export default function AccountClient({
 
   async function handleEmailChange(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (emailConfirmation !== "CHANGE EMAIL" || isChangingEmail || sharedAccount) return;
+    if (emailConfirmation !== "CHANGE EMAIL" || isChangingEmail || !canEditSignInSettings) return;
     setIsChangingEmail(true);
     setActionModalNotice(null);
     try {
@@ -2060,7 +2061,7 @@ export default function AccountClient({
         </div>
       ) : null}
 
-      {activeAccountModal === "email" && !sharedAccount ? (
+      {activeAccountModal === "email" && canEditSignInSettings ? (
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section ref={activeDialogRef} className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.polishedSettingsModal}`} role="dialog" aria-modal="true" aria-labelledby="change-account-email-title" tabIndex={-1} onClick={event => event.stopPropagation()}>
             <AccountModalScroller>
@@ -2104,11 +2105,10 @@ export default function AccountClient({
             <AccountModalScroller>
               <div className={styles.modalHeader}>
                 <h2 id="business-details-modal-title">Business details</h2>
-                {!sharedAccount && <p>Your changes are saved together on the final step.</p>}
+                <p>Your changes are saved together on the final step.</p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details" data-modal-close="true">×</button>
               </div>
 
-              {sharedAccount ? sharedSettings : <>
               <ModalInlineNotice notice={actionModalNotice} />
 
               <ModalStepProgress
@@ -2161,7 +2161,7 @@ export default function AccountClient({
                             <input value={profileDraft.phone} onChange={(event) => setProfileDraft((current) => ({ ...current, phone: event.target.value }))} placeholder="Phone, WhatsApp or office number" />
                           </span>
                         </label>
-                        {isPartnerAccount ? (
+                        {isPartnerAccount || sharedAccount ? (
                           <label className={styles.field}>
                             <span>Website link</span>
                             <span className={styles.settingsInput}>
@@ -2180,11 +2180,11 @@ export default function AccountClient({
                           </span>
                           <small className={styles.fieldHint}>Used to sign in.</small>
                         </div>
-                          {!sharedAccount ? <button type="button" className={styles.accountEmailChangeButton} onClick={() => {
+                          {canEditSignInSettings ? <button type="button" className={styles.accountEmailChangeButton} onClick={() => {
                             setNewAccountEmail(""); setEmailConfirmation(""); setEmailChangeSent(false); setActionModalNotice(null); setActiveAccountModal("email");
                           }}><SettingsDetailIcon name="lock" />Change account details</button> : null}
                         </div>
-                      {!sharedAccount ? <>
+                      {canEditSignInSettings ? <>
                         <div className={styles.billingEmailRow}>
                           <span className={styles.billingEmailIcon}><SettingsDetailIcon name="email" /></span>
                           <div><strong>Use business email for billing</strong><p>{billingEmails === null ? "Loading billing email…" : `Billing goes to: ${billingDestination}`}</p><p>{billingEmails ? "On · Business email" : "Off · Account email"} · Saves immediately.</p>{profileDraft.marketplaceEmail.trim() !== savedBillingBusinessEmail ? <p>Save business details to update the business email.</p> : null}</div>
@@ -2255,7 +2255,7 @@ export default function AccountClient({
                               <p>JPG, PNG or WEBP. Maximum {formatUploadSize(MAX_LOGO_UPLOAD_BYTES)}.</p>
                               <div className={styles.businessMediaControls}>
                                 <label className={styles.uploadButton}>
-                                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoFileChange} disabled={sharedAccount || isReadingLogo || isSavingProfile} />
+                                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoFileChange} disabled={isReadingLogo || isSavingProfile} />
                                   {isReadingLogo ? "Reading logo..." : logoUrl ? "Replace logo" : "Upload logo"}
                                 </label>
                                 {logoUrl ? <button type="button" className={styles.ghostButton} onClick={handleRemoveLogo} disabled={isSavingProfile || isReadingLogo}>Remove logo</button> : null}
@@ -2269,9 +2269,8 @@ export default function AccountClient({
 
                 </form>
               )}
-              </>}
             </AccountModalScroller>
-              {!sharedAccount && !isLoading ? (
+              {!isLoading ? (
                   <div className={`${styles.actionsRow} ${styles.wizardActions}`}>
                     <button
                       type="button"

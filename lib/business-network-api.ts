@@ -36,11 +36,12 @@ export function requireBusinessOrigin(request: NextRequest) {
 }
 export async function businessBody(
   request: NextRequest,
+  maxLength = 100000,
 ): Promise<Record<string, unknown>> {
-  if (Number(request.headers.get("content-length") || 0) > 100000)
+  if (Number(request.headers.get("content-length") || 0) > maxLength)
     throw new Error("This request is too large.");
   const text = await request.text();
-  if (text.length > 100000) throw new Error("This request is too large.");
+  if (text.length > maxLength) throw new Error("This request is too large.");
   const body = JSON.parse(text);
   if (!body || typeof body !== "object" || Array.isArray(body))
     throw new Error("This request is invalid.");

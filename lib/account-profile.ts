@@ -362,7 +362,7 @@ function asNullableInteger(value: unknown): number | null {
   return numeric === null ? null : Math.round(numeric);
 }
 
-function sanitizeLogoUrl(value: unknown): string {
+export function sanitizeLogoUrl(value: unknown): string {
   return sanitizeImageUrl(value, MAX_LOGO_URL_LENGTH);
 }
 
