@@ -50,7 +50,7 @@ test('public enquiry renders an expandable Leads card for every selected asset',
     '../leads/useOutsideCardDismiss':load('components/leads/useOutsideCardDismiss.ts',{
       '../../lib/viewport-scrollbar':load('lib/viewport-scrollbar.ts'),
     }),
-    '../leads/LeadCardSummary':load('components/leads/LeadCardSummary.tsx').default,
+    '../leads/RecipientAssetSummary':load('components/leads/RecipientAssetSummary.tsx').default,
     '../leads/LeadAssetCard':load('components/leads/LeadAssetCard.tsx').default,
     '../leads/LeadAssetDetails':load('components/leads/LeadAssetDetails.tsx').default,
     // Outside sharing is covered by verify-shared-asset-export.cjs.
@@ -74,7 +74,10 @@ test('public enquiry renders an expandable Leads card for every selected asset',
   }).default;
   const html=renderToStaticMarkup(React.createElement(Cards,{share,senderName:'Farm',allowBusinessDetails:true}));
   assert.equal((html.match(/<article/g)||[]).length,3);
-  for(const asset of share.assets)assert.ok(html.includes(`aria-label="Open ${asset.title}"`));
+  for(const asset of share.assets) {
+    assert.ok(html.includes(`<h3>${asset.title}</h3>`));
+    assert.ok(html.includes(`aria-label="Open ${asset.title}"`));
+  }
   assert.ok(html.includes('Add your business details'));
   assert.doesNotMatch(html,/[—–]/);
 });
