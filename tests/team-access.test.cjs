@@ -499,6 +499,7 @@ test('My access lists only the signed-in grant and projects safe summaries acros
 test('Account sends managed staff to My access without reading the main account profile',async()=>{
  let session=null,managed={id:'desktop:grant',email:'staff@example.com'},profileReads=0,managedReads=0;
  const page=load('app/account/page.tsx',{
+  '../../lib/middleman-account':load('lib/middleman-account.ts',{}),
   '../../lib/accounting-pilot':{isAccountingPilotSession:()=>false},
   '../../components/BusinessCredits':()=>null,
   '../../lib/team-access':{canManageTeamAccess:async()=>false},

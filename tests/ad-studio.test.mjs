@@ -928,7 +928,7 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
   assert.match(dealerHome, /'discovery', 'marketplace', 'ad_studio', 'showroom'/);
   assert.match(dealerMarketplace, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
   assert.doesNotMatch(dealerMarketplace, /if \(isMiddlemanAccountSubtype[^\n]*redirect/);
-  assert.match(account, /isMiddlemanAccount \? ['"]Middleman app access['"] : ['"]Manage Dealer App staff['"]/);
+  assert.match(account, /isMiddlemanAccount \? ['"]Middleman app access['"] : ['"]Manage Business App staff['"]/);
   assert.match(accessPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
   // Scope these checks to the Middleman override, not shared Dealer/Owner copy.
   const middlemanAccess = accessClient.match(/export function DealerAppAccessManagement[\s\S]*?return <AppAccessManagement[^;]+;/)?.[0] ?? '';

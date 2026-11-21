@@ -126,7 +126,8 @@ test('admin has a confirmed account-group composer with live recipient counts', 
   assert.match(client, />\s*Message\s*</);
   assert.doesNotMatch(client, /Message account groups/);
   assert.match(client, /NOTIFICATION_AUDIENCE_OPTIONS/);
-  assert.match(client, /Businesses/);
+  assert.match(client, /value: "dealer", label: "Business desktop accounts"/);
+  assert.match(client, /value: "business", label: "Shared-access businesses"/);
   assert.match(client, /notificationAudienceCounts/);
   assert.match(client, /action: "send_group_notification"/);
   assert.match(client, /notificationAudience: draft\.audience/);
