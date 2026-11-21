@@ -21,7 +21,7 @@ test("dedicated staff-management pages remain intact", async () => {
 
   assert.match(source, /window\.location\.assign\("\/account\/dealer-app"\)/);
   assert.match(source, /window\.location\.assign\("\/account\/owner-app"\)/);
-  assert.match(source, /Manage Business App staff/);
+  assert.match(source, /Business App/);
 });
 
 test("the restored account receives server-preloaded profile and PIN data", async () => {

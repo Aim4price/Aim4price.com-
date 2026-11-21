@@ -4559,6 +4559,7 @@
 }
 
 .quickActionGroup .lockedBusinessAction:disabled {
+  grid-template-columns: auto minmax(0, 1fr) auto;
   cursor: not-allowed;
   opacity: 0.8;
 }
@@ -4569,7 +4570,10 @@
 }
 
 .businessLock {
-  margin-inline-start: auto;
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
 }
 
 .businessLock > span {
