@@ -116,3 +116,12 @@
   .actions { grid-column: 1 / -1; }
   .actions > button { flex: 1 1 8rem; min-width: 0; }
 }
+
+.recipientCard { position: relative; }
+.recipientCard > .toggle { text-decoration: none; }
+.recipientCard > .toggle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 1.45rem;
+}

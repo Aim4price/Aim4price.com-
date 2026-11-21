@@ -53,8 +53,9 @@
 }
 .note {
   margin-block: 24px;
-  font-size: 12px;
-  color: #677970;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--app-text, #173e32);
 }
 .empty {
   margin-block: 64px;

@@ -103,12 +103,17 @@ export async function listReceivedSharedEnquiries(){
  await ensureGuestLeadSchema();await ensureSharingFoundation();
  const candidates = (await getDb().query<{token:string;request:string;sender:string;created_at:string}>(`SELECT token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE (lower(lead_details->>'recipientEmail')=$1 OR EXISTS(SELECT 1 FROM sharing_usage_events e WHERE e.token=s.token AND e.account_id=$2 AND e.metric='enquiry_opened')) AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC LIMIT 50`,[session.user.email.toLowerCase(),session.user.id])).rows;
  const {externalLeadAccess}=await import('./external-lead-access');
- const result:typeof candidates=[];
+ const result: Array<(typeof candidates)[number] & { title: string; assetCount: number }> = [];
  for(const candidate of candidates){
   const lead=await readLeadPage(candidate.token);
   if(!lead||!['active','read-only','owner'].includes((await externalLeadAccess(lead)).access))continue;
   await recordDeliveredAssets(session.user.email,candidate.token,lead.share.assets.flatMap(asset=>asset.assetId?[asset.assetId]:[]));
-  result.push(candidate);
+  result.push({
+    ...candidate,
+    sender: lead.share.senderName || candidate.sender,
+    title: lead.share.umbrellaName || (lead.share.assets.length === 1 ? lead.share.assets[0].title : 'Shared Assets'),
+    assetCount: lead.share.assets.length,
+  });
  }
  return result;
 }
