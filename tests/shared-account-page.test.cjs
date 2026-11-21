@@ -18,7 +18,7 @@ const mocks={
 };
 test('protected enquiry page keeps asset data behind access checks and shows the landing before opening',async()=>{
  for(const access of ['sign-in','wrong-recipient','verify-email','request-access','suspended','approval-required']){
-  const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>true}});
+  const page=load('app/asset-share/[token]/AssetShareView.tsx',{...mocks,'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>true}});
   const output=await page.default({params:{token}});
   assert.equal(output.props.children[1].type,'Landing');
   assert.deepEqual(output.props.children[1].props,{returnTo:'/asset-share/'+token+'?open=1',access,prompt:false,summary:{senderName:'Private sender',umbrellaName:'',assetCount:1,assetTitles:['Private tractor']}});
@@ -28,7 +28,7 @@ test('protected enquiry page keeps asset data behind access checks and shows the
   for(const secret of ['PRIVATE-SERIAL','private@example.test','Private request','Private report']) assert.ok(!JSON.stringify(opened).includes(secret));
  }
  for(const access of ['read-only','active','owner']){
-  const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>true}});
+  const page=load('app/asset-share/[token]/AssetShareView.tsx',{...mocks,'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>true}});
   const landing=await page.default({params:{token}});
   assert.equal(landing.props.children[1].type,'Landing');
   const output=await page.default({params:{token},searchParams:{open:'1'}});
@@ -42,7 +42,7 @@ test('old invitation URLs redirect enquiries before serializing asset names',asy
 
 test('umbrella landing identifies the group without serializing the member records',async()=>{
  const grouped={...lead,share:{...lead.share,umbrellaName:'Vehicles'}};
- const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/guest-leads':{readLeadPage:async()=>grouped},'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access:'sign-in'}),leadAllows:()=>true}});
+ const page=load('app/asset-share/[token]/AssetShareView.tsx',{...mocks,'../../../lib/guest-leads':{readLeadPage:async()=>grouped},'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access:'sign-in'}),leadAllows:()=>true}});
  const output=await page.default({params:{token}});
  assert.deepEqual(output.props.children[1].props.summary,{senderName:'Private sender',umbrellaName:'Vehicles',assetCount:1,assetTitles:[]});
  assert.ok(!JSON.stringify(output).includes('PRIVATE-SERIAL'));
@@ -50,7 +50,7 @@ test('umbrella landing identifies the group without serializing the member recor
 
 test('malformed asset share tokens stop before password or database checks',async()=>{
  let passwordChecks=0,leadReads=0;
- const page=load('app/asset-share/[token]/page.tsx',{...mocks,
+ const page=load('app/asset-share/[token]/AssetShareView.tsx',{...mocks,
   '../../../lib/asset-share-links':{getAssetSharePasswordState:async()=>{passwordChecks++;return{exists:false,protected:false,unlocked:true};}},
   '../../../lib/guest-leads':{readLeadPage:async()=>{leadReads++;return null;}},
  });
@@ -150,7 +150,7 @@ test('guests can browse standard links while recipient and approval restrictions
   [{accessMode:'owner-approval'},false],[{accessMode:'signed-in',recipientUserId:'invited'},false],
   [{recipientWhatsApp:'+27111111111'},false],[{recipientEmail:'invited@example.test'},false],
  ]) {
-  const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/guest-leads':{readLeadPage:async()=>({...lead,details})}});
+  const page=load('app/asset-share/[token]/AssetShareView.tsx',{...mocks,'../../../lib/guest-leads':{readLeadPage:async()=>({...lead,details})}});
   const landing=await page.default({params:{token}});
   assert.equal(landing.props.children[1].props.access,publicView?'guest-view':'sign-in');
   const opened=await page.default({params:{token},searchParams:{open:'1'}});
@@ -167,6 +167,7 @@ test('Business opens its inbox directly and only reads shares for active verifie
  let verified=true, paused=false, reads=0;
  const link='/asset-share/'+token+'?open=1';
  const page=load('app/business/page.tsx',{
+  '../asset-share/[token]/AssetShareView':{default:'AssetShareView'},
   '../../components/AppHeader':{default:'Header'},
   './BusinessSharedAssets':{default:'Inbox'},
   '../../lib/guest-leads':{listReceivedSharedEnquiries:async()=>{reads++;return ['share'];}},
@@ -207,4 +208,22 @@ test('Admin opening a Free Business account sees that user’s subscription and 
   assert.equal(props.canManageDesktopUsers,false);
   assert.equal(props.subscription.fullAccess,false);
   assert.equal(props.subscription.remaining,495);
+});
+
+test('opening an inbox member inline keeps the selected asset and applies the share access checks',async()=>{
+ const id='bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb';
+ const grouped={...lead,share:{...lead.share,assets:[{assetId:id,title:'Tractor'}]}};
+ for(const access of ['active','read-only','wrong-recipient']){
+  const view=load('app/asset-share/[token]/AssetShareView.tsx',{...mocks,
+   '../../../lib/guest-leads':{readLeadPage:async()=>grouped},
+   '../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>false}});
+  const result=await view.default({inline:true,params:{token},searchParams:{open:'1',asset:id}});
+  assert.equal(result.props.children[0],null);
+  if(access==='wrong-recipient') assert.equal(result.props.children[1].type,'Landing');
+  else {
+   const card=result.props.children[2];
+   assert.equal(card.type,'AssetCards');assert.equal(card.props.initialAssetId,id);
+   assert.equal(card.props.inline,true);assert.equal(card.props.enquiry.access,access);
+  }
+ }
 });
