@@ -82,6 +82,7 @@ test('SQL reuses live links, enforces owner scope, revocation and asset lifecycl
     assert.equal(await mod.readPublicAssetShare(third.token),null);
     await pg.query("UPDATE asset_register_items SET lifecycle_state='archived' WHERE id=$1",[B]);
     assert.equal((await mod.getAssetSharePasswordState(multiple.token)).exists,false);
+    assert.ok((await pg.query('SELECT revoked_at FROM asset_share_links WHERE token=$1',[multiple.token])).rows[0].revoked_at);
     assert.equal(await mod.readPublicAssetShare(multiple.token),null);
     await pg.query('DELETE FROM asset_register_items WHERE id=$1', [A]);
     assert.equal(await mod.readPublicAssetShare(third.token), null);

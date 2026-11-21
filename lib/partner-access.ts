@@ -958,7 +958,7 @@ export const liveLeadSourceSql = `
       THEN original.snapshot->'assets' ELSE '[]'::jsonb END) WITH ORDINALITY member(value,ord)
     JOIN public.asset_register_items a ON a.id::text=member.value->>'id' AND a.user_id=l.owner_user_id
       AND coalesce(to_jsonb(a)->>'lifecycle_state','active')='active') members
-  JOIN LATERAL (SELECT CASE WHEN original.snapshot IS NULL OR members.count=jsonb_array_length(original.snapshot->'assets')
+  JOIN LATERAL (SELECT CASE WHEN original.snapshot IS NULL OR members.count=jsonb_array_length(CASE WHEN jsonb_typeof(original.snapshot->'assets')='array' THEN original.snapshot->'assets' ELSE '[]'::jsonb END)
     THEN original.snapshot ELSE
       (original.snapshot - ARRAY['assetGroups','replacementPricedAssetCount','totalReplacementValue',
        'totalReplacementValueInclVat','aim4priceAssetCount','manualAssetCount','financedAssetCount',
@@ -1759,6 +1759,7 @@ export async function updateAssetLeadPhotosForPartner(input: {
         updated_at = now()
       where id = $1::uuid
         and partner_user_id = $2
+        and exists (select 1 from asset_register_items a where a.id=asset_leads.asset_register_item_id and a.user_id=asset_leads.owner_user_id and coalesce(to_jsonb(a)->>'lifecycle_state','active')='active')
       returning id::text
     `,
     [input.leadId, input.dealerUserId, JSON.stringify(photos)],
@@ -1777,9 +1778,10 @@ export async function getAssetLeadLogoForUser(input: {
   const result = await getDb().query<{ logo_url: string | null }>(
     `
       select asset_snapshot_json ->> 'logoUrl' as logo_url
-      from asset_leads
-      where id = $1::uuid
-        and (owner_user_id = $2 or partner_user_id = $2)
+      from asset_leads l
+      join asset_register_items a on a.id=l.asset_register_item_id and a.user_id=l.owner_user_id and coalesce(to_jsonb(a)->>'lifecycle_state','active')='active'
+      where l.id = $1::uuid
+        and (l.owner_user_id = $2 or l.partner_user_id = $2)
       limit 1
     `,
     [input.leadId, input.currentUserId],

@@ -1002,6 +1002,7 @@ function proposalSelectSql(whereSql: string): string {
     from public.dealer_maintenance_schedule_proposals proposal
     inner join public.dealer_maintenance_access access on access.id = proposal.access_id
     inner join public.asset_register_items asset on asset.id = proposal.asset_register_item_id
+      and asset.user_id = proposal.owner_user_id and coalesce(to_jsonb(asset)->>'lifecycle_state','active')='active'
     left join public.account_profiles dealer on dealer.user_id = proposal.dealer_user_id
     ${whereSql}
   `;
