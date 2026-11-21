@@ -86,7 +86,7 @@ test('each lead and report is owner/recipient scoped; payment never bypasses own
  const surviving=await mod.readLeadPage(bundle.token);
  assert.deepEqual(surviving.share.assets.map(item=>item.assetId),[A]);
  assert.deepEqual(surviving.reports,[]);
- assert.equal((await mod.loadProtectedLeadReport(bundle.token,bundleReport.id)).status,404);
+ assert.equal((await mod.loadProtectedLeadReport(bundle.token,bundleReport.id)).status,403);
  guest=null;session={user:{id:'other',email:details.recipientEmail,emailVerified:false}};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);session.user.emailVerified=true;assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);
  session={user:{id:'owner'}};assert.equal(await mod.resolveLeadAccess('owner',details.recipientEmail),'owner');session=null;
  await base.revokeAssetShareLink('other',one.token);assert.ok(await mod.readLeadPage(one.token));await base.revokeAssetShareLink('owner',one.token);assert.equal(await mod.readLeadPage(one.token),null);assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,404);

@@ -155,7 +155,7 @@ test('guests can browse standard links while recipient and approval restrictions
   if(publicView){
    const cards=opened.props.children[2];
    assert.equal(cards.props.share,lead.share);
-   assert.equal(opened.props.children[1],false);
+   assert.equal(opened.props.children[1].props.recordActivity,false);
    if(details){assert.equal(cards.props.enquiry.access,'sign-in');assert.deepEqual(cards.props.enquiry.reports,[]);}
   }else{assert.equal(opened.props.children[1].type,'Landing');}
  }

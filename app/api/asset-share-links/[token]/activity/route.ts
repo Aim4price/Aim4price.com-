@@ -35,6 +35,8 @@ export async function HEAD(request: NextRequest, { params }: { params: { token: 
     const assetId = request.nextUrl.searchParams.get('asset');
     const lead = await readLeadPage(params.token);
     if (!lead || !lead.share.assets.some(asset => asset.assetId === assetId)) return new NextResponse(null, { status: 404 });
+    const reports = request.nextUrl.searchParams.getAll('report');
+    if (reports.some(id => !lead.reports.some(report => report.id === id))) return new NextResponse(null, {status:404});
     const { access, user } = await externalLeadAccess(lead);
     const details = lead.details;
     const standard = !details || (details.accessMode === 'signed-in' && !details.recipientUserId && !details.recipientEmail && !details.recipientWhatsApp && !details.recipientName);

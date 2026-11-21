@@ -126,3 +126,30 @@ test('link appears in email and WhatsApp copy only when selected', () => {
   assert.match(decodeURIComponent(mod.buildEmailShareUrl(copy)), /View asset details:\nhttps:\/\/www.aim4price.com\/asset-share\/example/);
   assert.match(decodeURIComponent(mod.buildWhatsAppShareUrl(copy)), /asset-share\/example/);
 });
+
+test('a legacy register lead keeps its surviving members when its original anchor is removed', async () => {
+  const pg = new PGlite();
+  const mocks = new Proxy({'./db':{getDb:()=>pg}}, {has:()=>true, get:(obj,key)=>obj[key] ?? {}});
+  const leads = load('lib/partner-access.ts', mocks);
+  const leadId='40000000-0000-4000-8000-000000000004';
+  try {
+    await pg.exec(`CREATE TABLE asset_register_items(id uuid primary key,user_id text,lifecycle_state text);
+      CREATE TABLE asset_leads(id uuid,owner_user_id text,partner_user_id text,asset_register_item_id uuid,
+        asset_snapshot_json jsonb,included_sections_json jsonb)`);
+    await pg.query("INSERT INTO asset_register_items VALUES($1,'owner','active'),($2,'owner','active')",[A,B]);
+    const members=[{id:A,title:'Tractor',value:100},{id:B,title:'Trailer',value:30}];
+    await pg.query("INSERT INTO asset_leads VALUES($1,'owner','dealer',$2,$3,$4)",[leadId,A,{title:'Tractor'},
+      {registerSnapshot:{assets:members,assetCount:2,totalValue:130}}]);
+    await pg.query("UPDATE asset_register_items SET lifecycle_state='archived' WHERE id=$1",[A]);
+    const projection=await pg.query(`SELECT ${leads.liveLeadSnapshotSql} AS anchor,
+      ${leads.liveLeadSectionsSql} AS sections FROM asset_leads l ${leads.liveLeadSourceSql}`);
+    assert.deepEqual(projection.rows[0].anchor,{});
+    assert.deepEqual(projection.rows[0].sections.registerSnapshot.assets,[members[1]]);
+    assert.equal(projection.rows[0].sections.registerSnapshot.totalValue,30);
+    assert.equal(await leads.canViewLiveAssetLead('dealer',leadId,B),true);
+    assert.equal(await leads.canViewLiveAssetLead('dealer',leadId,A),false);
+    assert.equal(await leads.canViewLiveAssetLead('other',leadId,B),false);
+    await pg.query('DELETE FROM asset_register_items WHERE id=$1',[B]);
+    assert.equal(await leads.canViewLiveAssetLead('dealer',leadId,null),false);
+  } finally { await pg.close(); }
+});

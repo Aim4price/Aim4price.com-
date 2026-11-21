@@ -50,8 +50,13 @@ export default function SharedAssetCards({
 }) {
   const router=useRouter();
   const openAttempt = useRef(0);
-  function availabilityUrl(assetId?: string) {
-    return shareToken && assetId ? `/api/asset-share-links/${shareToken}/activity?asset=${encodeURIComponent(assetId)}` : undefined;
+  function availabilityUrl(assetId?: string, includeReports = false) {
+    if (!shareToken || !assetId) return undefined;
+    const query = new URLSearchParams({asset:assetId});
+    if (includeReports && enquiry?.permissions.reports) {
+      for (const report of enquiry.reports) query.append('report', report.id);
+    }
+    return `/api/asset-share-links/${shareToken}/activity?${query}`;
   }
   async function openAsset(index: number, assetId?: string) {
     const attempt = ++openAttempt.current;
@@ -210,7 +215,7 @@ export default function SharedAssetCards({
                           <div
                             className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${leadStyles.exportHeaderActions}`}
                           >
-                            <SharedAssetExport availabilityUrl={availabilityUrl(item.assetId)} creditTarget={creditToken?{token:creditToken,assetKey:item.assetId||String(index)}:undefined} signInReturnTo={guestReturnTo} title={item.title} photos={item.photoUrls} asset={item} attachments={enquiry && enquiry.permissions.reports && ['owner','active','read-only'].includes(enquiry.access) ? enquiry.reports.map(report => ({name:report.label, url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}`})) : []}/>
+                            <SharedAssetExport availabilityUrl={availabilityUrl(item.assetId, true)} creditTarget={creditToken?{token:creditToken,assetKey:item.assetId||String(index)}:undefined} signInReturnTo={guestReturnTo} title={item.title} photos={item.photoUrls} asset={item} attachments={enquiry && enquiry.permissions.reports && ['owner','active','read-only'].includes(enquiry.access) ? enquiry.reports.map(report => ({name:report.label, url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}`})) : []}/>
                             {enquiry && item.assetId && <SharedAssetSend creditTarget={creditToken?{token:creditToken,assetKey:item.assetId}:undefined} enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>}
                             <LeadManageButton
                               label={`Manage ${item.title}`}
@@ -299,7 +304,7 @@ export default function SharedAssetCards({
           <LeadManageDialog suspended={manageSuspended} title={asset.title} description={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} onClose={() => { closeVisit(); setManaged(null); trigger.current?.focus(); }}>
               {visit.current && <div className={assetStyles.assetHeaderActions}>
                 {enquiry?.reply && asset.assetId && <SharedAssetSend enquiry={enquiry} assetId={asset.assetId} assetTitle={asset.title} creditTarget={{...visit.current,visitId:visit.current.requestId}} onDialogChange={setManageSuspended}/>}
-                <SharedAssetExport availabilityUrl={availabilityUrl(asset.assetId)} title={asset.title} asset={asset} photos={asset.photoUrls} attachments={enquiry?.permissions.reports?enquiry.reports.map(report=>({name:report.label,url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}` })):[]} creditTarget={{...visit.current,visitId:visit.current.requestId}} onDialogChange={setManageSuspended}/>
+                <SharedAssetExport availabilityUrl={availabilityUrl(asset.assetId, true)} title={asset.title} asset={asset} photos={asset.photoUrls} attachments={enquiry?.permissions.reports?enquiry.reports.map(report=>({name:report.label,url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}` })):[]} creditTarget={{...visit.current,visitId:visit.current.requestId}} onDialogChange={setManageSuspended}/>
               </div>}
               {enquiry ? <ExternalLeadActions creditVisit={visit.current||undefined} key={asset.assetId||managed} {...enquiry} onDialogChange={setManageSuspended} assetSubtitle={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} assetTitle={asset.title} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
                 <section aria-label="Enquiry actions">
