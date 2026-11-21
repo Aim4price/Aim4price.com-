@@ -16,6 +16,11 @@ test('business identity is stable, claims only verified email and preserves gues
   assert.equal((await m.businessWorkspaceSummary('b')).legacyOpened,0,'Unverified email cannot claim guest history');
   await pg.exec('UPDATE "user" SET "emailVerified"=true');
   let summary=await m.businessWorkspaceSummary('b');
+  assert.equal(summary.paid,false);
+  await pg.exec(`ALTER TABLE business_workspaces ADD COLUMN paid_since timestamptz, ADD COLUMN upgrade_requested_at timestamptz; UPDATE business_workspaces SET upgrade_requested_at=now()`);
+  assert.equal((await m.businessWorkspaceSummary('b')).paid,false);
+  await pg.exec(`UPDATE business_workspaces SET paid_since=now()`);
+  assert.equal((await m.businessWorkspaceSummary('b')).paid,true);
   assert.equal(summary.legacyOpened,1);assert.equal(summary.suspended,true);
   await pg.exec(`UPDATE "user" SET email='second@example.test' WHERE id='b'`);
   summary=await m.businessWorkspaceSummary('b');

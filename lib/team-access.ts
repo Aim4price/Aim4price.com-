@@ -64,19 +64,19 @@ export async function requireTeamActor(): Promise<TeamActor> {
 }
 export async function teamIssuerAvailable(id: string, profile: {accountType: string; accountSubtype?: string | null; accountStatus: string}) {
     const kind = teamAccountKind(profile.accountType, profile.accountSubtype);
-    if (!kind || profile.accountStatus !== 'active' || await sharingPlan(id, profile.accountType) !== 'desktop') return false;
+    if (!kind || profile.accountStatus !== 'active') return false;
     if (kind === 'business') {
         const workspace = await businessWorkspaceSummary(id);
-        return Boolean(workspace && workspace.role === 'owner' && !workspace.suspended);
+        return Boolean(workspace?.paid && workspace.role === 'owner' && !workspace.suspended);
     }
-    return true;
+    return await sharingPlan(id, profile.accountType) === 'desktop';
 }
 export async function requireTeamOwner() {
     const actor = await requireTeamActor();
     if (actor.managedGrantId) throw new TeamAccessError('Only the business owner can manage desktop users.');
     const profile = await getAccountProfile(actor);
     if (!await teamIssuerAvailable(actor.id, profile))
-        throw new TeamAccessError('Team access requires an active Owner, Dealer or Business desktop account managed by its account holder.');
+        throw new TeamAccessError(profile.accountType === 'business' ? 'Desktop users are available to the owner of an active Paid Business workspace.' : 'Team access requires an active Owner, Dealer or Business desktop account managed by its account holder.');
     await ensureTeamAccessSchema();
     return { actor, profile };
 }
@@ -334,6 +334,7 @@ export async function acceptTeamGrant(actor: TeamActor, id: string) {
         if (!row)
             throw new TeamAccessError('This access is unavailable or belongs to another email address.');
         const grant = mapTeamGrant(row);
+        if (!await teamIssuerAvailable(grant.ownerId, await getAccountProfile({ id:grant.ownerId }))) throw new TeamAccessError('This business workspace is unavailable.');
         await auditTeam(client, actor, grant, 'Workspace opened');
         await client.query('COMMIT');
         return grant;

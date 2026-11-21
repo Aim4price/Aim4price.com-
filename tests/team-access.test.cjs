@@ -29,7 +29,7 @@ async function setup(options={}) {
   './app-realm-server':{currentAppRealm:async()=>null},
   './manager-team-workspace':{managerTeamActor:async()=>null},
   './team-account-policy':load('lib/team-account-policy.ts',{'./team-access-policy':policy}),
-  './business-workspaces':{businessWorkspaceSummary:async()=>({role:'owner',suspended:false})},
+  './business-workspaces':{businessWorkspaceSummary:async()=>({role:options.role || 'owner',suspended:false,paid:options.paid === true})},
   './team-client-work':{listTeamClientWork:async()=>[]},
   './team-login':login,
   './asset-groups':{listAssetGroups:async()=>[]},
@@ -315,15 +315,16 @@ test('existing personal account is activated by user ID; owner password never cr
 });
 
 test('desktop login route enforces origin, rate limits and isolated cookies; logout deletes the server session',async()=>{
- const f=await setup();try{
+ const options={accountType:'business',paid:true};
+ const f=await setup(options);try{
  await f.invite({email:'new@example.com',password:'Initial-password-123'});
  const limits=[];let blocked=false,token='';
  const json=(body,status=200)=>({body,status,cookies:{set:(...args)=>{json.lastCookie=args;}}});
  const route=load('app/api/team-login/route.ts',{
   'next/server':{},'next/headers':{cookies:()=>({get:()=>({value:token})})},
   '../../../lib/auth-session':{getAnyServerSession:async()=>f.getSession()},
-  '../../../lib/account-profile':{getAccountProfile:async()=>({accountType:'owner',accountStatus:'active'})},
-  '../../../lib/sharing-foundation':{sharingPlan:async()=> 'desktop'},'../../../lib/db':{getDb:()=>f.pool},
+  '../../../lib/account-profile':{getAccountProfile:async()=>({accountType:options.accountType,accountStatus:'active'})},
+  '../../../lib/team-access':f.service,'../../../lib/db':{getDb:()=>f.pool},
   '../../../lib/team-access-schema':{ensureTeamAccessSchema:async()=>{}},'../../../lib/team-login':f.login,
   '../../../lib/team-access-policy':policy,'../../../lib/team-access-http':{teamJson:json,teamError:e=>json({error:e.message},e.status||500)},
   '../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.badOrigin)throw new policy.TeamAccessError('Invalid origin',403);},businessBody:async r=>r.body},
@@ -333,6 +334,7 @@ test('desktop login route enforces origin, rate limits and isolated cookies; log
  assert.equal((await route.POST({...req,badOrigin:true})).status,403);
  assert.equal((await route.POST(req)).status,409);
  f.setSession(null);blocked=true;assert.equal((await route.POST(req)).status,429);blocked=false;
+ options.paid=false;assert.equal((await route.POST(req)).status,403);options.paid=true;
  assert.equal((await route.POST(req)).status,200);assert.equal(json.lastCookie[0],'aim4price_desktop_user');assert.equal(json.lastCookie[2].httpOnly,true);assert.equal(json.lastCookie[2].sameSite,'lax');
  const universal=await f.invite({email:'',loginType:'managed',username:'office@farm',password:'Username-password-123'});
  const usernameReq={...req,body:{username:'OFFICE@FARM',password:'Username-password-123',rememberMe:false}};
@@ -675,7 +677,7 @@ test('permission dependencies and summaries remain explicit',()=>{
 });
 test('Dealer and Business create isolated logins with an empty own-asset scope and explicit client permissions',async()=>{
  for(const accountType of ['dealer','business']){
- const f=await setup({accountType});try{
+ const f=await setup({accountType,paid:true});try{
  f.setSession({user:owner});assert.equal((await f.service.requireTeamOwner()).profile.accountType,accountType);
  const grant=await f.invite({loginType:'managed',email:'',username:'desk.'+accountType,password:'Desktop-password-123',scope:'selected',registerIds:[],assetIds:[],clientWorkIds:[],permissions:{viewClientWork:true,viewClientContacts:true}});
  assert.deepEqual(grant.clientWorkIds,[]);assert.equal(grant.permissions.viewClientWork,true);assert.equal(grant.permissions.viewClientValues,false);
@@ -708,5 +710,23 @@ test('Middleman cannot administer desktop users or use legacy grants after accou
   assert.equal(await f.service.teamIssuerAvailable('owner',{accountType:'middleman',accountStatus:'active'}),false);
   options.accountType='dealer';
   assert.equal((await f.service.loadTeamScope(grant.id)).grant.id,grant.id);
+ }finally{await f.db.close();}
+});
+
+test('Business requires an activated owner workspace for team administration and existing staff grants',async()=>{
+ const options={accountType:'business',paid:true,role:'owner'};
+ const f=await setup(options);
+ try {
+  const grant=await f.active();
+  for(const [paid,role] of [[false,'owner'],[true,'member']]){
+   options.paid=paid;options.role=role;f.setSession({user:owner});
+   assert.equal(await f.service.canManageTeamAccess(),false);
+   await assert.rejects(f.service.requireTeamOwner(),/Paid Business/);
+   await assert.rejects(f.invite(),/active desktop account holder/);
+   f.setSession({user:member});
+   await assert.rejects(f.service.loadTeamScope(grant.id),/workspace is unavailable/);
+  }
+  options.paid=true;options.role='owner';f.setSession({user:owner});
+  assert.equal(await f.service.canManageTeamAccess(),true);
  }finally{await f.db.close();}
 });
