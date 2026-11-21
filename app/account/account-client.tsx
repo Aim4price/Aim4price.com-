@@ -1198,16 +1198,8 @@ export default function AccountClient({
   }
 
   function openOverviewDetails(progress = false) {
-    if (sharedAccount) {
-      const section = document.getElementById('account-details');
-      if (section instanceof HTMLDetailsElement) section.open = true;
-      const target = section;
-      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const input = section?.querySelector<HTMLInputElement>(progress && profile?.businessName?.trim() ? 'input[name="phone"]' : progress ? 'input[name="businessName"]' : 'input[name="phone"]');
-      input?.focus({ preventScroll: true });
-      return;
-    }
     openActionModal('business');
+    if (sharedAccount) return;
     const saved = profile ? buildProfileDraft(profile) : profileDraft;
     if (progress && [saved.displayName, saved.businessName, saved.phone, saved.marketplaceEmail].every(value => value.trim()) && [saved.province, saved.townCity, saved.addressLine1].some(value => !value.trim())) setBusinessDetailsStep(2);
     else setBusinessDetailsStep(1);
@@ -1578,7 +1570,7 @@ export default function AccountClient({
           </div>
         ) : null}
 
-        <section className={styles.accountDashboard}>
+        <section className={`${styles.accountDashboard} ${isFreeBusiness ? styles.dashboardWithCredits : ""}`}>
           <section className={`${styles.card} ${styles.overviewCard}`}>
             <div className={styles.compactCardHeader}>
               <h2>Account overview</h2>
@@ -1626,6 +1618,20 @@ export default function AccountClient({
             </div>
           </section>
 
+          {isFreeBusiness && subscription && (
+            <section id="business-credits" className={`${styles.card} ${styles.creditBarCard}`} aria-labelledby="credit-bar-title">
+              <div className={styles.creditBarHeading}>
+                <h2 id="credit-bar-title">Credits</h2>
+                <strong>{subscription.remaining !== null && subscription.limit !== null
+                  ? `${subscription.remaining} of ${subscription.limit} available` : "Balance unavailable"}</strong>
+              </div>
+              {subscription.remaining !== null && subscription.limit !== null && subscription.limit > 0 && (
+                <div className={styles.progressTrack} role="meter" aria-label="Credits available" aria-valuemin={0} aria-valuemax={subscription.limit} aria-valuenow={subscription.remaining}>
+                  <span style={{ width: `${100 * subscription.remaining / subscription.limit}%` }} />
+                </div>
+              )}
+            </section>
+          )}
           <section className={`${styles.card} ${styles.quickActionsCard}`}>
             <div className={styles.compactCardHeader}>
               <PageHelpHeading topic={sharedAccount || normalizedAccountType === "business" ? "sharingAccount" : isMiddlemanAccount ? "middlemanAccount" : isDealerAccount ? "dealerAccount" : "account"}>
@@ -1791,7 +1797,7 @@ export default function AccountClient({
                   <h3 id="account-billing-actions-title">Account &amp; billing</h3>
                 </div>
                 <div className={styles.quickActionList}>
-                  {sharedAccount ? <Link className={styles.quickActionButton} href="#account-details" data-tooltip="View and update your business details." data-tooltip-style="description"><QuickActionIcon name="business"/><strong>Business details</strong></Link> : <button
+                  {sharedAccount ? <button type="button" className={styles.quickActionButton} onClick={openBusinessEditor} data-tooltip="View and update your business details." data-tooltip-style="description"><QuickActionIcon name="business"/><strong>Business details</strong></button> : <button
                     type="button"
                     className={styles.quickActionButton}
                     onClick={openBusinessEditor} data-tooltip="Update your business name, contact details, address and logo." data-tooltip-style="description"
@@ -1806,13 +1812,12 @@ export default function AccountClient({
                     <QuickActionIcon name="invoices" />
                     <strong>Aim4price invoices</strong>
                   </button>
-                  {sharedAccount ? <Link href="#business-credits" data-tooltip="View credits and Business upgrade options." data-tooltip-style="description" className={styles.quickActionButton}><QuickActionIcon name="registers" /><strong>Business credits</strong></Link> : null}
+
                 </div>
               </section>
             </div>
           </section>
 
-          {sharedSettings && <div className={styles.sharedAccountSettings}>{sharedSettings}</div>}
 
           <section
             className={`${styles.card} ${styles.securityCard}`}
@@ -2099,12 +2104,11 @@ export default function AccountClient({
             <AccountModalScroller>
               <div className={styles.modalHeader}>
                 <h2 id="business-details-modal-title">Business details</h2>
-                <p>
-                  Your changes are saved together on the final step.
-                </p>
+                {!sharedAccount && <p>Your changes are saved together on the final step.</p>}
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details" data-modal-close="true">×</button>
               </div>
 
+              {sharedAccount ? sharedSettings : <>
               <ModalInlineNotice notice={actionModalNotice} />
 
               <ModalStepProgress
@@ -2265,8 +2269,9 @@ export default function AccountClient({
 
                 </form>
               )}
+              </>}
             </AccountModalScroller>
-              {!isLoading ? (
+              {!sharedAccount && !isLoading ? (
                   <div className={`${styles.actionsRow} ${styles.wizardActions}`}>
                     <button
                       type="button"
