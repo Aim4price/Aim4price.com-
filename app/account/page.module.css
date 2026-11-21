@@ -4175,8 +4175,16 @@
 .invoiceFoldToggle:hover { background:#f5faf7; }.invoiceFoldToggle:focus-visible,.invoiceListToolbar button:focus-visible { outline:2px solid #267152; outline-offset:-3px; }
 .invoiceFoldBody { border-top:1px solid #e0e9e3; }
 
-.sharedAccountSettings { grid-column:1 / -1; min-width:0; }
-.sharedAccountSettings [id] { scroll-margin-top:9rem; }
+.accountDashboard.dashboardWithCredits {
+  grid-template-areas: "overview quick" "credits quick" "security quick";
+  grid-template-rows: auto auto 1fr;
+}
+.creditBarCard { grid-area: credits; scroll-margin-top: 9rem; }
+.creditBarHeading { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; }
+.creditBarHeading h2 { margin: 0; font-size: 1.15rem; }
+.creditBarCard .progressTrack { margin-top: .6rem; height: .5rem; }
+.creditBarCard .progressTrack > span { min-width: 0; background: var(--app-accent, #228762); }
+
 
 .metricTileButton { width:100%; font:inherit; text-align:left; cursor:pointer; transition:background .15s,border-color .15s; }
 .metricTileButton:hover { background:var(--app-success-soft,#e8f3ed); border-color:var(--app-accent,#318469); }
