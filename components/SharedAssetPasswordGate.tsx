@@ -49,7 +49,11 @@ function PasswordDialog({token,onClose}: {token:string;onClose:()=>void}) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'The asset link could not be opened.');
       setPassword('');
-      if (!controller.signal.aborted) window.location.replace(`/asset-share/${encodeURIComponent(token)}?open=1`);
+      if (!controller.signal.aborted) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('open','1');
+        window.location.replace(url.href);
+      }
     } catch (cause) {
       if (controller.signal.aborted) return;
       setError(cause instanceof Error ? cause.message : 'Please try again.');

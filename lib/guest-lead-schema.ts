@@ -54,6 +54,12 @@ CREATE TABLE IF NOT EXISTS asset_share_access_requests (
  created_at timestamptz NOT NULL DEFAULT now(), reviewed_at timestamptz,
  PRIMARY KEY(token,user_id)
 );
+CREATE TABLE IF NOT EXISTS shared_asset_views (
+ account_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+ token text NOT NULL REFERENCES asset_share_links(token) ON DELETE CASCADE,
+ asset_id uuid NOT NULL,
+ PRIMARY KEY(account_id, token, asset_id)
+);
 CREATE INDEX IF NOT EXISTS asset_share_reports_token ON asset_share_reports(token);
 `;
 let ready: Promise<void> | undefined;

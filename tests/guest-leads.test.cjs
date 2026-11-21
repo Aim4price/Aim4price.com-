@@ -22,7 +22,7 @@ const snapshot=load('lib/asset-share-snapshot.ts',{'./asset-usage':load('lib/ass
 const asset={id:A,userId:'owner',title:'Tractor',kind:'tractor',serialNumber:'1234',value:100000,photos:[],condition:'good',privateNote:'PRIVATE',documents:[{name:'PRIVATE'}]};
 const details={recipientName:'Workshop',recipientEmail:'workshop@example.com',request:'Please quote to repair this tractor.',replyName:'Owner',replyEmail:'owner@example.com',replyPhone:'0821234567',allowReply:true};
 async function setup(){
- const pg=new PGlite();await pg.exec('CREATE TABLE sharing_usage_events(token text,account_id text,metric text); CREATE TABLE asset_groups(id uuid,user_id text,name text); CREATE TABLE asset_group_members(group_id uuid,asset_id uuid); CREATE TABLE account_profiles(user_id text PRIMARY KEY,business_name text); CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text NOT NULL)');await pg.query('INSERT INTO asset_register_items VALUES($1,$2),($3,$4)',[A,'owner',B,'other']);
+ const pg=new PGlite();await pg.exec(`CREATE TABLE "user"(id text PRIMARY KEY); INSERT INTO "user" VALUES ('receiver');`);await pg.exec('CREATE TABLE sharing_usage_events(token text,account_id text,metric text); CREATE TABLE asset_groups(id uuid,user_id text,name text); CREATE TABLE asset_group_members(group_id uuid,asset_id uuid); CREATE TABLE account_profiles(user_id text PRIMARY KEY,business_name text); CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text NOT NULL)');await pg.query('INSERT INTO asset_register_items VALUES($1,$2),($3,$4)',[A,'owner',B,'other']);
  const query=(sql,params)=>params?pg.query(sql,params):pg.exec(sql).then(rows=>rows.at(-1));const client={query,release(){}},db={query,connect:async()=>client};
  const assetDb={getAssetRegisterItemsByRefs:async refs=>{const rows=(await pg.query('SELECT * FROM asset_register_items')).rows;return rows.filter(row=>refs.some(ref=>ref.assetId===row.id&&ref.userId===row.user_id)).map(row=>({...asset,id:row.id,userId:row.user_id}));}};
  const base=load('lib/asset-share-links.ts',{'./shared-market-assessment':{sharedMarketAssessments:async()=>({})},'./db':{getDb:()=>db},'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot});
@@ -135,7 +135,13 @@ test('incoming documents are opt-in, owner-private, review-only and respect link
   assert.equal((await docs.listLeadSubmissions('owner',one.token))[0].status,'accepted');
   assert.equal((await pg.query('SELECT user_id FROM asset_register_items WHERE id=$1',[A])).rows[0].user_id,'owner');
   session={user:{id:'receiver',email:details.recipientEmail,emailVerified:true}};
-  assert.equal((await lead.listReceivedSharedEnquiries()).length,2);
+  const delivered = await lead.listReceivedSharedEnquiries();
+  assert.equal(delivered.length,2);
+  assert.ok(delivered.every(share=>share.assets.every(asset=>!asset.viewed)));
+  await lead.markSharedAssetViewed('receiver',one.token,A);
+  await lead.markSharedAssetViewed('receiver',one.token,A);
+  const refreshed=await lead.listReceivedSharedEnquiries();
+  assert.deepEqual(refreshed.flatMap(share=>share.assets.filter(asset=>asset.viewed).map(asset=>[share.token,asset.id])),[[one.token,A]]);
   session={user:{id:'receiver',email:details.recipientEmail,emailVerified:false}};assert.equal((await lead.listReceivedSharedEnquiries()).length,2);
   await base.revokeAssetShareLink('owner',one.token);
   await assert.rejects(docs.submitLeadDocument(one.token,input,file,'receiver'),/no longer available/);

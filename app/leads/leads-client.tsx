@@ -41,6 +41,8 @@ import DropdownOverlay from '../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { createPortal } from '../../components/WebsitePortal';
 import dynamic from 'next/dynamic';
+import SharedUmbrellaSummary from '../../components/leads/SharedUmbrellaSummary';
+import SharedAssetStatus from '../../components/leads/SharedAssetStatus';
 import AppHeader from '../../components/AppHeader';
 import {
   WorkspaceTitlePanel,
@@ -3728,43 +3730,7 @@ export default function LeadsClient({
           )}
 
           {useDealerWorkspaceStyles ? (
-            <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`} aria-label="Shared asset summary">
-              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardNew} ${styles.leadSummaryFilterButton} ${statusFilter === 'new' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('new')} aria-pressed={statusFilter === 'new'}>
-                <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>New</span>
-                </span>
-                <span className={assetStyles.heroSummaryValueRow}>
-                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{newLeadCount}</strong>
-                </span>
-                <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Shared assets not yet viewed.</small>
-                </span>
-              </button>
-
-              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen} ${styles.leadSummaryFilterButton} ${statusFilter === 'viewed' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('viewed')} aria-pressed={statusFilter === 'viewed'}>
-                <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Viewed</span>
-                </span>
-                <span className={assetStyles.heroSummaryValueRow}>
-                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{viewedLeadCount}</strong>
-                </span>
-                <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Shared assets you have viewed.</small>
-                </span>
-              </button>
-
-              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone} ${styles.leadSummaryFilterButton} ${statusFilter === 'all' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('all')} aria-pressed={statusFilter === 'all'}>
-                <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>All shared</span>
-                </span>
-                <span className={assetStyles.heroSummaryValueRow}>
-                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{summaryLeads.length}</strong>
-                </span>
-                <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>All assets shared with you.</small>
-                </span>
-              </button>
-            </section>
+            <SharedAssetStatus statusFilter={statusFilter} chooseLeadStatusFilter={chooseLeadStatusFilter} newLeadCount={newLeadCount} viewedLeadCount={viewedLeadCount} total={summaryLeads.length}/>
           ) : !useDealerWorkspaceStyles ? (
             <div className={`${styles.leadSummaryRow} ${dealerAppMode ? dealerStyles.dealerHidden : ''}`}>
               <article className={`${styles.leadSummaryCard} ${styles.leadSummaryCardNew}`}>
@@ -3864,38 +3830,7 @@ export default function LeadsClient({
                 return (
                   <div key={row.key} className={assetStyles.assetList}>
                     <div className={`${assetStyles.assetGroupHeaderRow} ${sharedStyles.frame}`}>
-                      <section className={sharedStyles.card} data-expanded={expanded}
-                        onClick={event => {
-                          if (!(event.target as Element).closest('button') && !window.getSelection()?.toString()) toggle();
-                        }}>
-                        <span className={sharedStyles.icon} aria-hidden="true">
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 12a9 9 0 0 1 18 0c-3-3-6 0-9 0s-6-3-9 0ZM12 3v15a3 3 0 0 0 6 0"/>
-                          </svg>
-                        </span>
-                        <div className={sharedStyles.body}>
-                          <div className={sharedStyles.heading}>
-                            <h2>{row.name}</h2>
-                            <span className={sharedStyles.count}>{row.members.length} {row.members.length === 1 ? 'asset' : 'assets'}</span>
-                          </div>
-                          <div className={sharedStyles.metadata}>
-                            <strong>{first.ownerBusinessName || ownerDisplayName(first)}</strong>
-                            <span>Received {formatDate(first.createdAtIso)}</span>
-                          </div>
-                          {!expanded && (
-                            <div className={sharedStyles.preview}>
-                              {row.members.slice(0, 2).map(member => (
-                                <span key={member.id} className={assetStyles.assetGroupPreview} title={assetTitle(member)}>{assetTitle(member)}</span>
-                              ))}
-                              {row.members.length > 2 && <span className={assetStyles.assetGroupPreview}>+{row.members.length - 2} more</span>}
-                            </div>
-                          )}
-                        </div>
-                        <button type="button" className={sharedStyles.toggle} onClick={toggle} aria-expanded={expanded} aria-controls={panelId}>
-                          {expanded ? <ChevronUpIcon className={assetStyles.buttonIcon}/> : <ChevronDownIcon className={assetStyles.buttonIcon}/>}
-                          {expanded ? 'Hide details' : 'View assets'}
-                        </button>
-                      </section>
+                      <SharedUmbrellaSummary title={row.name} titles={row.members.map(assetTitle)} sender={first.ownerBusinessName || ownerDisplayName(first)} date={formatDate(first.createdAtIso)} expanded={expanded} toggle={toggle} panelId={panelId}/>
                     </div>
                     <div id={panelId} hidden={!expanded} className={expanded ? assetStyles.assetList : undefined}>
                       {expanded && row.members.map((member, index) => (

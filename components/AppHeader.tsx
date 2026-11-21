@@ -291,7 +291,7 @@ function buildNavItems(
   if (accountType === 'business') return [
     { key: 'home', href: '/', label: 'Home' },
     { key: 'valuation', href: '/valuation', label: 'Value Asset' },
-    { key: 'leads', href: '/business', label: 'Shared enquiries' },
+    { key: 'leads', href: '/business', label: 'Shared Assets' },
     { key: 'account', href: '/account', label: 'Account' },
   ];
 
@@ -1028,7 +1028,7 @@ export default function AppHeader({
   const isDealerAccount = session?.accountType === 'dealer' && session.sharingPlan !== 'free';
   const isMiddlemanAccount = isDealerAccount && isMiddlemanAccountSubtype(session?.accountSubtype);
 
-  const partsAccess = (isDealerAccount && !isMiddlemanAccount) || session?.accountType === 'business';
+  const partsAccess = isDealerAccount && !isMiddlemanAccount;
   const navAccountType = isLoadingSession ? null : (session?.sharingPlan === 'free' ? 'business' : session?.accountType ?? 'public');
   const navItems = useMemo(
     () => [...buildNavItems(navAccountType, session?.accountSubtype), ...(partsAccess ? [{ key: 'parts' as const, href: '/parts', label: 'Parts Stock' }] : [])].map(item => item.key === 'leads' && session?.sharingPlan === 'free' && session?.accountType !== 'business' ? { ...item, href: '/shared-enquiries' } : item),
@@ -2541,7 +2541,7 @@ export default function AppHeader({
                                       { href: '/', label: 'Home' },
                                       { href: '/valuation', label: 'Value Asset' },
                                       { href: '/account', label: 'Account' },
-                                      { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared enquiries' },
+                                      { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared Assets' },
                                       { href: '/pricing', label: 'Subscriptions' },
                                       ...(partsAccess ? [{ href: '/parts', label: 'Parts Stock' }] : []),
                                     ]

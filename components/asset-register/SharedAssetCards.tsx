@@ -37,7 +37,7 @@ export default function SharedAssetCards({
   example = false,
   senderName = "",
   allowBusinessDetails = false,
-  guestReturnTo, creditToken, shareToken,
+  guestReturnTo, creditToken, shareToken, initialAssetId, trackViews,
 }: {
   example?: boolean;
   share: PublicAssetShare | null;
@@ -46,6 +46,7 @@ export default function SharedAssetCards({
   enquiry?: ExternalLeadActionData;
   senderName?: string;
   allowBusinessDetails?: boolean;
+  initialAssetId?: string; trackViews?: boolean;
   guestReturnTo?: string; creditToken?: string; shareToken?: string;
 }) {
   const router=useRouter();
@@ -105,7 +106,22 @@ export default function SharedAssetCards({
     photoIndex: number;
   } | null>(null);
   const selectionKey=share?.assets.map(asset=>asset.assetId||asset.title).join('|')||'';
-  useEffect(()=>{closeVisit();setOpened(null);setManaged(null);setPhotoViewer(null);},[selectionKey]);
+  useEffect(()=>{
+    closeVisit();
+    const index = initialAssetId ? share?.assets.findIndex(asset => asset.assetId === initialAssetId) : -1;
+    setOpened(index != null && index >= 0 ? index : null);
+    setManaged(null);
+    setPhotoViewer(null);
+  },[selectionKey, initialAssetId]);
+  const viewedId = opened === null ? undefined : share?.assets[opened]?.assetId;
+  useEffect(()=>{
+    if (viewedId && viewedId === initialAssetId) document.getElementById('asset-'+viewedId)?.scrollIntoView({block:'center'});
+  },[viewedId,initialAssetId]);
+  useEffect(()=>{
+    if (trackViews && viewedId && shareToken) {
+      void fetch(`/api/asset-share-links/${shareToken}/activity?asset=${encodeURIComponent(viewedId)}`, {method:'POST', keepalive:true}).catch(()=>{});
+    }
+  },[trackViews,shareToken,viewedId]);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const photoTrigger = useRef<HTMLElement | null>(null);
   const panelPrefix = useId();
@@ -159,6 +175,7 @@ export default function SharedAssetCards({
               return (
                 <article
                   key={item.assetId || index}
+                  id={item.assetId ? `asset-${item.assetId}` : undefined}
                   ref={isOpen ? openedCardRef : null}
                   className={sharedStyles.frame}
                 >

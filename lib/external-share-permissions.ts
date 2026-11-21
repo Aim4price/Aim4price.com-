@@ -43,7 +43,7 @@ export function sharedEnquiryReturnTo(value: unknown): string | null {
 
     if (typeof value === 'string' && /^\/maintenance-reminder\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) return value;
     if (typeof value === 'string' && /^\/value-review\/[0-9a-f-]{36}\/[0-9a-f-]{36}$/i.test(value)) return value;
-    return typeof value === 'string' && /^\/asset-share\/[A-Za-z0-9_-]{43}(?:\?open=1)?$/.test(value) ? value : null;
+    return typeof value === 'string' && /^\/asset-share\/[A-Za-z0-9_-]{43}(?:\?open=1(?:&asset=[0-9a-fA-F-]{36})?)?$/.test(value) ? value : null;
 }
 
 /** Photos and general reports are included; maintenance and costs require explicit selection. */

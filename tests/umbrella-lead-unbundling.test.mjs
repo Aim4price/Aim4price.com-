@@ -20,6 +20,8 @@ const [
   read('lib/partner-access.ts'),
 ]);
 
+const umbrellaSummary = await read('components/leads/SharedUmbrellaSummary.tsx');
+
 test('sharing an umbrella sends every member asset for all supported partner types', () => {
   assert.match(shareClient, /assetIds: isAssetGroupShare[\s\S]*?\? managedAssetIds/);
   assert.match(leadRoute, /function isAssetGroupShareRequest/);
@@ -47,7 +49,8 @@ test('umbrella children reuse the exact single-asset lead rendering and actions'
   assert.match(leadsClient, /<SharedAssetContributionDialog/);
   assert.match(leadsClient, /assetStyles\.assetGroupHeader/);
   assert.match(leadsClient, /assetStyles\.assetGroupMemberRow/);
-  assert.match(leadsClient, /aria-expanded=\{expanded\}/);
+  assert.match(leadsClient, /<SharedUmbrellaSummary/);
+  assert.match(umbrellaSummary, /aria-expanded=\{expanded\}/);
   assert.match(leadsClient, /renderLead\(member, true\)/);
 });
 
