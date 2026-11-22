@@ -18,12 +18,11 @@ import {
 import { refreshCachedHeaderSession } from "../../lib/header-session-cache";
 import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
-import PricingModal from "../pricing/pricing-modal";
 
 import BusinessSignup from "../business/join/business-signup";
 import { BUSINESS_SERVICE_OPTIONS, isBusinessService } from "../../lib/business-service-options";
 
-import { SIGNUP_ACCOUNT_TYPE_OPTIONS, SIGNUP_ACCOUNT_SUBTYPE_OPTIONS, type SignupAccountType, type SignupAccountSubtype } from "../../lib/account-type-options";
+import { PUBLIC_SIGNUP_OPTIONS, SIGNUP_ACCOUNT_SUBTYPE_OPTIONS, type PublicSignupAccountType, type SignupAccountSubtype } from "../../lib/account-type-options";
 
 type Mode = "signup" | "login" | "forgot";
 type SignupStep = 1 | 2 | 3;
@@ -87,7 +86,7 @@ function SignupProgress({ currentStep }: { currentStep: SignupStep }) {
 }
 
 type SignupFormState = {
-  accountType: SignupAccountType;
+  accountType: PublicSignupAccountType;
   accountSubtype: SignupAccountSubtype;
   introducedByOption: SignupIntroducedByOption;
   introducedByName: string;
@@ -373,7 +372,7 @@ function CustomSelect<T extends string>({
 }
 
 function getDefaultSubtype(
-  accountType: SignupAccountType,
+  accountType: PublicSignupAccountType,
 ): SignupAccountSubtype {
   return SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[accountType][0].value;
 }
@@ -417,14 +416,10 @@ function getModeFromHash(hash: string): Mode {
 
 function getSignupAccountTypeFromSearch(
   search: string,
-): Extract<SignupAccountType, "owner" | "dealer" | "middleman"> | null {
-  const accountType = new URLSearchParams(search).get("accountType");
-
-  // Paid Business uses the existing desktop account and invoice plan.
-  if (accountType === "business") return "dealer";
-  return accountType === "owner" || accountType === "dealer" || accountType === "middleman"
-    ? accountType
-    : null;
+): PublicSignupAccountType | null {
+  const type = new URLSearchParams(search).get("accountType");
+  if (type === "business" || type === "dealer") return "business";
+  return type === "owner" ? "owner" : null;
 }
 
 function getNestedRecord(value: unknown): Record<string, unknown> | null {
@@ -570,7 +565,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   const [createdBusinessEmail,setCreatedBusinessEmail]=useState('');
   const [verificationSent,setVerificationSent]=useState(false);
   async function sendBusinessVerification(email:string){
-    await postAuth('/send-verification-email',{email,callbackURL:sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/shared-enquiries'});
+    await postAuth('/send-verification-email',{email,callbackURL:sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/business'});
     setVerificationSent(true);
   }
   const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
@@ -583,13 +578,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   }, []);
 
   const [mode, setMode] = useState<Mode>("signup");
-  useEffect(() => {
-    if (getSafeReturnTo()?.startsWith("/parts/join?")) {
-      setSignupForm(current => ({...current, accountType: "dealer", accountSubtype: getDefaultSubtype("dealer"), directoryParticipation: false}));
-    }
-  }, []);
   const [signupStep, setSignupStep] = useState<SignupStep>(1);
-  const [showDealerRegisterInfo, setShowDealerRegisterInfo] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupForm, setSignupForm] =
@@ -818,7 +807,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     return true;
   };
 
-  const selectedBillingPlan = (accountAccess === "free" || signupForm.accountType === "middleman" || signupForm.accountType === "business") ? undefined : billingPlans.find(plan=>plan.accountType===(signupForm.accountType==="dealer"?"business":signupForm.accountType));
+  const selectedBillingPlan = (accountAccess === "free" || signupForm.accountType === "business") ? undefined : billingPlans.find(plan=>plan.accountType===signupForm.accountType);
   useEffect(()=>{setBilling(current=>({...current,accepted:false}));},[selectedBillingPlan?.accountType,selectedBillingPlan?.version]);
 
   const handleSignupSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -863,22 +852,18 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         phone,
         businessName: signupForm.businessName.trim(),
         acceptedTerms: signupForm.acceptTerms,
-        accountType: signupForm.accountType === "middleman" ? "dealer" : signupForm.accountType === "dealer" ? "business" : signupForm.accountType,
+        accountType: signupForm.accountType,
         accountSubtype: signupForm.accountSubtype,
         accountAccess,
         province,
         townCity,
         partnerDirectoryEnabled:
-          signupForm.accountType !== "owner" &&
-          signupForm.accountType !== "middleman" &&
+          signupForm.accountType === "business" &&
           signupForm.directoryParticipation,
         introducedByOption: signupForm.introducedByOption,
         introducedByName:
           signupForm.introducedByOption === "other" ? introducedByName : "",
-        callbackURL: getCallbackUrl(
-          email,
-          signupForm.accountType === "middleman" ? "/my-showroom" : undefined,
-        ),
+        callbackURL: getCallbackUrl(email),
       });
 
       if(signupForm.accountType==='business'||accountAccess==='free'){
@@ -897,9 +882,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
       setNotice({
         tone: "success",
         title: "Account created",
-        text: signupForm.accountType === "middleman"
-          ? "Your free Middleman workspace is ready. Opening your showroom now."
-          : "Your account has been created and is awaiting payment/admin approval. You will not be able to use protected pages until Aim4price activates the account.",
+        text: "Your account has been created and is awaiting payment/admin approval. You will not be able to use protected pages until Aim4price activates the account.",
       });
 
       if (redirectUrl && typeof window !== "undefined") {
@@ -1116,7 +1099,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                 {notice&&<p role="alert">{notice.text}</p>}
                 <div className={styles.signupFooter}>
                   <button type="button" className={styles.secondaryButton} disabled={isSubmitting} onClick={async()=>{setIsSubmitting(true);setNotice(null);try{await sendBusinessVerification(createdBusinessEmail);}catch{setNotice({tone:'error',title:'Unable to send email',text:'Please try resending the verification email.'});}finally{setIsSubmitting(false);}}}>{isSubmitting?'Sending…':'Resend verification email'}</button>
-                  <a className={`${styles.primaryButton} ${styles.signupPrimaryButton}`} href={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/shared-enquiries'}>Continue</a>
+                  <a className={`${styles.primaryButton} ${styles.signupPrimaryButton}`} href={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/business'}>Continue</a>
                 </div>
               </section>
             ) : mode === "signup" ? (
@@ -1160,7 +1143,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           <span className={styles.signupStepNumber}>1</span>
                           <div className={styles.signupStepCopy}>
                             <strong id="signup-step-workspace">Choose your workspace</strong>
-                            <small>Choose what fits. Paid workspaces require activation after signup.</small>
+                            <small>Choose how you’ll use Aim4price.</small>
                           </div>
                         </div>
 
@@ -1171,18 +1154,18 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                               name="accountType"
                               ariaLabel="What would you like to use Aim4price for?"
                               value={signupForm.accountType}
-                              options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
+                              options={PUBLIC_SIGNUP_OPTIONS}
                               onChange={(accountType) => {
                                 setSignupForm((current) => ({
                                   ...current,
                                   accountType,
                                   accountSubtype: getDefaultSubtype(accountType),
                                   directoryParticipation:
-                                    accountType !== "owner" && accountType !== "middleman" && !getSafeReturnTo()?.startsWith("/parts/join?"),
+                                    accountType === "business" && !getSafeReturnTo()?.startsWith("/parts/join?"),
                                 }));
                               }}
                             />
-                            <small>{signupForm.accountType === 'owner' ? 'For farms, companies and individuals managing their own assets.' : signupForm.accountType === 'dealer' ? 'For businesses managing stock, client registers and enquiries. Client registers are billed separately.' : signupForm.accountType === 'business' ? 'For service providers working with assets shared by clients, such as repairers, insurers and financiers.' : 'For intermediaries connecting asset owners with buyers and service providers.'}</small>
+                            <small>{signupForm.accountType === 'owner' ? 'Value and manage your own assets.' : 'Work with assets shared by clients. Start free with credits and upgrade when you need more.'}</small>
                           </div>
 
                           <div className={styles.field}>
@@ -1203,24 +1186,8 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                             />
                           </div>
 
-                        {signupForm.accountType === "dealer" ? (
-                          <div className={styles.dealerRegisterInfoRow}>
-                            <button type="button" className={styles.dealerRegisterInfo} aria-haspopup="dialog" onClick={() => setShowDealerRegisterInfo(true)}>Client register information</button>
-                            <PricingModal compact open={showDealerRegisterInfo} title="Manage client asset registers" closeLabel="Close client register information" onClose={() => setShowDealerRegisterInfo(false)}>
-                              <div className={styles.dealerRegisterDetails}>
-                                <p>With Business hosting, you can create and manage asset registers for your clients directly inside your Aim4price account.</p>
-                                <div className={styles.dealerRegisterPrice}>
-                                  <strong>25% of the standard Owner plan price</strong>
-                                  <p>Client-register hosting is based on the number of assets and the corresponding Owner plan. It is billed separately from your R199/month Business subscription.</p>
-                                </div>
-                                <p>Your business controls these registers and receives the invoices. Clients have no login or access.</p>
-                                <p className={styles.dealerRegisterNote}>Aim4price confirms the applicable asset band, charges and billing start date before activation.</p>
-                              </div>
-                            </PricingModal>
-                          </div>
-                        ) : null}
 
-                          {signupForm.accountType !== "owner" && signupForm.accountType !== "middleman" ? (
+                          {signupForm.accountType === "business" ? (
                             <label className={`${styles.checkboxRow} ${styles.signupFieldWide} ${styles.directoryChoice}`}>
                               <input
                                 type="checkbox"
@@ -1665,18 +1632,6 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                 </button>
               </form>
             ) : null}
-
-            {(mode === "login" || (mode === "signup" && signupStep === 1)) && <aside className={styles.sharedEntry} aria-label="Shared enquiry account access">
-              <div>
-                <strong>Received a shared enquiry link?</strong>
-                <span>Create an account to view and respond to your shared enquiry.</span>
-              </div>
-              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/join?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/join'}>Create enquiry account</Link>
-              <p className={styles.sharedEntryLogin}>
-                Already have an Aim4price account?{" "}
-                {mode === "login" ? "Log in above." : <button type="button" disabled={isSubmitting} onClick={() => updateHashAndMode("login")}>Log in</button>}
-              </p>
-            </aside>}
 
             <p className={styles.footerText}>
               {copy.footer}{" "}
