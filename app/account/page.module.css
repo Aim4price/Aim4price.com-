@@ -53,18 +53,7 @@
   justify-content: space-between;
   gap: 1.25rem;
   color: #ffffff;
-  background:
-    radial-gradient(
-      circle at 10% 0%,
-      var(--app-surface-soft, rgba(49, 197, 142, 0.28)) 0,
-      transparent 23rem
-    ),
-    radial-gradient(
-      circle at 92% 105%,
-      var(--app-info-soft, rgba(86, 136, 229, 0.3)) 0,
-      transparent 21rem
-    ),
-    linear-gradient(135deg, #102a23 0%, #15392f 48%, #17385d 100%);
+  background: var(--brand-700, #184d3d);
 }
 
 .accountHero::before,
@@ -80,11 +69,7 @@
   inset: -9rem auto auto -7rem;
   width: 24rem;
   height: 24rem;
-  background: radial-gradient(
-    circle,
-    var(--app-surface-soft, rgba(51, 185, 131, 0.26)) 0%,
-    rgba(51, 185, 131, 0) 70%
-  );
+  background: none;
   filter: blur(8px);
 }
 
@@ -92,11 +77,7 @@
   inset: auto -7rem -10rem auto;
   width: 26rem;
   height: 26rem;
-  background: radial-gradient(
-    circle,
-    var(--app-info-soft, rgba(98, 154, 255, 0.26)) 0%,
-    rgba(98, 154, 255, 0) 70%
-  );
+  background: none;
   filter: blur(12px);
 }
 
@@ -1246,15 +1227,12 @@
   padding: 1.35rem 1.5rem;
   border: 1px solid var(--app-line, rgba(37, 71, 51, 0.2));
   border-radius: 22px;
-  background:
-    radial-gradient(circle at 6% 0%, var(--app-surface-soft, rgba(111, 197, 150, 0.32)), transparent 20rem),
-    radial-gradient(circle at 96% 100%, var(--app-warning-soft, rgba(191, 122, 53, 0.18)), transparent 18rem),
-    linear-gradient(135deg, #1d3929 0%, #254733 62%, #2f5740 100%);
+  background: var(--brand-700, #184d3d);
   box-shadow: 0 18px 42px var(--app-shadow-colour, rgba(18, 53, 45, 0.14));
 }
 
 .dealerAccountPage .accountHero::after {
-  background: radial-gradient(circle, var(--app-warning-soft, rgba(191, 122, 53, 0.18)) 0%, rgba(191, 122, 53, 0) 70%);
+  background: none;
 }
 
 .dealerAccountPage .heroAvatar {
@@ -2953,10 +2931,7 @@
   padding: clamp(1.25rem, calc(var(--website-design-vw) * 2), 1.6rem);
   border: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
   border-radius: 1.12rem;
-  background:
-    radial-gradient(circle at 10% 0%, var(--app-surface-soft, rgba(49, 197, 142, 0.28)) 0, transparent 23rem),
-    radial-gradient(circle at 92% 105%, var(--app-info-soft, rgba(86, 136, 229, 0.3)) 0, transparent 21rem),
-    linear-gradient(135deg, #102a23 0%, #15392f 48%, #17385d 100%);
+  background: var(--brand-700, #184d3d);
   box-shadow:
     0 22px 50px var(--app-shadow-colour, rgba(18, 45, 37, 0.075)),
     0 7px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.035)),
@@ -2964,7 +2939,7 @@
 }
 
 .dealerAccountPage .accountHero::after {
-  background: radial-gradient(circle, var(--app-info-soft, rgba(98, 154, 255, 0.26)) 0%, rgba(98, 154, 255, 0) 70%);
+  background: none;
 }
 
 .dealerAccountPage .heroAvatar {

@@ -5737,9 +5737,7 @@
   padding: 1.25rem;
   border-radius: 1.45rem;
   border: 1px solid var(--app-line, rgba(17, 56, 45, 0.12));
-  background:
-    radial-gradient(circle at top right, var(--app-surface-soft, rgba(80, 146, 116, 0.12)), transparent 35%),
-    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-surface, rgba(244, 249, 246, 0.98)) 100%);
+  background: var(--brand-700, #184d3d);
   color: var(--app-text, #16372f);
   text-align: left;
   box-shadow:
@@ -5784,9 +5782,7 @@
 .sectorBigCardLive:hover {
   transform: translateY(-2px);
   border-color: var(--app-line, rgba(24, 77, 61, 0.24));
-  background:
-    radial-gradient(circle at top right, var(--app-surface-soft, rgba(80, 146, 116, 0.18)), transparent 36%),
-    linear-gradient(180deg, var(--app-surface, rgba(248, 253, 250, 0.99)) 0%, var(--app-surface-soft, rgba(232, 243, 237, 0.98)) 100%);
+  background: var(--brand-700, #184d3d);
   box-shadow:
     0 28px 58px var(--app-shadow-colour, rgba(15, 53, 42, 0.12)),
     0 0 0 4px var(--app-shadow-colour, rgba(26, 89, 68, 0.06)),
@@ -5799,9 +5795,7 @@
 
 .sectorBigCardSoon {
   cursor: pointer;
-  background:
-    radial-gradient(circle at top right, var(--app-surface-soft, rgba(130, 130, 120, 0.08)), transparent 35%),
-    linear-gradient(180deg, var(--app-surface, rgba(250, 251, 250, 0.96)) 0%, var(--app-surface-soft, rgba(239, 242, 240, 0.96)) 100%);
+  background: var(--brand-700, #184d3d);
 }
 
 .sectorBigCardSoon .sectorBigCardContent {
@@ -5976,10 +5970,7 @@
   min-height: clamp(11rem, calc(var(--website-design-vw, 1vw) * 17), 14.4rem);
   padding: 1.35rem 1.45rem;
   border-radius: 1.55rem;
-  background:
-    radial-gradient(circle at 82% 18%, var(--app-surface-soft, rgba(40, 116, 87, 0.105)), transparent 34%),
-    radial-gradient(circle at 0% 100%, var(--app-surface-soft, rgba(40, 116, 87, 0.06)), transparent 40%),
-    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.995)) 0%, var(--app-surface, rgba(246, 250, 248, 0.99)) 100%);
+  background: var(--brand-700, #184d3d);
 }
 
 .sectorBigCard::before {
@@ -6025,9 +6016,7 @@
 }
 
 .sectorBigCardSoon {
-  background:
-    radial-gradient(circle at 82% 18%, var(--app-surface-soft, rgba(102, 114, 108, 0.075)), transparent 34%),
-    linear-gradient(180deg, var(--app-surface, rgba(251, 252, 251, 0.98)) 0%, var(--app-surface-soft, rgba(239, 243, 241, 0.98)) 100%);
+  background: var(--brand-700, #184d3d);
 }
 
 .sectorBigCardSoon .sectorBigCardContent {
@@ -7904,7 +7893,7 @@
   overflow: hidden;
   border-radius: 1.8rem;
   border: 1px solid var(--app-line, rgba(17, 56, 45, 0.1));
-  background: linear-gradient(180deg, var(--app-surface-soft, #eff4f1) 0%, var(--app-surface-soft, #e5ece8) 100%);
+  background: var(--brand-700, #184d3d);
   box-shadow: 0 22px 40px var(--app-shadow-colour, rgba(16, 42, 34, 0.08)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
 }
 
@@ -7930,16 +7919,15 @@
 .sectorVideoOverlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, var(--app-surface-soft, rgba(7, 20, 16, 0.18)) 0%, var(--app-surface-soft, rgba(7, 20, 16, 0.05)) 34%, rgba(7, 20, 16, 0.62) 100%);
-  opacity: 0.95;
-  transition: opacity 200ms ease, background 200ms ease;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(to bottom, transparent 32%, rgba(4, 20, 14, .54) 70%, rgba(4, 20, 14, .8));
+  transition: opacity 260ms ease;
 }
 
-.sectorBigCard:hover .sectorVideoOverlay,
-.sectorBigCard:focus-visible .sectorVideoOverlay,
-.sectorBigCard:focus .sectorVideoOverlay {
+.sectorBigCard:is(:hover, :focus) .sectorVideo + .sectorVideoOverlay,
+.sectorVideoMobileActive + .sectorVideoOverlay {
   opacity: 1;
-  background: linear-gradient(180deg, var(--app-surface-soft, rgba(6, 16, 13, 0.15)) 0%, var(--app-surface-soft, rgba(6, 16, 13, 0.08)) 34%, rgba(6, 16, 13, 0.68) 100%);
 }
 
 .sectorBigCardContent {
@@ -8313,18 +8301,6 @@
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.82));
 }
 
-.sectorVideoOverlay {
-  background:
-    radial-gradient(circle at top right, var(--app-surface-soft, rgba(255, 255, 255, 0.12)), transparent 26%),
-    linear-gradient(180deg, var(--app-surface-soft, rgba(7, 20, 16, 0.12)) 0%, var(--app-surface-soft, rgba(7, 20, 16, 0.04)) 35%, rgba(7, 20, 16, 0.7) 100%);
-}
-
-.sectorBigCardSoon .sectorVideoOverlay {
-  background:
-    radial-gradient(circle at top right, var(--app-danger-soft, rgba(255, 210, 210, 0.14)), transparent 28%),
-    linear-gradient(180deg, rgba(72, 22, 22, 0.32) 0%, var(--app-danger-soft, rgba(36, 18, 18, 0.12)) 36%, rgba(17, 18, 15, 0.74) 100%);
-}
-
 .sectorSoonMessage {
   background: linear-gradient(180deg, rgba(161, 48, 48, 0.84) 0%, rgba(113, 30, 30, 0.84) 100%);
   border: 1px solid var(--app-danger-line, rgba(255, 230, 230, 0.16));
@@ -8583,30 +8559,9 @@
   transform: scale(1.055);
 }
 
-.sectorVideoOverlay {
-  opacity: 1;
-  background:
-    radial-gradient(circle at 22% 0%, var(--app-surface-soft, rgba(255, 255, 255, 0.12)), transparent 34%),
-    linear-gradient(180deg, var(--app-surface-soft, rgba(8, 23, 18, 0.08)) 0%, var(--app-surface-soft, rgba(8, 23, 18, 0.06)) 38%, rgba(8, 23, 18, 0.55) 100%);
-}
-
-.sectorBigCard:hover .sectorVideoOverlay,
-.sectorBigCard:focus-visible .sectorVideoOverlay,
-.sectorBigCard:focus .sectorVideoOverlay {
-  background:
-    radial-gradient(circle at 22% 0%, var(--app-surface-soft, rgba(255, 255, 255, 0.16)), transparent 36%),
-    linear-gradient(180deg, var(--app-surface-soft, rgba(8, 23, 18, 0.03)) 0%, var(--app-surface-soft, rgba(8, 23, 18, 0.04)) 34%, rgba(8, 23, 18, 0.48) 100%);
-}
-
 .sectorBigCardSoon .sectorVideo {
   opacity: 1;
   filter: saturate(1.02) contrast(1.04) brightness(0.96);
-}
-
-.sectorBigCardSoon .sectorVideoOverlay {
-  background:
-    radial-gradient(circle at top right, var(--app-danger-soft, rgba(255, 235, 235, 0.16)), transparent 30%),
-    linear-gradient(180deg, var(--app-danger-soft, rgba(42, 16, 16, 0.1)) 0%, var(--app-danger-soft, rgba(42, 16, 16, 0.08)) 38%, rgba(15, 18, 16, 0.58) 100%);
 }
 
 .sectorBigCardSoon .sectorBigCardContent {
@@ -8777,9 +8732,7 @@
 
 /* === Final polish pass — dark sector idle state + sleeker path pills === */
 .sectorBigCard {
-  background:
-    radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(79, 147, 120, 0.22)), transparent 30%),
-    linear-gradient(135deg, #0f3329 0%, #123d31 52%, #0d2c24 100%);
+  background: var(--brand-700, #184d3d);
   border-color: var(--app-line, rgba(255, 255, 255, 0.08));
   box-shadow:
     0 28px 48px var(--app-shadow-colour, rgba(13, 36, 28, 0.12)),
@@ -8804,27 +8757,6 @@
   opacity: 1;
   filter: saturate(1.2) contrast(1.08) brightness(1.04);
   transform: scale(1.055);
-}
-
-.sectorVideoOverlay {
-  opacity: 1;
-  background:
-    radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(121, 190, 163, 0.18)), transparent 32%),
-    linear-gradient(180deg, rgba(9, 26, 21, 0.22) 0%, rgba(9, 26, 21, 0.26) 42%, rgba(6, 16, 13, 0.58) 100%);
-}
-
-.sectorBigCard:hover .sectorVideoOverlay,
-.sectorBigCard:focus-visible .sectorVideoOverlay,
-.sectorBigCard:focus .sectorVideoOverlay {
-  background:
-    radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(255, 255, 255, 0.14)), transparent 34%),
-    linear-gradient(180deg, var(--app-surface-soft, rgba(9, 26, 21, 0.08)) 0%, var(--app-surface-soft, rgba(9, 26, 21, 0.12)) 36%, rgba(6, 16, 13, 0.46) 100%);
-}
-
-.sectorBigCardSoon .sectorVideoOverlay {
-  background:
-    radial-gradient(circle at top right, var(--app-danger-soft, rgba(255, 235, 235, 0.12)), transparent 30%),
-    linear-gradient(180deg, var(--app-danger-soft, rgba(34, 16, 16, 0.18)) 0%, var(--app-danger-soft, rgba(34, 16, 16, 0.18)) 42%, rgba(9, 16, 13, 0.58) 100%);
 }
 
 .sectorLabelWrap {
@@ -8910,9 +8842,7 @@
 
 /* === Micro-pass: unify sector idle state + refine path pills === */
 .sectorBigCardSoon {
-  background:
-    radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(79, 147, 120, 0.22)), transparent 30%),
-    linear-gradient(135deg, #0f3329 0%, #123d31 52%, #0d2c24 100%);
+  background: var(--brand-700, #184d3d);
   border-color: var(--app-line, rgba(255, 255, 255, 0.08));
 }
 
@@ -8928,20 +8858,6 @@
   opacity: 1;
   filter: saturate(1.16) contrast(1.06) brightness(1.02);
   transform: scale(1.055);
-}
-
-.sectorBigCardSoon .sectorVideoOverlay {
-  background:
-    radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(121, 190, 163, 0.18)), transparent 32%),
-    linear-gradient(180deg, rgba(9, 26, 21, 0.22) 0%, rgba(9, 26, 21, 0.26) 42%, rgba(6, 16, 13, 0.58) 100%);
-}
-
-.sectorBigCardSoon:hover .sectorVideoOverlay,
-.sectorBigCardSoon:focus-visible .sectorVideoOverlay,
-.sectorBigCardSoon:focus .sectorVideoOverlay {
-  background:
-    radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(255, 255, 255, 0.14)), transparent 34%),
-    linear-gradient(180deg, var(--app-surface-soft, rgba(9, 26, 21, 0.08)) 0%, var(--app-surface-soft, rgba(9, 26, 21, 0.12)) 36%, rgba(6, 16, 13, 0.46) 100%);
 }
 
 .sectorBigCardSoon .sectorLabel,
@@ -9935,9 +9851,7 @@
   min-height: clamp(15.5rem, calc(var(--website-design-vw, 1vw) * 20), 18rem);
   border-radius: 1.75rem;
   border-color: var(--app-line, rgba(255, 255, 255, 0.1));
-  background:
-    radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(92, 167, 136, 0.22)), transparent 31%),
-    linear-gradient(135deg, #0f3329 0%, #123d31 52%, #0b2a22 100%);
+  background: var(--brand-700, #184d3d);
   box-shadow:
     0 28px 52px var(--app-shadow-colour, rgba(13, 36, 28, 0.14)),
     0 10px 22px var(--app-shadow-colour, rgba(13, 36, 28, 0.08)),
@@ -9996,20 +9910,6 @@
   filter: saturate(1.2) contrast(1.08) brightness(1.04);
 }
 
-.sectorVideoOverlay {
-  background:
-    radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(255, 255, 255, 0.13)), transparent 34%),
-    linear-gradient(180deg, var(--app-surface-soft, rgba(7, 23, 18, 0.18)) 0%, var(--app-surface-soft, rgba(7, 23, 18, 0.16)) 38%, rgba(4, 13, 10, 0.62) 100%);
-}
-
-.sectorBigCard:hover .sectorVideoOverlay,
-.sectorBigCard:focus-visible .sectorVideoOverlay,
-.sectorBigCard:focus .sectorVideoOverlay {
-  background:
-    radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(255, 255, 255, 0.18)), transparent 36%),
-    linear-gradient(180deg, var(--app-surface-soft, rgba(6, 19, 15, 0.06)) 0%, var(--app-surface-soft, rgba(6, 19, 15, 0.1)) 34%, rgba(4, 13, 10, 0.52) 100%);
-}
-
 @media (hover: none), (pointer: coarse) {
   .sectorVideo {
     opacity: 1;
@@ -10017,10 +9917,8 @@
     filter: saturate(1.18) contrast(1.06) brightness(1.03);
   }
 
-  .sectorVideoOverlay {
-    background:
-      radial-gradient(circle at 16% 0%, var(--app-surface-soft, rgba(255, 255, 255, 0.15)), transparent 35%),
-      linear-gradient(180deg, var(--app-surface-soft, rgba(7, 23, 18, 0.08)) 0%, var(--app-surface-soft, rgba(7, 23, 18, 0.12)) 34%, rgba(4, 13, 10, 0.56) 100%);
+  .sectorVideo + .sectorVideoOverlay {
+    opacity: 1;
   }
 }
 

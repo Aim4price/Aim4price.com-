@@ -1212,7 +1212,7 @@
 
 .serviceModeCardActive {
   color: #ffffff;
-  background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
+  background: var(--brand-700, #184d3d);
   border-color: var(--app-accent, rgba(16, 68, 52, 0.34));
   box-shadow:
     0 16px 32px var(--app-shadow-colour, rgba(16, 68, 52, 0.18)),

@@ -31736,7 +31736,7 @@ button.documentOpenLink {
 .assetFilterOptionCardActive,
 .assetFilterOptionCardActive:hover {
   border-color: var(--app-accent, #1f684f);
-  background: linear-gradient(180deg, #27785b 0%, #19563f 100%);
+  background: var(--brand-700, #184d3d);
   box-shadow: 0 9px 20px var(--app-shadow-colour, rgba(24, 86, 63, 0.17));
 }
 
@@ -31753,7 +31753,7 @@ button.documentOpenLink {
 }
 
 .assetFilterAllOptionCard.assetFilterOptionCardActive {
-  background: linear-gradient(180deg, #27785b 0%, #19563f 100%);
+  background: var(--brand-700, #184d3d);
 }
 
 .assetFilterModalTick {
@@ -34315,7 +34315,7 @@ button.documentOpenLink {
   grid-column: 1 / -1 !important;
   min-height: 6rem !important;
   border-color: var(--app-line, #1c7658) !important;
-  background: linear-gradient(135deg, #1d7659 0%, #135b43 100%) !important;
+  background: var(--brand-700, #184d3d) !important;
   box-shadow: 0 13px 25px var(--app-shadow-colour, rgba(20, 95, 70, 0.17)) !important;
 }
 
@@ -34807,9 +34807,7 @@ button.documentOpenLink {
   padding: 1rem 1.05rem;
   border: 1px solid var(--app-line, rgba(22, 126, 91, 0.3));
   border-radius: 1.15rem;
-  background:
-    radial-gradient(circle at top left, var(--app-surface-soft, rgba(255, 255, 255, 0.26)), transparent 38%),
-    linear-gradient(135deg, #197d5c 0%, #116247 100%);
+  background: var(--brand-700, #184d3d);
   box-shadow:
     0 14px 28px var(--app-shadow-colour, rgba(15, 91, 66, 0.16)),
     inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
@@ -39480,9 +39478,7 @@ button.documentOpenLink {
   grid-column: auto !important;
   min-height: 4.75rem !important;
   border-color: var(--app-line, #176b50) !important;
-  background:
-    radial-gradient(circle at 8% 0%, var(--app-surface-soft, rgba(255, 255, 255, 0.14)), transparent 34%),
-    linear-gradient(135deg, #217b5d 0%, #11553f 100%) !important;
+  background: var(--brand-700, #184d3d) !important;
   box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(20, 95, 70, 0.18)) !important;
 }
 
