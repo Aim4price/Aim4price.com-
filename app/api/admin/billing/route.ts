@@ -3,7 +3,7 @@ import { suspendBillingAccount } from '../../../../lib/billing-suspension';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiAccess } from '../../../../lib/admin-api-access';
 import { isTrustedRequestOrigin } from '../../../../lib/trusted-request-origin';
-import { signupTerms,saveSignupTerms,setBillingHold, BillingError, listBillingInvoices, getBillingWorkspace, listBillingPlans, createBillingDraft, actOnBillingInvoice, saveBillingPlan, billingHistory, processSignupInvoices, billingPreparationStatus, saveBillingAgreement, pauseBillingAgreement, listBillingAgreements } from '../../../../lib/billing';
+import { globalBillingControl,setGlobalBillingHold,signupTerms,saveSignupTerms,setBillingHold, BillingError, listBillingInvoices, getBillingWorkspace, listBillingPlans, createBillingDraft, actOnBillingInvoice, saveBillingPlan, billingHistory, processSignupInvoices, billingPreparationStatus, saveBillingAgreement, pauseBillingAgreement, listBillingAgreements } from '../../../../lib/billing';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 const json=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'Cache-Control':'private, no-store'}});
 function failure(error:unknown){if(error instanceof BillingError)return json({error:error.message},400);console.error('Billing API failed',error);return json({error:'Billing could not be loaded or saved. Please retry.'},500);}
@@ -13,7 +13,8 @@ export async function GET(request:NextRequest){
   const params=request.nextUrl.searchParams,userId=params.get('account');
   if(params.get('invoice'))return json(await billingHistory(params.get('invoice')!));
   const [list,plans,workspace,preparation,agreements]=await Promise.all([listBillingInvoices(userId,true,Number(params.get('page')||1)),listBillingPlans(),userId?getBillingWorkspace(userId):null,billingPreparationStatus(),listBillingAgreements()]);
-  return json({...list,terms:await signupTerms(),plans,workspace,preparation,agreements,automationPaused:process.env.AIM4PRICE_BILLING_DISABLED==='1'||process.env.AIM4PRICE_RECURRING_BILLING_DISABLED==='1'});
+  const globalControl=await globalBillingControl();
+  return json({...list,globalControl,terms:await signupTerms(),plans,workspace,preparation,agreements,automationPaused:globalControl.held||process.env.AIM4PRICE_BILLING_DISABLED==='1'||process.env.AIM4PRICE_RECURRING_BILLING_DISABLED==='1'});
  }catch(error){return failure(error);}
 }
 export async function POST(request:NextRequest){
@@ -24,6 +25,7 @@ export async function POST(request:NextRequest){
   if(input.action==='hard_delete')await hardDeleteBillingInvoice(input,access.actor.userId);
   else if(input.action==='suspend_account')await suspendBillingAccount(input,access.actor.userId);
   else if(input.action==='save_signup_terms')await saveSignupTerms(input,access.actor.userId);
+  else if(input.action==='set_global_billing_hold')await setGlobalBillingHold(input,access.actor.userId);
   else if(input.action==='set_billing_hold')await setBillingHold(input,access.actor.userId);
   else if(input.action==='save_agreement')await saveBillingAgreement(input,access.actor.userId);
   else if(input.action==='pause_agreement')await pauseBillingAgreement(input,access.actor.userId);

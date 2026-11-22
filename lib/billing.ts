@@ -20,6 +20,10 @@ export function ensureBillingSchema(): Promise<void> {
     try { await db.query('begin'); await db.query("select pg_advisory_xact_lock(hashtext('aim4price-billing-schema-v1'))"); await db.query(BILLING_SCHEMA_SQL);
       await db.query(`create table if not exists aim4price_signup_terms(id boolean primary key default true check(id),trial_days integer not null default 30,monthly_credits integer not null default 500,referral_credits integer not null default 50,version integer not null default 1)`);
       await db.query('insert into aim4price_signup_terms(id) values(true) on conflict do nothing');
+      await db.query(`create table if not exists aim4price_global_billing (
+        singleton boolean primary key check(singleton), held boolean not null default true,
+        version integer not null default 1, changed_by text, changed_at timestamptz not null default now())`);
+      await db.query('insert into aim4price_global_billing(singleton) values(true) on conflict do nothing');
       const offers=[...ownerHosting.map((band,i)=>({key:'owner-band-'+(i+1),name:'Owner · '+band.range+' assets',rates:band})),{key:'business-standard',name:'Paid Business',rates:businessHosting}];
       for(const offer of offers){
         for(const period of ['monthly','annual'] as const){
@@ -103,7 +107,31 @@ export async function getBillingWorkspace(userId: string) {
   const planLabel=selected ? selected.description+' · '+selected.interval : ap?.account_type==='owner'&&ap.owner_trial_requested ? 'Owner trial' : ap?.account_type==='business'?'Free Business':ap?.account_type==='dealer'?(ap.account_subtype==='equipment-middleman'?'Free Middleman':'Paid Business'):'Owner';
   return { planLabel,accessStatus:ap?.account_status,control:control??{held:false,version:0}, signupType:p.account_profile?.account_type, trialEnd:p.account_profile?.owner_trial_ends_at??null, supportsHostedRegisters:p.account_profile?.account_type === 'dealer' && p.account_profile?.account_subtype !== 'equipment-middleman', agreement:await getBillingAgreement(userId), agreementHistory:(await getDb().query('select action,detail,created_at from aim4price_billing_agreement_events where user_id=$1 order by id desc limit 20',[userId])).rows, accountCustomer, customer:{...accountCustomer,...p.customer,businessName:p.customer?.businessName||accountCustomer.businessName,address:p.customer?.address||accountCustomer.address,reference:''}, nextBillingDate:p.next_billing_date, interval:p.interval ?? 'once', amountCents:Number(p.amount_cents ?? 0), work:work.rows };
 }
+export async function globalBillingControl() {
+  await ensureBillingSchema();
+  const result = await getDb().query('select held,version from aim4price_global_billing where singleton');
+  return result.rows[0] as {held:boolean;version:number};
+}
+
+async function globalBillingHeld(db: PoolClient) {
+  const result = await db.query('select held from aim4price_global_billing where singleton for share');
+  return result.rows[0]?.held !== false;
+}
+
+export async function setGlobalBillingHold(input: Record<string,unknown>, actor: string) {
+  if (typeof input.held !== 'boolean') throw new BillingError('Choose a billing setting.');
+  await transaction(async db => {
+    const result = await db.query('update aim4price_global_billing set held=$1,version=version+1,changed_by=$2,changed_at=now() where singleton and version=$3 and held<>$1 returning held',[input.held,actor,input.version]);
+    if (!result.rowCount) throw new BillingError('Billing settings changed. Refresh before continuing.');
+    if (input.held === false) {
+      await db.query('update aim4price_billing_signup_jobs set processed_at=now() where processed_at is null and next_attempt_at<=now()');
+      await db.query("update aim4price_billing_agreements set enabled=false,version=version+1,last_error='Choose a new billing date after the site-wide hold.' where enabled and next_invoice_date<=$1",[dateKey()]);
+    }
+  });
+}
+
 async function billingHeld(db: PoolClient, userId: string) {
+  if (await globalBillingHeld(db)) return true;
   await db.query('select pg_advisory_xact_lock(hashtext($1))',['billing-control:'+userId]);
   return (await db.query('select held from aim4price_billing_controls where user_id=$1',[userId])).rows[0]?.held === true;
 }
@@ -224,6 +252,7 @@ export async function actOnBillingInvoice(id: string, input: Record<string,unkno
         }
       }
     } else if(action==='send') {
+      if(await globalBillingHeld(db))throw new BillingError('Billing is on hold for everyone.');
       if(row.status!=='issued'||!row.user_id)throw new BillingError('Only issued invoices for existing accounts can be sent.');
       const latest=(await db.query('select * from aim4price_billing_mail where invoice_id=$1 order by created_at desc limit 1 for update',[id])).rows[0];
       if(latest && ['queued','retry','sending'].includes(latest.status))return;
@@ -283,8 +312,8 @@ export async function subscribeOwnerTrial(userId:string, input:Record<string,unk
 export async function queueSignupInvoice(userId: string, quote: SignupBilling) {
   await ensureBillingSchema();
   await transaction(async db=>{
-    if(await billingHeld(db,userId))return;
-    await db.query('insert into aim4price_billing_signup_jobs(user_id,quote) values($1,$2) on conflict(user_id) do nothing',[userId,JSON.stringify(quote)]);
+    const held=await billingHeld(db,userId);
+    await db.query('insert into aim4price_billing_signup_jobs(user_id,quote,processed_at) values($1,$2,case when $3::boolean then now() end) on conflict(user_id) do nothing',[userId,JSON.stringify(quote),held]);
   });
 }
 export async function processSignupInvoices() {
