@@ -75,27 +75,26 @@ export function BusinessSubscriptionButton({plan,className,icon,credits=false,in
    finally{setBusy(false);}
  }
  const inviteAction = inviteLink && <button type="button" className={styles.secondaryButton} onClick={()=>void copyInvite()}>
-   <span aria-live="polite">{copied ? 'Invite link copied' : 'Copy owner invite link'}</span>
+   <span aria-live="polite">{copied ? 'Invite link copied' : 'Copy invite link'}</span>
  </button>;
  const subscriptionAction = fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
  <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
  plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
- plan.owner ? <><p>Add staff and use unlimited credits. We’ll contact you to arrange activation.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
+ plan.owner ? <><p>Get staff access and unlimited credits. We’ll contact you to activate your plan.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
  plan.limit === null ? <><p>Contact Aim4price to request an upgrade for this account.</p><a className={styles.button} href="/contact-us">Contact Aim4price</a></> :
  <p>Your business owner can request an upgrade.</p>;
  return <><button type="button" className={credits ? className + ' ' + creditStyles.card : className}
    aria-haspopup="dialog" onClick={()=>{setError('');setCopied(false);setOpen(true);}}>
    {credits ? <>
-     <span className={creditStyles.cardHeading}><strong>Credits</strong><span className={creditStyles.arrow} aria-hidden="true" /></span>
+     <strong className={creditStyles.cardHeading}>Credits</strong>
      <CreditBalance plan={plan} />
    </> : <>{icon}<strong>{label}</strong></>}
  </button>{open && <ShareDisclosureDialog title={credits ? 'Business credits' : label} titleId={titleId}
    className={credits ? creditStyles.dialog : undefined} closeLabel="Close" onClose={()=>setOpen(false)}>
  {credits ? <div className={creditStyles.body}>
    <div className={creditStyles.summary}>
-     
      <CreditBalance plan={plan} />
-     {plan.allowance != null && <p>Monthly allowance · {plan.allowance} credits</p>}
+     {plan.allowance != null && <p>{plan.allowance} credits per month</p>}
    </div>
    <section className={creditStyles.usage}>
      <p><strong>1 credit</strong><span>Save a cost, document or maintenance record.</span></p>
@@ -103,8 +102,8 @@ export function BusinessSubscriptionButton({plan,className,icon,credits=false,in
    </section>
    <div className={creditStyles.options}>
      {inviteLink && <section>
-       <h3>Invite an owner {plan.reward != null && <span className={creditStyles.reward}>+{plan.reward} credits</span>}</h3>
-       <p>Earn credits for the month when a new owner joins through your link, verifies their email and adds their first asset.</p>
+       <h3>Invite an owner</h3>
+       <p>Earn {plan.reward != null ? `${plan.reward} credits` : 'credits'} this month when an owner signs up with your link, verifies their email and adds their first asset.</p>
        {inviteAction}
      </section>}
      <section><h3>Paid Business</h3>{subscriptionAction}</section>
