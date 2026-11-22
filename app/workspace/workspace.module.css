@@ -1,4 +1,5 @@
 .shell {
+  container-type:inline-size;
   width: min(92%, 76rem);
   box-sizing: border-box;
   margin: var(--layout-section-gap, 1.5rem) auto;
@@ -34,10 +35,10 @@
 .options input { width:1.15rem; height:1.15rem; accent-color:#1b6247; }
 .paid { margin-top:1.6rem; padding-top:1.4rem; border-top:1px solid #91ad9f; }
 .paid .heading { scroll-margin-top:8rem; }
-@media (max-width: 54rem) {
+@container (max-width: 48rem) {
   .grid, .options { grid-template-columns:repeat(2,minmax(0,1fr)); }
 }
-@media (max-width: 36rem) {
+@container (max-width: 30rem) {
   .grid, .options { grid-template-columns:minmax(0,1fr); }
   .cardLink { min-height:6.5rem; }
 }
