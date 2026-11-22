@@ -16,7 +16,7 @@ function unauthorized() {
 }
 
 async function requireTransferSession() {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowDealerApp: true,allowBusinessWorkspace:true });
   if (!session?.user?.id) return { response: unauthorized() } as const;
   if (isAdminSupportSession(session)) {
     return {
@@ -63,6 +63,7 @@ function errorResponse(error: unknown) {
   const databaseCode = error && typeof error === 'object' && 'code' in error
     ? String((error as { code?: unknown }).code ?? '')
     : '';
+  if (code === 'Your monthly Business credits have been used.') return NextResponse.json({error:code,code:'BUSINESS_CREDIT_LIMIT'},{status:402});
   if (code === 'ASSET_TRANSFER_RATE_LIMITED') {
     return NextResponse.json(
       { ok: false, error: 'Too many unsuccessful attempts. Wait 15 minutes and try again.' },
@@ -134,6 +135,7 @@ export async function POST(request: NextRequest) {
   try {
     if (action === 'claim') {
       const claimed = await claimAssetTransfer({
+        personalSession:access.session,
         buyerUserId: access.session.user.id,
         buyerName: access.session.user.name,
         buyerEmail: access.session.user.email,

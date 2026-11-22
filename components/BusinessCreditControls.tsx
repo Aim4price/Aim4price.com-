@@ -36,7 +36,7 @@ export function UpgradeBusiness({businessId}:{businessId?:string}) {
  </ShareDisclosureDialog>}</>;
 }
 
-export type BusinessSubscription = { fullAccess?:boolean; paidSince:string|null; pending:boolean; owner:boolean; remaining:number|null; limit:number|null };
+export type BusinessSubscription = { resets?:string; bonus?:number; reward?:number; history?:{action:string;units:number;date:string}[]; fullAccess?:boolean; paidSince:string|null; pending:boolean; owner:boolean; remaining:number|null; limit:number|null };
 
 export function BusinessSubscriptionButton({plan,className,icon}:{plan:BusinessSubscription;className:string;icon:ReactNode}) {
  const router=useRouter(), titleId=useId();

@@ -198,7 +198,7 @@ const appCode =
       }
       if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "xlsx") {
         const {buildPartsWorkbook}=require('../tests/helpers/load-ts.cjs')('lib/parts-network-report.ts');
-        const workbook=await buildPartsWorkbook([{part:row.part_number,description:row.description,brand:row.brand,quantity:row.quantity,price:row.price,vat:'Excl. VAT',dealer:row.business_name,town:row.town}]);
+        const workbook=await buildPartsWorkbook([{part:row.part_number,description:row.description,brand:row.brand,quantity:row.quantity,price:Number(row.price),vat:'Excl. VAT',dealer:row.business_name,town:row.town}]);
         return r.respond({status:200,contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',body:Buffer.from(await workbook.xlsx.writeBuffer())});
       }
       if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "pdf") {

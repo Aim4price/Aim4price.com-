@@ -89,9 +89,9 @@ export async function saveBusinessDetails(userId: string, input: Record<string, 
             const logo = sanitizeLogoUrl(input.logoUrl);
             if (input.logoUrl && !logo) throw new Error('Choose a valid business logo.');
             await db.query(`UPDATE account_profiles SET display_name=$2,marketplace_email=$3,
-                province=$4,town_city=$5,address_line_1=$6,address_line_2=$7,logo_url=$8,website_url=$9
+                province=$4,town_city=$5,address_line_1=$6,address_line_2=$7,logo_url=$8,website_url=$9,marketplace_seller_name=coalesce($10,marketplace_seller_name),marketplace_phone=coalesce($11,marketplace_phone),marketplace_location=coalesce($12,marketplace_location)
                 WHERE user_id=$1`, [userId, field('displayName'), field('marketplaceEmail').toLowerCase(),
-                field('province'), field('townCity'), field('addressLine1'), field('addressLine2'), logo, website]);
+                field('province'), field('townCity'), field('addressLine1'), field('addressLine2'), logo, website, input.marketplaceSellerName === undefined ? null : field('marketplaceSellerName'),input.marketplacePhone === undefined ? null : field('marketplacePhone'),input.marketplaceLocation === undefined ? null : field('marketplaceLocation')]);
         }
         await db.query(`INSERT INTO business_account_reviews(user_id,website,evidence) VALUES($1,$2,$3)
       ON CONFLICT(user_id) DO UPDATE SET website=$2,evidence=$3,
