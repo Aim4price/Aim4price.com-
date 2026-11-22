@@ -13,7 +13,7 @@ async function trialAccount(){
   if(profile.accountType!=='owner'||profile.accountStatus==='suspended'||!profile.trialEndsAt)redirect('/account');
   return {user:session.user,end:profile.trialEndsAt};
 }
-export default async function OwnerTrialPage(){
+export default async function OwnerTrialPage({searchParams}:{searchParams?:{review?:string}}){
   const {user,end}=await trialAccount();
   await ensureBillingSchema();
   const plans=(await listBillingPlans(true)).filter(p=>p.accountType==='owner');
@@ -23,19 +23,21 @@ export default async function OwnerTrialPage(){
   async function subscribe(form:FormData){
     'use server';
     const {user}=await trialAccount();
-    await subscribeOwnerTrial(user.id,{billingName:user.name,billingEmail:user.email,billingAddress:form.get('address'),billingAccepted:form.get('consent')==='on',planKey:form.get('planKey'),billingPlanVersion:Number(form.get('version'))});
+    const [key,version]=String(form.get('offer')??'').split(':');
+    try { await subscribeOwnerTrial(user.id,{billingName:user.name,billingEmail:user.email,billingAddress:form.get('address'),billingAccepted:form.get('consent')==='on',planKey:key,billingPlanVersion:Number(version)}); } catch { redirect('/account/owner-trial?review=1'); }
     redirect('/account/owner-trial');
   }
   return <main className={styles.page}><section className={styles.panel}><h1>Owner trial</h1>
     <p>Your trial {expired?'ended':'ends'} on {new Date(end).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}.</p>
-    {ordered?<p>Your subscription invoice is scheduled. Aim4price will confirm activation after payment.</p>:plans.length?plans.map(plan=><form key={plan.key} action={subscribe} className={styles.field}>
-      <h2>{plan.description}</h2><strong>{money(plan.amountCents)} · {plan.interval}</strong>
+    {searchParams?.review && <p role="alert">Review the current price and billing address. Contact Aim4price if your account has a billing hold.</p>}
+    {ordered?<p>Your subscription invoice is scheduled. Aim4price will confirm activation after payment.</p>:plans.length?<form action={subscribe} className={styles.field}>
+      <fieldset><legend>Choose an Owner subscription</legend>
+      {plans.map(plan=><label key={plan.key} style={{display:'block',padding:8}}><input type="radio" name="offer" required style={{width:'auto'}} value={plan.key+':'+plan.version}/> {plan.description} · {money(plan.amountCents)} {plan.interval}</label>)}</fieldset>
       <p>Your first invoice is issued {expired?'after you subscribe':'when the trial ends'}.</p>
-      <input type="hidden" name="planKey" value={plan.key}/><input type="hidden" name="version" value={plan.version}/>
       <label>Billing address<input name="address" required maxLength={400}/></label>
       <label><input type="checkbox" required name="consent"/> I accept this subscription price and invoice.</label>
       <button className={styles.primary}>Subscribe</button>
-    </form>):<a href="/contact-us">Contact Aim4price about subscribing</a>}
+    </form>:<a href="/contact-us">Contact Aim4price about subscribing</a>}
     {expired?<><h2>Your saved assets</h2><ul>{assets.map((a,i)=><li key={i}>{a.title}</li>)}</ul><a href="/account/owner-trial/export">Download register records</a></>:<a href="/asset-register">Open asset register</a>}
   </section></main>;
 }

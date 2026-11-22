@@ -14,6 +14,8 @@ export async function registerOwnerReferral(ownerId:string, invite:string) {
     await db.query(`
       create or replace function a4p_referral_asset_added() returns trigger language plpgsql as $$
         begin
+          if not exists(select 1 from business_owner_referrals where owner_id=new.user_id and rewarded_at is null) then return new; end if;
+          perform id from "user" where id=new.user_id for update;
           update business_owner_referrals r set first_asset_at=coalesce(first_asset_at,now()),
             rewarded_at=case when u."emailVerified" then now() end
           from "user" u where r.owner_id=new.user_id and u.id=r.owner_id and r.rewarded_at is null;

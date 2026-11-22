@@ -178,3 +178,48 @@ test('share links normalize saved contacts and safely encode invoice messages',(
  for(const email of ['', 'a@example.test,b@example.test','a@example.test\r\nBcc: other@example.test'])assert.equal(shared.billingContactLinks({...invoice,contactEmail:email}).email,null);
  const draft=shared.billingContactLinks({...invoice,status:'draft',number:null});assert.match(new URL(draft.whatsapp).searchParams.get('text'),/preparing/);assert.doesNotMatch(new URL(draft.whatsapp).searchParams.get('text'),/signing in/);
 });
+
+test('Owner trial conversion, current terms, payment and account billing holds',async()=>{
+ const pg=new PGlite();
+ const query=async(sql,values)=>{
+   if(sql===schema.BILLING_SCHEMA_SQL){await pg.exec(sql);return {rows:[],rowCount:0};}
+   const result=await pg.query(sql,values);
+   return {...result,rowCount:result.rows.length||result.affectedRows||0};
+ };
+ const db={query,connect:async()=>({query,release(){}})};
+ const billing=load('lib/billing.ts',{'./hosting-pricing':load('lib/hosting-pricing.ts'),'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{}});
+ try{
+   await pg.exec(`create table "user"(id text primary key);insert into "user" values('trial'),('pilot');
+     create table account_profiles(user_id text primary key,account_type text,account_status text,owner_trial_requested boolean,owner_trial_ends_at timestamptz);
+     insert into account_profiles values('trial','owner','pending_payment',true,now()+interval '30 days'),('pilot','owner','active',false,null);`);
+   const plans=await billing.listBillingPlans(true);
+   const plan=plans.find(p=>p.key==='owner-band-1-monthly');
+   const input={billingAccepted:true,planKey:plan.key,billingPlanVersion:plan.version,billingName:'Test Owner',billingEmail:'owner@example.test',billingAddress:'George'};
+   await billing.subscribeOwnerTrial('trial',input);
+   await billing.subscribeOwnerTrial('trial',input);
+   await billing.processSignupInvoices();
+   assert.equal((await query('select count(*)::int as n from aim4price_billing_invoices')).rows[0].n,0);
+   await query("update aim4price_billing_signup_jobs set next_attempt_at=now() where user_id='trial'");
+   await billing.processSignupInvoices();
+   const invoice=(await query('select * from aim4price_billing_invoices')).rows[0];
+   assert.equal(Number(invoice.total_cents),plan.amountCents);
+   const payment={action:'payment',paymentId:randomUUID(),amountCents:plan.amountCents,reference:'Test settlement',paymentDate:shared.dateKey()};
+   await billing.actOnBillingInvoice(invoice.id,payment,'admin');
+   await billing.actOnBillingInvoice(invoice.id,payment,'admin');
+   assert.equal((await billing.getBillingAgreement('trial')).enabled,true);
+   assert.equal((await query("select account_status from account_profiles where user_id='trial'")).rows[0].account_status,'active');
+   assert.equal((await query('select count(*)::int as n from aim4price_subscription_mail')).rows[0].n,1);
+   const quote=await billing.validateSignupBilling({...input,accountType:'owner',signupPlan:'paid'});
+   await billing.queueSignupInvoice('pilot',quote);
+   await billing.setBillingHold({userId:'pilot',version:0,held:true,reason:'Complimentary access'},'admin');
+   await billing.processSignupInvoices();
+   await billing.setBillingHold({userId:'pilot',version:1,held:false,reason:'Ready to review agreement'},'admin');
+   await billing.createSignupInvoice('pilot',quote);
+   assert.equal((await query("select count(*)::int as n from aim4price_billing_invoices where user_id='pilot'")).rows[0].n,0);
+   assert.equal((await query("select account_status from account_profiles where user_id='pilot'")).rows[0].account_status,'active');
+   await billing.setBillingHold({userId:'trial',version:0,held:true,reason:'Pilot period'},'admin');
+   assert.equal((await billing.getBillingAgreement('trial')).enabled,false);
+   await billing.setBillingHold({userId:'trial',version:1,held:false,reason:'Review dates'},'admin');
+   assert.equal((await billing.getBillingAgreement('trial')).enabled,false);
+ }finally{await pg.close();}
+});
