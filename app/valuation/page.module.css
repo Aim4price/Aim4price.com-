@@ -15935,3 +15935,30 @@
     scroll-margin-top: 80px;
   }
 }
+
+/* Keep supporting text legible throughout the estimate, including detail dialogs. */
+.stepText,
+.fieldHint,
+.identityFieldHint,
+.sectionHint,
+.stepMetaHint,
+.completionHint,
+.specificationModalHint,
+.advancedQuestionHint,
+.conditionChoiceCopy small,
+.replacementHelpCopy,
+.replacementNoticeKicker,
+.finalEstimateLayout .resultConfidenceNote,
+.estimateModeGrid .sectorBigCard .estimateModeDescription {
+  color: var(--app-text, #294b3d);
+  font-weight: 600;
+}
+
+.yearSliderControl .fieldLabel,
+.yearSliderControl .yearSliderMeta {
+  color: var(--app-text, #294b3d);
+}
+
+.page :where(button, input, select, textarea) {
+  font-family: inherit;
+}
