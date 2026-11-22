@@ -2,7 +2,7 @@
   display: grid;
   gap: .6rem;
   width: 100%;
-  padding: clamp(1rem, 2.5vw, 1.4rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2.5), 1.4rem);
   font: inherit;
   color: var(--app-text, #173f31);
   text-align: start;
