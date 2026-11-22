@@ -77,6 +77,19 @@
 }
 @container (max-width: 21rem) {
   .calendar { padding: .65rem; }
-  .summary { flex-wrap: wrap; }
+  .dialogHeader { padding-bottom: .35rem; margin-bottom: .35rem; }
+  .navigation { margin-bottom: .35rem; }
+  .summary { flex-wrap: wrap; gap: .3rem; margin-top: .35rem; padding-top: .35rem; }
   .summary > button { margin-left: auto; }
+}
+
+@media (max-height: 500px) and (min-width: 600px) {
+  .calendar { padding: .5rem 1rem; }
+  .dialogHeader, .navigation { margin-bottom: .25rem; }
+  .dialogHeader { padding-bottom: .25rem; }
+  .dialogHeader > button, .headingIcon { height: 2rem; flex-basis: 2rem; }
+  .calendar .selectTrigger, .navigationActions > button, .summary > button { min-height: 2.25rem; height: 2.25rem; padding-block: .25rem; }
+  .weekday { padding-block: .125rem; }
+  .days button, .outsideDay, .days button > span { min-height: 1.875rem; height: 1.875rem; }
+  .summary { margin-top: .25rem; padding-top: .25rem; }
 }

@@ -132,6 +132,8 @@ export default function DateInput({ value, defaultValue = '', onValueChange, min
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
   const offset = (month.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const visibleDays = Math.ceil((offset + daysInMonth) / 7) * 7;
   const [title, setTitle] = useState('Choose a date');
   const headingId = useId();
 
@@ -174,7 +176,7 @@ export default function DateInput({ value, defaultValue = '', onValueChange, min
       </div>
       <div className={styles.days} ref={grid}>
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <span key={day} className={styles.weekday}>{day}</span>)}
-        {Array.from({ length: 42 }, (_, i) => {
+        {Array.from({ length: visibleDays }, (_, i) => {
           const date = new Date(year, monthIndex, i - offset + 1, 12);
           const key = dateKey(date);
           if (date.getMonth() !== monthIndex) return <span key={key} className={styles.outsideDay} aria-hidden="true">{date.getDate()}</span>;
