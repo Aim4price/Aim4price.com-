@@ -1640,19 +1640,8 @@ export default function AccountClient({
           </section>
 
           {isFreeBusiness && subscription && (
-            <section id="business-credits" className={`${styles.card} ${styles.creditBarCard}`} aria-labelledby="credit-bar-title">
-              <div className={styles.creditBarHeading}>
-                <h2 id="credit-bar-title">
-                  <BusinessSubscriptionButton plan={subscription} inviteLink={inviteLink} credits className={styles.creditDetailsButton} />
-                </h2>
-                <strong>{subscription.remaining !== null && subscription.limit !== null
-                  ? `${subscription.remaining} of ${subscription.limit} available` : "Balance unavailable"}</strong>
-              </div>
-              {subscription.remaining !== null && subscription.limit !== null && subscription.limit > 0 && (
-                <div className={styles.progressTrack} role="meter" aria-label="Credits available" aria-valuemin={0} aria-valuemax={subscription.limit} aria-valuenow={subscription.remaining}>
-                  <span style={{ width: `${100 * subscription.remaining / subscription.limit}%` }} />
-                </div>
-              )}
+            <section id="business-credits" className={styles.creditBarCard} aria-label="Business credits">
+              <BusinessSubscriptionButton plan={subscription} inviteLink={inviteLink} credits className={styles.card} />
             </section>
           )}
           <section className={`${styles.card} ${styles.quickActionsCard}`}>

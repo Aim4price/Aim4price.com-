@@ -1,6 +1,7 @@
 'use client';
 import { useId,useState,type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import creditStyles from './BusinessCreditControls.module.css';
 import ShareDisclosureDialog from './asset-register/ShareDisclosureDialog';
 import styles from '../app/business/page.module.css';
 
@@ -38,6 +39,16 @@ export function UpgradeBusiness({businessId}:{businessId?:string}) {
 
 export type BusinessSubscription = { allowance?:number; resets?:string; bonus?:number; reward?:number; history?:{action:string;units:number;date:string}[]; fullAccess?:boolean; paidSince:string|null; pending:boolean; owner:boolean; remaining:number|null; limit:number|null };
 
+function CreditBalance({plan}:{plan:BusinessSubscription}) {
+ const {remaining,limit}=plan;
+ if (remaining === null || limit === null) return <span>Balance unavailable</span>;
+ const percent=limit > 0 ? Math.min(100,Math.max(0,100 * remaining / limit)) : 0;
+ return <span className={creditStyles.balance}>
+   <span><strong>{remaining.toLocaleString('en-ZA')}</strong> of {limit.toLocaleString('en-ZA')} available</span>
+   <span aria-hidden="true" className={creditStyles.track}><span style={{width: percent + '%'}} /></span>
+ </span>;
+}
+
 export function BusinessSubscriptionButton({plan,className,icon,credits=false,inviteLink}:{plan:BusinessSubscription;className:string;icon?:ReactNode;credits?:boolean;inviteLink?:string}) {
  const router=useRouter(), titleId=useId();
  const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -63,25 +74,44 @@ export function BusinessSubscriptionButton({plan,className,icon,credits=false,in
    } catch(e){setError(e instanceof Error?e.message:'Could not request upgrade.');}
    finally{setBusy(false);}
  }
- return <><button type="button" className={className} aria-haspopup="dialog" onClick={()=>{setError('');setCopied(false);setOpen(true);}}>
-   {icon}
-   <strong>{credits ? 'Credits' : label}</strong>
- </button>{open && <ShareDisclosureDialog title={credits ? 'Business credits' : label} titleId={titleId} closeLabel="Close" onClose={()=>setOpen(false)}>
- {!fullAccess && plan.remaining !== null && plan.limit !== null && (
-   <p><strong>{plan.remaining} of {plan.limit} credits remaining</strong></p>
- )}
- {credits && <>
-   <p>{plan.allowance != null ? `Your monthly allowance is ${plan.allowance} credits.` : 'Your credit allowance renews monthly.'} Saving a cost, document or maintenance record uses one credit. Viewing, messaging and sharing are free.</p>
-   {inviteLink && <p>Earn {plan.reward != null ? `${plan.reward} extra credits` : 'extra credits'} this month for each new owner who signs up with your link, verifies their email and adds their first asset.</p>}
- </>}
- {inviteLink && <button type="button" className={styles.secondaryButton} onClick={()=>void copyInvite()}>
+ const inviteAction = inviteLink && <button type="button" className={styles.secondaryButton} onClick={()=>void copyInvite()}>
    <span aria-live="polite">{copied ? 'Invite link copied' : 'Copy owner invite link'}</span>
- </button>}
- {fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
+ </button>;
+ const subscriptionAction = fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
  <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
  plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
  plan.owner ? <><p>Paid Business adds staff access and removes the monthly credit limit. Aim4price will contact you to arrange activation.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
  plan.limit === null ? <><p>Contact Aim4price to request an upgrade for this account.</p><a className={styles.button} href="/contact-us">Contact Aim4price</a></> :
- <p>Your business owner can request an upgrade.</p>}
+ <p>Your business owner can request an upgrade.</p>;
+ return <><button type="button" className={credits ? className + ' ' + creditStyles.card : className}
+   aria-haspopup="dialog" onClick={()=>{setError('');setCopied(false);setOpen(true);}}>
+   {credits ? <>
+     <span className={creditStyles.cardHeading}><strong>Credits</strong><span className={creditStyles.arrow} aria-hidden="true">›</span></span>
+     <CreditBalance plan={plan} />
+   </> : <>{icon}<strong>{label}</strong></>}
+ </button>{open && <ShareDisclosureDialog title={credits ? 'Business credits' : label} titleId={titleId}
+   className={credits ? creditStyles.dialog : undefined} closeLabel="Close" onClose={()=>setOpen(false)}>
+ {credits ? <div className={creditStyles.body}>
+   <div className={creditStyles.summary}>
+     <span className={creditStyles.summaryTitle}>Credit balance</span>
+     <CreditBalance plan={plan} />
+     {plan.allowance != null && <p>Monthly allowance · {plan.allowance} credits</p>}
+   </div>
+   <section className={creditStyles.usage}>
+     <h3>Using credits</h3>
+     <p>Saving a cost, document or maintenance record uses one credit. Viewing, messaging and sharing are free.</p>
+   </section>
+   <div className={creditStyles.options}>
+     {inviteLink && <section>
+       <h3>Invite an owner</h3>
+       <p>Earn {plan.reward != null ? plan.reward + ' extra credits' : 'extra credits'} this month when a new owner uses your link, verifies their email and adds their first asset.</p>
+       {inviteAction}
+     </section>}
+     <section><h3>Paid Business</h3>{subscriptionAction}</section>
+   </div>
+ </div> : <>
+   {!fullAccess && plan.remaining !== null && plan.limit !== null && <p><strong>{plan.remaining} of {plan.limit} credits remaining</strong></p>}
+   {inviteAction}{subscriptionAction}
+ </>}
  {error && <p role="alert">{error}</p>}</ShareDisclosureDialog>}</>;
 }

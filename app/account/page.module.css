@@ -4154,29 +4154,7 @@
   grid-template-areas: "overview quick" "credits quick" "security quick";
   grid-template-rows: auto auto 1fr;
 }
-.creditDetailsButton {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-.creditDetailsButton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-.creditDetailsButton:focus-visible { outline: none; }
-.creditBarCard:focus-within { outline: 2px solid var(--app-accent, #228762); outline-offset: 3px; }
-.creditBarCard:hover .creditDetailsButton { text-decoration: underline; }
-.creditBarCard { position: relative; grid-area: credits; scroll-margin-top: 9rem; }
-.creditBarHeading { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; }
-.creditBarHeading h2 { margin: 0; font-size: 1.15rem; }
-.creditBarCard .progressTrack { margin-top: .6rem; height: .5rem; }
-.creditBarCard .progressTrack > span { min-width: 0; background: var(--app-accent, #228762); }
+.creditBarCard { grid-area: credits; min-width: 0; scroll-margin-top: 9rem; }
 
 
 .metricTileButton { width:100%; font:inherit; text-align:left; cursor:pointer; transition:background .15s,border-color .15s; }
