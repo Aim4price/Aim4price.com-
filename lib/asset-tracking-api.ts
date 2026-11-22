@@ -17,7 +17,7 @@ export async function trackingOwner(request: NextRequest, assetId: string) {
     )
   )
     return trackingJson({ error: "Invalid request origin." }, 403);
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session || !(await getAssetRegisterAccountAccess(session)))
     return trackingJson({ error: "Sign in to manage tracking." }, 403);
   if (!/^[0-9a-f-]{36}$/i.test(assetId))

@@ -62,7 +62,7 @@ export function BusinessSubscriptionButton({plan,className,icon}:{plan:BusinessS
  {fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
  <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
  plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
- plan.owner ? <><p>Paid Business includes your stock, Parts Stock, hosted client registers and staff access. Aim4price will contact you to arrange activation.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
+ plan.owner ? <><p>Paid Business adds staff access and removes the monthly credit limit. Aim4price will contact you to arrange activation.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
  plan.limit === null ? <><p>Contact Aim4price to request an upgrade for this account.</p><a className={styles.button} href="/contact-us">Contact Aim4price</a></> :
  <p>Your business owner can request an upgrade.</p>}
  {error && <p role="alert">{error}</p>}</ShareDisclosureDialog>}</>;

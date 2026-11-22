@@ -16,7 +16,7 @@ type LicenseAlertRequestBody = {
 };
 
 export async function PATCH(request: NextRequest) {
-  const session = await getServerSession({ requireActive: true, allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  requireActive: true, allowDealerApp: true });
 
   if (!session?.user?.id) {
     return NextResponse.json(

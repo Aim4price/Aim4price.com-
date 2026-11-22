@@ -31,17 +31,17 @@ test('each personal workspace has four ordered header links and role-specific ca
   assert.ok(owner.some(card=>card.href==='/budgets'));
 });
 
-test('both Business tiers keep the same inventory with their own inbox and paid locks', () => {
+test('both Business tiers keep the same inventory with their own inbox and personal tools', () => {
   const free = nav.workspaceCards('business',true,nav.receivedAssetsHref('business','free'));
   const paid = nav.workspaceCards('business',false,nav.receivedAssetsHref('dealer','desktop'));
   assert.deepEqual(paid.map(card=>card.key), ['shared','value','marketplace','discovery','register','registers','parts','tracking','businessCosts','showroom','template','advert']);
   assert.deepEqual(free.map(card=>card.key),paid.map(card=>card.key));
   assert.equal(free.find(card=>card.key==='shared').href,'/business');
   assert.equal(paid.find(card=>card.key==='shared').href,'/leads');
-  assert.equal(free.find(card=>card.key==='parts').locked,true);
+  assert.equal(free.find(card=>card.key==='parts').locked,false);
   assert.equal(paid.find(card=>card.key==='parts').label,'Parts & Stock');
   assert.ok(paid.every(card=>!card.locked));
-  assert.ok(free.filter(card=>['account','value','shared','marketplace','discovery'].includes(card.key)).every(card=>!card.locked));
+  assert.ok(free.every(card=>!card.locked));
   for (const role of ['business','middleman']) {
     const links = nav.workspaceCards(role,false,'/leads').map(card=>card.href);
     assert.ok(links.includes('/ad-studio?mode=template') && links.includes('/ad-studio?mode=create'));

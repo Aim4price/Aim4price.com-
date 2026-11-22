@@ -24,7 +24,7 @@ export default async function PricingPage({ searchParams }: { searchParams?: { a
   return (
     <main className={styles.page}>
       <AppHeader active="none" />
-      <PricingContent signedIn={Boolean(session?.user?.id)} initialAudience={initialAudience} offers={offers} trialDays={terms.trial_days} freeBusinessCredits={terms.monthly_credits} />
+      <PricingContent signedIn={Boolean(session?.user?.id)} initialAudience={initialAudience} offers={offers} trialDays={terms.trial_days} freeBusinessCredits={terms.monthly_credits} referralCredits={terms.referral_credits} />
     </main>
   );
 }

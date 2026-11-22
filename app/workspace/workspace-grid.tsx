@@ -51,6 +51,7 @@ export default function WorkspaceGrid({cards, role, userId, subscription}: {
         <button type="button" className={styles.setting} aria-label="Customise workspace" aria-haspopup="dialog" onClick={() => setEditing(true)}>Customise</button>
       </div>
     </header>
+    {subscription && <p>One credit per completed action. Viewing, messages and sharing are free. Staff access is included with Paid Business.</p>}
     {editing && <ShareDisclosureDialog title="Customise workspace" titleId="workspace-card-options" closeLabel="Close workspace settings" onClose={() => setEditing(false)}>
       <fieldset className={styles.fields}><legend>Show cards</legend>
       <div className={styles.options}>{cards.map(card => <label key={card.key}>

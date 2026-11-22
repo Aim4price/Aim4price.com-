@@ -1265,6 +1265,7 @@ export async function createDealerMaintenanceSchedule(input: {
         [input.proposalId, maintenanceRecordId],
       );
     }
+    if (!sharedScope) await (await import('./business-credits')).spendBusinessCredit(client,input.dealerUserId,'Scheduled maintenance',maintenanceRecordId+':schedule');
     if(sharedScope) await recordSharingUsage({accountId:input.dealerUserId,actorId:input.dealerUserId,token:sharedScope.token,assetId:sharedScope.assetId,metric:'contribution',eventKey:maintenanceRecordId+':schedule'},client);
     await client.query('commit');
     return { accessId, maintenanceRecordId };
@@ -1763,7 +1764,7 @@ export async function recordDealerStandaloneMaintenance(input: {
       const access = await client.query(`SELECT id FROM dealer_maintenance_access WHERE id=$1::uuid AND dealer_user_id=$2 AND owner_user_id=$3 AND asset_register_item_id=$4::uuid AND is_active=true AND can_add_maintenance=true FOR SHARE`, [input.accessId, input.dealerUserId, asset.ownerUserId, asset.assetId]);
       if (!access.rows.length) throw new Error('MAINTENANCE_ADD_PERMISSION_REQUIRED');
       await setAssetHistoryActor(client,input.dealerUserId,typeof input.completion.completedBy === 'string' ? input.completion.completedBy : 'Dealer','Dealer maintenance');
-    } },
+    }, after:async (client,record) => (await import('./business-credits')).spendBusinessCredit(client,input.dealerUserId,'Completed maintenance','maintenance:'+record.id) },
   );
   const refreshedAsset = await getDealerTrackedAsset(
     input.dealerUserId,
@@ -1832,6 +1833,7 @@ export async function completeDealerTrackedMaintenance(input: {
     { assetId: asset.assetId, before: async client => {
       const access = await client.query(`SELECT id FROM dealer_maintenance_access WHERE id=$1::uuid AND dealer_user_id=$2 AND owner_user_id=$3 AND asset_register_item_id=$4::uuid AND is_active=true AND can_add_maintenance=true FOR SHARE`, [input.accessId, input.dealerUserId, asset.ownerUserId, asset.assetId]);
       if (!access.rows.length) throw new Error('MAINTENANCE_ADD_PERMISSION_REQUIRED');
+      await (await import('./business-credits')).spendBusinessCredit(client,input.dealerUserId,'Completed maintenance','maintenance:'+openRecord.id);
       await setAssetHistoryActor(client,input.dealerUserId,typeof input.completion.completedBy === 'string' ? input.completion.completedBy : 'Dealer','Dealer maintenance');
     } },
   );

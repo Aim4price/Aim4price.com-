@@ -990,7 +990,7 @@ async function insertAssetRegister(
   const logoUrls = normalizeLogoUrls(input.logoUrls);
   const showLogosOnRegister = normalizeLogoVisibility(input.showLogosOnRegister, true);
 
-  const result = await db.query<AssetRegisterRow>(
+  const insert = (writer:Pick<typeof db,'query'>) => writer.query<AssetRegisterRow>(
     `
       insert into public.asset_registers (
         user_id,
@@ -1039,6 +1039,8 @@ async function insertAssetRegister(
     ],
   );
 
+  const result = isPrimary ? await insert(db) : await (await import('./business-credits')).saveBusinessResult(
+    userId,'Created a register',insert,saved=>'register:'+saved.rows[0].id);
   return mapAssetRegisterRow(result.rows[0]);
 }
 

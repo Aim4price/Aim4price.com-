@@ -61,6 +61,6 @@ const freeCards = new Set<CardKey>(['shared','value','marketplace','discovery','
 export function workspaceCards(role: WorkspaceRole, free: boolean, receivedHref: string) {
   return inventories[role].map(key => {
     const [label,href] = cards[key];
-    return {key,label,href:key === 'shared' ? receivedHref : href,locked:free && !freeCards.has(key)};
+    return {key,label,href:key === 'shared' ? receivedHref : href,locked:role !== 'business' && free && !freeCards.has(key)};
   });
 }

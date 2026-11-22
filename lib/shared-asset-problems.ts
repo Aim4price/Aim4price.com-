@@ -62,7 +62,7 @@ export async function sharedAssetProblems(request:NextRequest,target:Contributio
     }
     if(changed){
     await recordSharedAssetActivity(client,{id,ownerId:scope.ownerId,assetId:scope.assetId,actorId:scope.user.id,actorName:scope.user.name||scope.user.email,action,after:resolving?{problemId:body.problemId,resolutionNote}:{problemId:id,note}});
-    await recordSharingUsage({accountId:scope.user.id,actorId:scope.user.id,assetId:scope.assetId,token:scope.token,metric:'contribution',eventKey:`problem:${id}`},client);
+    await recordSharingUsage({accountId:scope.user.id,actorId:scope.user.id,assetId:scope.assetId,token:scope.token,metric:'contribution',eventKey:`${resolving?'resolution':'problem'}:${id}`},client);
     }
    }
    await client.query('COMMIT');

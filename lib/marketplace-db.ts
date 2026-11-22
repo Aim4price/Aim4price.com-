@@ -1240,7 +1240,8 @@ export async function publishStudioAdvert(userId: string, input: ReturnType<type
     usageUnit: d.usageUnit, lifeWorkedPercent: d.usageUnit === 'percent' ? Number(d.usage) || 0 : null,
     conditionLabel: d.condition, marketplaceAdBrand: input.brand, showDealRating: false,
   };
-  const result = await getDb().query(`
+  const {saveBusinessResult} = await import('./business-credits');
+  const result = await saveBusinessResult(userId,'Published an advert',db=>db.query(`
     insert into marketplace_listings (
       id,user_id,status,title,description,asking_price_ex_vat,province,area,
       seller_name,seller_company,seller_phone,seller_email,primary_image_url,image_urls,
@@ -1255,9 +1256,9 @@ export async function publishStudioAdvert(userId: string, input: ReturnType<type
       and marketplace_listings.asset_register_item_id is null
       and marketplace_listings.specs_json->>'advertStudioId'=excluded.specs_json->>'advertStudioId'
       and marketplace_listings.status='live'
-    returning *
+    returning *, (xmax=0) as newly_published
   `, [input.id,userId,d.title,d.description,Number(d.askingPrice),input.province,input.area,
-    d.contactName,d.businessName,d.phone,d.email,input.photos[0],JSON.stringify(input.photos),JSON.stringify(specs)]);
+    d.contactName,d.businessName,d.phone,d.email,input.photos[0],JSON.stringify(input.photos),JSON.stringify(specs)]), saved => saved.rows[0]?.newly_published ? 'advert:'+input.id : null);
   if (!result.rows[0]) throw new Error('This advert can no longer be updated from this draft.');
   return buildMarketplaceListing(result.rows[0], {viewerUserId:userId,exposeContact:true,listingSnapshot:true});
 }

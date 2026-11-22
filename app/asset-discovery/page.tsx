@@ -1,5 +1,5 @@
+import { businessToolProfile } from '../../lib/business-tool-profile';
 import AppHeader from '../../components/AppHeader';
-import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
 import AssetDiscoveryClient from './asset-discovery-client';
 import { workspaceStyles } from '../../components/WorkspacePrimitives';
@@ -23,7 +23,7 @@ function firstSearchValue(value: string | string[] | undefined): string {
 export default async function AssetDiscoveryPage({
   searchParams,
 }: AssetDiscoveryPageProps) {
-  const session = await getServerSession({
+  const session = await getServerSession({allowBusinessWorkspace:true,
     allowDealerApp: true,
     allowOwnerApp: true,
   });
@@ -31,11 +31,7 @@ export default async function AssetDiscoveryPage({
 
   if (session?.user?.id) {
     try {
-      const profile = await getAccountProfile({
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-      });
+      const profile = await businessToolProfile(session);
       if (profile.accountStatus === 'active') {
         activeAccountType = profile.accountType;
       }

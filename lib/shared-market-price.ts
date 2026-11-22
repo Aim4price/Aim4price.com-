@@ -1,5 +1,5 @@
 import type {NextRequest} from 'next/server';
-import {randomUUID} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {getDb} from './db';
 import {getAssetRegisterItemById} from './asset-register-db';
 import {assetSaleabilityInput,saleabilityBasis,saleabilityContext,validCurrentSaleabilityAnswers} from './asset-saleability';
@@ -36,11 +36,16 @@ export async function sharedMarketPrice(request:NextRequest,target:{token:string
    const current=await client.query(`SELECT id FROM asset_register_items WHERE user_id=$1 AND id=$2::uuid AND date_trunc('milliseconds',updated_at)=$3::timestamptz FOR UPDATE`,[ownerId,asset.id,asset.updatedAtIso]);
    if(!current.rows.length)throw new ExternalLeadAccessError('Asset changed while saving. Reopen market price and try again.',409);
    await client.query(`INSERT INTO asset_saleability_assessments(owner_id,asset_id,actor_id,assessment) VALUES($1,$2::uuid,$3,$4::jsonb)`,[ownerId,asset.id,scope.user.id,JSON.stringify(assessment)]);
+   if (scope.business) {
+    const resultKey=createHash('sha256').update(JSON.stringify([asset.id,body.basis,body.answers])).digest('hex');
+    await (await import('./business-credits')).spendBusinessCredit(client,scope.user.id,'Saved a market price','market-price:'+resultKey);
+   }
    await recordSharedAssetActivity(client,{id:randomUUID(),ownerId,assetId:asset.id,actorId:scope.user.id,actorName:scope.user.name||scope.user.email,action:'Market price updated',after:{priceExVat:assessment.priceExVat,assessedAt:assessment.assessedAt}});
    await client.query('COMMIT');
    return businessJson({assessment:{priceExVat:assessment.priceExVat,assessedAt:assessment.assessedAt,needsReview:false}});
   }catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}
  }catch(error){
+    if (error instanceof Error && error.message === 'Your monthly Business credits have been used.') return businessJson({error:error.message,code:'BUSINESS_CREDIT_LIMIT'},402);
   if(error instanceof ExternalLeadAccessError)return businessJson({error:error.message},error.status);
   console.error('Shared market price failed',error);
   return businessJson({error:'Could not load or save market price. Please try again.'},400);

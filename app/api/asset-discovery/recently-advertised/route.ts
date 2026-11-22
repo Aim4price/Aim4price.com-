@@ -1,5 +1,5 @@
+import { businessToolProfile } from '../../../../lib/business-tool-profile';
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession } from '../../../../lib/auth-session';
 import { dealerRoleCan } from '../../../../lib/dealer-app-access';
 import { getDealerAppSession } from '../../../../lib/dealer-app-session';
@@ -43,7 +43,7 @@ type RecentAdvertViewer = {
 };
 
 async function getRecentAdvertViewer(): Promise<RecentAdvertViewer> {
-  const session = await getServerSession({
+  const session = await getServerSession({allowBusinessWorkspace:true,
     allowDealerApp: true,
     allowOwnerApp: true,
   });
@@ -71,11 +71,7 @@ async function getRecentAdvertViewer(): Promise<RecentAdvertViewer> {
     };
   }
 
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await businessToolProfile(session);
 
   if (
     !['owner', 'dealer'].includes(profile.accountType)

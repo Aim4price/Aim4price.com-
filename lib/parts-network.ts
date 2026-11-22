@@ -251,6 +251,7 @@ export async function createPartsNetwork(
         profile?.town_city || "",
       ],
     );
+    if (actor.metered) await (await import('./business-credits')).spendBusinessCredit(db,actor.id,'Created a stocklist','stocklist:'+id);
     await audit(db, id, actor, "create", title);
     return { id };
   });
@@ -631,6 +632,8 @@ export async function importParts(
       "UPDATE parts_network_members SET business_name=$3,town=$4,phone=$5,email=$6,vat_included=$7,extra_fields=$8::jsonb,revision=revision+1,uploaded_at=now() WHERE network_id=$1 AND dealer_id=$2",
       [id, actor.id, business, town, phone, email, vatIncluded, JSON.stringify(extraFields)],
     );
+    const revision = Number(member.revision) + 1;
+    if (actor.metered) await (await import('./business-credits')).spendBusinessCredit(db,actor.id,'Saved a stock import',`stock-import:${id}:${actor.id}:${revision}`);
     await audit(
       db,
       id,

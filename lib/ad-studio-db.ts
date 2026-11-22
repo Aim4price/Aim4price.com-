@@ -220,6 +220,7 @@ export async function saveAdBrandKit(
         );
 
     if (!result.rows[0]) throw new Error('Brand Kit could not be saved.');
+    if (!requestedId) await (await import('./business-credits')).spendBusinessCredit(client,userId,'Created an advert template','template:'+result.rows[0].id);
     await client.query('commit');
     return mapAdBrandKit(result.rows[0]);
   } catch (error) {

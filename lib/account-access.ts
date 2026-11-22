@@ -42,7 +42,7 @@ export async function redirectAdminToAdmin(): Promise<void> {
   }
 }
 
-export async function requireActivePageAccess(options: { allowBusiness?: boolean } = {}) {
+export async function requireActivePageAccess(options: { allowBusiness?: boolean; allowBusinessWorkspace?:boolean } = {}) {
   const realSession = await getAnyServerSession();
 
   if (!realSession?.user?.id) {
@@ -52,6 +52,9 @@ export async function requireActivePageAccess(options: { allowBusiness?: boolean
   if ((await getAccountProfile(realSession.user)).accountType === "business") {
     const access = await getAccountAccess(realSession.user);
     if (!access.isActive) redirect("/pending-payment");
+    if (options.allowBusinessWorkspace && await (await import('./business-accounts')).canBusinessRead(realSession.user)) {
+      return {session:realSession, access};
+    }
     redirect("/upgrade-account");
   }
 

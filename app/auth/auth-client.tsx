@@ -1193,7 +1193,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                                 }));
                               }}
                             />
-                            <small>{signupForm.accountType === 'owner' ? 'Value and manage your own assets.' : 'Work with assets shared by clients or choose the full Business workspace.'}</small>
+                            <small>{signupForm.accountType === 'owner' ? 'Value and manage your own assets.' : 'Use Business tools on your own or add staff with a paid plan.'}</small>
                           </div>
 
                           <div className={styles.field}>

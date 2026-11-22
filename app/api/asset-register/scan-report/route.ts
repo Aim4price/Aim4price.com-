@@ -3892,7 +3892,7 @@ async function buildReportDocumentResponse(
 
 export async function GET(request: NextRequest) {
   const shareToken = request.nextUrl.searchParams.get('shareToken');
-  const session = await getServerSession({ allowOwnerApp: true, allowDealerApp: true, ...(shareToken ? {requireActive:false} : {}) });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowOwnerApp: true, allowDealerApp: true, ...(shareToken ? {requireActive:false} : {}) });
 
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL('/auth', request.url), { status: 302 });

@@ -3278,10 +3278,15 @@ export async function GET(request: NextRequest) {
       email: workspace.actorEmail,
     });
 
-    if (!isAssetRegisterAccountType(profile.accountType)) {
+    if (!isAssetRegisterAccountType(profile.accountType) && profile.accountType !== 'business') {
       return NextResponse.json({ ok: false, error: 'Asset Register export is only available to Owner and Business inventory accounts.' }, { status: 403 });
     }
 
+    const countReport = async (bundles:RegisterExportBundle[]) => {
+      if (profile.accountType !== 'business' && !sharedScope?.business) return;
+      const {recordBusinessReport} = await import('../../../../lib/business-credits');
+      await recordBusinessReport(sharedScope?.user.id || ownerUserId,'Generated a register report',[ownerUserId,reportKind,bundles]);
+    };
     const scopeParam = cleanText(params.get('scope')).toLowerCase();
     const isScopedExport = scopeParam === 'all' || scopeParam === 'single' || scopeParam === 'combined';
 
@@ -3399,6 +3404,8 @@ export async function GET(request: NextRequest) {
           : await renderFullRegisterReportHtml(bundles, exportProfile, generatedAt, request.url);
         const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
 
+        await countReport(bundles);
+
         return buildRegisterSummaryHtmlResponse(html, fileName);
       }
 
@@ -3411,6 +3418,8 @@ export async function GET(request: NextRequest) {
             cookie: request.headers.get('cookie') ?? '',
           });
           const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.pdf`;
+
+          await countReport(bundles);
 
           return new NextResponse(pdf, {
             status: 200,
@@ -3429,6 +3438,8 @@ export async function GET(request: NextRequest) {
           cookie: request.headers.get('cookie') ?? '',
         });
         const fileName = `aim4price-asset-registers-${ownerSlug}-${filenameDate}.pdf`;
+
+        await countReport(bundles);
 
         return new NextResponse(pdf, {
           status: 200,
@@ -3454,6 +3465,8 @@ export async function GET(request: NextRequest) {
       const fileName = reportKind === 'summary'
         ? `aim4price-register-summary-${ownerSlug}-${filenameDate}.xlsx`
         : `aim4price-asset-registers-${ownerSlug}-${filenameDate}.xlsx`;
+
+      await countReport(bundles);
 
       return new NextResponse(workbook, {
         status: 200,
@@ -3527,6 +3540,8 @@ export async function GET(request: NextRequest) {
         : await renderFullRegisterReportHtml([{ register, items }], exportProfile, generatedAt, request.url);
       const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
 
+      await countReport([{register,items}]);
+
       return buildRegisterSummaryHtmlResponse(html, fileName);
     }
 
@@ -3540,6 +3555,8 @@ export async function GET(request: NextRequest) {
           cookie: request.headers.get('cookie') ?? '',
         });
         const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.pdf`;
+
+        await countReport([{register,items}]);
 
         return new NextResponse(pdf, {
           status: 200,
@@ -3558,6 +3575,8 @@ export async function GET(request: NextRequest) {
         cookie: request.headers.get('cookie') ?? '',
       });
       const fileName = `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.pdf`;
+
+      await countReport([{register,items}]);
 
       return new NextResponse(pdf, {
         status: 200,
@@ -3579,6 +3598,8 @@ export async function GET(request: NextRequest) {
       ? `aim4price-register-summary-${ownerSlug}-${filenameDate}.xlsx`
       : `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.xlsx`;
 
+    await countReport([{register,items}]);
+
     return new NextResponse(workbook, {
       status: 200,
       headers: {
@@ -3589,6 +3610,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Your monthly Business credits have been used.') return NextResponse.json({error:error.message,code:'BUSINESS_CREDIT_LIMIT'},{status:402});
     console.error('asset register export failed', error);
     return NextResponse.json({ ok: false, error: 'Failed to export the asset register.' }, { status: 500 });
   }

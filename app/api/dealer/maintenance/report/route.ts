@@ -1,3 +1,4 @@
+import { businessToolProfile } from '../../../../../lib/business-tool-profile';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
 import { getServerSession } from '../../../../../lib/auth-session';
@@ -94,16 +95,12 @@ function reportScopeLabel(scope: ReportScope, selectedAsset: AssetMaintenanceAss
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'Dealer sign-in is required.' }, { status: 401 });
   }
 
-  const dealerProfile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const dealerProfile = await businessToolProfile(session);
   if (dealerProfile.accountType !== 'dealer' || dealerProfile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer access is required.' }, { status: 403 });
   }
@@ -157,8 +154,14 @@ export async function GET(request: NextRequest) {
     };
     const filename = `${slugify(`${scopeLabel}-${assetLabel}`)}.${format === 'xlsx' ? 'xlsx' : 'html'}`;
 
+    const countReport = async () => {
+      const {recordBusinessReport} = await import('../../../../../lib/business-credits');
+      await recordBusinessReport(session.user.id,'Generated a maintenance report',[ownerUserId,scope,selectedAsset?.id,data.summary,data.records]);
+    };
+
     if (format === 'xlsx') {
       const buffer = createXlsxWorkbook(buildAssetMaintenanceWorkbook(options));
+      await countReport();
       return new NextResponse(buffer, {
         status: 200,
         headers: {
@@ -169,7 +172,9 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return new NextResponse(buildAssetMaintenanceReportHtml(options), {
+    const html = buildAssetMaintenanceReportHtml(options);
+    await countReport();
+    return new NextResponse(html, {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
@@ -178,6 +183,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof Error && error.message === 'Your monthly Business credits have been used.') return NextResponse.json({error:error.message,code:'BUSINESS_CREDIT_LIMIT'},{status:402});
     if (error instanceof Error && error.message === 'MAINTENANCE_REPORT_FORBIDDEN') {
       return NextResponse.json({ ok: false, error: 'Maintenance Reports permission is required for every included asset.' }, { status: 403 });
     }

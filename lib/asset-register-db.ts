@@ -2598,7 +2598,7 @@ export async function createManualAssetRegisterItem(
   userId: string,
   input: CreateManualAssetInput,
 ): Promise<AssetRegisterItem> {
-  const db = getDb();
+
   const activeRegister = input.registerId
     ? await getAssetRegisterForUser(userId, input.registerId)
     : await getSelectedAssetRegister(userId);
@@ -2678,7 +2678,10 @@ export async function createManualAssetRegisterItem(
   });
 
   const query = buildInsertQuery(schema, fields);
-  const result = await db.query<AssetRegisterRow>(query.sql, query.values);
+  const {saveBusinessResult} = await import('./business-credits');
+  const result = await saveBusinessResult(userId,'Added an asset',
+    db => db.query<AssetRegisterRow>(query.sql,query.values),
+    saved => saved.rows[0] ? 'asset:'+mapAssetRegisterRow(saved.rows[0]).id : null);
   const row = result.rows[0];
 
   if (!row) {

@@ -22,8 +22,11 @@ export async function submitLeadDocument(token:string, input:Record<string,unkno
   await db.query('BEGIN');
   const lead=(await db.query(`SELECT user_id FROM asset_share_links s WHERE token=$1 AND revoked_at IS NULL AND lead_details->>'allowSubmissions'='true' AND ((lower(lead_details->>'recipientEmail')=$2 AND (coalesce(lead_details->>'recipientUserId','')='' OR lead_details->>'recipientUserId'=$3)) OR (coalesce(lead_details->>'recipientEmail','')='' AND coalesce(lead_details->>'recipientUserId','')='' AND (lead_details->>'accessMode' IN ('signed-in','owner-approval') OR coalesce(lead_details->>'recipientWhatsApp','')<>''))) AND ${liveShareOwnershipSql()} FOR UPDATE`,[token,contact.toLowerCase(),actorId])).rows[0];
   if(!lead)throw new Error('This enquiry is unavailable or document submissions are disabled.');
+  const previous = await db.query('SELECT id FROM asset_share_submissions WHERE token=$1 AND actor_user_id=$2 AND kind=$3 AND file_data=$4 AND note=$5 LIMIT 1',[token,actorId,input.kind,file.data,note]);
+  if (previous.rows.length) {await db.query('COMMIT');return;}
   const submissionId=randomUUID();
   await db.query(`INSERT INTO asset_share_submissions(id,token,kind,sender_name,sender_contact,note,file_name,content_type,file_data,actor_user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,[submissionId,token,input.kind,name,contact,note,file.fileName,file.contentType,file.data,actorId]);
+  await recordSharingUsage({accountId:actorId,actorId,token,metric:'contribution',eventKey:`${input.kind}:${submissionId}`},db);
   await recordSharingUsage({accountId:actorId,actorId,token,metric:'upload',eventKey:submissionId,bytes:file.data.length},db);
   await db.query('COMMIT');
  }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}

@@ -1,5 +1,5 @@
+import { businessToolProfile } from '../../../../../lib/business-tool-profile';
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../../lib/account-profile';
 import { getServerSession } from '../../../../../lib/auth-session';
 import {
   getAssetDiscoveryEnquiryForUser,
@@ -26,11 +26,11 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function GET(_request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) return unauthorized();
 
   try {
-    const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
+    const profile = await businessToolProfile(session);
     const enquiry = await getAssetDiscoveryEnquiryForUser({
       enquiryId: context.params.enquiryId,
       userId: session.user.id,
@@ -44,7 +44,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) return unauthorized();
 
   let body: PatchBody;
@@ -55,7 +55,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
+    const profile = await businessToolProfile(session);
     if (profile.accountType !== 'owner') {
       return NextResponse.json({ ok: false, error: 'Only the asset owner can update this enquiry.' }, { status: 403 });
     }
@@ -72,11 +72,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) return unauthorized();
 
   try {
-    const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
+    const profile = await businessToolProfile(session);
     if (!['owner', 'dealer'].includes(profile.accountType)) {
       return NextResponse.json({ ok: false, error: 'Only the requester can retract this enquiry.' }, { status: 403 });
     }

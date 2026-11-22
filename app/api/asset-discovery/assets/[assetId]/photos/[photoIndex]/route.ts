@@ -1,5 +1,5 @@
+import { businessToolProfile } from '../../../../../../../lib/business-tool-profile';
 import { NextResponse } from "next/server";
-import { getAccountProfile } from "../../../../../../../lib/account-profile";
 import { getAssetDiscoveryPhoto } from "../../../../../../../lib/asset-discovery";
 import { getServerSession } from "../../../../../../../lib/auth-session";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 type RouteContext = { params: { assetId: string; photoIndex: string } };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) return new NextResponse("Not found", { status: 404 });
 
   const photoIndex = Number(context.params.photoIndex);
@@ -18,11 +18,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   try {
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
+    const profile = await businessToolProfile(session);
     if (!["owner", "dealer"].includes(profile.accountType)) {
       return new NextResponse("Not found", { status: 404 });
     }

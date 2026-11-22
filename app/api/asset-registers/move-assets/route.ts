@@ -39,7 +39,7 @@ function normalizeAssetIds(body: MoveAssetsBody): string[] {
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();

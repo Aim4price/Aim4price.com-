@@ -10,7 +10,7 @@ import {validTrackingSnapshot} from '../../../../../lib/asset-tracking-history';
 export const dynamic='force-dynamic';
 export async function GET(request:NextRequest,{params}:{params:{assetId:string}}){
  try {
-  const session=await getServerSession({allowDealerApp:true});
+  const session=await getServerSession({allowBusinessWorkspace:true, allowDealerApp:true});
   if(!session||!await getAssetRegisterAccountAccess(session))return businessJson({error:'Sign in to view location history.'},403);
   if(!/^[0-9a-f-]{36}$/i.test(params.assetId))return businessJson({error:'Invalid asset.'},400);
   const asset=await getAssetRegisterItemById(session.user.id,params.assetId);
@@ -52,7 +52,7 @@ export async function GET(request:NextRequest,{params}:{params:{assetId:string}}
 export async function DELETE(request:NextRequest,{params}:{params:{assetId:string}}){
  try {
   if(!isTrustedRequestOrigin(request.headers.get('origin'),request.nextUrl.origin))return businessJson({error:'Invalid request origin.'},403);
-  const session=await getServerSession({allowDealerApp:true});
+  const session=await getServerSession({allowBusinessWorkspace:true, allowDealerApp:true});
   if(!session||!await getAssetRegisterAccountAccess(session))return businessJson({error:'Sign in to manage location history.'},403);
   const entryId=request.nextUrl.searchParams.get('entryId');
   const scope=request.nextUrl.searchParams.get('scope'),snapshotAt=request.nextUrl.searchParams.get('snapshotAt');

@@ -56,6 +56,7 @@ type SessionOptions = {
   allowAdmin?: boolean;
   /** Opt in only for the basic Business workspace; full account APIs stay restricted. */
   allowBusiness?: boolean;
+  allowBusinessWorkspace?: boolean;
   allowDealerApp?: boolean;
   allowOwnerApp?: boolean;
   authSession?: ServerSession;
@@ -326,9 +327,10 @@ export async function getServerSession(
   });
 
   if (!isActive) {
-    if (!options.allowBusiness) return null;
-    const { canBusinessContribute } = await import("./business-accounts");
-    if (!(await canBusinessContribute(session.user))) return null;
+    if (!options.allowBusiness && !options.allowBusinessWorkspace) return null;
+    const { canBusinessRead, canBusinessContribute } = await import("./business-accounts");
+    const permitted = options.allowBusinessWorkspace ? canBusinessRead : canBusinessContribute;
+    if (!(await permitted(session.user))) return null;
   }
 
   await markRealUserActivity(session);

@@ -1,5 +1,5 @@
+import { businessToolProfile } from '../../../../../lib/business-tool-profile';
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../../lib/account-profile';
 import { getServerSession } from '../../../../../lib/auth-session';
 import {
   createDealerMaintenanceSchedule,
@@ -12,13 +12,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 async function activeDealerUserId(): Promise<string> {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) return '';
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await businessToolProfile(session);
   return profile.accountType === 'dealer' && profile.accountStatus === 'active'
     ? session.user.id
     : '';

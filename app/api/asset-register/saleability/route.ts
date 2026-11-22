@@ -12,7 +12,7 @@ export const dynamic='force-dynamic';
 async function handle(request:NextRequest){
  try {
   if(request.method==='POST'){try{requireBusinessOrigin(request);}catch{return businessJson({error:'This request must be sent from Aim4price.'},403);}}
-  const session=await getServerSession({allowOwnerApp:true,allowDealerApp:true});
+  const session=await getServerSession({allowBusinessWorkspace:true, allowOwnerApp:true,allowDealerApp:true});
   if(!session?.user)return businessJson({error:'Sign in to access assessments.'},401);
   if(!await getAssetRegisterAccountAccess(session))return businessJson({error:'Asset access required.'},403);
   const access=isOwnerAppSession(session)?await getOwnerAppAccess():null;
