@@ -4592,34 +4592,6 @@
   box-shadow: none;
 }
 
-.heroTitleRow,
-.heroBadges {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.heroTitleRow {
-  gap: 0.4rem 0.9rem;
-  margin-bottom: 0.22rem;
-}
-
-.heroBadges {
-  gap: 0.4rem;
-}
-
-.heroBadges .statusBadge {
-  min-height: 1.65rem;
-  padding-inline: 0.65rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: none;
-  white-space: nowrap;
-  box-shadow: none;
-}
-
 button.heroSignOut {
   flex: 0 0 auto;
   align-self: center;

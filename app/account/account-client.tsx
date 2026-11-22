@@ -1552,17 +1552,7 @@ export default function AccountClient({
             </div>
 
             <div className={styles.heroCopy}>
-              <div className={styles.heroTitleRow}>
-                <h1>{accountDisplayName}</h1>
-                <div className={styles.heroBadges}>
-                  <span className={styles.statusBadge}>Active</span>
-                  {isDealerAccount && !isMiddlemanAccount ? (
-                    <span className={`${styles.statusBadge} ${styles.directoryHeroBadge}`}>
-                      Directory {directoryStatusLabel.toLowerCase()}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
+              <h1>{accountDisplayName}</h1>
               <p>{profile?.email || "Loading email"}</p>
               <small>
                 {businessPlanLabel ?? accountTypeLabel + " account"}&nbsp; • &nbsp;{memberSinceLabel}
