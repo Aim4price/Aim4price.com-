@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type CSSProperties, type InputHTMLAttributes } from 'react';
+import { useEffect, useId, useRef, useState, type InputHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './DateInput.module.css';
 
@@ -132,7 +132,17 @@ export default function DateInput({ value, defaultValue = '', onValueChange, min
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
   const offset = (month.getDay() + 6) % 7;
-  const count = new Date(year, monthIndex + 1, 0).getDate();
+  const [title, setTitle] = useState('Choose a date');
+  const headingId = useId();
+
+  function openCalendar() {
+    const field = input.current;
+    const labelledBy = props['aria-labelledby']?.split(/\s+/).map(id => document.getElementById(id)?.textContent?.trim()).filter(Boolean).join(' ');
+    setTitle(labelledBy || props['aria-label']?.trim() || field?.labels?.[0]?.textContent?.trim() || 'Choose a date');
+    setPendingDate(withinBounds(isoValue) ? isoValue : '');
+    setMonth(new Date(initial.getFullYear(), initial.getMonth(), 1));
+    dialog.current?.showModal();
+  }
   const years = Array.from({ length: Math.max(2100, year) - Math.min(1900, year) + 1 }, (_, i) => Math.min(1900, year) + i);
   function focusDate(date: Date) {
     if (!withinBounds(dateKey(date))) return;
@@ -144,13 +154,13 @@ export default function DateInput({ value, defaultValue = '', onValueChange, min
       <span className={styles.dateField}>
         <input {...props} ref={input} className={`${styles.input} ${className ?? ''}`} aria-label={props['aria-label']} type="text" inputMode="text" placeholder="DD/MM/YYYY" required={required} disabled={disabled} readOnly={readOnly} maxLength={10} value={text} onChange={(event) => editDate(event.target.value)} />
         {name ? <input type="hidden" name={name} value={isoValue} disabled={disabled} /> : null}
-        <button type="button" disabled={disabled || readOnly} aria-label="Open calendar" aria-haspopup="dialog" onClick={() => { setPendingDate(withinBounds(isoValue) ? isoValue : ''); setMonth(new Date(initial.getFullYear(), initial.getMonth(), 1)); dialog.current?.showModal(); }}>
+        <button type="button" disabled={disabled || readOnly} aria-label="Open calendar" aria-haspopup="dialog" onClick={openCalendar}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 3v4m10-4v4M3 11h18m-13 4h2m4 0h2m-8 3h2" /></svg>
         </button>
       </span>
-      {mounted ? createPortal(<dialog ref={dialog} className={styles.dateDialog} aria-label="Choose a date" onCancel={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); if (event.target === event.currentTarget) dialog.current?.close(); }}>
+      {mounted ? createPortal(<dialog ref={dialog} className={styles.dateDialog} aria-labelledby={headingId} onCancel={(event) => event.stopPropagation()} onClick={(event) => { event.stopPropagation(); if (event.target === event.currentTarget) dialog.current?.close(); }}>
       <div className={styles.calendar}>
-        <header className={styles.dialogHeader}><div className={styles.heading}><span className={styles.headingIcon}><CalendarIcon /></span><div><h3>Choose a date</h3><p>Select a date from the calendar</p></div></div><button type="button" aria-label="Close calendar" onClick={() => dialog.current?.close()} data-modal-close="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></header>
+        <header className={styles.dialogHeader}><div className={styles.heading}><span className={styles.headingIcon}><CalendarIcon /></span><h3 id={headingId}>{title}</h3></div><button type="button" aria-label="Close calendar" onClick={() => dialog.current?.close()} data-modal-close="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></header>
       <div className={styles.navigation}>
         <div className={styles.selectors}>
           <CalendarSelect label="Month" value={monthIndex} options={Array.from({ length: 12 }, (_, i) => ({ value: i, label: new Date(2000, i, 1).toLocaleDateString('en-ZA', { month: 'long' }) }))} onChange={(value) => setMonth(new Date(year, value, 1))} />
@@ -162,13 +172,13 @@ export default function DateInput({ value, defaultValue = '', onValueChange, min
         <button type="button" aria-label="Next month" onClick={() => setMonth(new Date(year, monthIndex + 1, 1))}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg></button>
         </div>
       </div>
-      <div className={styles.days} ref={grid} style={{ '--calendar-weeks': Math.ceil((offset + count) / 7) } as CSSProperties}>
+      <div className={styles.days} ref={grid}>
         {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => <span key={day} className={styles.weekday}>{day}</span>)}
-        {Array.from({ length: Math.ceil((offset + count) / 7) * 7 }, (_, i) => {
+        {Array.from({ length: 42 }, (_, i) => {
           const date = new Date(year, monthIndex, i - offset + 1, 12);
           const key = dateKey(date);
-          if (date.getMonth() !== monthIndex) return <span key={key} className={styles.outsideDay} data-weekend={date.getDay() === 0 || date.getDay() === 6 ? 'true' : undefined} aria-hidden="true">{date.getDate()}</span>;
-          return <button key={key} type="button" disabled={!withinBounds(key)} data-date={key} data-weekend={date.getDay() === 0 || date.getDay() === 6 ? 'true' : undefined} aria-label={date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })} aria-pressed={pendingDate === key} aria-current={today === key ? 'date' : undefined} onClick={() => setPendingDate(key)} onKeyDown={(event) => {
+          if (date.getMonth() !== monthIndex) return <span key={key} className={styles.outsideDay} aria-hidden="true">{date.getDate()}</span>;
+          return <button key={key} type="button" disabled={!withinBounds(key)} data-date={key} aria-label={date.toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })} aria-pressed={pendingDate === key} aria-current={today === key ? 'date' : undefined} onClick={() => setPendingDate(key)} onKeyDown={(event) => {
             const delta = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[event.key];
             if (delta === undefined) return;
             event.preventDefault();
@@ -177,7 +187,7 @@ export default function DateInput({ value, defaultValue = '', onValueChange, min
         })}
       </div>
       <div className={styles.summary}>
-        <div className={styles.selectedDate} aria-live="polite"><span>Selected date</span><strong>{pendingSelection && !Number.isNaN(pendingSelection.getTime()) ? pendingSelection.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Choose a date'}</strong></div>
+        <div className={styles.selectedDate} aria-live="polite"><strong>{pendingSelection && !Number.isNaN(pendingSelection.getTime()) ? pendingSelection.toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : ''}</strong></div>
         <button type="button" disabled={!pendingDate || !withinBounds(pendingDate)} onClick={() => chooseDate(pendingDate)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m5 12 4 4 10-10" /></svg>Confirm date</button>
       </div>
       </div>
