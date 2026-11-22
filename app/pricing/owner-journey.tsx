@@ -9,7 +9,7 @@ import { adminRetainers, businessHosting, ownerHosting, rand } from '../../lib/h
 
 const planNames = ['Essentials', 'Growth', 'Professional'];
 const planLimits = [25, 100, 300];
-const plans = ownerHosting.map((plan, index) => ({
+const defaultPlans = ownerHosting.map((plan, index) => ({
   name: planNames[index], range: plan.range, limit: planLimits[index],
   monthly: plan.monthly / 100, yearly: plan.annually / 100,
 }));
@@ -25,8 +25,10 @@ function Choice({ selected, onClick, title, children, icon }: { selected: boolea
   </button>;
 }
 
-export default function PackageJourney({ onTitleChange, audience = 'owner', signedIn = false }: { signedIn?: boolean; onTitleChange?: (title: string) => void; audience?: 'owner' | 'business' }) {
+export default function PackageJourney({ offers,onTitleChange, audience = 'owner', signedIn = false }: { offers?:import('../../lib/billing-shared').BillingPlan[];signedIn?: boolean; onTitleChange?: (title: string) => void; audience?: 'owner' | 'business' }) {
   const dealer = audience === 'business';
+  const rate=(key:string,defaultValue:number)=>offers?.find(p=>p.key===key)?.amountCents??defaultValue;
+  const plans=defaultPlans.map((p,i)=>({...p,monthly:rate('owner-band-'+(i+1)+'-monthly',p.monthly*100)/100,yearly:rate('owner-band-'+(i+1)+'-annual',p.yearly*100)/100}));
   const firstStep = dealer ? 6 : 0;
   const [step, setStep] = useState(firstStep);
   const [detail, setDetail] = useState<'funding' | 'commission' | 'setup' | 'admin' | 'billing' | null>(null);
@@ -39,7 +41,9 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
   const [customers, setCustomers] = useState<'self' | 'customers' | null>(null);
   const [admin, setAdmin] = useState<Admin | null>(dealer ? null : 'self');
   const heading = useRef<HTMLHeadingElement>(null);
-  const plan = dealer ? { name: 'Paid Business', monthly: businessHosting.monthly / 100, yearly: businessHosting.annually / 100, limit: 0 } : assetBand !== null ? plans[assetBand] : undefined;
+  const plan = dealer ? { name: 'Paid Business', monthly: rate('business-standard-monthly',businessHosting.monthly) / 100, yearly: rate('business-standard-annual',businessHosting.annually) / 100, limit: 0 } : assetBand !== null ? plans[assetBand] : undefined;
+  const offerKey=(dealer?'business-standard':'owner-band-'+((assetBand??0)+1))+'-'+(yearly?'annual':'monthly');
+  const signupAvailable=Boolean(plan)&&(!offers||offers.some(p=>p.key===offerKey&&p.enabled));
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
   const packagePrice = plan ? (yearly ? plan.yearly : plan.monthly + (adminPlan?.price ?? 0)) : null;
   const ready = step === 7 ? help !== null : step === 8 ? setup !== null : step === 6 ? customers !== null : step === 0 ? assetBand !== null : step === 5 ? setup === 'visit' || setup === 'inspection' || setup === 'assisted' : step === 1 ? setup !== null : admin !== null;
@@ -150,7 +154,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
       </>}
 
       {!detail && dealer && step === 6 && <>
-        <div className={styles.dealerBase}><span><PricingIcon name="stock" /><strong>Registers, Parts & Stock</strong></span><span className={styles.baseRates}><strong className={styles.rate}>{money(businessHosting.monthly / 100)}/month</strong><span className={styles.rate}>or {money(businessHosting.annually / 100)}/year</span></span></div>
+        <div className={styles.dealerBase}><span><PricingIcon name="stock" /><strong>Registers, Parts & Stock</strong></span><span className={styles.baseRates}><strong className={styles.rate}>{money(rate('business-standard-monthly',businessHosting.monthly) / 100)}/month</strong><span className={styles.rate}>or {money(rate('business-standard-annual',businessHosting.annually) / 100)}/year</span></span></div>
         <div className={`${styles.choices} ${styles.dealerChoices}`} role="group" aria-label="Customer registers">
           <Choice icon="stock" selected={customers === 'self'} onClick={() => setCustomers('self')} title="Our stock only"><span className={styles.choiceRate}>No client hosting fee</span><span className={styles.choiceSecondary}>Add client registers whenever you need them.</span></Choice>
           <Choice icon="clients" selected={customers === 'customers'} onClick={() => setCustomers('customers')} title="Stock and client registers"><span className={styles.choiceRate}>From <span className={styles.rate}>{rand(ownerHosting[0].monthly / 4)} per client/month</span></span><span className={styles.choiceSecondary}>25% of normal Owner hosting fees.</span></Choice>
@@ -260,8 +264,8 @@ export default function PackageJourney({ onTitleChange, audience = 'owner', sign
       </div>
       <div className={styles.navigation}>
         {detail ? <button type="button" className={styles.secondary} onClick={() => move(detailReturn)}>{detailReturn === 3 ? 'Back to package' : 'Back to choices'}</button> : <>
-        {(dealer ? step !== firstStep && !editing : step === 5 || step === 4 || (!editing && step > firstStep)) ? <button type="button" className={styles.secondary} onClick={() => move(previousStep())}>Back</button> : <span className={styles.note}>{editing ? 'Adjust your choice, then update.' : dealer ? 'Paid Business · R199/month' : ready ? 'Your base plan is selected.' : 'Choose your asset range.'}</span>}
-        {step !== 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => { const next = editing && !dealer ? 3 : nextStep(); if (next === 3) setEditing(false); move(next); }}>{(editing && !dealer) || nextStep() === 3 ? editing ? 'Update package' : 'See my package' : 'Continue'} </button> : <div className={styles.finalActions}>{!dealer && <button type="button" className={styles.restart} onClick={restart}>Start again</button>}<Link href={signedIn || !plan ? "/contact-us" : `/auth?accountType=${audience}#signup`} className={styles.primary}>{signedIn || !plan ? "Discuss my package" : "Sign up"}</Link></div>}
+        {(dealer ? step !== firstStep && !editing : step === 5 || step === 4 || (!editing && step > firstStep)) ? <button type="button" className={styles.secondary} onClick={() => move(previousStep())}>Back</button> : <span className={styles.note}>{editing ? 'Adjust your choice, then update.' : dealer ? 'Paid Business · '+money(rate('business-standard-monthly',businessHosting.monthly)/100)+'/month' : ready ? 'Your base plan is selected.' : 'Choose your asset range.'}</span>}
+        {step !== 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => { const next = editing && !dealer ? 3 : nextStep(); if (next === 3) setEditing(false); move(next); }}>{(editing && !dealer) || nextStep() === 3 ? editing ? 'Update package' : 'See my package' : 'Continue'} </button> : <div className={styles.finalActions}>{!dealer && <button type="button" className={styles.restart} onClick={restart}>Start again</button>}<Link href={signedIn || !signupAvailable ? "/contact-us" : `/auth?accountType=${audience}&offer=${offerKey}#signup`} className={styles.primary}>{signedIn || !signupAvailable ? "Discuss my package" : "Sign up"}</Link></div>}
         </>}
       </div>
     </div>

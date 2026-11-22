@@ -3,7 +3,7 @@ import AppHeader from '../../components/AppHeader';
 import { getAnyServerSession } from '../../lib/auth-session';
 import PricingContent from './pricing-content';
 import { pricingAudience } from '../../lib/subscription-options';
-import { MONTHLY_BUSINESS_CREDITS } from '../../lib/business-credits';
+import { listBillingPlans, signupTerms } from '../../lib/billing';
 import styles from './pricing.module.css';
 
 // The shared header reads search params and the visitor's session.
@@ -19,11 +19,12 @@ export const metadata: Metadata = {
 
 export default async function PricingPage({ searchParams }: { searchParams?: { audience?: string } }) {
   const session = await getAnyServerSession();
+  const [offers,terms]=await Promise.all([listBillingPlans(),signupTerms()]);
   const initialAudience = pricingAudience(searchParams?.audience);
   return (
     <main className={styles.page}>
       <AppHeader active="none" />
-      <PricingContent signedIn={Boolean(session?.user?.id)} initialAudience={initialAudience} freeBusinessCredits={MONTHLY_BUSINESS_CREDITS} />
+      <PricingContent signedIn={Boolean(session?.user?.id)} initialAudience={initialAudience} offers={offers} trialDays={terms.trial_days} freeBusinessCredits={terms.monthly_credits} />
     </main>
   );
 }

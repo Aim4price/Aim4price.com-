@@ -8,6 +8,7 @@ import PricingModal from './pricing-modal';
 import ServiceFees from './service-fees';
 import PricingIcon from './pricing-icon';
 import { businessHosting, ownerHosting, rand } from '../../lib/hosting-pricing';
+import type { BillingPlan } from '../../lib/billing-shared';
 import type { PricingAudience } from '../../lib/subscription-options';
 
 function AccountChoice({ title, price, caption, description, features, note, action, onClick }: {
@@ -24,11 +25,12 @@ function AccountChoice({ title, price, caption, description, features, note, act
   </button>;
 }
 
-export default function PricingContent({ signedIn = false, initialAudience = null, freeBusinessCredits }: { signedIn?: boolean; initialAudience?: PricingAudience | null; freeBusinessCredits?: number }) {
+export default function PricingContent({ signedIn = false, initialAudience = null, freeBusinessCredits,offers,trialDays=30 }: { offers?:BillingPlan[];trialDays?:number;signedIn?: boolean; initialAudience?: PricingAudience | null; freeBusinessCredits?: number }) {
   const [audience, setAudience] = useState<PricingAudience | null>(initialAudience);
   const [feesOpen, setFeesOpen] = useState(false);
   const [feesTopic, setFeesTopic] = useState<'commission' | undefined>();
   const [ownerTitle, setOwnerTitle] = useState('How many assets?');
+  const publishedRate=(key:string,fallback:number)=>offers?.find(p=>p.key===key)?.amountCents??fallback;
   const creditsLabel = freeBusinessCredits === undefined ? 'Monthly action credits' : `${freeBusinessCredits} monthly action credits`;
   const showFees = (topic?: 'commission') => { setFeesTopic(topic); setFeesOpen(true); };
   return <div className={styles.photoSurface}><div className={styles.shell}>
@@ -37,22 +39,22 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
       <p className={styles.heroDescription}>Choose the right account for you.</p>
     </header>
     <section className={styles.pricingChoices} aria-label="Choose your account">
-      <AccountChoice title="Owner" price={rand(ownerHosting[0].monthly)} caption={`Or ${rand(ownerHosting[0].annually)}/year · 1–25 assets`}
+      <AccountChoice title="Owner" price={rand(publishedRate('owner-band-1-monthly',ownerHosting[0].monthly))} caption={`Or ${rand(publishedRate('owner-band-1-annual',ownerHosting[0].annually))}/year · 1–25 assets`}
         description="Know what you own, what it’s worth and what it costs."
         features={['Asset registers, valuations & reports', 'Maintenance, fuel & running costs', 'Documents and asset sharing']}
-        note="Priced by active assets. Unlimited registers." action="Explore Owner plans" onClick={() => setAudience('owner')} />
+        note={trialDays+'-day free trial available. Unlimited registers.'} action="Explore Owner plans" onClick={() => setAudience('owner')} />
       <AccountChoice title="Free Business" price="R0" caption="No subscription fee"
         description="Work with the assets and enquiries your clients share."
         features={['Shared Assets & client enquiries', 'Value Asset & Marketplace', creditsLabel]}
         note="View shared assets for free. Upgrade when needed." action="Explore Free Business" onClick={() => setAudience('free-business')} />
-      <AccountChoice title="Paid Business" price={rand(businessHosting.monthly)} caption={`Or ${rand(businessHosting.annually)}/year`}
+      <AccountChoice title="Paid Business" price={rand(publishedRate('business-standard-monthly',businessHosting.monthly))} caption={`Or ${rand(publishedRate('business-standard-annual',businessHosting.annually))}/year`}
         description="Manage your stock, clients and team in one workspace."
         features={['Registers, Parts & Stock', 'Maintenance, costs & advert tools', 'Staff access · no monthly credit limit']}
         note={<>Client hosting from <span className={styles.rate}>{rand(ownerHosting[0].monthly / 4)} per client/month.</span></>} action="Explore Paid Business" onClick={() => setAudience('business')} />
     </section>
     <p className={styles.pricingNote}>No VAT added.</p>
-    <PricingModal owner open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
-    <PricingModal owner open={audience === 'business'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney audience="business" signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
+    <PricingModal owner open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney offers={offers} signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
+    <PricingModal owner open={audience === 'business'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney offers={offers} audience="business" signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
     <PricingModal open={audience === 'free-business'} title="Free Business" onClose={() => setAudience(null)}>
       <section className={styles.freeBusiness} data-free-business aria-label="Free Business access">
         <div className={styles.freeSummary}><span className={styles.accessIcon}><PricingIcon name="link" /></span><div><strong>Shared assets. No subscription fee.</strong><p>Work with records your clients choose to share.</p></div><strong className={styles.freePrice}>R0</strong></div>

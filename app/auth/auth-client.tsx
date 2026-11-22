@@ -606,6 +606,10 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
       window.location.search,
     );
 
+    const requestedOffer=new URLSearchParams(window.location.search).get('offer');
+    if(requestedOffer && /^(owner-band-[123]|business-standard)-(monthly|annual)$/.test(requestedOffer)){
+      setPlanKey(requestedOffer);setSignupPlan('paid');
+    }
     if (requestedAccountType) {
       setSignupForm((current) => ({
         ...current,
