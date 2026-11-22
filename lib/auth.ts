@@ -1,5 +1,3 @@
-import { ensureCreditSchema } from "./business-credits";
-import { registerOwnerReferral } from "./owner-referrals";
 import { ensureAccountProfileColumns } from "./account-profile";
 import { registerFreeSharingAccount } from './sharing-foundation';
 import { ensureBusinessWorkspace } from './business-workspaces';
@@ -200,12 +198,16 @@ function createAuth() {
           if (readSignupField(context, "accountType") === "business") await registerFreeSharingAccount(user.id);
           if (readSignupField(context, "accountType") === "business") {
             await ensureBusinessWorkspace(user.id);
+            const {ensureCreditSchema}=await import("./business-credits");
             await ensureCreditSchema();
             const allowances=terms??await signupTerms();
             await getDb().query('update business_workspaces set enforce_credits=true,monthly_allowance=$2,referral_reward=$3 where owner_user_id=$1',[user.id,allowances.monthly_credits,allowances.referral_credits]);
           }
           const invite=readSignupWorkspaceField("ownerInvite");
-          if (readSignupWorkspaceField("accountType")==="owner" && typeof invite==="string") await registerOwnerReferral(user.id,invite);
+          if (readSignupWorkspaceField("accountType")==="owner" && typeof invite==="string") {
+            const {registerOwnerReferral}=await import("./owner-referrals");
+            await registerOwnerReferral(user.id,invite);
+          }
           const billing = readSignupWorkspaceField("billingSignup") as SignupBilling | null;
           if (billing) await queueSignupInvoice(user.id, billing);
 
