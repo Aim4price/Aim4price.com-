@@ -1705,10 +1705,10 @@ export default function AccountClient({
                   <div className={styles.quickActionList}>
                     {!isFreeBusiness && !(isOwnerAccount || isDealerAccount) && <Link className={styles.quickActionButton} href="/team/access" data-tooltip="View the workspaces and assets shared with you." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>My access</strong></Link>}
                     {isFreeBusiness && <>
-                      <LockedBusinessAction icon="connections" label="Desktop users" />
-                      <LockedBusinessAction icon="dealer" label="Business App" />
+                      <LockedBusinessAction icon="fieldManager" label="Desktop users" />
+                      <LockedBusinessAction icon="ownerApp" label="Business App" />
                     </>}
-                    {!isFreeBusiness && canManageDesktopUsers && !isMiddlemanAccount && <Link className={styles.quickActionButton} href="/account/team-access" data-tooltip="Manage who can use your desktop workspace and what they can access." data-tooltip-style="description"><QuickActionIcon name="connections" /><strong>Desktop users</strong></Link>}
+                    {!isFreeBusiness && canManageDesktopUsers && !isMiddlemanAccount && <Link className={styles.quickActionButton} href="/account/team-access" data-tooltip="Manage who can use your desktop workspace and what they can access." data-tooltip-style="description"><QuickActionIcon name="fieldManager" /><strong>Desktop users</strong></Link>}
 
                     {isOwnerAccount ? (
                       <button
@@ -1812,7 +1812,7 @@ export default function AccountClient({
                     <strong>Edit business details</strong>
                   </button>}
 
-                  {initialProfile?.trialEndsAt && <a href="/account/owner-trial" className={styles.quickActionButton}>Owner trial · ends {new Date(initialProfile.trialEndsAt).toLocaleDateString('en-ZA')}</a>}
+                  {initialProfile?.trialEndsAt && <a href="/account/owner-trial" className={styles.quickActionButton}><QuickActionIcon name="subscription" /><strong>Owner trial · ends {new Date(initialProfile.trialEndsAt).toLocaleDateString('en-ZA')}</strong></a>}
                   {subscription && <BusinessSubscriptionButton plan={subscription} inviteLink={isFreeBusiness ? undefined : inviteLink} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />}
 
                   <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")} data-tooltip="View and download your Aim4price invoices." data-tooltip-style="description">
