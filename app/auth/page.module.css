@@ -933,3 +933,38 @@
 .planChoices label:has(:checked) {border-color:#246345;background:#edf6ef}
 .planChoices input {accent-color:#246345}
 .planChoices label:focus-within {outline:2px solid #246345;outline-offset:2px}
+
+.signupForm, .signupForm :is(button, input, textarea, label), .customSelectMenu {
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
+}
+
+.planChoices label { min-height: 3rem; }
+.planChoices label:focus-within { outline: none; }
+.planChoices label:has(input:focus-visible) { outline: 2px solid #246345; outline-offset: 2px; }
+.planChoices input[type="radio"] { width: 1rem; height: 1rem; min-height: 0; margin: 0; flex: none; }
+
+.paidOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem;
+  align-items: start;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #d6e3dc;
+}
+
+.billingPeriod { min-width: 0; margin: 0; padding: 0; border: 0; }
+.periodSwitch {
+  display: flex; gap: .2rem; padding: .25rem;
+  background: #edf4f0; border: 1px solid #ceded5; border-radius: .82rem;
+}
+.periodSwitch label { position: relative; display: flex; flex: 1; cursor: pointer; }
+.periodSwitch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.periodSwitch span {
+  display: grid; place-items: center; width: 100%; min-height: 2.42rem;
+  padding: .3rem .5rem; border-radius: .58rem; color: #354f44; font-weight: 600;
+}
+.periodSwitch input:checked + span { background: #fff; color: #12583f; box-shadow: 0 1px 5px #1b463122; }
+.periodSwitch input:focus-visible + span { outline: 2px solid #246345; }
+.singlePlan { display: flex; align-items: center; min-height: 3.08rem; color: #194633; font-size: 1rem; font-weight: 650; }
+.longSelectMenu { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.7rem), 1fr)); }

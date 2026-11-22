@@ -329,7 +329,7 @@ function CustomSelect<T extends string>({
       {isOpen ? (
         <DropdownOverlay
           id={listboxId}
-          className={styles.customSelectMenu}
+          className={options.length>6 ? styles.longSelectMenu+' '+styles.customSelectMenu : styles.customSelectMenu}
           role="listbox"
           aria-labelledby={buttonId}
         >
@@ -588,7 +588,16 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   const [signupPlan,setSignupPlan] = useState<"free" | "paid" | null>(null);
   const [planKey,setPlanKey]=useState('');
   const offers=billingPlans.filter(plan=>plan.accountType===signupForm.accountType);
-  const planOffer=offers.find(plan=>(plan.key??plan.accountType)===planKey)??offers[0];
+  const planOffer=offers.find(plan=>(plan.key??plan.accountType)===planKey)??offers.find(plan=>plan.interval==='monthly')??offers[0];
+  const periodOffers=offers.filter(plan=>plan.interval===planOffer?.interval);
+  const periods=(['monthly','annual','once'] as const).filter(period=>offers.some(plan=>plan.interval===period));
+
+  function choosePeriod(period: BillingPlan['interval']) {
+    const candidates=offers.filter(plan=>plan.interval===period);
+    const tier=(plan: BillingPlan)=>plan.key?.replace(/-(monthly|annual)$/,'')??plan.accountType;
+    const next=candidates.find(plan=>planOffer && tier(plan)===tier(planOffer))??candidates[0];
+    if(next)setPlanKey(next.key??next.accountType);
+  }
   const accountAccess = signupPlan === 'paid' ? 'desktop' : signupForm.accountType === 'owner' ? 'trial' : 'free';
   const [loginForm, setLoginForm] = useState<LoginFormState>(initialLoginState);
   const [forgotForm, setForgotForm] =
@@ -1161,7 +1170,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           <span className={styles.signupStepNumber}>1</span>
                           <div className={styles.signupStepCopy}>
                             <strong id="signup-step-workspace">Choose your workspace</strong>
-                            <small>Choose how you’ll use Aim4price.</small>
+
                           </div>
                         </div>
 
@@ -1214,7 +1223,33 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                                 <span>{choice==='free' ? signupForm.accountType==='owner' ? terms.trial_days+'-day free trial' : 'Free · '+terms.monthly_credits+' credits per month' : planOffer ? 'Choose a paid plan' : billingPricingError || 'Paid plan unavailable'}</span>
                               </label>)}
                             </div>
-                            {signupPlan==='paid' && planOffer && <CustomSelect name="subscriptionPlan" ariaLabel="Subscription plan" value={planOffer.key??planOffer.accountType} options={offers.map(p=>({value:p.key??p.accountType,label:p.description+' · '+money(p.amountCents)+' '+p.interval}))} onChange={setPlanKey}/>}
+                            {signupPlan==='paid' && planOffer && (
+                              <div className={styles.paidOptions}>
+                                <fieldset className={styles.billingPeriod}>
+                                  <legend className={styles.label}>Billing frequency</legend>
+                                  <div className={styles.periodSwitch}>
+                                    {periods.map(period=>(
+                                      <label key={period}>
+                                        <input type="radio" name="billingFrequency" value={period}
+                                          checked={planOffer.interval===period} onChange={()=>choosePeriod(period)} />
+                                        <span>{period==='monthly'?'Monthly':period==='annual'?'Annual':'One-time'}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </fieldset>
+                                <div className={styles.field}>
+                                  <span className={styles.label}>Subscription plan</span>
+                                  {periodOffers.length===1 ? (
+                                    <strong className={styles.singlePlan}>{planOffer.description} · {money(planOffer.amountCents)}</strong>
+                                  ) : (
+                                    <CustomSelect name="subscriptionPlan" ariaLabel="Subscription plan"
+                                      value={planOffer.key??planOffer.accountType}
+                                      options={periodOffers.map(plan=>({value:plan.key??plan.accountType,label:plan.description+' · '+money(plan.amountCents)}))}
+                                      onChange={setPlanKey} />
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </fieldset>
                           {signupForm.accountType === "business" ? (
                             <label className={`${styles.checkboxRow} ${styles.signupFieldWide} ${styles.directoryChoice}`}>
