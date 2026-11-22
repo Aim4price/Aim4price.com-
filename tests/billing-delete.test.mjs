@@ -20,6 +20,7 @@ test('hard deletion removes invoice data atomically, retires identifiers, and sc
  try{
   await pg.exec(`create table "user"(id text primary key,name text,email text);insert into "user" values('owner','Customer','customer@example.test'),('other','Other','other@example.test');create table account_profiles(user_id text primary key,account_status text,suspension_reason text,billing_suspension_invoice_id uuid,updated_at timestamptz);create table user_notifications(user_id text,event_key text);insert into account_profiles(user_id,account_status) values('owner','suspended');`);
   await billing.ensureBillingSchema();
+  await billing.setGlobalBillingHold({held:false,version:1},'admin');
   async function seed(status='issued',paid=0,user='owner',key=null){const id=randomUUID(),number=status==='draft'?null:'A4P-'+id;await pg.query(`insert into aim4price_billing_invoices(id,user_id,number,status,customer,issuer,lines,total_cents,paid_cents,due_date,issued_at,version,generation_key,report_html,pdf) values($1,$2,$3,$4,$5,'{}','[]',39900,$6,'2026-09-27',now(),2,$7,'invoice html',$8)`,[id,user,number,status,JSON.stringify(customer),paid,key,Buffer.from('pdf')]);return {id,version:2,confirmation:number||'DELETE',confirmed:true,reason:'Mistaken test invoice'};}
   const paid=await seed('issued',39900,'owner','signup:owner');
   await seed('draft');await seed('void');const other=await seed('issued',0,'other');
@@ -56,4 +57,3 @@ test('hard deletion removes invoice data atomically, retires identifiers, and sc
   for(const state of ['draft','void','issued']){const item=await seed(state);await deletion.hardDeleteBillingInvoice(item,'admin');await assert.rejects(billing.getBillingInvoice(item.id,null,true),/not found/);}
  }finally{await pg.close();}
 });
-
