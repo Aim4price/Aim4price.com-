@@ -30,6 +30,27 @@
 .help { position:absolute; z-index:2; right:.7rem; top:.7rem; }
 .card .help button { width:2.75rem; height:2.75rem; background:transparent; color:#fff; border-color:transparent; box-shadow:none; }
 .card .help button:hover, .card .help button:focus-visible { background:#365e4d; border-color:#96b2a5; }
+.card[data-business] {
+  display:flex;
+  align-items:center;
+  border-radius:.85rem;
+  background:#143f30;
+}
+.card[data-business]:hover, .card[data-business]:focus-within { background:#103628; }
+.card[data-business] .cardLink {
+  flex:1;
+  min-width:0;
+  flex-direction:row;
+  align-items:center;
+  justify-content:flex-start;
+  min-height:6.15rem;
+  gap:.8rem;
+  padding:.9rem .15rem .9rem 1.15rem;
+}
+.card[data-business] .cardLink strong { font-size:1.17rem; line-height:1.2; }
+.glyph { width:2.15rem; height:2.15rem; flex:none; }
+.card[data-business] .plan { position:static; margin-left:auto; flex:none; }
+.card[data-business] .help { position:static; margin-right:.4rem; flex:none; }
 .shell :is(a,button,input):focus-visible { outline:3px solid #e1ae50; outline-offset:2px; }
 .fields { min-width:0; border:0; margin:1rem 0; padding:0; }
 .fields legend { margin-bottom:.65rem; padding:0; font-weight:700; }

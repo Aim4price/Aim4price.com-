@@ -53,7 +53,7 @@ const cards = {
 export type CardKey = keyof typeof cards;
 const inventories: Record<WorkspaceRole, CardKey[]> = {
   owner: ['registers','value','map','maintenance','fuel','storage','costs','budgets','documents','marketplace','discovery','account'],
-  business: ['shared','register','registers','parts','tracking','businessCosts','value','marketplace','discovery','showroom','template','advert','account'],
+  business: ['shared','value','marketplace','discovery','register','registers','parts','tracking','businessCosts','showroom','template','advert'],
   middleman: ['marketplace','showroom','value','template','advert','account'],
 };
 const freeCards = new Set<CardKey>(['shared','value','marketplace','discovery','account']);
