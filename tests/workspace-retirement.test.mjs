@@ -110,6 +110,12 @@ test('retired roles are rejected but former assistance emails can sign in and re
     const res = await route.POST(new Request('https://example.com/api/auth/sign-up/email', {method:'POST',body:JSON.stringify({email:'normal@example.com',accountType:role})}));
     assert.equal(res.status,400);
   }
+  for (const accountType of ['owner', 'business']) {
+    const response = await route.POST(new Request('https://example.com/api/auth/sign-up/email', {
+      method: 'POST', body: JSON.stringify({ accountType, accountSubtype: 'equipment-middleman', businessName: 'Example', acceptedTerms: true }),
+    }));
+    assert.equal(response.status, 400);
+  }
   const res = await route.POST(new Request('https://example.com/api/auth/sign-in/email', {method:'POST',body:JSON.stringify({email:'Accounting@aim4price.com'})}));
   assert.equal(res.status,200); assert.equal(authCalls,1); assert.equal(billingCalls,0);
   for (const email of ['insurance', 'finance', 'Accounting', 'licensing', 'dealers']) {
