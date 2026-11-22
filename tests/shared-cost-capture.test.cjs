@@ -13,7 +13,7 @@ test('shared capture is scoped, retry safe and atomic with file, allowance and u
  const db={getDb:()=>({query,connect:async()=>({query,release(){}})})};
  const allowance=load('lib/capture-allowance.ts',{'./db':db});
  const capture=load('lib/capture-requests.ts',{'./db':db,'./capture-allowance':allowance,'./asset-usage':{}});
- const foundation=load('lib/sharing-foundation.ts',{'./db':db});
+ const foundation=load('lib/sharing-foundation.ts',{'./business-credits':{spendBusinessCredit:async()=>{}},'./db':db});
  const state={active:true,fail:false,uploads:0,cleanups:0,user:'recipient',failUsage:false};
  class AccessError extends Error{constructor(message,status){super(message);this.status=status;}}
  const service=load('lib/shared-cost-capture.ts',{
