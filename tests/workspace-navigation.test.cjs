@@ -15,11 +15,11 @@ const nav = load('lib/workspace-navigation.ts', {
   './middleman-account':load('lib/middleman-account.ts'),
 });
 
-test('each personal workspace has four ordered header links and Account last in its grid', () => {
+test('each personal workspace has four ordered header links and role-specific cards', () => {
   for (const [role, third] of [['owner','Asset Register'],['business','Shared Assets'],['middleman','Marketplace']]) {
     assert.deepEqual(nav.workspaceHeader(role,'/business').map(item=>item.label), ['Home','Workspace',third,'Value Asset']);
     const cards = nav.workspaceCards(role,false,'/leads');
-    assert.equal(cards.at(-1).key,'account');
+    if (role !== 'business') assert.equal(cards.at(-1).key,'account');
     assert.equal(cards.find(card=>card.key==='marketplace').href,'/marketplace/browse');
     assert.equal(new Set(cards.map(card=>card.href)).size,cards.length);
   }
@@ -34,6 +34,7 @@ test('each personal workspace has four ordered header links and Account last in 
 test('both Business tiers keep the same inventory with their own inbox and paid locks', () => {
   const free = nav.workspaceCards('business',true,nav.receivedAssetsHref('business','free'));
   const paid = nav.workspaceCards('business',false,nav.receivedAssetsHref('dealer','desktop'));
+  assert.deepEqual(paid.map(card=>card.key), ['shared','value','marketplace','discovery','register','registers','parts','tracking','businessCosts','showroom','template','advert']);
   assert.deepEqual(free.map(card=>card.key),paid.map(card=>card.key));
   assert.equal(free.find(card=>card.key==='shared').href,'/business');
   assert.equal(paid.find(card=>card.key==='shared').href,'/leads');
