@@ -1642,7 +1642,9 @@ export default function AccountClient({
           {isFreeBusiness && subscription && (
             <section id="business-credits" className={`${styles.card} ${styles.creditBarCard}`} aria-labelledby="credit-bar-title">
               <div className={styles.creditBarHeading}>
-                <h2 id="credit-bar-title">Credits</h2>
+                <h2 id="credit-bar-title">
+                  <BusinessSubscriptionButton plan={subscription} inviteLink={inviteLink} credits className={styles.creditDetailsButton} />
+                </h2>
                 <strong>{subscription.remaining !== null && subscription.limit !== null
                   ? `${subscription.remaining} of ${subscription.limit} available` : "Balance unavailable"}</strong>
               </div>
@@ -1822,11 +1824,7 @@ export default function AccountClient({
                   </button>}
 
                   {initialProfile?.trialEndsAt && <a href="/account/owner-trial" className={styles.quickActionButton}>Owner trial · ends {new Date(initialProfile.trialEndsAt).toLocaleDateString('en-ZA')}</a>}
-                  {inviteLink && <button type="button" className={styles.quickActionButton} onClick={async()=>{const url=new URL(inviteLink,window.location.origin).href;try{await navigator.clipboard.writeText(url);window.alert('Owner invite link copied.');}catch{window.prompt('Copy your Owner invite link',url);}}}>
-                    <QuickActionIcon name="connections" />
-                    <strong>Copy owner invite link</strong>
-                  </button>}
-                  {subscription && <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />}
+                  {subscription && <BusinessSubscriptionButton plan={subscription} inviteLink={isFreeBusiness ? undefined : inviteLink} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />}
 
                   <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")} data-tooltip="View and download your Aim4price invoices." data-tooltip-style="description">
                     <QuickActionIcon name="invoices" />
