@@ -49,3 +49,13 @@ test('each retainer is charged monthly at the agreed fee', () => {
   assert.deepEqual(adminRetainers.map(p => [p.hours, p.cents]), [[2, 39900], [5, 89900], [10, 159900]]);
   assert.equal(hostingEstimate('owner', 'monthly', 0, [], 1).monthlyTotal, 99800);
 });
+
+
+test('pricing links resolve to the three current choices, including legacy URLs', async () => {
+  const { pricingAudience } = await import('../lib/subscription-options.ts');
+  for (const [input, expected] of [
+    ['owner', 'owner'], ['business', 'business'], ['paid-business', 'business'],
+    ['free-business', 'free-business'], ['dealer', 'business'], ['middleman', 'free-business'],
+    [undefined, null], ['unknown', null],
+  ]) assert.equal(pricingAudience(input), expected);
+});

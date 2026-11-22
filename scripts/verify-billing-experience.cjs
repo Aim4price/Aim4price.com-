@@ -87,7 +87,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     const switchPage='require("app/auth/page").default({}).then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));';
     if(mode.startsWith('signup-'))await page.evaluate(type=>history.replaceState(null,'','/auth?accountType='+type+'#signup'),mode.slice(7));
     await page.evaluate(anonymous=>{globalThis.fixtureAnonymous=anonymous;},mode==='business-join'||mode==='business-register');
-    await page.addScriptTag({content:runtime+(mode==='tutorials'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/tutorials/tutorial-library").default));':mode==='pricing'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/pricing/pricing-content").default));':mode==='business-join'||mode==='business-register'?'require("app/business/join/page").default('+JSON.stringify({searchParams:{mode:mode==='business-register'?'account':undefined,businessType:width===390?'insurance-services':undefined}})+').then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));':mode.startsWith('signup-')?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/auth/auth-client").default));':mode==='guest'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("components/GuestEnquiryAccess").default,{returnTo:"/asset-share/'+ 't'*43 +'"}));':mode==='switch'?switchPage:mode==='account'?account:mode==='billing'?billing:suspended)});
+    await page.addScriptTag({content:runtime+(mode==='tutorials'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/tutorials/tutorial-library").default));':mode==='pricing'?'globalThis.fixturePricingRoot=ReactDOM.createRoot(document.getElementById("app"));fixturePricingRoot.render(React.createElement(require("app/pricing/pricing-content").default,{freeBusinessCredits:500}));':mode==='business-join'||mode==='business-register'?'require("app/business/join/page").default('+JSON.stringify({searchParams:{mode:mode==='business-register'?'account':undefined,businessType:width===390?'insurance-services':undefined}})+').then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));':mode.startsWith('signup-')?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/auth/auth-client").default));':mode==='guest'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("components/GuestEnquiryAccess").default,{returnTo:"/asset-share/'+ 't'*43 +'"}));':mode==='switch'?switchPage:mode==='account'?account:mode==='billing'?billing:suspended)});
     if(mode==='account'||mode==='suspended')await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));else await page.waitForSelector('h1');
     if(mode==='suspended-unlinked'||mode==='suspended-void'){assert.equal(await page.$('button[aria-label="Open invoice"]'),null);assert.equal(await page.$('iframe'),null);assert.match(await page.$eval('h1',e=>e.textContent),/temporarily paused/);}
     if(mode==='pending'){
@@ -205,7 +205,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      });
      assert.equal(annualRate.lines,1,'Hosted client rate stays on one line');
      assert.ok(annualRate.fits,'Unbroken annual price still fits the card');
-     const prices=await page.$$eval('button[aria-haspopup="dialog"]',els=>els.slice(0,2).map(e=>{const amount=[...e.querySelectorAll('strong')].find(n=>/^(R99|R199|Free)$/.test(n.textContent));return {top:amount.getBoundingClientRect().top,size:parseFloat(getComputedStyle(amount).fontSize)};}));
+     const prices=await page.$$eval('button[aria-haspopup="dialog"]',els=>els.slice(0,3).map(e=>{const amount=[...e.querySelectorAll('strong')].find(n=>/^(R99|R199|R0)$/.test(n.textContent));return {top:amount.getBoundingClientRect().top,size:parseFloat(getComputedStyle(amount).fontSize)};}));
      assert(prices.every(p=>p.size>=40),'Subscription prices are prominent');
      if(width===1440)assert(Math.max(...prices.map(p=>p.top))-Math.min(...prices.map(p=>p.top))<2,'Subscription prices align across cards');
 
@@ -219,8 +219,10 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.focus('summary');await page.keyboard.press('Enter');
      assert.equal(await page.$eval('details',e=>e.open),false,'Coverage closes from the keyboard');
 
-     assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent.includes('R199')),true);
-     assert.deepEqual(await page.$$eval('section[aria-label="Choose your account"] button',els=>els.map(e=>e.querySelector('strong').textContent)),['Owner','Business']);
+     assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Paid Business')).textContent.includes('R199')),true);
+     assert.deepEqual(await page.$$eval('section[aria-label="Choose your account"] button',els=>els.map(e=>e.querySelector('strong').textContent)),['Owner','Free Business','Paid Business']);
+     assert.equal(await page.evaluate(()=>document.body.textContent.includes('Middleman access')),false);
+     await page.screenshot({path:path.join(evidence,`subscription-three-options-${width}.png`),fullPage:true});
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
@@ -337,11 +339,11 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.keyboard.press('Escape');
      await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
      assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'auto','Document scrolling returns after closing pricing');
-     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).click());
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Paid Business')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/customers.*asset registers/);
      assert.match(await page.$eval('[aria-label="Customer registers"]',e=>e.textContent),/R24.75 per client\/month/);
-     assert.match(await page.$eval('[data-dealer-journey]',e=>e.textContent),/Stock & parts stocklists/);
+     assert.match(await page.$eval('[data-dealer-journey]',e=>e.textContent),/Registers, Parts & Stock/);
      await page.screenshot({path:path.join(evidence,`dealer-client-options-${width}.png`)});
      await clickText('View client hosting rates');
      assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/R24.75\/month.*R249.75\/year/);
@@ -386,29 +388,34 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.screenshot({path:path.join(evidence,`dealer-compact-summary-${width}.png`)});
      await page.setViewport({width,height:1000});
      await page.keyboard.press('Escape');
-     assert.ok(await page.$('a[href="/business/join"]'));
-     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent==='Middleman access').click());
-     await page.waitForSelector('[data-middleman-access]');
-     assert.match(await page.$eval('[data-middleman-access]',e=>e.textContent),/Free basic access.*Hosting referrals.*40%.*Asset recording.*R270\/hour.*Asset sales.*Agreed per sale/);
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Free Business')).click());
+     await page.waitForSelector('[data-free-business]');
+     assert.match(await page.$eval('[data-free-business]',e=>e.textContent),/500 monthly action credits.*Viewing uses no credits/);
+     assert.ok(await page.$('[data-free-business] a[href="/business/join"]'),'Free Business uses the free signup route');
+     assert.match(await page.$eval('[data-free-business]',e=>e.textContent),/registers, Parts & Stock or staff access.*Paid Business/);
      for(const height of [1000,600]){
       await page.setViewport({width,height});
-      const fit=await page.$eval('[data-middleman-access]',e=>{
-       const body=e.parentElement,dialog=e.closest('[role="dialog"]'),action=e.querySelector('a');
-       const rect=dialog.getBoundingClientRect(),button=action.getBoundingClientRect();
-       return {scrolls:body.scrollHeight>body.clientHeight+1,horizontal:body.scrollWidth>body.clientWidth+1,top:rect.top,bottom:rect.bottom,actionBottom:button.bottom};
+      const fit=await page.$eval('[data-free-business]',e=>{
+       const body=e.parentElement,rect=e.closest('[role="dialog"]').getBoundingClientRect();
+       return {scrolls:body.scrollHeight>body.clientHeight+1,horizontal:body.scrollWidth>body.clientWidth+1,top:rect.top,bottom:rect.bottom};
       });
-      await page.screenshot({path:path.join(evidence,`middleman-access-${width}-${height}.png`)});
-      assert.equal(fit.scrolls,false,'Middleman overview fits without a scrollbar');
-      assert.equal(fit.horizontal,false,'Middleman overview has no horizontal overflow');
-      assert.ok(fit.top>=0&&fit.bottom<=height&&fit.actionBottom<=height,'Middleman contact action is visible');
+      if(width===1440)assert.equal(fit.scrolls,false,'Free Business overview fits without a desktop scrollbar');
+      assert.equal(fit.horizontal,false,'Free Business has no horizontal overflow');
+      assert.ok(fit.top>=0&&fit.bottom<=height,'Free Business stays inside the viewport');
+      await page.screenshot({path:path.join(evidence,`free-business-${width}-${height}.png`)});
      }
-     await clickText('Commission terms');
+     await page.setViewport({width,height:1000});
+     await clickText('Compare Paid Business');
+     await page.waitForSelector('[aria-label="Customer registers"]');
+     assert.equal(await page.$('[data-free-business]'),null,'Comparing switches to the Paid Business flow');
+     await page.keyboard.press('Escape');
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent==='Partner earnings').click());
      await page.waitForFunction(()=>document.querySelector('[role="dialog"] h2')?.textContent==='Success fees & services');
      assert.equal(await page.$eval('[role="dialog"] details',e=>e.open),true,'Commission terms open directly');
      assert.equal(await page.$eval('[role="dialog"] details summary',e=>e.textContent),'Partner earnings');
      assert.match(await page.$eval('[role="dialog"] details',e=>e.textContent),/R180\/hour.*Travel payments.*No referral commission.*30 days.*R500/);
      await page.keyboard.press('Escape');
-     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent==='Success fees & services').click());
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent==='Services & success fees').click());
      await page.waitForSelector('[role="dialog"]');
      assert.equal(await page.$$eval('[role="dialog"] details[open]',els=>els.length),0,'General service fees still start collapsed');
      await page.setViewport({width,height:1000});
@@ -438,6 +445,12 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.waitForFunction(()=>[...document.querySelectorAll('[data-service-fees] > details')].every(e=>!e.open&&getComputedStyle(e).filter==='none'));
      await page.keyboard.press('Escape');
      await page.setViewport({width,height:1000});
+     await page.evaluate(()=>fixturePricingRoot.render(React.createElement(require('app/pricing/pricing-content').default,{key:'signed-pricing',signedIn:true,initialAudience:'free-business',freeBusinessCredits:500})));
+     await page.waitForSelector('[data-free-business]');
+     assert.ok(await page.$('[data-free-business] a[href="/account"]'),'Existing users manage their account rather than create a duplicate');
+     assert.equal(await page.$('[data-free-business] a[href="/business/join"]'),null);
+     await page.keyboard.press('Escape');
+     assert.ok(await page.$('a[href="/account"]'),'Signed-in pricing links to subscription management');
     }
     if(['guest','business-join','business-register'].includes(mode)){
      assert.equal(await page.$$eval('main',els=>els.length),1,'Onboarding has one page landmark');

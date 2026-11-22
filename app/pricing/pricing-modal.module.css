@@ -70,3 +70,8 @@
   :global(html:not(:has([data-website-canvas]))) .body:has([data-middleman-access]) { padding: .75rem 1rem 1rem; }
   :global(html:not(:has([data-website-canvas]))) .body:has([data-service-fees]) { padding: 1rem 1rem 1.25rem; }
 }
+
+.dialog:has([data-free-business]) { width: min(56rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem)); }
+.dialog:has([data-free-business]) .header { align-items: center; padding-block: 1.1rem; }
+.dialog:has([data-free-business]) .header h2 { font-size: 1.65rem; line-height: 1.25; }
+.body:has([data-free-business]) { padding-bottom: 1.25rem; }
