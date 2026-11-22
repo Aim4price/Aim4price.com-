@@ -4,7 +4,6 @@ import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
 import { sharingPlan } from '../../lib/sharing-foundation';
 import { receivedAssetsHref, workspaceCards, workspaceRole } from '../../lib/workspace-navigation';
-import { getBusinessCredits } from '../../components/BusinessCredits';
 import { getManagedTeamActor } from '../../lib/team-login';
 import WorkspaceGrid from './workspace-grid';
 import styles from './workspace.module.css';
@@ -23,19 +22,11 @@ export default async function WorkspacePage() {
   if (!role) redirect('/account');
   const cards = workspaceCards(role, plan === 'free', receivedAssetsHref(profile.accountType, plan));
   const freeBusiness = role === 'business' && plan === 'free';
-  const credits = freeBusiness ? await getBusinessCredits(session.user.id) : null;
-  const subscription = freeBusiness ? {
-    paidSince: null,
-    owner: credits?.workspace.role === 'owner',
-    pending: Boolean(credits?.workspace.upgrade_requested_at),
-    remaining: credits ? Math.max(0, credits.balance.limit - credits.balance.used - credits.balance.held) : null,
-    limit: credits?.balance.limit ?? null,
-  } : null;
   return <>
     <AppHeader active="workspace"/>
     <main data-workspace-page>
       <div className={styles.shell}>
-        <WorkspaceGrid key={session.user.id + role} cards={cards} role={role} userId={session.user.id} subscription={subscription}/>
+        <WorkspaceGrid key={session.user.id + role} cards={cards} role={role} userId={session.user.id} freeBusiness={freeBusiness}/>
       </div>
     </main>
   </>;

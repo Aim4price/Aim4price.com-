@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import ShareDisclosureDialog from '../../components/asset-register/ShareDisclosureDialog';
 import PageHelp from '../../components/PageHelp';
-import { BusinessSubscriptionButton, type BusinessSubscription } from '../../components/BusinessCreditControls';
 import type { workspaceCards, WorkspaceRole } from '../../lib/workspace-navigation';
 import { cardTopic } from './card-help';
 import styles from './workspace.module.css';
@@ -14,8 +13,8 @@ type Cards = ReturnType<typeof workspaceCards>;
 function WorkspaceTile({card, role, free}: {card: Cards[number]; role: WorkspaceRole; free: boolean}) {
   const {key, label, href, locked} = card;
   return <article className={styles.card}>
-    <Link className={styles.cardLink} href={locked ? '#workspace-upgrade' : href} prefetch={false}
-      aria-label={locked ? label + ' — see Paid Business upgrade' : label}>
+    <Link className={styles.cardLink} href={locked ? '/account' : href} prefetch={false}
+      aria-label={locked ? label + ' — view account options' : label}>
       <strong>{label}</strong>
       {locked && <span title="Included with Paid Business" aria-hidden="true" className={styles.plan}><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="4" y="8" width="12" height="9" rx="2"/><path d="M7 8V6a3 3 0 0 1 6 0v2"/></svg></span>}
     </Link>
@@ -23,8 +22,8 @@ function WorkspaceTile({card, role, free}: {card: Cards[number]; role: Workspace
   </article>;
 }
 
-export default function WorkspaceGrid({cards, role, userId, subscription}: {
-  cards: Cards; role: WorkspaceRole; userId: string; subscription: BusinessSubscription | null;
+export default function WorkspaceGrid({cards, role, userId, freeBusiness}: {
+  cards: Cards; role: WorkspaceRole; userId: string; freeBusiness: boolean;
 }) {
   const storageKey = 'aim4price.workspace.hidden.' + userId + '.' + role;
   const [hidden, setHidden] = useState<string[]>([]);
@@ -43,15 +42,17 @@ export default function WorkspaceGrid({cards, role, userId, subscription}: {
   const available = visible.filter(card => !card.locked);
   const paid = visible.filter(card => card.locked);
   return <>
-    <header className={styles.heading}><h1>Workspace</h1>
-      <div className={styles.actions}>
-        {subscription && <div id="workspace-upgrade" className={styles.subscription} tabIndex={-1}>
-          <BusinessSubscriptionButton plan={subscription} className={styles.upgrade} icon={subscription.remaining !== null && <span>{subscription.remaining.toLocaleString('en-ZA')} credits</span>}/>
-        </div>}
-        <button type="button" className={styles.setting} aria-label="Customise workspace" aria-haspopup="dialog" onClick={() => setEditing(true)}>Customise</button>
-      </div>
+    <header className={styles.heading}>
+      {role === 'middleman' ? <h1>Workspace</h1> : (
+        <div className={styles.intro}>
+          <h1>Choose a workspace</h1>
+          <p>{role === 'owner'
+            ? 'Manage your assets, track costs and plan maintenance.'
+            : 'View shared assets, manage your registers and explore the marketplace.'}</p>
+        </div>
+      )}
+      <button type="button" className={styles.setting} aria-label="Customise workspace" aria-haspopup="dialog" onClick={() => setEditing(true)}>Customise</button>
     </header>
-    {subscription && <p>One credit per completed action. Viewing, messages and sharing are free. Staff access is included with Paid Business.</p>}
     {editing && <ShareDisclosureDialog title="Customise workspace" titleId="workspace-card-options" closeLabel="Close workspace settings" onClose={() => setEditing(false)}>
       <fieldset className={styles.fields}><legend>Show cards</legend>
       <div className={styles.options}>{cards.map(card => <label key={card.key}>
@@ -64,7 +65,7 @@ export default function WorkspaceGrid({cards, role, userId, subscription}: {
       </footer>
     </ShareDisclosureDialog>}
     {visible.length > 0 && <nav className={styles.grid} aria-label="Workspace pages">
-      {[...available, ...paid].map(card => <WorkspaceTile key={card.key} card={card} role={role} free={Boolean(subscription)}/>)}
+      {[...available, ...paid].map(card => <WorkspaceTile key={card.key} card={card} role={role} free={freeBusiness}/>)}
     </nav>}
     {visible.length === 0 && <p>Choose cards in Customise workspace to show them here.</p>}
   </>;
