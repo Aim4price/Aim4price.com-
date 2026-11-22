@@ -3,6 +3,7 @@ import { getAnyServerSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { ensureBillingSchema,listBillingPlans,subscribeOwnerTrial } from '../../../lib/billing';
 import { money } from '../../../lib/billing-shared';
+import { readTrialRegister } from '../../../lib/trial-register';
 import { getDb } from '../../../lib/db';
 import styles from '../../admin/billing/page.module.css';
 
@@ -19,7 +20,7 @@ export default async function OwnerTrialPage({searchParams}:{searchParams?:{revi
   const plans=(await listBillingPlans(true)).filter(p=>p.accountType==='owner');
   const ordered=(await getDb().query('select 1 from aim4price_billing_signup_jobs where user_id=$1',[user.id])).rowCount;
   const expired=new Date(end).getTime()<=Date.now();
-  const assets=expired?(await getDb().query(`select coalesce(nullif(to_jsonb(a)->>'title',''),nullif(to_jsonb(a)->>'asset_name',''),nullif(to_jsonb(a)->>'model_name',''),a.id::text) as title from asset_register_items a where user_id=$1 order by title`,[user.id])).rows:[];
+  const assets=expired?await readTrialRegister(user.id):[];
   async function subscribe(form:FormData){
     'use server';
     const {user}=await trialAccount();
@@ -38,6 +39,6 @@ export default async function OwnerTrialPage({searchParams}:{searchParams?:{revi
       <label><input type="checkbox" required name="consent"/> I accept this subscription price and invoice.</label>
       <button className={styles.primary}>Subscribe</button>
     </form>:<a href="/contact-us">Contact Aim4price about subscribing</a>}
-    {expired?<><h2>Your saved assets</h2><ul>{assets.map((a,i)=><li key={i}>{a.title}</li>)}</ul><a href="/account/owner-trial/export">Download register records</a></>:<a href="/asset-register">Open asset register</a>}
+    {expired?<><h2>Your saved assets</h2><div className={styles.tableWrap}><table className={styles.table}><thead><tr><th>Register</th><th>Asset</th><th>Serial</th><th>Year</th><th>Value</th></tr></thead><tbody>{assets.map((a,i)=><tr key={i}><td>{a.register}</td><td>{a.asset}</td><td>{a.serial}</td><td>{a.year}</td><td>{money(Math.round(a.valueExVat*100))}</td></tr>)}</tbody></table></div><a href="/account/owner-trial/export">Download register records</a></>:<a href="/asset-register">Open asset register</a>}
   </section></main>;
 }

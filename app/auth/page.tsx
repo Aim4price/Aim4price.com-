@@ -34,6 +34,7 @@ export default async function AuthPage({ searchParams }: { searchParams?: { swit
       redirect(sharedEnquiryReturnTo(searchParams?.returnTo) || (profile.accountType === 'business' ? '/business' : '/shared-enquiries'));
     }
 
+    if (!access.isActive && profile.trialEndsAt && profile.accountStatus !== 'suspended' && searchParams?.switchAccount !== '1') redirect('/account/owner-trial');
     if (!access.isActive || searchParams?.switchAccount === '1') {
       return <main className={`${styles.page} ${styles.switchPage}`}>
         <AppHeader active="none" />
