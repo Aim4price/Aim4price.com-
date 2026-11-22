@@ -318,8 +318,7 @@
   inset: 0;
   background: linear-gradient(180deg, rgba(249,252,249,.94), rgba(243,248,244,.79) 52%, rgba(239,246,241,.92));
 }
-/* Workspace uses the light photographic backdrop behind its white card panel. */
-:global(html[data-background='dark']:not(:has([data-workspace-page]))) .background .decoration::after {
+:global(html[data-background='dark']) .background .decoration::after {
   background: linear-gradient(180deg, rgba(24,44,36,.94), rgba(24,44,36,.82) 52%, rgba(19,37,30,.94));
 }
 @media print {
