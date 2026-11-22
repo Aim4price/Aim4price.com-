@@ -20,6 +20,12 @@ export type SignupAccountSubtype =
   | "licence-renewal-expert"
   | "fleet-licensing-service";
 
+export type PublicSignupAccountType = "owner" | "business";
+export const PUBLIC_SIGNUP_OPTIONS: Array<SelectOption<PublicSignupAccountType>> = [
+  { value: "owner", label: "Owner" },
+  { value: "business", label: "Business" },
+];
+
 export const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
   { value: "owner", label: "Owner" },
   { value: "dealer", label: "Business" },
