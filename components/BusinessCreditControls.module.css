@@ -10,18 +10,12 @@
 }
 .card:hover { border-color: var(--app-accent, #228762); }
 .card:focus-visible { outline: 3px solid var(--app-accent, #228762); outline-offset: 3px; }
-.cardHeading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-size: 1.12rem; }
-.arrow {
-  display: grid; place-items: center; width: 1.8rem; height: 1.8rem;
-  border-radius: 50%; background: var(--app-success-soft, #e8f3ed);
-  color: var(--app-text, #173f31); font-size: 1.45rem; line-height: 1;
-}
+
 .balance { display: grid; gap: .65rem; font-size: 1rem; font-weight: 550; line-height: 1.25; }
 .balance strong { font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
 .track { display: block; height: .45rem; overflow: hidden; border-radius: 1rem; background: var(--app-line, #dce5e1); }
 .track > span { display: block; height: 100%; border-radius: inherit; background: var(--app-accent, #228762); }
 
-.arrow::before { content: ""; width: .4rem; height: .4rem; border: solid currentColor; border-width: 2px 2px 0 0; transform: translateX(-1px) rotate(45deg); }
 .card.card { gap: .75rem; border: 1px solid var(--app-line,#cfdfd6); border-radius: 1.45rem; }
 .card.card:hover { border-color: var(--app-accent,#228762); }
 .cardHeading { font-size: 1.25rem; }
@@ -40,7 +34,7 @@
 .options > section { display: grid; grid-template-columns: 1fr auto; gap: .3rem 1.25rem; padding: 1rem 0; border-top: 1px solid var(--app-line,#d3e1d9); }
 .options > section:last-child { padding-bottom: 0; }
 .options h3 { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; font-size: 1.08rem; }
-.reward { background: var(--app-success-soft,#e5f2eb); color: var(--app-text,#204b37); border-radius: 2rem; padding: .16rem .55rem; font-size: .86rem; font-weight: 700; }
+
 .options p { grid-column: 1; }
 .options button, .options a { grid-column: 2; grid-row: 1 / 3; align-self: center; min-height: 2.75rem; font: inherit; font-weight: 700; }
 @container credit-dialog (max-width: 32rem) {
@@ -48,16 +42,16 @@
   .options button, .options a { grid-area: auto; justify-self: start; margin-top: .4rem; }
 }
 
-.card.card { grid-template-columns: auto 1fr auto; align-items: center; gap: .9rem .7rem; }
-.card .cardHeading, .card .balance { display: contents; }
-.cardHeading > strong { grid-area: 1 / 1; }
+.card.card { grid-template-columns: auto 1fr; align-items: center; gap: .9rem .7rem; }
+.card .balance { display: contents; }
+.cardHeading { grid-area: 1 / 1; }
 .card .balance > span:first-child { grid-area: 1 / 2; justify-self: end; }
 .card .balance strong { font-size: 1.42rem; }
-.card .arrow { grid-area: 1 / 3; }
+
 .card .track { grid-area: 2 / 1 / 3 / -1; }
 .card.card { container: credit-card / inline-size; }
 @container credit-card (max-width: 18rem) {
   .card .balance > span:first-child { grid-area: 2 / 1 / 3 / -1; justify-self: start; }
-  .card .arrow { grid-area: 1 / 2; }
+
   .card .track { grid-row: 3; }
 }
