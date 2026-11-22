@@ -6,16 +6,16 @@ import styles from './pricing.module.css';
 import PackageJourney from './owner-journey';
 import PricingModal from './pricing-modal';
 import ServiceFees from './service-fees';
-import PricingIcon, { type PricingIconName } from './pricing-icon';
+import PricingIcon from './pricing-icon';
 import { businessHosting, ownerHosting, rand } from '../../lib/hosting-pricing';
 import type { PricingAudience } from '../../lib/subscription-options';
 
-function AccountChoice({ title, icon, price, caption, description, features, note, action, onClick }: {
-  title: string; icon: PricingIconName; price: string; caption: string; description: string;
+function AccountChoice({ title, price, caption, description, features, note, action, onClick }: {
+  title: string; price: string; caption: string; description: string;
   features: string[]; note: ReactNode; action: string; onClick: () => void;
 }) {
   return <button className={styles.accountCard} type="button" aria-haspopup="dialog" onClick={onClick}>
-    <span className={styles.accountHeading}><span className={styles.accessIcon}><PricingIcon name={icon} /></span><strong className={styles.accountTitle}>{title}</strong></span>
+    <span className={styles.accountHeading}><strong className={styles.accountTitle}>{title}</strong></span>
     <span className={styles.cardPrice}><span className={styles.priceLabel}>{title === 'Owner' ? 'From' : 'Subscription'}</span><span className={styles.priceLine}><strong>{price}</strong><span>/ month</span></span><span className={styles.annualCaption}>{caption}</span></span>
     <span className={styles.accountDescription}>{description}</span>
     <span className={styles.planFeatures}>{features.map(feature => <span key={feature}><span aria-hidden="true">✓</span>{feature}</span>)}</span>
@@ -34,24 +34,23 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
   return <div className={styles.photoSurface}><div className={styles.shell}>
     <header className={styles.hero}>
       <h1>Subscriptions</h1>
-      <p className={styles.heroDescription}>Three simple options. Choose what fits your work.</p>
+      <p className={styles.heroDescription}>Choose the right account for you.</p>
     </header>
     <section className={styles.pricingChoices} aria-label="Choose your account">
-      <AccountChoice title="Owner" icon="stock" price={rand(ownerHosting[0].monthly)} caption={`Or ${rand(ownerHosting[0].annually)}/year · 1–25 assets`}
+      <AccountChoice title="Owner" price={rand(ownerHosting[0].monthly)} caption={`Or ${rand(ownerHosting[0].annually)}/year · 1–25 assets`}
         description="Know what you own, what it’s worth and what it costs."
         features={['Asset registers, valuations & reports', 'Maintenance, fuel & running costs', 'Documents and asset sharing']}
         note="Priced by active assets. Unlimited registers." action="Explore Owner plans" onClick={() => setAudience('owner')} />
-      <AccountChoice title="Free Business" icon="link" price="R0" caption="No subscription fee"
+      <AccountChoice title="Free Business" price="R0" caption="No subscription fee"
         description="Work with the assets and enquiries your clients share."
         features={['Shared Assets & client enquiries', 'Value Asset & Marketplace', creditsLabel]}
         note="View shared assets for free. Upgrade when needed." action="Explore Free Business" onClick={() => setAudience('free-business')} />
-      <AccountChoice title="Paid Business" icon="workspace" price={rand(businessHosting.monthly)} caption={`Or ${rand(businessHosting.annually)}/year`}
+      <AccountChoice title="Paid Business" price={rand(businessHosting.monthly)} caption={`Or ${rand(businessHosting.annually)}/year`}
         description="Manage your stock, clients and team in one workspace."
         features={['Registers, Parts & Stock', 'Maintenance, costs & advert tools', 'Staff access · no monthly credit limit']}
         note={<>Client hosting from <span className={styles.rate}>{rand(ownerHosting[0].monthly / 4)} per client/month.</span></>} action="Explore Paid Business" onClick={() => setAudience('business')} />
     </section>
-    <p className={styles.pricingNote}>Prices in rand · No VAT added · Optional assistance costs extra.</p>
-    <p className={styles.signIn}>{signedIn ? <>Already have an account? <Link href="/account">Manage or upgrade your subscription</Link></> : <>Already have an account? <Link href="/auth#login">Log in</Link></>}</p>
+    <p className={styles.pricingNote}>No VAT added.</p>
     <PricingModal owner open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
     <PricingModal owner open={audience === 'business'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney audience="business" signedIn={signedIn} onTitleChange={setOwnerTitle} /></PricingModal>
     <PricingModal open={audience === 'free-business'} title="Free Business" onClose={() => setAudience(null)}>
@@ -67,20 +66,6 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
       </section>
     </PricingModal>
     <PricingModal open={feesOpen} title="Success fees & services" onClose={() => setFeesOpen(false)}><ServiceFees initialTopic={feesTopic} /></PricingModal>
-    <details className={styles.pricingIncluded}>
-      <summary className={styles.coverageSummary}><h2>What each account includes</h2><span className={styles.coverageToggle} aria-hidden="true" /></summary>
-      <div className={styles.subscriptionDetails}>
-        <article className={styles.subscriptionDetail}><h3>Owner</h3><p>Your assets, organised.</p><ul>
-          <li>Asset records, costs, fuel, maintenance, documents, sharing and reports.</li><li>Unlimited registers within your active-asset limit.</li><li>Sold and archived assets don’t count towards your limit.</li>
-        </ul></article>
-        <article className={styles.subscriptionDetail}><h3>Free Business</h3><p>Start with shared assets.</p><ul>
-          <li>Shared Assets, client enquiries, Value Asset and Marketplace.</li><li>{creditsLabel}. Viewing does not use credits.</li><li>Contributions depend on account approval and the sender’s permissions.</li>
-        </ul></article>
-        <article className={styles.subscriptionDetail}><h3>Paid Business</h3><p>Your full business workspace.</p><ul>
-          <li>Stock and client registers, Parts &amp; Stock, maintenance tracking and cost records.</li><li>Staff access, showroom and advert tools. No monthly action-credit limit.</li><li>Client hosting adds 25% of the applicable Owner rate, billed to your business.</li>
-        </ul></article>
-      </div>
-    </details>
     <div className={styles.serviceStrip}><div><strong>Extra help, when you need it.</strong><p>Setup, admin and success fees are agreed separately.</p></div><div className={styles.serviceActions}><button type="button" aria-haspopup="dialog" onClick={() => showFees()}>Services &amp; success fees</button><button type="button" aria-haspopup="dialog" onClick={() => showFees('commission')}>Partner earnings</button></div></div>
     <div className={styles.closing}>
       <div><h2>Need a hand choosing?</h2><p>We’ll help you find the right account and support.</p></div>

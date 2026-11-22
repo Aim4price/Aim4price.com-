@@ -209,21 +209,16 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert(prices.every(p=>p.size>=40),'Subscription prices are prominent');
      if(width===1440)assert(Math.max(...prices.map(p=>p.top))-Math.min(...prices.map(p=>p.top))<2,'Subscription prices align across cards');
 
-     assert.equal(await page.$eval('details',e=>e.open),false,'Subscription coverage starts collapsed');
-     await page.focus('summary');await page.keyboard.press('Enter');
-     assert.equal(await page.$eval('details',e=>e.open),true,'Coverage opens from the keyboard');
-     assert.equal(await page.$$eval('details article',els=>els.length),3);
+     assert.equal(await page.$('details'),null,'Account features are presented once, inside the cards');
+     assert.equal(await page.evaluate(()=>document.body.textContent.includes('Already have an account?')),false,'Account management does not repeat beneath pricing');
      assert.equal(await page.evaluate(()=>document.body.textContent.includes('Monthly or yearly?')),false);
      assert.ok(await page.$('a[href="/contact-us"]'));
-     await page.screenshot({path:path.join(evidence,'subscription-coverage-open-'+width+'.png'),fullPage:true});
-     await page.focus('summary');await page.keyboard.press('Enter');
-     assert.equal(await page.$eval('details',e=>e.open),false,'Coverage closes from the keyboard');
 
      assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Paid Business')).textContent.includes('R199')),true);
      assert.deepEqual(await page.$$eval('section[aria-label="Choose your account"] button',els=>els.map(e=>e.querySelector('strong').textContent)),['Owner','Free Business','Paid Business']);
      assert.equal(await page.evaluate(()=>document.body.textContent.includes('Middleman access')),false);
      await page.screenshot({path:path.join(evidence,`subscription-three-options-${width}.png`),fullPage:true});
-     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
+     await page.focus('section[aria-label="Choose your account"] button');await page.keyboard.press('Enter');
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
      assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).overflowY),'hidden','Background document scrollbar is removed while pricing is open');
@@ -450,7 +445,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.ok(await page.$('[data-free-business] a[href="/account"]'),'Existing users manage their account rather than create a duplicate');
      assert.equal(await page.$('[data-free-business] a[href="/business/join"]'),null);
      await page.keyboard.press('Escape');
-     assert.ok(await page.$('a[href="/account"]'),'Signed-in pricing links to subscription management');
+     assert.equal(await page.$('a[href="/account"]'),null,'Account management stays inside the selected plan');
     }
     if(['guest','business-join','business-register'].includes(mode)){
      assert.equal(await page.$$eval('main',els=>els.length),1,'Onboarding has one page landmark');

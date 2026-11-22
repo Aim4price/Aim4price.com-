@@ -390,8 +390,7 @@
 /* Three current account choices, with aligned prices and actions. */
 .pricingChoices { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.1rem; }
 .accountCard { gap: 1rem; padding: 1.4rem; border-radius: 1.15rem; --action-hover-shadow: 0 8px 24px rgba(20,64,50,.1); --action-hover-outline: transparent; }
-.accountHeading { display: flex; align-items: center; gap: .65rem; min-height: 2rem; }
-.accountHeading .accessIcon { flex-basis: 2rem; }
+.accountHeading { display: flex; align-items: center; min-height: 2rem; }
 .accountTitle { font-size: 1.4rem; line-height: 1.35; }
 .cardPrice { padding: 1rem; gap: .3rem; }
 .annualCaption { color: #244c3c; font-size: .82rem; font-weight: 600; line-height: 1.5; }
@@ -402,7 +401,7 @@
 .cardNote { font-size: .82rem; line-height: 1.6; min-height: 4.2em; padding-top: .85rem; }
 .cardAction { justify-content: space-between; gap: .5rem; min-height: 2.9rem; font-size: .88rem; padding: .7rem .85rem; }
 .cardAction > span { font-size: 1.2rem; line-height: 1; }
-.pricingNote { text-align: center; margin: 1rem 0 0; font-size: .82rem; font-weight: 600; color: #345444; line-height: 1.6; }
+.pricingNote { text-align: center; margin: 1rem 0 1.5rem; font-size: .82rem; font-weight: 600; color: #345444; line-height: 1.6; }
 .signIn { margin: .6rem 0 1.75rem; }
 .serviceStrip { display: flex; justify-content: space-between; align-items: center; gap: 1rem 2rem; flex-wrap: wrap; padding: 1.1rem 1.4rem; margin-block: 1rem; border: 1px solid #d3e3d9; border-radius: 1rem; background: #f5f9f6; color: #244c3c; }
 .serviceStrip strong { font-size: 1rem; }
