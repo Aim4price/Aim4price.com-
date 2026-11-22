@@ -75,3 +75,6 @@
 .dialog:has([data-free-business]) .header { align-items: center; padding-block: 1.1rem; }
 .dialog:has([data-free-business]) .header h2 { font-size: 1.65rem; line-height: 1.25; }
 .body:has([data-free-business]) { padding-bottom: 1.25rem; }
+@media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .body:has([data-free-business]) { padding-bottom: 1.25rem; }
+}
