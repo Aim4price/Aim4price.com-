@@ -112,9 +112,9 @@ test("the submit guard advances early steps without creating an account", async 
 test("the staged flow preserves signup account and activation rules", async () => {
   const source = await read("app/auth/auth-client.tsx");
 
-  assert.match(source, /accountType: signupForm\.accountType === "middleman" \? "dealer"/);
-  assert.match(source, /signupForm\.accountType !== "owner" &&\s*signupForm\.accountType !== "middleman" &&\s*signupForm\.directoryParticipation/);
-  assert.match(source, /signupForm\.accountType === "middleman" \? "\/my-showroom"/);
+  assert.match(source, /options=\{PUBLIC_SIGNUP_OPTIONS\}/);
+  assert.match(source, /accountType: signupForm\.accountType,/);
+  assert.doesNotMatch(source, /Create enquiry account/);
   assert.doesNotMatch(source, /Free workspace for valuation-backed adverts and your public showroom/);
   assert.match(source, /awaiting payment\/admin approval/);
 });

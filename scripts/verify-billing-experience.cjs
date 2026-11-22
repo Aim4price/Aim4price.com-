@@ -77,7 +77,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
   const font=fs.readFileSync(path.join(root,'public/fonts/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
-   for(const mode of ['tutorials','guest','pricing','business-join','business-register','signup-owner','signup-dealer','signup-middleman','switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
+   for(const mode of ['tutorials','guest','pricing','business-join','business-register','signup-owner','signup-business','switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
     await page.goto('https://billing.test/');
     await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:12px;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32;--modal-backdrop-color:rgba(12,32,26,.58);--modal-backdrop-filter:blur(7px)}button,input,textarea{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
     await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
@@ -455,7 +455,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     }
     if(mode==='business-join'||mode==='business-register'){
      assert.equal(await page.$('a[href="/business/guest"]'),null);
-     assert.equal(await page.$eval('h1',e=>e.textContent),'Create your free account');
+     assert.equal(await page.$eval('h1',e=>e.textContent),'Create your Business account');
      await page.waitForSelector('input[name="password"]');
      for(const [name,value] of Object.entries({name:'Test Recipient',businessName:'Test Business',email:'recipient@example.test',password:'Synthetic-password-123'}))await page.type('input[name="'+name+'"]',value);
      await page.click('input[name="terms"]');await page.click('button[type="submit"]');
@@ -466,42 +466,14 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     }
     if(mode.startsWith('signup-')){
      const clickText=async text=>{assert.ok(await page.evaluate(t=>{const e=[...document.querySelectorAll('button')].find(e=>e.textContent.trim()===t);e?.click();return !!e;},text),text);};
-     const select=async(label,text)=>{const selector='button[aria-label^="'+label+'"]';await page.click(selector);await page.waitForSelector('[role="option"]');assert.ok(await page.evaluate(t=>{const e=[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.trim().startsWith(t));e?.click();return !!e;},text));await page.waitForFunction(selector=>{const button=document.querySelector(selector);return button?.getAttribute('aria-expanded')==='false'&&document.activeElement===button;},{},selector);};
      const settledStep=async id=>page.waitForFunction(id=>document.activeElement===document.querySelector('[aria-labelledby="'+id+'"]'),{},id);
      const typeField=async(name,value)=>{const selector='input[name="'+name+'"]';await page.type(selector,value);assert.equal(await page.$eval(selector,e=>e.value),value,'Signup field '+name+' receives every character');};
-     if(mode.startsWith('signup-')){
-      await page.waitForFunction(type=>document.querySelector('input[name="accountType"]')?.value===type,{},mode.slice(7));
-      if(mode==='signup-owner'){
-       await select('What would you like to use Aim4price for?','Middleman');
-       assert.equal(await page.$eval('input[name="accountSubtype"]',e=>e.value),'equipment-middleman');
-       await select('What would you like to use Aim4price for?','Owner');
-      }
-      if(mode==='signup-middleman')assert.equal(await page.$eval('input[name="accountSubtype"]',e=>e.value),'equipment-middleman');
-      if(mode==='signup-dealer'){
-       const trigger='button[aria-haspopup="dialog"]';
-       assert.equal(await page.$('[role="dialog"]'),null);
-       assert.doesNotMatch(await page.$eval('form',e=>e.textContent),/Clients have no login or access/);
-       await page.click(trigger);
-       await page.waitForSelector('[role="dialog"]');
-       const notice=await page.$eval('[role="dialog"]',e=>e.textContent);
-       assert.match(notice,/Manage client asset registers/);
-       assert.match(notice,/25% of the standard Owner plan price/);
-       assert.match(notice,/number of assets and the corresponding Owner plan/);
-       assert.match(notice,/Clients have no login or access/);
-       assert.match(notice,/billed separately.*R199\/month/);
-       await page.screenshot({path:path.join(evidence,'dealer-register-popup-'+width+'.png'),fullPage:true});
-       await page.keyboard.press('Escape');
-       await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
-       assert.equal(await page.$eval(trigger,e=>document.activeElement===e),true);
-       await page.click(trigger);
-       await page.click('button[aria-label="Close client register information"]');
-       await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
-       await select('What would you like to use Aim4price for?','Owner');
-       assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
-       await select('What would you like to use Aim4price for?','Business');
-       assert.ok(await page.$('button[aria-haspopup="dialog"]'));
-      }else assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
-     }
+     await page.waitForFunction(type=>document.querySelector('input[name="accountType"]')?.value===type,{},mode.slice(7));
+     await page.click('button[aria-label^="What would you like to use Aim4price for?"]');
+     await page.waitForSelector('[role="option"]');
+     assert.deepEqual(await page.$$eval('[role="option"]',els=>els.map(e=>e.querySelector('span').textContent)),['Owner','Business']);
+     await page.keyboard.press('Escape');
+     assert.doesNotMatch(await page.$eval('main', e=>e.textContent), /Create enquiry account/);
      await page.click('button[aria-label^="Which best describes your work?"]');await page.waitForSelector('[role="option"]');
      const options=await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent));
      assert.equal(options.includes('Other business'),mode==='signup-dealer',mode+' shows the applicable business categories');

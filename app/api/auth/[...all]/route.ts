@@ -1,3 +1,4 @@
+import { isMiddlemanAccountSubtype } from "../../../../lib/middleman-account";
 import { isSupportedSignupAccountType } from "../../../../lib/retired-workspaces";
 import { BillingError, validateSignupBilling } from "../../../../lib/billing";
 import { toNextJsHandler } from "better-auth/next-js";
@@ -27,11 +28,10 @@ export async function POST(request: Request): Promise<Response> {
   const signupInput = await request.clone().json().catch(() => null);
 
   try {
-    if (!isSupportedSignupAccountType(signupInput?.accountType)) {
-      return Response.json({ message: 'Choose an Owner or Business account, or Middleman access.' }, { status: 400 });
+    if (!isSupportedSignupAccountType(signupInput?.accountType) || isMiddlemanAccountSubtype(signupInput?.accountSubtype)) {
+      return Response.json({ message: 'Choose an Owner or Business account.' }, { status: 400 });
     }
-    const requestedType = String(signupInput?.accountType ?? 'owner').trim().toLowerCase();
-    const accountType = requestedType === 'business' && signupInput?.accountAccess === 'desktop' ? 'dealer' : requestedType;
+    const accountType = String(signupInput?.accountType ?? 'owner').trim().toLowerCase();
     if (accountType === 'business' && (typeof signupInput.businessName !== 'string' || !signupInput.businessName.trim() || signupInput.businessName.length > 200 || signupInput.acceptedTerms !== true)) {
       return Response.json({ message: 'Enter your business name and accept the terms.' }, { status: 400 });
     }

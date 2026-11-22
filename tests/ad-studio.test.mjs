@@ -355,14 +355,11 @@ test('signup keeps Middleman distinct without a redundant access selector', asyn
   const signupOptions = await read("lib/account-type-options.ts");
   assert.match(signupOptions, /value: "middleman", label: "Middleman"/);
   assert.match(signupOptions, /value: "equipment-middleman"/);
-  assert.match(authClient, /accountType: signupForm\.accountType === "middleman" \? "dealer"/);
-  assert.match(authClient, /name="accountType"[\s\S]*?options=\{SIGNUP_ACCOUNT_TYPE_OPTIONS\}/);
+  assert.match(authClient, /name="accountType"[\s\S]*?options=\{PUBLIC_SIGNUP_OPTIONS\}/);
   assert.doesNotMatch(authClient, /name="accountAccess"|Free sharing account/);
   assert.match(authClient, /name="accountSubtype"[\s\S]*?options=\{SIGNUP_ACCOUNT_SUBTYPE_OPTIONS\[signupForm\.accountType\]\}/);
   assert.doesNotMatch(authClient, /Free workspace for valuation-backed adverts and your public showroom/);
   assert.doesNotMatch(authClient, /accountTypeGrid|role="radiogroup"/);
-  assert.match(authClient, /signupForm\.accountType === "middleman" \? "\/my-showroom"/);
-  assert.match(authClient, /signupForm\.accountType !== "middleman"/);
   assert.match(authPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\)[\s\S]*?"\/my-showroom"/);
   assert.match(profile, /isMiddlemanAccountSubtype\(initialAccountSubtype\)[\s\S]*?"active"/);
   assert.match(profile, /!isMiddlemanAccountSubtype\(normalizedAccountSubtype\)/);
