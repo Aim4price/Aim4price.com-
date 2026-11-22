@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetRegisterItems } from '../../../../lib/asset-register-db';
 import { withRealisticSellingAssessments } from '../../../../lib/realistic-selling-assessments';
 import { NextResponse } from 'next/server';
@@ -14,7 +14,7 @@ export async function GET() {
   const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) return NextResponse.json({ ok: false, error: 'Please sign in.' }, { status: 401 });
   const [profile, dealer] = await Promise.all([
-    businessToolProfile(session),
+    getAccountProfile(session.user,{businessToolsFor:session}),
     getDealerAppSession(),
   ]);
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active' || (dealer && (!dealerRoleCan(dealer.role, 'ad_studio') || !dealerRoleCan(dealer.role, 'inventory')))) {

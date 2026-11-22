@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../lib/business-tool-profile';
+import { getAccountProfile } from '../../lib/account-profile';
 import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
 import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
@@ -14,7 +14,7 @@ export default async function MyShowroomPage() {
   const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) redirect('/auth#login');
   if (isDealerAppSession(session)) redirect('/dealer/showroom');
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   let showroom;
   try {
     showroom = await getOrCreateMiddlemanShowroom(profile);

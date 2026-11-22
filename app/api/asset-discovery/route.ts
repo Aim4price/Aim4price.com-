@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../lib/account-profile';
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "../../../lib/auth-session";
 import {
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (session?.user?.id) {
-      const profile = await businessToolProfile(session);
+      const profile = await getAccountProfile(session.user,{businessToolsFor:session});
       const permittedAccount = ["dealer", "owner"].includes(
         profile.accountType,
       );
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const profile = await businessToolProfile(session);
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
 
     if (!["dealer", "owner"].includes(profile.accountType)) {
       return forbidden();

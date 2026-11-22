@@ -617,6 +617,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     );
 
     const requestedOffer=new URLSearchParams(window.location.search).get('offer');
+    if(requestedOffer==='free' && requestedAccountType==='business') setSignupPlan('free');
     if(requestedOffer && /^(owner-band-[123]|business-standard)-(monthly|annual)$/.test(requestedOffer)){
       setPlanKey(requestedOffer);setSignupPlan('paid');
     }

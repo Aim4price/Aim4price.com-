@@ -1184,7 +1184,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
 
   updateAssignments.push('updated_at = now()');
 
-  const updated = await db.query<MarketplaceAssetRow>(
+  const updated = await (await import('./business-credits')).saveBusinessResult(input.userId,'Published an asset listing',
+    writer=>writer.query<MarketplaceAssetRow>(
     `
       update asset_register_items
       set
@@ -1193,7 +1194,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
       returning *
     `,
     updateValues,
-  );
+  ), saved=>saved.rows.length && row.marketplace_status !== 'live' ? 'asset-listing:'+input.assetId : null);
 
   const updatedRow = updated.rows[0];
 

@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../lib/account-profile';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession, isDealerAppSession } from '../../../lib/auth-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
@@ -16,7 +16,7 @@ async function getMiddlemanContext() {
   const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) return null;
   if (isDealerAppSession(session) && !dealerRoleCan(session.dealerApp.role, 'showroom')) return null;
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   return { session, profile };
 }
 

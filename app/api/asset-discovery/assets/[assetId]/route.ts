@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../../lib/account-profile';
 import { NextResponse } from "next/server";
 import { getAssetDiscoveryAssetDetails } from "../../../../../lib/asset-discovery";
 import { getServerSession } from "../../../../../lib/auth-session";
@@ -14,7 +14,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ ok: false, error: "You must be signed in." }, { status: 401 });
   }
   try {
-    const profile = await businessToolProfile(session);
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     if (!["owner", "dealer"].includes(profile.accountType)) {
       return NextResponse.json({ ok: false, error: "Asset details are not available." }, { status: 403 });
     }

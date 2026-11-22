@@ -39,6 +39,13 @@ test('Business credits pool across members and preserve trial, upgrade, retry an
   assert.equal((await credits.creditHistory(pool,owner.business_id)).length,2);
   await pg.query("UPDATE business_completed_actions SET created_at=now()-interval '2 months'");
   assert.equal((await balance()).used,0);
+  const usage=load('lib/sharing-foundation.ts',{...db,'./business-credits':credits});
+  const contribute=(key)=>credits.creditTransaction(client=>usage.recordSharingUsage({accountId:'owner',actorId:'owner',metric:'contribution',eventKey:key},client));
+  await contribute('shared-note:message');await contribute('details:edit');
+  assert.equal((await balance()).used,0);
+  await contribute('maintenance:service');await contribute('maintenance:service');
+  assert.equal((await balance()).used,1);
+  await pg.query("UPDATE business_completed_actions SET created_at=now()-interval '2 months'");
   const setPlan=(plan)=>credits.creditTransaction(db=>credits.changeBusinessPlan(db,owner.business_id,'owner',plan));
   await pg.query('UPDATE business_workspaces SET upgrade_requested_at=now()');
   await setPlan('paid');await setPlan('paid');

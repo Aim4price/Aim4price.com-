@@ -13,7 +13,6 @@ async function loadTypeScriptModule(path, dependencies = {}) {
   }).outputText;
   const module = { exports: {} };
   const loadDependency = (specifier) => {
-    if (specifier.endsWith('/business-tool-profile')) return {businessToolProfile:session=>dependencies[specifier.replace('business-tool-profile','account-profile')].getAccountProfile(session.user)};
     if (specifier === './business-credits') return {spendBusinessCredit:async()=>{}};
     if (specifier === './ad-custom-design') return loadTs('lib/ad-custom-design.ts');
     if (specifier === './ad-custom-renderer') return loadTs('lib/ad-custom-renderer.ts');

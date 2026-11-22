@@ -60,12 +60,12 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
         <div className={styles.freeSummary}><span className={styles.accessIcon}><PricingIcon name="link" /></span><div><strong>Shared assets. No subscription fee.</strong><p>Work with records your clients choose to share.</p></div><strong className={styles.freePrice}>R0</strong></div>
         <dl className={styles.freeBenefits}>
           <div><dt>Shared Assets</dt><dd>View client assets and enquiries. Manage, message and share where the sender’s permissions allow.</dd></div>
-          <div><dt>{creditsLabel}</dt><dd>One completed action uses one credit. Examples include recording a shared cost, adding documents or logging maintenance. Viewing, messaging and sharing are free. See your balance and recent activity in Account.</dd></div>
+          <div><dt>{creditsLabel}</dt><dd>One completed action uses one credit. Examples include recording a shared cost, adding documents or logging maintenance. Viewing uses no credits. Messages and sharing are free. See your balance and recent activity in Account.</dd></div>
           <div><dt>Invite an owner</dt><dd>Earn {referralCredits ?? 50} extra credits when an invited owner verifies their email and adds their first asset.</dd></div>
           <div><dt>Business workspace</dt><dd>Manage registers, stocklists, your showroom and adverts from your personal workspace.</dd></div>
         </dl>
         <p className={styles.freeUpgrade}>Choose Paid Business for staff access and unlimited actions.</p>
-        <div className={styles.freeActions}><button type="button" onClick={() => setAudience('business')}>Compare Paid Business</button><Link className={styles.button} href={signedIn ? '/account' : '/auth#signup'}>{signedIn ? 'Go to my account' : 'Create free account'}</Link></div>
+        <div className={styles.freeActions}><button type="button" onClick={() => setAudience('business')}>Compare Paid Business</button><Link className={styles.button} href={signedIn ? '/account' : '/auth?accountType=business&offer=free#signup'}>{signedIn ? 'Go to my account' : 'Create free account'}</Link></div>
       </section>
     </PricingModal>
     <PricingModal open={feesOpen} title="Success fees & services" onClose={() => setFeesOpen(false)}><ServiceFees initialTopic={feesTopic} /></PricingModal>

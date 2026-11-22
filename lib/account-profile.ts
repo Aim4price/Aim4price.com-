@@ -1082,7 +1082,7 @@ export async function getAccountProfile(user: {
   id: string;
   name?: string | null;
   email?: string | null;
-}): Promise<AccountProfile> {
+}, options:{businessToolsFor?:NonNullable<Awaited<ReturnType<typeof import('./auth-session').getServerSession>>>} = {}): Promise<AccountProfile> {
   await ensureAccountProfileColumns();
 
   const db = getDb();
@@ -1131,7 +1131,11 @@ export async function getAccountProfile(user: {
     [user.id],
   );
 
-  return mapAccountProfileRow(result.rows[0], user);
+  const profile = mapAccountProfileRow(result.rows[0], user);
+  if (profile.accountType === 'business' && options.businessToolsFor?.user.id === user.id) {
+    return (await import('./business-tool-profile')).businessToolProfile(options.businessToolsFor,profile);
+  }
+  return profile;
 }
 
 export async function upsertAccountProfile(

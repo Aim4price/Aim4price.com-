@@ -1,4 +1,3 @@
-import { businessToolProfile } from '../../../../../lib/business-tool-profile';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
 import { getServerSession } from '../../../../../lib/auth-session';
@@ -100,7 +99,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Dealer sign-in is required.' }, { status: 401 });
   }
 
-  const dealerProfile = await businessToolProfile(session);
+  const dealerProfile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (dealerProfile.accountType !== 'dealer' || dealerProfile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer access is required.' }, { status: 403 });
   }

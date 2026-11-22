@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../../../../lib/account-profile';
 import { NextResponse } from "next/server";
 import { getAssetDiscoveryPhoto } from "../../../../../../../lib/asset-discovery";
 import { getServerSession } from "../../../../../../../lib/auth-session";
@@ -18,7 +18,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   try {
-    const profile = await businessToolProfile(session);
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     if (!["owner", "dealer"].includes(profile.accountType)) {
       return new NextResponse("Not found", { status: 404 });
     }

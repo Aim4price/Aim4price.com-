@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../../lib/account-profile';
 import { NextResponse } from 'next/server';
 import { getServerSession, isDealerAppSession } from '../../../../../lib/auth-session';
 import {
@@ -19,7 +19,7 @@ async function dealerNotificationContext(): Promise<DealerNotificationContext | 
   const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) return null;
 
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return null;
 
   const dealerAppSession = isDealerAppSession(session) ? session.dealerApp : null;

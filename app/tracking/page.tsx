@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../lib/business-tool-profile';
+import { getAccountProfile } from '../../lib/account-profile';
 import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import { getServerSession } from '../../lib/auth-session';
@@ -20,7 +20,7 @@ export default async function TrackingPage({ searchParams }: { searchParams?: { 
 
   const initialOpenAccessId = String(searchParams?.open ?? '').trim() || null;
   const [profile, initialLoad] = await Promise.all([
-    businessToolProfile(session),
+    getAccountProfile(session.user,{businessToolsFor:session}),
     listInitialDealerTrackedAssets({
       dealerUserId: session.user.id,
       limit: INITIAL_MAINTENANCE_BATCH_SIZE,

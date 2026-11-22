@@ -2541,7 +2541,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const headlineVatLabel = getVatDisplayLabel(vatDisplayMode);
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isMiddlemanApp = dealerAppMode && dealerAppRoot === '/middleman';
-  const isDealerAccount = normalizedSignedInAccountType === 'dealer' && !isMiddlemanApp;
+  const isDealerAccount = ['dealer','business'].includes(normalizedSignedInAccountType) && !isMiddlemanApp;
   const dealerOwnedRegister = useMemo(
     () => dealerAssetRegisters.find((register) => register.isPrimary) ?? dealerAssetRegisters[0] ?? null,
     [dealerAssetRegisters],
@@ -2567,10 +2567,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       && dealerRequiredWork,
   );
   const popularityStepComplete = popularityStars >= 1 && popularityStars <= 5;
-  const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
+  const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'business' || normalizedSignedInAccountType === 'dealer');
   const canSaveToAssetRegister = isSignedIn && !isMiddlemanApp && (
     normalizedSignedInAccountType === 'owner'
-    || normalizedSignedInAccountType === 'dealer'
+    || normalizedSignedInAccountType === 'dealer' || normalizedSignedInAccountType === 'business'
   );
   const requiredSpecQuestionsCompleted = Boolean(
     conditionStepComplete &&

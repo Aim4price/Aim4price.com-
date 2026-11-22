@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../lib/business-tool-profile';
+import { getAccountProfile } from '../../lib/account-profile';
 import AppHeader from '../../components/AppHeader';
 import { getServerSession } from '../../lib/auth-session';
 import AssetDiscoveryClient from './asset-discovery-client';
@@ -31,7 +31,7 @@ export default async function AssetDiscoveryPage({
 
   if (session?.user?.id) {
     try {
-      const profile = await businessToolProfile(session);
+      const profile = await getAccountProfile(session.user,{businessToolsFor:session});
       if (profile.accountStatus === 'active') {
         activeAccountType = profile.accountType;
       }

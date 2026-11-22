@@ -3481,7 +3481,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
 
   if (input.confirmUsageReading && input.transaction) await db.query("SELECT set_config('aim4price.confirm_usage','on',true)");
   const update = buildUpdateSetClause(fields);
-  const result = await db.query<AssetRegisterRow>(
+  const write = (writer:Pick<typeof db,'query'>)=>writer.query<AssetRegisterRow>(
     `
       update asset_register_items
       set
@@ -3493,6 +3493,12 @@ export async function updateAssetRegisterItemFromValuation(input: {
     `,
     [input.userId, input.assetId, ...update.values, ...(input.expectedUpdatedAtIso && revisionColumn ? [input.expectedUpdatedAtIso] : [])],
   );
+
+  const credits = await import('./business-credits');
+  const key = 'valuation:'+input.valuationRunId;
+  const result = input.transaction ? await write(input.transaction)
+    : await credits.saveBusinessResult(input.userId,'Saved a valuation',write,saved=>saved.rows.length ? key : null);
+  if (input.transaction && result.rows.length) await credits.spendBusinessCredit(input.transaction,input.userId,'Saved a valuation',key);
 
   const row = result.rows[0];
   if (!row) {
@@ -3664,7 +3670,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
 
   if (input.confirmUsageReading && input.transaction) await db.query("SELECT set_config('aim4price.confirm_usage','on',true)");
   const update = buildUpdateSetClause(fields);
-  const result = await db.query<AssetRegisterRow>(
+  const write = (writer:Pick<typeof db,'query'>)=>writer.query<AssetRegisterRow>(
     `
       update asset_register_items
       set
@@ -3676,6 +3682,12 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     `,
     [input.userId, input.assetId, ...update.values, ...(input.expectedUpdatedAtIso && revisionColumn ? [input.expectedUpdatedAtIso] : [])],
   );
+
+  const credits = await import('./business-credits');
+  const key = 'valuation:'+input.valuationRunId;
+  const result = input.transaction ? await write(input.transaction)
+    : await credits.saveBusinessResult(input.userId,'Saved a valuation',write,saved=>saved.rows.length ? key : null);
+  if (input.transaction && result.rows.length) await credits.spendBusinessCredit(input.transaction,input.userId,'Saved a valuation',key);
 
   const row = result.rows[0];
   if (!row) {
@@ -3848,7 +3860,9 @@ export async function createAssetRegisterItemFromValuation(input: {
   });
 
   const query = buildInsertQuery(schema, fields);
-  const inserted = await db.query<AssetRegisterRow>(query.sql, query.values);
+  const inserted = await (await import('./business-credits')).saveBusinessResult(input.userId,'Saved a valuation',
+    writer=>writer.query<AssetRegisterRow>(query.sql,query.values),
+    saved=>saved.rows.length ? 'valuation:'+input.valuationRunId : null);
   const row = inserted.rows[0];
 
   if (!row) {
@@ -4000,7 +4014,9 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
   });
 
   const query = buildInsertQuery(schema, fields);
-  const inserted = await db.query<AssetRegisterRow>(query.sql, query.values);
+  const inserted = await (await import('./business-credits')).saveBusinessResult(input.userId,'Saved a valuation',
+    writer=>writer.query<AssetRegisterRow>(query.sql,query.values),
+    saved=>saved.rows.length ? 'valuation:'+input.valuationRunId : null);
   const row = inserted.rows[0];
 
   if (!row) {

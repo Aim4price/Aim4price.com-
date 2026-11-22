@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../../../lib/account-profile';
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { isAim4priceAdminEmail } from "../../../../../../lib/account-constants";
@@ -21,7 +21,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   try {
-    const profile = await businessToolProfile(session);
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     if (!["owner", "dealer"].includes(profile.accountType)) {
       return NextResponse.json({ ok: false, error: "Asset details are not available." }, { status: 403 });
     }

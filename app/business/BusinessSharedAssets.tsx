@@ -14,7 +14,7 @@ import card from '../leads/shared-assets.module.css';
 type Share = Awaited<ReturnType<typeof listReceivedSharedEnquiries>>[number];
 const receivedDate = new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Africa/Johannesburg'});
 
-export default function BusinessSharedAssets({shares,notice,selection,detail}:{shares:Share[];notice:string;selection?:{token:string;assetId:string};detail?:ReactNode}) {
+export default function BusinessSharedAssets({shares,notice,selection,detail,freeBusiness}:{freeBusiness?:boolean;shares:Share[];notice:string;selection?:{token:string;assetId:string};detail?:ReactNode}) {
   const router = useRouter();
   const [refreshing,startTransition] = useTransition();
   const [status,setStatus] = useState<SharedStatus>('all');
@@ -52,6 +52,7 @@ export default function BusinessSharedAssets({shares,notice,selection,detail}:{s
   return <main className={`${asset.page} ${workspaceStyles.page} ${lead.leadsPage} ${lead.dealerOwnerParity} ${lead.dealerDesktopLeads}`}>
     <section className={`${asset.shell} ${workspaceStyles.shell}`}><section id="received-enquiries" className={`${asset.registerPanel} ${lead.leadsRegisterPanel}`}>
       <WorkspaceTitlePanel title="Shared Assets" helpTopic="sharedEnquiries"/>
+      {freeBusiness && !notice && <p>Viewing and sharing are free. One completed action uses one credit. <Link href="/account#business-credits">View my credits</Link> · <Link href="/workspace">Open workspace</Link></p>}
       {notice ? <p role="status" className={asset.notice}>{notice}</p> : <>
         <SharedAssetStatus statusFilter={status} chooseLeadStatusFilter={setStatus} newLeadCount={members.length-viewed} viewedLeadCount={viewed} total={members.length}/>
         <div className={`${asset.toolbar} ${workspaceStyles.controlsRow} ${lead.leadSearchToolbar}`}>

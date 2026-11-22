@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../../lib/account-profile';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../../lib/auth-session';
 import {
@@ -30,7 +30,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   if (!session?.user?.id) return unauthorized();
 
   try {
-    const profile = await businessToolProfile(session);
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     const enquiry = await getAssetDiscoveryEnquiryForUser({
       enquiryId: context.params.enquiryId,
       userId: session.user.id,
@@ -55,7 +55,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const profile = await businessToolProfile(session);
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     if (profile.accountType !== 'owner') {
       return NextResponse.json({ ok: false, error: 'Only the asset owner can update this enquiry.' }, { status: 403 });
     }
@@ -76,7 +76,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
   if (!session?.user?.id) return unauthorized();
 
   try {
-    const profile = await businessToolProfile(session);
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     if (!['owner', 'dealer'].includes(profile.accountType)) {
       return NextResponse.json({ ok: false, error: 'Only the requester can retract this enquiry.' }, { status: 403 });
     }

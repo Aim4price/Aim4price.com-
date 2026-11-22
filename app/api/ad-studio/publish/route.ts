@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../lib/account-profile';
 import {NextRequest, NextResponse} from 'next/server';
 import {getServerSession, isDealerAppSession} from '../../../../lib/auth-session';
 import {dealerRoleCan} from '../../../../lib/dealer-app-access';
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   const session = await getServerSession({allowBusinessWorkspace:true, allowDealerApp:true});
   if (!session?.user?.id) return NextResponse.json({ok:false,error:'Sign in to publish.'},{status:401});
   if (isDealerAppSession(session) && (!dealerRoleCan(session.dealerApp.role,'ad_studio') || !dealerRoleCan(session.dealerApp.role,'marketplace'))) return NextResponse.json({ok:false,error:'Your app login cannot publish adverts.'},{status:403});
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return NextResponse.json({ok:false,error:'Advert publishing is unavailable for this account.'},{status:403});
   let input;
   try { input = normalizeAdvertPublication(await request.json()); }

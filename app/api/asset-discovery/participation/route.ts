@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../lib/account-profile';
 import { NextRequest, NextResponse } from "next/server";
 import { setOwnerDiscoveryParticipation } from "../../../../lib/asset-discovery";
 import { getServerSession } from "../../../../lib/auth-session";
@@ -26,7 +26,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const profile = await businessToolProfile(session);
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     if (profile.accountType !== "owner") {
       return NextResponse.json(
         {

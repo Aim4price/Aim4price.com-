@@ -1,4 +1,4 @@
-import { businessToolProfile } from './business-tool-profile';
+import { getAccountProfile } from './account-profile';
 import { getServerSession } from './auth-session';
 import { dealerRoleCan } from './dealer-app-access';
 import { getDealerAppSession } from './dealer-app-session';
@@ -16,7 +16,7 @@ export async function getDealerCostRequestContext(): Promise<DealerCostRequestCo
   const dealerAppSession = await getDealerAppSession();
   if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'client_costs')) return null;
 
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return null;
 
   const supplierName = profile.businessName || profile.displayName || profile.name || 'Dealer';

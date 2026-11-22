@@ -45,7 +45,7 @@ test('renderer uses design dimensions, field bindings and rejects missing requir
 });
 test('database creates, updates and reloads designs while enforcing account ownership', async () => {
   const pg = new PGlite();
-  await pg.exec('create table asset_register_items (id text);');
+  await pg.exec('create table asset_register_items (id text); create table account_profiles(user_id text primary key,account_type text);');
   const client = { query: async (sql, values) => {
     if (sql.includes('pg_advisory_xact_lock')) return { rows: [] };
     if (!values && sql.includes('create table')) { await pg.exec(sql); return { rows: [] }; }

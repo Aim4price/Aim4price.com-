@@ -1,8 +1,8 @@
+import { getAccountProfile } from '../../../lib/account-profile';
 import { normalizeMarketplaceTitle } from '../../../lib/marketplace-title';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession, isDealerAppSession } from '../../../lib/auth-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
-import { getAccountProfile } from '../../../lib/account-profile';
 import {
   listPublishedMarketplaceAssetListings,
   publishAssetRegisterItemToMarketplace,
@@ -92,7 +92,7 @@ function formatUnknownError(error: unknown, fallback: string): string {
 
 async function getOptionalSession() {
   try {
-    return await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+    return await getServerSession({ allowBusinessWorkspace:true, allowDealerApp: true, allowOwnerApp: true });
   } catch {
     return null;
   }
@@ -106,11 +106,7 @@ export async function GET() {
     let exposeContact = false;
 
     if (session?.user?.id) {
-      const profile = await getAccountProfile({
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-      });
+      const profile = await getAccountProfile(session.user,{businessToolsFor:session});
 
       if (
         profile.accountStatus !== 'active'
@@ -142,7 +138,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({ allowBusinessWorkspace:true, allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -188,11 +184,7 @@ export async function POST(request: NextRequest) {
   const brandKitId = String(body.brandKitId ?? '').trim();
 
   try {
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
 
     const accountType = String(profile.accountType ?? '').trim().toLowerCase();
 

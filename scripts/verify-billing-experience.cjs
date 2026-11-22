@@ -386,8 +386,8 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Free Business')).click());
      await page.waitForSelector('[data-free-business]');
      assert.match(await page.$eval('[data-free-business]',e=>e.textContent),/500 monthly action credits.*Viewing uses no credits/);
-     assert.ok(await page.$('[data-free-business] a[href="/business/join"]'),'Free Business uses the free signup route');
-     assert.match(await page.$eval('[data-free-business]',e=>e.textContent),/registers, Parts & Stock or staff access.*Paid Business/);
+     assert.ok(await page.$('[data-free-business] a[href="/auth?accountType=business&offer=free#signup"]'),'Free Business uses the free signup route');
+     assert.match(await page.$eval('[data-free-business]',e=>e.textContent),/Paid Business for staff access and unlimited actions/);
      for(const height of [1000,600]){
       await page.setViewport({width,height});
       const fit=await page.$eval('[data-free-business]',e=>{
@@ -443,7 +443,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.evaluate(()=>fixturePricingRoot.render(React.createElement(require('app/pricing/pricing-content').default,{key:'signed-pricing',signedIn:true,initialAudience:'free-business',freeBusinessCredits:500})));
      await page.waitForSelector('[data-free-business]');
      assert.ok(await page.$('[data-free-business] a[href="/account"]'),'Existing users manage their account rather than create a duplicate');
-     assert.equal(await page.$('[data-free-business] a[href="/business/join"]'),null);
+     assert.equal(await page.$('[data-free-business] a[href="/auth?accountType=business&offer=free#signup"]'),null);
      await page.keyboard.press('Escape');
      assert.equal(await page.$('a[href="/account"]'),null,'Account management stays inside the selected plan');
     }

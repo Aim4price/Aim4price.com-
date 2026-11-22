@@ -1,10 +1,10 @@
+import { getAccountProfile } from '../../../lib/account-profile';
 import { validCurrentSaleabilityAnswers } from '../../../lib/asset-saleability';
 import { saveValuationSaleability } from '../../../lib/server/save-valuation-saleability';
 import { normalizeEstimateReplacementPrice } from '../../../lib/estimate-replacement';
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventsSafely, type AdminUsageEventInput } from '../../../lib/admin-usage-events';
 import { getServerSession, isAdminSupportSession, isOwnerAppSession } from '../../../lib/auth-session';
-import { getAccountProfile } from '../../../lib/account-profile';
 import {
   createAssetRegisterItemFromGenericValuation,
   createAssetRegisterItemFromValuation,
@@ -394,7 +394,7 @@ function buildFriendlyError(error: unknown): { status: number; message: string }
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+    const session = await getServerSession({ allowBusinessWorkspace:true, allowDealerApp: true, allowOwnerApp: true });
 
     if (!session?.user?.id) {
       return NextResponse.json<SaveValuationRunApiResponse>(
@@ -443,11 +443,7 @@ export async function POST(request: NextRequest) {
     const accountantShareId = String(body.accountantShareId ?? '').trim();
     const requestedRegisterId = String(body.registerId ?? '').trim();
 
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     if (advancedAssumptionsRequireActiveAccess(body.advancedAssumptions) && profile.accountStatus !== 'active') {
       return NextResponse.json<SaveValuationRunApiResponse>(
         {

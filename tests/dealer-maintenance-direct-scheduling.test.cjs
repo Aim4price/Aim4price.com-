@@ -18,6 +18,7 @@ async function setup(){
  const query=(sql,params)=>/create extension/i.test(sql)?Promise.resolve({rows:[]}):params?pg.query(sql,params):pg.exec(sql).then(r=>r.at(-1));
  const db={query,connect:async()=>{if(beforeWrite){const fn=beforeWrite;beforeWrite=null;await fn();}return {query,release(){}};}};
  const mocks={
+  './business-credits':{spendBusinessCredit:async()=>{}},
  // These tests create schedules; history attribution belongs to completion.
  './asset-history-schema':{setAssetHistoryActor:async()=>{throw Error('Schedule creation must not invoke completion history attribution');}},
  './maintenance-reminders':{ensureMaintenanceReminders:async()=>{},saveMaintenanceSource:async(client,source)=>{await client.query('CREATE TABLE IF NOT EXISTS test_sources(record_id uuid, scheduler_id text)');await client.query('INSERT INTO test_sources VALUES($1::uuid,$2)',[source.record_id,source.scheduler_id]);}},

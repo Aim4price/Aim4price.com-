@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../../lib/account-profile';
 import { dealerRoleCan } from '../../../../../lib/dealer-app-access';
 import { isTrustedRequestOrigin } from '../../../../../lib/trusted-request-origin';
 import { NextResponse } from 'next/server';
@@ -20,7 +20,7 @@ export async function GET(_request: Request, { params }: { params: { accessId: s
     return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
   }
 
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer App access is not available.' }, { status: 403 });
   }
@@ -44,7 +44,7 @@ export async function POST(request: Request, { params }: { params: { accessId: s
   }
 
   if ((isDealerAppSession(session) && !dealerRoleCan(session.dealerApp.role, 'maintenance')) || !isTrustedRequestOrigin(request.headers.get('origin'), new URL(request.url).origin)) return NextResponse.json({ ok: false, error: 'Maintenance access is not available.' }, { status: 403 });
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer maintenance access is not available.' }, { status: 403 });
   }
@@ -134,7 +134,7 @@ export async function PATCH(request: Request, { params }: { params: { accessId: 
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'Dealer login is required.' }, { status: 401 });
   }
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer maintenance access is not available.' }, { status: 403 });
   }
@@ -189,7 +189,7 @@ export async function DELETE(_request: Request, { params }: { params: { accessId
     return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
   }
 
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer App access is not available.' }, { status: 403 });
   }

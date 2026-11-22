@@ -17,7 +17,7 @@ export default async function SharingAdmin({searchParams}:{searchParams?:{period
  ]);
  const paidIds=new Set(paidMembers.rows.map(row=>row.user_id));
  return <main className={styles.page}>
-  <header className={styles.heading}><div><h1>Sharing usage</h1><p>Track shared assets, link opens and account activity.</p></div><span className={styles.badge}>{creditLimitsActive()?'Business credit limits active':'Business credit trial'}</span></header>
+  <header className={styles.heading}><div><h1>Sharing usage</h1><p>Track shared assets, link opens and account activity.</p></div><span className={styles.badge}>{creditLimitsActive()?'Business credit limits active':'Credit limits set per business'}</span></header>
   <SharingUsage accounts={accounts.map(account=>account.plan==='free'&&paidIds.has(account.user_id)?{...account,plan:'paid-business'}:account)} period={period} adminId={admin.user.id}/>
   <AdminBusinessCredits {...credits}/>
   <ListingReviews />

@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../lib/account-profile';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { dealerRoleCan } from '../../../../lib/dealer-app-access';
@@ -71,7 +71,7 @@ async function getRecentAdvertViewer(): Promise<RecentAdvertViewer> {
     };
   }
 
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
 
   if (
     !['owner', 'dealer'].includes(profile.accountType)

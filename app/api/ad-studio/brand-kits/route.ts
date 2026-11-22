@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../../../lib/business-tool-profile';
+import { getAccountProfile } from '../../../../lib/account-profile';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   deleteAdBrandKit,
@@ -18,7 +18,7 @@ async function resolveAccess() {
   if (!session?.user?.id) return null;
 
   const [profile, dealerSession] = await Promise.all([
-    businessToolProfile(session),
+    getAccountProfile(session.user,{businessToolsFor:session}),
     getDealerAppSession(),
   ]);
 

@@ -1,4 +1,4 @@
-import { businessToolProfile } from '../../lib/business-tool-profile';
+import { getAccountProfile } from '../../lib/account-profile';
 import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import AdStudioClient from '../../components/AdStudioClient';
@@ -13,7 +13,7 @@ export default async function AdStudioPage({searchParams}: {searchParams?: {mode
   if (!session?.user?.id) redirect('/auth#login');
   if (isDealerAppSession(session)) redirect('/dealer/ad-studio');
 
-  const profile = await businessToolProfile(session);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
 
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     redirect('/account');
