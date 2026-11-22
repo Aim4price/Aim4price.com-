@@ -11,15 +11,15 @@
 }
 .heading { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.25rem; }
 .heading h1, .heading h2, .settings h2 { margin:0; line-height:1.08; letter-spacing:-.035em; }
-.heading h1 { font-size:clamp(2.3rem,4vw,3rem); }
-.heading h2 { font-size:clamp(1.6rem,3vw,2.1rem); }
+.heading h1 { font-size:2.65rem; }
+.heading h2 { font-size:1.9rem; }
 .setting, .upgrade { border:1px solid #779e8c; border-radius:.85rem; padding:.7rem 1rem; background:#eff8f3; color:#153e30; font:inherit; font-weight:700; cursor:pointer; }
 .upgrade { display:flex; align-items:center; flex-wrap:wrap-reverse; gap:.6rem; background:#194735; color:white; }
 .upgrade span { padding:.25rem .65rem; border-radius:2rem; color:#123f30; background:#d3efdf; font-size:.88rem; }
 .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,16.5rem),1fr)); gap:.85rem; }
 .card { position:relative; isolation:isolate; min-height:9rem; border-radius:1.15rem; background:#204839; color:#fff; }
 .cardLink { position:relative; z-index:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-start; box-sizing:border-box; gap:1rem; height:100%; min-height:9rem; border-radius:inherit; padding:1.25rem; color:white; text-decoration:none; background:linear-gradient(105deg,rgba(13,48,36,.75),transparent 78%); }
-.cardLink strong { font-size:clamp(1.18rem,1.8vw,1.42rem); line-height:1.15; color:white; text-shadow:0 1px 4px #173829; }
+.cardLink strong { font-size:1.4rem; line-height:1.15; color:white; text-shadow:0 1px 4px #173829; }
 .cardLink:hover, .cardLink:focus-visible { color:white; }
 .plan { margin-bottom:auto; display:inline-flex; align-items:center; gap:.35rem; font-size:.85rem; font-weight:750; padding:.28rem .6rem; background:#d7ecdf; color:#183b2d; border-radius:2rem; }
 .plan svg { width:1rem; height:1rem; }
