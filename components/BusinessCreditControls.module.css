@@ -20,8 +20,8 @@
 .card.card:hover { border-color: var(--app-accent,#228762); }
 .cardHeading { font-size: 1.25rem; }
 .card .balance { gap: .7rem; }
-.dialog.dialog { width: min(43rem,calc(100% - 2rem)); }
-.body { container: credit-dialog / inline-size; display: grid; gap: 1rem; padding-top: 1rem; font-size: 1rem; line-height: 1.45; }
+.dialog.dialog { width: min(49rem, calc(100% - 2rem)); }
+.body { container: credit-dialog / inline-size; display: grid; gap: .9rem; padding-top: 1rem; font-size: 1rem; line-height: 1.45; }
 .body p, .body h3 { margin: 0; }
 .summary { padding: 1rem 1.2rem; border-radius: 1rem; background: #194c3d; color: white; }
 .summary .balance strong { font-size: 2rem; }
@@ -31,13 +31,13 @@
 .usage { display: grid; gap: .45rem; }
 .usage p { display: grid; grid-template-columns: 4.4rem 1fr; gap: .5rem; }
 .options { display: grid; }
-.options > section { display: grid; grid-template-columns: 1fr auto; gap: .3rem 1.25rem; padding: 1rem 0; border-top: 1px solid var(--app-line,#d3e1d9); }
+.options > section { display: grid; grid-template-columns: 1fr auto; gap: .25rem 1.1rem; padding: .9rem 0; border-top: 1px solid var(--app-line,#d3e1d9); }
 .options > section:last-child { padding-bottom: 0; }
 .options h3 { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; font-size: 1.08rem; }
 
-.options p { grid-column: 1; }
+.options p { grid-column: 1; text-wrap: pretty; }
 .options button, .options a { grid-column: 2; grid-row: 1 / 3; align-self: center; min-height: 2.75rem; font: inherit; font-weight: 700; }
-@container credit-dialog (max-width: 32rem) {
+@container credit-dialog (max-width: 36rem) {
   .options > section { grid-template-columns: 1fr; }
   .options button, .options a { grid-area: auto; justify-self: start; margin-top: .4rem; }
 }
