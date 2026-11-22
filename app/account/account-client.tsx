@@ -18,6 +18,7 @@ import {
 import SettingsDetailIcon from "../../components/SettingsDetailIcon";
 import DesktopNotificationSettings from "./notifications/notification-settings-client";
 import AccountInvoices from "./account-invoices";
+import { closeWebsiteSession } from "../../lib/close-website-session";
 import AppHeader from "../../components/AppHeader";
 import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
@@ -518,6 +519,7 @@ export default function AccountClient({
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteModalError, setDeleteModalError] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newAccountEmail, setNewAccountEmail] = useState("");
@@ -1444,6 +1446,18 @@ export default function AccountClient({
     }
   }
 
+  async function handleSignOut() {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    try {
+      await closeWebsiteSession();
+      window.location.replace("/auth#login");
+    } catch {
+      setIsSigningOut(false);
+      setNotice({ tone: "error", message: "Could not sign out. Check your connection and try again." });
+    }
+  }
+
   async function handleDeleteAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setDeleteModalError(null);
@@ -1553,6 +1567,14 @@ export default function AccountClient({
                 Directory {directoryStatusLabel.toLowerCase()}
               </span>
             ) : null}
+            <button type="button" className={styles.heroSignOut} onClick={handleSignOut} disabled={isSigningOut}>
+              <span aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5M9 12h12m-5-5 5 5-5 5" />
+                </svg>
+              </span>
+              {isSigningOut ? "Signing out…" : "Sign out"}
+            </button>
           </div>
         </section>
 
