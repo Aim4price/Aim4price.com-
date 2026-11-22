@@ -93,7 +93,7 @@
 
 .familyModalHeading p {
   margin: 0.45rem 0 0;
-  color: #71817c;
+  color: #385748;
   font-size: 0.9rem;
   font-weight: 630;
   line-height: 1.4;
@@ -182,7 +182,7 @@
 }
 
 .familySearchField input::placeholder {
-  color: #8a9994;
+  color: #385748;
   opacity: 1;
 }
 
@@ -311,7 +311,7 @@
 }
 
 .familyOptionCopy small {
-  color: #80928c;
+  color: #385748;
   font-size: 0.76rem;
   font-weight: 640;
   line-height: 1.3;
@@ -326,7 +326,7 @@
   gap: 0.5rem;
   border: 1px dashed rgba(24, 104, 79, 0.2);
   border-radius: 1rem;
-  color: #61776f;
+  color: #385748;
   background: rgba(247, 251, 249, 0.82);
   text-align: center;
 }
@@ -414,9 +414,9 @@
 
 .familyGuidance {
   display: block;
-  color: #536d63;
+  color: #385748;
   font-size: 0.8rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.4;
   white-space: normal;
 }
@@ -426,9 +426,9 @@
 .familyGuideNote {
   display: block;
   margin-top: 0.25rem;
-  color: var(--app-muted, #536d63);
+  color: #385748;
   font-size: 0.78rem;
-  font-weight: 400;
+  font-weight: 600;
   line-height: 1.4;
 }
 
@@ -448,7 +448,7 @@
 /* Keep browsing controls fixed while only the equipment list scrolls. */
 .familyListHeading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .8rem .3rem; border-top: 1px solid #e1eae5; flex-shrink: 0; }
 .familyListHeading strong { font-size: .95rem; }
-.familyListHeading > span { font-size: .8rem; color: #5d7569; }
+.familyListHeading > span { font-size: .8rem; color: #385748; }
 .familyModal .familyOptionsViewport { padding-right: 1rem; }
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .familyOptionsGrid { grid-template-columns: 1fr; }
@@ -534,6 +534,6 @@
 .familyCategoryMenu { font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif; }
 .familyCategorySearch { display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 1; padding: 10px; margin-bottom: 6px; border: 1px solid #c4dcd0; border-radius: 10px; background: #edf5f0; color: #36735a; }
 .familyCategorySearch input { width: 100%; min-width: 0; padding: 0; border: 0; outline: none; background: transparent; color: #244f3f; font: inherit; font-size: .9rem; }
-.familyCategorySearch input::placeholder { color: #63796e; }
+.familyCategorySearch input::placeholder { color: #385748; }
 .familyCategorySearch:focus-within { border-color: #237454; box-shadow: inset 0 0 0 1px #237454; }
-.familyCategoryEmpty { padding: 10px 12px; margin: 0; color: #63796e; font-size: .9rem; }
+.familyCategoryEmpty { padding: 10px 12px; margin: 0; color: #385748; font-size: .9rem; }
