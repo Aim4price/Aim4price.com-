@@ -31,8 +31,10 @@ test('website header keeps desktop navigation while native callers retain compac
 });
 
 test('website sign-out stays separate from installable app sessions and verifies closure', async () => {
-  const [headerClient, sessionCache, meRoute] = await Promise.all([
+  const [headerClient, accountClient, closeSession, sessionCache, meRoute] = await Promise.all([
     read('components/AppHeader.tsx'),
+    read('app/account/account-client.tsx'),
+    read('lib/close-website-session.ts'),
     read('lib/header-session-cache.ts'),
     read('app/api/me/route.ts'),
   ]);
@@ -41,13 +43,16 @@ test('website sign-out stays separate from installable app sessions and verifies
   assert.match(meRoute, /export async function GET\(request: Request\)/);
   assert.match(meRoute, /searchParams\.get\('scope'\) === 'website'/);
   assert.match(meRoute, /websiteOnly[\s\S]*?\? await getServerSession\(\)[\s\S]*?: await getServerSession\(\{ allowDealerApp: true, allowOwnerApp: true \}\)/);
-  assert.match(headerClient, /for \(let attempt = 0; attempt < 2; attempt \+= 1\)/);
-  assert.match(headerClient, /keepalive: true/);
-  assert.match(headerClient, /headerFetch\('\/api\/me\?scope=website'/);
+  assert.match(closeSession, /for \(let attempt = 0; attempt < 2; attempt \+= 1\)/);
+  assert.match(closeSession, /keepalive: true/);
+  assert.match(closeSession, /fetch\('\/api\/me\?scope=website'/);
   assert.match(headerClient, /if \(desktopContext\) \{ desktopContext.onSignOut\(\); return; \}/);
   assert.match(headerClient, /const headerFetch:[\s\S]*?desktopContext \?[^;]*?status: 403[^;]*?globalThis.fetch.bind\(globalThis\)/);
-  assert.match(headerClient, /verification\?\.signedIn !== false/);
-  assert.match(headerClient, /clearCachedHeaderSession\(\)[\s\S]*?window\.location\.replace\('\/auth#login'\)/);
+  assert.match(closeSession, /verification\?\.signedIn !== false/);
+  assert.match(closeSession, /clearCachedHeaderSession\(\)/);
+  for (const client of [headerClient, accountClient]) {
+    assert.match(client, /await closeWebsiteSession\(\);[\s\S]*?window\.location\.replace\(['"]\/auth#login['"]\)/);
+  }
 });
 
 test('Home retains its eight-step scroll story at every width and respects reduced motion', async () => {

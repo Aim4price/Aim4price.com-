@@ -10,12 +10,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
-  clearCachedHeaderSession,
   readCachedHeaderSession,
   refreshCachedHeaderSession,
   writeCachedHeaderSession,
   type HeaderSessionUser,
 } from '../lib/header-session-cache';
+import { closeWebsiteSession } from '../lib/close-website-session';
 import { isMiddlemanAccountSubtype } from '../lib/middleman-account';
 import { workspaceHeader, workspaceRole, receivedAssetsHref } from '../lib/workspace-navigation';
 import { isViewportScrollbarInteraction } from '../lib/viewport-scrollbar';
@@ -639,13 +639,6 @@ function MobileNavIcon({ page }: { page: ActivePage }) {
       </svg>
     </span>
   );
-}
-
-function clearLegacyPrototypeStorage() {
-  if (typeof window === 'undefined') return;
-
-  window.localStorage.removeItem('aim4price-tractors-kit-register');
-  window.localStorage.removeItem('aim4price-tractors-kit-marketplace');
 }
 
 function parseTime(value: string | null | undefined): number {
@@ -1632,50 +1625,7 @@ export default function AppHeader({
     setIsSigningOut(true);
 
     try {
-      await headerFetch('/api/admin/users', {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ action: 'close_account' }),
-      }).catch(() => null);
-
-      let signOutResponse: Response | null = null;
-
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        signOutResponse = await headerFetch('/api/auth/sign-out', {
-          method: 'POST',
-          credentials: 'include',
-          cache: 'no-store',
-          keepalive: true,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({}),
-        }).catch(() => null);
-
-        if (signOutResponse?.ok) break;
-      }
-
-      if (!signOutResponse?.ok) {
-        throw new Error('The website session did not close.');
-      }
-
-      const verificationResponse = await headerFetch('/api/me?scope=website', {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      const verification = (await verificationResponse.json().catch(() => null)) as {
-        signedIn?: boolean;
-      } | null;
-
-      if (!verificationResponse.ok || verification?.signedIn !== false) {
-        throw new Error('The website session is still active.');
-      }
-
-      clearLegacyPrototypeStorage();
-      clearCachedHeaderSession();
+      await closeWebsiteSession();
       setSession(null);
       setMenuOpen(false);
       setMobileMenuOpen(false);
