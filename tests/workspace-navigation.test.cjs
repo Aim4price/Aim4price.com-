@@ -47,3 +47,14 @@ test('both Business tiers keep the same inventory with their own inbox and perso
     assert.ok(links.includes('/ad-studio?mode=template') && links.includes('/ad-studio?mode=create'));
   }
 });
+
+test('Free Business Manage follows the current workspace selection', () => {
+  for (const inbox of ['/business', '/shared-enquiries']) {
+    const cards = nav.workspaceCards('business', true, inbox);
+    const links = hidden => nav.freeBusinessManageItems(inbox, hidden).map(item => item.href);
+    assert.deepEqual(links([]), ['/account', '/', ...cards.map(card => card.href)]);
+    assert.deepEqual(links(['retired-card']), links([]));
+    assert.deepEqual(links(cards.filter(card => card.key !== 'shared').map(card => card.key)), [inbox]);
+    assert.deepEqual(links(cards.map(card => card.key)), []);
+  }
+});
