@@ -23,7 +23,8 @@ test('each personal workspace has four ordered header links and Account last in 
     assert.equal(new Set(cards.map(card=>card.href)).size,cards.length);
   }
   const owner = nav.workspaceCards('owner',false,'/leads');
-  assert.ok(owner.length >= 12);
+  assert.equal(owner[0].href, '/asset-registers');
+  assert.ok(owner.every(card => !['/annual-review','/asset-register'].includes(card.href)));
   assert.ok(owner.some(card=>card.href==='/fuel?view=slips'));
   assert.ok(owner.some(card=>card.href==='/budgets'));
 });
@@ -35,6 +36,7 @@ test('both Business tiers keep the same inventory with their own inbox and paid 
   assert.equal(free.find(card=>card.key==='shared').href,'/business');
   assert.equal(paid.find(card=>card.key==='shared').href,'/leads');
   assert.equal(free.find(card=>card.key==='parts').locked,true);
+  assert.equal(paid.find(card=>card.key==='parts').label,'Parts & Stock');
   assert.ok(paid.every(card=>!card.locked));
   assert.ok(free.filter(card=>['account','value','shared','marketplace'].includes(card.key)).every(card=>!card.locked));
   for (const role of ['business','middleman']) {

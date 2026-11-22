@@ -235,7 +235,7 @@ const OWNER_NAV_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/parts', label: 'Parts Stock', accountTypes: ['dealer'] },
+  { href: '/parts', label: 'Parts & Stock', accountTypes: ['dealer'] },
   { href: '/valuation', label: 'Value Asset' },
   { href: '/account', label: 'Account' },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
@@ -1036,12 +1036,12 @@ export default function AppHeader({
   const navItems = useMemo<NavItem[]>(() => {
     if (role) return [...workspaceHeader(role, receivedAssetsHref(session?.accountType, session?.sharingPlan))];
     const items = buildNavItems(navAccountType, session?.accountSubtype);
-    return partsAccess ? [...items, {key:'parts', href:'/parts', label:'Parts Stock'}] : items;
+    return partsAccess ? [...items, {key:'parts', href:'/parts', label:'Parts & Stock'}] : items;
   }, [role, navAccountType, partsAccess, session?.accountType, session?.accountSubtype, session?.sharingPlan]);
   const mobileNavItems = useMemo(() => {
     if (role || !session?.accountType) return navItems;
     const items = buildMobileNavItems(session.accountType, session.accountSubtype);
-    return partsAccess ? [...items, {key:'parts' as const, href:'/parts', label:'Parts Stock'}] : items;
+    return partsAccess ? [...items, {key:'parts' as const, href:'/parts', label:'Parts & Stock'}] : items;
   }, [role, navItems, session?.accountType, session?.accountSubtype, partsAccess]);
   const activeNavKey = useMemo(
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
@@ -2546,7 +2546,7 @@ export default function AppHeader({
                                       { href: '/account', label: 'Account' },
                                       { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared Assets' },
                                       ...(session?.accountType === 'business' ? [] : [{ href: '/pricing', label: 'Subscriptions' }]),
-                                      ...(partsAccess ? [{ href: '/parts', label: 'Parts Stock' }] : []),
+                                      ...(partsAccess ? [{ href: '/parts', label: 'Parts & Stock' }] : []),
                                     ]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).filter(item=>desktopAllows(item.href)).map((item) => {

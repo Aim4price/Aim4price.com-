@@ -12,7 +12,9 @@ const json = (value: unknown, status = 200) => NextResponse.json(value, { status
 async function account() {
   // Full account access only. Shared links and restricted installed-app sessions cannot apply account-wide changes.
   const session = await getServerSession();
-  return session && await getAssetRegisterAccountAccess(session) ? session.user : null;
+  if (!session) return null;
+  const access = await getAssetRegisterAccountAccess(session);
+  return access?.accountType === 'dealer' ? session.user : null;
 }
 function failure(error: unknown) {
   const message = error instanceof Error ? error.message : '';
@@ -22,7 +24,7 @@ function failure(error: unknown) {
 }
 export async function GET(request: NextRequest) {
   const user = await account();
-  if (!user) return json({ error: 'Sign in with an active Owner or Business account.' }, 403);
+  if (!user) return json({ error: 'Annual review is unavailable for this account.' }, 403);
   try {
     const year = liveReviewYear();
     if (!year) return json({ available: false, opensOn: '2027-01-01' });
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     requireBusinessOrigin(request);
     const user = await account();
-    if (!user) return json({ error: 'Sign in with an active Owner or Business account.' }, 403);
+    if (!user) return json({ error: 'Annual review is unavailable for this account.' }, 403);
     const body = await readAnnualReviewBody(request);
     const year = requireAnnualYear(body.year);
     if (body.action === 'apply') return json(await applyAnnualReview(user.id, body as unknown as AnnualConfirmation));

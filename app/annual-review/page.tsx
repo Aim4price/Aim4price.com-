@@ -7,6 +7,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export default async function AnnualReviewPage() {
   const { session } = await requireActivePageAccess();
-  if (!await getAssetRegisterAccountAccess(session)) redirect('/account');
+  const access = await getAssetRegisterAccountAccess(session);
+  if (access?.accountType !== 'dealer') redirect('/workspace');
   return <><AppHeader active="workspace"/><main style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem 1rem' }}><AnnualReviewClient live /></main></>;
 }

@@ -98,12 +98,12 @@ test('future years and prelaunch saves fail; next year can be reviewed again',as
 
 test('API uses the authenticated account and never accepts a submitted owner identity',async()=>{
   const {NextRequest,NextResponse}=require('next/server');
-  let session={user:{id:'signed-in',email:'owner@example.com'}},allowed=true,applied=[],loaded=[],originChecked=0;
+  let session={user:{id:'signed-in',email:'owner@example.com'}},allowed=true,accountType='dealer',applied=[],loaded=[],originChecked=0;
   const api=load('app/api/annual-review/route.ts',{
     'next/server':{NextResponse},
     '../../../lib/annual-review-request':load('lib/annual-review-request.ts'),
     '../../../lib/auth-session':{getServerSession:async()=>session},
-    '../../../lib/asset-register-account-access':{getAssetRegisterAccountAccess:async()=>allowed},
+    '../../../lib/asset-register-account-access':{getAssetRegisterAccountAccess:async()=>allowed ? {accountType} : null},
     '../../../lib/business-network-api':{businessBody:r=>r.json(),requireBusinessOrigin:r=>{originChecked++;if(r.headers.get('origin')!=='https://aim4price.com')throw Error('This request must be sent from Aim4price.');}},
     '../../../lib/annual-review-preview':{loadAnnualReview:async(...args)=>{loaded.push(args);return{rows:[]};}},
     '../../../lib/annual-review-policy':{...policy,liveReviewYear:()=>2027},
@@ -116,6 +116,10 @@ test('API uses the authenticated account and never accepts a submitted owner ide
   allowed=true;assert.equal((await api.POST(req())).status,200);assert.equal(applied[0][0],'signed-in');assert.equal(originChecked,4);
   await api.GET(new NextRequest('https://aim4price.com/api/annual-review?email=victim@example.com&year=2099'));
   assert.equal(loaded[0][1],2027);assert.equal(loaded[0][3],'signed-in');
+  accountType='owner';
+  assert.equal((await api.GET(new NextRequest('https://aim4price.com/api/annual-review'))).status,403);
+  assert.equal((await api.POST(req())).status,403);
+  assert.equal(applied.length,1);
 });
 
 test('crossing midnight during saving rolls back the already-written assets and history',async()=>{

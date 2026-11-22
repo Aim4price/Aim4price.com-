@@ -96,7 +96,6 @@ export default async function AssetRegisterPage({
 
   return (
     <>
-      <AnnualReviewNotice />
       <AssetRegisterClient />
       <AssetRegisterOverview />
     </>
