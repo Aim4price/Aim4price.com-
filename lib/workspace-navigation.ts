@@ -31,7 +31,8 @@ export function workspaceHeader(role: WorkspaceRole, receivedHref: string) {
 const cards = {
   register: ['Asset Register','/asset-register'],
   value: ['Value Asset','/valuation'],
-  marketplace: ['Marketplace','/marketplace'],
+  marketplace: ['Marketplace','/marketplace/browse'],
+  discovery: ['Discovery','/asset-discovery'],
   registers: ['Manage Registers','/asset-registers'],
   map: ['Asset Map','/asset-map'],
   maintenance: ['Maintenance','/maintenance'],
@@ -51,7 +52,7 @@ const cards = {
 } as const;
 type CardKey = keyof typeof cards;
 const inventories: Record<WorkspaceRole, CardKey[]> = {
-  owner: ['registers','value','map','maintenance','fuel','storage','costs','budgets','documents','marketplace','account'],
+  owner: ['registers','value','map','maintenance','fuel','storage','costs','budgets','documents','marketplace','discovery','account'],
   business: ['shared','register','registers','parts','tracking','businessCosts','value','marketplace','showroom','template','advert','account'],
   middleman: ['marketplace','showroom','value','template','advert','account'],
 };

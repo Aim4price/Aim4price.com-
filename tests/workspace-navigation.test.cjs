@@ -20,9 +20,11 @@ test('each personal workspace has four ordered header links and Account last in 
     assert.deepEqual(nav.workspaceHeader(role,'/business').map(item=>item.label), ['Home','Workspace',third,'Value Asset']);
     const cards = nav.workspaceCards(role,false,'/leads');
     assert.equal(cards.at(-1).key,'account');
+    assert.equal(cards.find(card=>card.key==='marketplace').href,'/marketplace/browse');
     assert.equal(new Set(cards.map(card=>card.href)).size,cards.length);
   }
   const owner = nav.workspaceCards('owner',false,'/leads');
+  assert.deepEqual(owner.slice(-3).map(card=>card.href), ['/marketplace/browse','/asset-discovery','/account']);
   assert.equal(owner[0].href, '/asset-registers');
   assert.ok(owner.every(card => !['/annual-review','/asset-register'].includes(card.href)));
   assert.ok(owner.some(card=>card.href==='/fuel?view=slips'));
