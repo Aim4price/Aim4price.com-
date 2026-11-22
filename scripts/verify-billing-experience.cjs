@@ -476,7 +476,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.doesNotMatch(await page.$eval('main', e=>e.textContent), /Create enquiry account/);
      await page.click('button[aria-label^="Which best describes your work?"]');await page.waitForSelector('[role="option"]');
      const options=await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent));
-     assert.equal(options.includes('Other business'),mode==='signup-dealer',mode+' shows the applicable business categories');
+     assert.equal(options.includes('Other business'),mode==='signup-business',mode+' shows the applicable business categories');
      await page.keyboard.press('Escape');
      await clickText('Next');await page.waitForSelector('input[name="name"]');await settledStep('signup-step-details');
      assert.ok(await page.$('#signup-step-details'),'Every account uses the same second step');
