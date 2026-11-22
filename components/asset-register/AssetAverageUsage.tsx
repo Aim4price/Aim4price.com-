@@ -1,6 +1,7 @@
 'use client';
 import {useEffect,useId,useRef,useState} from 'react';
 import {suggestedDailyUsage,usageToday,validUsageDate,validWorkingDays} from '../../lib/average-usage-math';
+import DateInput from '../DateInput';
 import styles from './AssetAverageUsage.module.css';
 type Usage={mode:string;enabled:boolean;metric:string;reading:number|null;estimated:boolean;baselineValue:number|null;baselineAt:string|null;dailyUsage:number|null;workingDays:number[];yearModel:number|null;events?:{id:string;action:string;reading:number;metric:string;created_at:string}[]};
 const number=(n:number|null)=>n==null?'Not recorded':n.toLocaleString('en-ZA',{maximumFractionDigits:2});
@@ -50,7 +51,7 @@ export default function AssetAverageUsage({assetId}:{assetId:string}) {
       {screen==='reading'&&<>
         <p className={styles.notice}>{usage.estimated?'Current estimate':'Saved reading'}: <strong>{number(usage.reading)} {usage.metric}</strong></p>
         <div className={styles.fields}><label htmlFor={`${id}-reading`}>Meter reading ({usage.metric})<input id={`${id}-reading`} type="number" min="0" max="999999999999" step="0.01" inputMode="decimal" required value={reading} onChange={e=>setReading(e.target.value)} placeholder={usage.metric==='hours'?'For example, 14014':'For example, 90000'} disabled={busy}/></label>
-        <label htmlFor={`${id}-date`}>Date recorded<input id={`${id}-date`} type="date" min="1900-01-01" max={usageToday()} required value={date} onChange={e=>setDate(e.target.value)} disabled={busy}/></label></div>
+        <label htmlFor={`${id}-date`}>Date recorded<DateInput id={`${id}-date`} aria-label="Date recorded" min="1900-01-01" max={usageToday()} required value={date} onValueChange={setDate} disabled={busy}/></label></div>
         {configured&&!active&&<button className={styles.suggest} type="button" disabled={busy||!validReading} onClick={()=>void save('confirm')}>Save reading · stay off</button>}
       </>}
       {screen==='usage'&&<>
@@ -60,7 +61,7 @@ export default function AssetAverageUsage({assetId}:{assetId:string}) {
         <button className={styles.suggest} type="button" disabled={busy||!days.length} onClick={()=>navigate('calculator')}>Not sure? Estimate from age</button>
       </>}
       {screen==='calculator'&&<>
-        <label htmlFor={`${id}-service`}>Date first put to work<input id={`${id}-service`} type="date" min="1900-01-01" max={date} value={serviceDate} onChange={e=>setServiceDate(e.target.value)} disabled={busy}/><small>Based on the model year. Change the date if needed.</small></label>
+        <label htmlFor={`${id}-service`}>Date first put to work<DateInput id={`${id}-service`} aria-label="Date first put to work" min="1900-01-01" max={date} value={serviceDate} onValueChange={setServiceDate} disabled={busy}/><small>Based on the model year. Change the date if needed.</small></label>
         <p>We divide total usage by the working days since this date. This assumes the meter started at zero.</p>
         {suggestion!==null&&suggestion>0&&suggestion<=(usage.metric==='hours'?24:10000)?<div className={styles.result}><span>Suggested daily average</span><strong>{number(suggestion)} {usage.metric} per working day</strong><span>Use this only if it matches normal use today.</span></div>:<p role="status">{suggestion!==null&&suggestion>(usage.metric==='hours'?24:10000)?'Average too high. Check the date.':'Choose an earlier date.'}</p>}
       </>}

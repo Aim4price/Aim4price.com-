@@ -56,8 +56,21 @@ function CalendarSelect({ label, value, options, onChange }: {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus(); return; }
       const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'));
       const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
-      const next = event.key === 'ArrowDown' ? Math.min(index + 1, buttons.length - 1) : event.key === 'ArrowUp' ? Math.max(index - 1, 0) : event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : -1;
-      if (next >= 0) { event.preventDefault(); buttons[next]?.focus(); }
+      if (index < 0) return;
+      const pageSize = Math.max(1, Math.floor(event.currentTarget.clientHeight / buttons[index].offsetHeight));
+      let next = index;
+      switch (event.key) {
+        case 'ArrowDown': next++; break;
+        case 'ArrowUp': next--; break;
+        case 'PageDown': next += pageSize; break;
+        case 'PageUp': next -= pageSize; break;
+        case 'Home': next = 0; break;
+        case 'End': next = buttons.length - 1; break;
+        default: return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      buttons[Math.max(0, Math.min(next, buttons.length - 1))].focus();
     }}>
       {options.map((option) => <button key={option.value} type="button" role="option" tabIndex={-1} aria-selected={option.value === value} onClick={() => { onChange(option.value); setOpen(false); trigger.current?.focus(); }}>
         <span>{option.label}</span>{option.value === value ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4 10-10" /></svg> : null}
