@@ -1552,7 +1552,17 @@ export default function AccountClient({
             </div>
 
             <div className={styles.heroCopy}>
-              <h1>{accountDisplayName}</h1>
+              <div className={styles.heroTitleRow}>
+                <h1>{accountDisplayName}</h1>
+                <div className={styles.heroBadges}>
+                  <span className={styles.statusBadge}>Active</span>
+                  {isDealerAccount && !isMiddlemanAccount ? (
+                    <span className={`${styles.statusBadge} ${styles.directoryHeroBadge}`}>
+                      Directory {directoryStatusLabel.toLowerCase()}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
               <p>{profile?.email || "Loading email"}</p>
               <small>
                 {businessPlanLabel ?? accountTypeLabel + " account"}&nbsp; • &nbsp;{memberSinceLabel}
@@ -1560,22 +1570,12 @@ export default function AccountClient({
             </div>
           </div>
 
-          <div className={styles.heroStatusGroup}>
-            <span className={styles.statusBadge}>Active</span>
-            {isDealerAccount && !isMiddlemanAccount ? (
-              <span className={`${styles.statusBadge} ${styles.directoryHeroBadge}`}>
-                Directory {directoryStatusLabel.toLowerCase()}
-              </span>
-            ) : null}
-            <button type="button" className={styles.heroSignOut} onClick={handleSignOut} disabled={isSigningOut}>
-              <span aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5M9 12h12m-5-5 5 5-5 5" />
-                </svg>
-              </span>
-              {isSigningOut ? "Signing out…" : "Sign out"}
-            </button>
-          </div>
+          <button type="button" className={styles.heroSignOut} onClick={handleSignOut} disabled={isSigningOut}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h5M9 12h12m-5-5 5 5-5 5" />
+            </svg>
+            {isSigningOut ? "Signing out…" : "Sign out"}
+          </button>
         </section>
 
         {notice ? (
