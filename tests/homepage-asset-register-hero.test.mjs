@@ -197,7 +197,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.equal((roleSelector.match(/<Link href="\/pricing\?audience=(?:owner|business)" className=\{styles\.roleAction\}>Find my package<\/Link>/g) ?? []).length, 2);
   assert.equal((roleSelector.match(/<Link\b/g) ?? []).length, 4);
   assert.match(roleSelector, /focus\(\{ preventScroll: true \}\)/);
-  assert.match(auth, /accountType === "owner" \|\| accountType === "dealer"/);
+  assert.match(auth, /type === "business" \|\| type === "dealer"/);
 
   assert.deepEqual(
     [...preview.matchAll(/key: '([^']+)'/g)].map((match) => match[1]),
