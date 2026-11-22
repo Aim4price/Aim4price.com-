@@ -325,9 +325,8 @@ export default function SharedAssetCards({
       {asset &&
         createPortal(
           <LeadManageDialog suspended={manageSuspended} title={asset.title} description={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} onClose={() => { closeVisit(); setManaged(null); trigger.current?.focus(); }}>
-              {visit.current && <div className={assetStyles.assetHeaderActions}>
-                {enquiry?.reply && asset.assetId && <SharedAssetSend enquiry={enquiry} assetId={asset.assetId} assetTitle={asset.title} creditTarget={{...visit.current,visitId:visit.current.requestId}} onDialogChange={setManageSuspended}/>}
-                <SharedAssetExport availabilityUrl={availabilityUrl(asset.assetId, true)} title={asset.title} asset={asset} photos={asset.photoUrls} attachments={enquiry?.permissions.reports?enquiry.reports.map(report=>({name:report.label,url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}` })):[]} creditTarget={{...visit.current,visitId:visit.current.requestId}} onDialogChange={setManageSuspended}/>
+              {visit.current && enquiry?.reply && asset.assetId && <div className={assetStyles.assetHeaderActions}>
+                <SharedAssetSend enquiry={enquiry} assetId={asset.assetId} assetTitle={asset.title} creditTarget={{...visit.current,visitId:visit.current.requestId}} onDialogChange={setManageSuspended}/>
               </div>}
               {enquiry ? <ExternalLeadActions creditVisit={visit.current||undefined} key={asset.assetId||managed} {...enquiry} onDialogChange={setManageSuspended} assetSubtitle={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} assetTitle={asset.title} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
                 <section aria-label="Enquiry actions">
