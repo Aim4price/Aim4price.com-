@@ -1098,7 +1098,7 @@ export async function getAssetDiscoveryBrowseAccess(input: {
     const dealer = await db.query<{ allowed: boolean }>(
       `
         select (
-          account_type = $2
+          (account_type = $2 OR ($2='dealer' AND account_type='business'))
           and account_status = 'active'
         ) as allowed
         from public.account_profiles
@@ -1849,7 +1849,7 @@ export async function createAssetDiscoveryEnquiry(input: {
   }
 
   const message = asText(input.message).slice(0, 600);
-  const result = await db.query<{ id: string }>(
+  const result = await (await import('./business-credits')).saveBusinessResult(input.requesterUserId,'Created a Discovery enquiry',writer=>writer.query<{ id: string }>(
     `
       insert into public.asset_discovery_enquiries (
         asset_register_item_id,
@@ -1891,7 +1891,7 @@ export async function createAssetDiscoveryEnquiry(input: {
       input.requesterAccountType,
       message,
     ],
-  );
+  ), saved=>saved.rows[0] ? 'discovery:'+saved.rows[0].id : null);
 
   const enquiryId = result.rows[0]?.id;
   if (!enquiryId) throw new Error("Asset is not available for Discovery.");
@@ -2501,7 +2501,7 @@ export async function updateAssetDiscoveryOwnerDecision(input: {
                 and (
                   (
                     candidate.requester_account_type = 'dealer'
-                    and requester.account_type = 'dealer'
+                    and requester.account_type IN ('dealer','business')
                   )
                   or (
                     candidate.requester_account_type = 'owner'
@@ -2554,7 +2554,7 @@ export async function updateAssetDiscoveryOwnerDecision(input: {
               and (
                 (
                   candidate.requester_account_type = 'dealer'
-                  and requester.account_type = 'dealer'
+                  and requester.account_type IN ('dealer','business')
                 )
                 or (
                   candidate.requester_account_type = 'owner'
@@ -2593,7 +2593,7 @@ export async function listPendingAssetDiscoveryEnquiriesForOwner(
          and (
            (
              enquiry.requester_account_type = 'dealer'
-             and requester.account_type = 'dealer'
+             and requester.account_type IN ('dealer','business')
            )
            or (
              enquiry.requester_account_type = 'owner'
@@ -2625,7 +2625,7 @@ export async function listRecentAssetDiscoveryEnquiriesForRequester(
         and (
           (
             enquiry.requester_account_type = 'dealer'
-            and requester.account_type = 'dealer'
+            and requester.account_type IN ('dealer','business')
           )
           or (
             enquiry.requester_account_type = 'owner'

@@ -1,7 +1,7 @@
+import { getAccountProfile } from '../../../../../lib/account-profile';
 import { dealerRoleCan } from '../../../../../lib/dealer-app-access';
 import { isTrustedRequestOrigin } from '../../../../../lib/trusted-request-origin';
 import { NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../../lib/account-profile';
 import { getServerSession, isDealerAppSession } from '../../../../../lib/auth-session';
 import {
   completeDealerTrackedMaintenance,
@@ -15,16 +15,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(_request: Request, { params }: { params: { accessId: string } }) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
   }
 
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer App access is not available.' }, { status: 403 });
   }
@@ -42,17 +38,13 @@ export async function GET(_request: Request, { params }: { params: { accessId: s
 }
 
 export async function POST(request: Request, { params }: { params: { accessId: string } }) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'Dealer login is required.' }, { status: 401 });
   }
 
   if ((isDealerAppSession(session) && !dealerRoleCan(session.dealerApp.role, 'maintenance')) || !isTrustedRequestOrigin(request.headers.get('origin'), new URL(request.url).origin)) return NextResponse.json({ ok: false, error: 'Maintenance access is not available.' }, { status: 403 });
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer maintenance access is not available.' }, { status: 403 });
   }
@@ -138,15 +130,11 @@ export async function POST(request: Request, { params }: { params: { accessId: s
 }
 
 export async function PATCH(request: Request, { params }: { params: { accessId: string } }) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'Dealer login is required.' }, { status: 401 });
   }
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer maintenance access is not available.' }, { status: 403 });
   }
@@ -196,16 +184,12 @@ export async function PATCH(request: Request, { params }: { params: { accessId: 
 }
 
 export async function DELETE(_request: Request, { params }: { params: { accessId: string } }) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
   }
 
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer App access is not available.' }, { status: 403 });
   }

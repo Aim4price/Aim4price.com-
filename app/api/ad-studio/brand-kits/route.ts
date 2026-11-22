@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   deleteAdBrandKit,
   listAdBrandKits,
@@ -14,15 +14,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 async function resolveAccess() {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) return null;
 
   const [profile, dealerSession] = await Promise.all([
-    getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    }),
+    getAccountProfile(session.user,{businessToolsFor:session}),
     getDealerAppSession(),
   ]);
 

@@ -52,7 +52,7 @@ export default function ExternalLeadActions({ token, permissions: suppliedPermis
     if(!creditVisit||!messageId)return;
     try{
       await creditAction(creditVisit,'send','complete',messageId,creditVisit.requestId);
-      setMessageId('');setMessageStatus('Message recorded · Included in this Manage visit.');
+      setMessageId('');setMessageStatus('Message sent.');
     }catch(e){setMessageStatus(e instanceof Error?e.message:'Please try again.');}
   }
   const permissions = access === 'owner' ? {...suppliedPermissions,viewParts:true,addParts:true,history:true,suggestValue:true,updateDetails:true,location:true,yearModel:true,usage:true,condition:true,addMaintenance:true,addPhotos:true,addCosts:true,serialNumber:true,replacementPrice:true,maintenanceSchedules:true,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,directUpdates:true} : suppliedPermissions;

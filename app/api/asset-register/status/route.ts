@@ -306,7 +306,7 @@ function formatUnknownError(error: unknown, fallback: string): string {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();

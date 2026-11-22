@@ -172,13 +172,13 @@ test('Business opens its inbox directly and only reads shares for active verifie
   './BusinessSharedAssets':{default:'Inbox'},
   '../../lib/guest-leads':{listReceivedSharedEnquiries:async()=>{reads++;return ['share'];}},
   '../../lib/auth-session':{getServerSession:async()=>({user:{id:'business',emailVerified:verified}})},
-  '../../lib/business-accounts':{readBusinessAccount:async()=>({profile:{accountStatus:'active'}})},
+  '../../lib/business-accounts':{readBusinessAccount:async()=>({profile:{accountType:'business',accountStatus:'active'}})},
   '../../lib/business-workspaces':{businessWorkspaceSummary:async()=>({suspended:paused})},
   '../../lib/external-share-permissions':{sharedEnquiryReturnTo:value=>value===link?link:null},
   'next/navigation':{redirect:path=>{throw Error(path);}}
  });
  const inbox=async()=> (await page.default({})).props.children[1].props;
- assert.deepEqual(await inbox(),{shares:['share'],notice:''});
+ assert.deepEqual(await inbox(),{freeBusiness:true,shares:['share'],notice:''});
  await assert.rejects(page.default({searchParams:{returnTo:link}}),{message:link});
  verified=false;assert.deepEqual((await inbox()).shares,[]);
  paused=true;verified=true;assert.match((await inbox()).notice,/paused/);

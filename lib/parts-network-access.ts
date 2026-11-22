@@ -8,6 +8,7 @@ import { dealerRoleCan } from "./dealer-app-access";
 import { isMiddlemanAccountSubtype } from "./middleman-account";
 export type PartsActor = {
   team?: TeamScope;
+  metered?: boolean;
   id: string;
   email: string;
   staff: boolean;
@@ -52,6 +53,8 @@ export async function getPartsActor(
   const business =
     p.accountType === "business" &&
     (plan === "free" || p.accountStatus === "active");
+  const soloBusiness = business && !staff && await (await import('./business-accounts')).canBusinessRead(session.user);
+  if (soloBusiness) await (await import('./business-credits')).ensureCreditSchema();
   const pending =
     allowPending &&
     p.accountType === "dealer" &&
@@ -62,8 +65,9 @@ export async function getPartsActor(
     id: session.user.id,
     email: (session.user.email || "").trim().toLowerCase(),
     staff,
-    viewerOnly: !dealer,
+    metered: soloBusiness,
+    viewerOnly: !dealer && !soloBusiness,
     canContribute:
-      dealer && (!staff || ["owner", "parts"].includes(session.dealerApp.role)),
+      soloBusiness || dealer && (!staff || ["owner", "parts"].includes(session.dealerApp.role)),
   };
 }

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
+import { NextRequest, NextResponse } from 'next/server';
 import { dealerRoleCan } from '../../../../lib/dealer-app-access';
 import {
   getServerSession,
@@ -89,7 +89,7 @@ function errorResponse(error: unknown) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({ allowBusinessWorkspace:true, allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
   }
@@ -109,11 +109,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     if (
       (profile.accountType !== 'owner' && profile.accountType !== 'dealer') ||
       profile.accountStatus !== 'active'

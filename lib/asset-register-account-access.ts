@@ -1,4 +1,5 @@
-import { getAccountProfile, type AccountProfile } from './account-profile';
+import { getAccountProfile } from './account-profile';
+import { type AccountProfile } from './account-profile';
 import { getServerSession, isDealerAppSession } from './auth-session';
 import { dealerRoleCan } from './dealer-app-access';
 
@@ -20,11 +21,7 @@ export async function getAssetRegisterAccountAccess(
 ): Promise<AssetRegisterAccountAccess | null> {
   if (!session?.user?.id) return null;
 
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
 
   if (!isAssetRegisterAccountType(profile.accountType) || profile.accountStatus !== 'active') {
     return null;

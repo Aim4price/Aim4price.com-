@@ -201,7 +201,7 @@ function formatError(error: unknown): { status: number; message: string } {
 export async function POST(request: NextRequest) {
   try { requireBusinessOrigin(request); }
   catch { return NextResponse.json({ok: false, error: 'This request must be sent from Aim4price.'}, {status: 403}); }
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return NextResponse.json<RevalueAssetResponse>({ ok: false, error: 'You must be signed in.' }, { status: 401 });

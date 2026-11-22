@@ -787,11 +787,11 @@ export default function AccountClient({
   const isDealerAccount = !sharedAccount && normalizedAccountType === "dealer";
   const isMiddlemanAccount =
     isDealerAccount && isMiddlemanAccountSubtype(profile?.accountSubtype);
-  const isAssetRegisterAccount = isOwnerAccount || (isDealerAccount && !isMiddlemanAccount);
+  const isAssetRegisterAccount = isFreeBusiness || isOwnerAccount || (isDealerAccount && !isMiddlemanAccount);
   const isPartnerAccount = !sharedAccount && !isOwnerAccount && !isMiddlemanAccount;
   const showScanPinControls = !isLoading && isOwnerAccount;
   const showPartnerDirectory = !isLoading && (isPartnerAccount || sharedAccount);
-  const showMarketplaceContact = isLoading || isOwnerAccount || isDealerAccount;
+  const showMarketplaceContact = isFreeBusiness || isLoading || isOwnerAccount || isDealerAccount;
   const accountDisplayName =
     profileDraft.displayName.trim() || profile?.name || "Aim4price user";
   const profileInitials = useMemo(
@@ -1651,6 +1651,10 @@ export default function AccountClient({
                   <span style={{ width: `${100 * subscription.remaining / subscription.limit}%` }} />
                 </div>
               )}
+              <p>One credit per completed action. Viewing, messaging and sharing are free.</p>
+              {subscription.resets && <p>Monthly reset on {new Date(subscription.resets).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg',day:'numeric',month:'long'})}. Referral credits earned this month: {subscription.bonus || 0}.</p>}
+              {subscription.reward !== undefined && <p>Earn {subscription.reward} credits when a new owner uses your invite, verifies their email and adds their first asset.</p>}
+              <details><summary>Recent credit activity</summary>{subscription.history?.length ? <ul>{subscription.history.map((event,index)=><li key={index}>{new Date(event.date).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})} · {event.action} · {event.units} {event.units===1?'credit':'credits'}</li>)}</ul> : <p>No credit activity yet.</p>}</details>
             </section>
           )}
           <section className={`${styles.card} ${styles.quickActionsCard}`}>
@@ -1674,11 +1678,6 @@ export default function AccountClient({
                     <h3 id="assets-activity-actions-title">Assets &amp; activity</h3>
                   </div>
                   <div className={styles.quickActionList}>
-                    {isFreeBusiness && <>
-                      <LockedBusinessAction icon="registers" label="Manage asset registers" />
-                      <LockedBusinessAction icon="claim" label="Claim or send an asset" />
-                      <LockedBusinessAction icon="notifications" label="Notifications" />
-                    </>}
                     {isAssetRegisterAccount ? (
                       <button
                         type="button"
@@ -1701,7 +1700,7 @@ export default function AccountClient({
                       </button>
                     ) : null}
 
-                    {isOwnerAccount || isDealerAccount ? <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("notifications")} data-tooltip="Choose which account and asset updates you receive." data-tooltip-style="description">
+                    {isFreeBusiness || isOwnerAccount || isDealerAccount ? <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("notifications")} data-tooltip="Choose which account and asset updates you receive." data-tooltip-style="description">
                       <QuickActionIcon name="notifications" />
                       <strong>Notifications</strong>
                     </button> : null}
@@ -1772,8 +1771,7 @@ export default function AccountClient({
                       </Link>
                     ) : null}
 
-                    {isFreeBusiness && <LockedBusinessAction icon="marketplace" label="Marketplace contact" />}
-                    {!isFreeBusiness && showMarketplaceContact ? (
+                    {showMarketplaceContact ? (
                       <button
                         type="button"
                         className={styles.quickActionButton}

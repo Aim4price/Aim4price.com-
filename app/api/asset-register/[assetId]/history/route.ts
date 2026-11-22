@@ -8,7 +8,7 @@ import {businessJson,businessBody,requireBusinessOrigin,businessError} from '../
 import type {NextRequest} from 'next/server';
 export const dynamic='force-dynamic';
 export async function GET(request:NextRequest,{params}:{params:{assetId:string}}){try{
- const session=await getServerSession({allowOwnerApp:true,allowDealerApp:true});
+ const session=await getServerSession({allowBusinessWorkspace:true, allowOwnerApp:true,allowDealerApp:true});
  if(!session||!await getAssetRegisterAccountAccess(session))return businessJson({error:'Sign in as the asset owner.'},403);
  if(isOwnerAppSession(session)){const access=await getOwnerAppAccess();if(!access||!ownerAppCanAccessAsset(access,params.assetId)||!ownerAppCan(access,'manage_assets'))return businessJson({error:'Asset unavailable.'},403);}
  const asset=await getAssetRegisterItemById(session.user.id,params.assetId);

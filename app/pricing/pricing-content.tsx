@@ -25,7 +25,7 @@ function AccountChoice({ title, price, caption, description, features, note, act
   </button>;
 }
 
-export default function PricingContent({ signedIn = false, initialAudience = null, freeBusinessCredits,offers,trialDays=30 }: { offers?:BillingPlan[];trialDays?:number;signedIn?: boolean; initialAudience?: PricingAudience | null; freeBusinessCredits?: number }) {
+export default function PricingContent({ signedIn = false, initialAudience = null, freeBusinessCredits,referralCredits,offers,trialDays=30 }: { offers?:BillingPlan[];trialDays?:number;signedIn?: boolean; initialAudience?: PricingAudience | null; referralCredits?:number; freeBusinessCredits?: number }) {
   const [audience, setAudience] = useState<PricingAudience | null>(initialAudience);
   const [feesOpen, setFeesOpen] = useState(false);
   const [feesTopic, setFeesTopic] = useState<'commission' | undefined>();
@@ -45,7 +45,7 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
         note={trialDays+'-day free trial available. Unlimited registers.'} action="Explore Owner plans" onClick={() => setAudience('owner')} />
       <AccountChoice title="Free Business" price="R0" caption="No subscription fee"
         description="Work with the assets and enquiries your clients share."
-        features={['Shared Assets & client enquiries', 'Value Asset & Marketplace', creditsLabel]}
+        features={['Registers, shared assets & valuations', 'Parts, maintenance & advert tools', creditsLabel]}
         note="View shared assets for free. Upgrade when needed." action="Explore Free Business" onClick={() => setAudience('free-business')} />
       <AccountChoice title="Paid Business" price={rand(publishedRate('business-standard-monthly',businessHosting.monthly))} caption={`Or ${rand(publishedRate('business-standard-annual',businessHosting.annually))}/year`}
         description="Manage your stock, clients and team in one workspace."
@@ -60,11 +60,12 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
         <div className={styles.freeSummary}><span className={styles.accessIcon}><PricingIcon name="link" /></span><div><strong>Shared assets. No subscription fee.</strong><p>Work with records your clients choose to share.</p></div><strong className={styles.freePrice}>R0</strong></div>
         <dl className={styles.freeBenefits}>
           <div><dt>Shared Assets</dt><dd>View client assets and enquiries. Manage, message and share where the sender’s permissions allow.</dd></div>
-          <div><dt>{creditsLabel}</dt><dd>One credit per Manage visit, sent message or completed share. Viewing uses no credits. Track your balance in Account.</dd></div>
-          <div><dt>Value Asset &amp; Marketplace</dt><dd>Use valuations and explore the marketplace from your workspace.</dd></div>
+          <div><dt>{creditsLabel}</dt><dd>One completed action uses one credit. Examples include recording a shared cost, adding documents or logging maintenance. Viewing uses no credits. Messages and sharing are free. See your balance and recent activity in Account.</dd></div>
+          <div><dt>Invite an owner</dt><dd>Earn {referralCredits ?? 50} extra credits when an invited owner verifies their email and adds their first asset.</dd></div>
+          <div><dt>Business workspace</dt><dd>Manage registers, stocklists, your showroom and adverts from your personal workspace.</dd></div>
         </dl>
-        <p className={styles.freeUpgrade}>Need your own registers, Parts &amp; Stock or staff access? Choose Paid Business.</p>
-        <div className={styles.freeActions}><button type="button" onClick={() => setAudience('business')}>Compare Paid Business</button><Link className={styles.button} href={signedIn ? '/account' : '/business/join'}>{signedIn ? 'Go to my account' : 'Create free account'}</Link></div>
+        <p className={styles.freeUpgrade}>Choose Paid Business for staff access and unlimited actions.</p>
+        <div className={styles.freeActions}><button type="button" onClick={() => setAudience('business')}>Compare Paid Business</button><Link className={styles.button} href={signedIn ? '/account' : '/auth?accountType=business&offer=free#signup'}>{signedIn ? 'Go to my account' : 'Create free account'}</Link></div>
       </section>
     </PricingModal>
     <PricingModal open={feesOpen} title="Success fees & services" onClose={() => setFeesOpen(false)}><ServiceFees initialTopic={feesTopic} /></PricingModal>

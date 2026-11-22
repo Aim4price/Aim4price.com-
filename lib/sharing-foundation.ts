@@ -51,6 +51,18 @@ export async function registerFreeSharingAccount(userId: string) {
     await getDb().query("INSERT INTO sharing_account_access(user_id,plan) VALUES($1,'free') ON CONFLICT DO NOTHING", [userId]);
 }
 type Writer = Pick<ReturnType<typeof getDb>, 'query'>;
+export function completedActionLabel(key: string) {
+    const [kind, operation] = key.split(':');
+    if (operation === 'photos') return 'Added photos';
+    if (operation === 'schedule') return 'Scheduled maintenance';
+    const labels: Record<string,string> = {
+        maintenance: 'Completed maintenance', cost: 'Recorded a cost', capture: 'Submitted a cost capture',
+        document: 'Added a document', problem: 'Logged a problem', part: 'Recorded a part',
+        'value-suggestion': 'Submitted a valuation', quote: 'Submitted a quote', invoice: 'Submitted an invoice',
+    };
+    return Object.hasOwn(labels,kind) ? labels[kind] : null;
+}
+
 export async function recordSharingUsage(input: {
     accountId: string;
     actorId: string;
@@ -63,8 +75,15 @@ export async function recordSharingUsage(input: {
 }, writer?: Writer) {
     if (!writer)
         await ensureSharingFoundation();
-    await (writer || getDb()).query(`INSERT INTO sharing_usage_events(account_id,actor_id,session_id,token,asset_id,metric,event_key,bytes)
- VALUES($1,$2,$3,$4,$5::uuid,$6,$7,$8) ON CONFLICT(account_id,metric,event_key) DO NOTHING`, [input.accountId, input.actorId, input.sessionId || null, input.token || null, input.assetId || null, input.metric, input.eventKey, input.bytes || 0]);
+    const saved = await (writer || getDb()).query(`INSERT INTO sharing_usage_events(account_id,actor_id,session_id,token,asset_id,metric,event_key,bytes)
+ VALUES($1,$2,$3,$4,$5::uuid,$6,$7,$8) ON CONFLICT(account_id,metric,event_key) DO NOTHING RETURNING id`, [input.accountId, input.actorId, input.sessionId || null, input.token || null, input.assetId || null, input.metric, input.eventKey, input.bytes || 0]);
+    if (writer && saved.rows.length && input.metric === 'contribution') {
+        const action = completedActionLabel(input.eventKey);
+        if (action) {
+            const {spendBusinessCredit} = await import('./business-credits');
+            await spendBusinessCredit(writer,input.actorId,action,input.eventKey);
+        }
+    }
 }
 export async function sharingUsageSummary(userId: string) {
     await ensureSharingFoundation();

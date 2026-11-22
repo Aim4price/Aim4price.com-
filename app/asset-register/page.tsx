@@ -1,9 +1,9 @@
+import { getAccountProfile } from '../../lib/account-profile';
 import { getAnyServerSession } from '../../lib/auth-session';
 import { getManagedTeamActor } from '../../lib/team-login';
 import TeamWorkspaceClient from '../team/team-workspace-client';
 import AnnualReviewNotice from '../../components/AnnualReviewNotice';
 import { redirect } from "next/navigation";
-import { getAccountProfile } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
 import { listAssetRegisters } from "../../lib/asset-registers";
 import AssetRegisterClient from "./asset-register-client";
@@ -20,13 +20,9 @@ export default async function AssetRegisterPage({
   const personal = await getAnyServerSession();
   const managed = personal?.user ? null : await getManagedTeamActor();
   if (managed) return <TeamWorkspaceClient email={managed.username || managed.email} managed initialWorkspace={managed.managedGrantId}/>;
-  const { session } = await requireActivePageAccess();
+  const { session } = await requireActivePageAccess({allowBusinessWorkspace:true});
 
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
 
   if (profile.accountType !== "owner" && profile.accountType !== "dealer") {
     redirect("/leads");

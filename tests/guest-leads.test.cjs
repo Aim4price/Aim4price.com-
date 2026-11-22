@@ -124,7 +124,10 @@ test('incoming documents are opt-in, owner-private, review-only and respect link
   const one=await lead.createGuestLead('owner',[A],false,{...details,allowSubmissions:true},[]);
   await assert.rejects(docs.submitLeadDocument(one.token,input,file,'receiver'),/signed-in, approved/);
   session={user:{id:'receiver',name:'Workshop',email:details.recipientEmail,emailVerified:true}};
-  await docs.submitLeadDocument(one.token,input,file,'receiver');
+  const retryable={...input,requestId:require('node:crypto').randomUUID()};
+  await docs.submitLeadDocument(one.token,retryable,file,'receiver');
+  await docs.submitLeadDocument(one.token,retryable,file,'receiver');
+  assert.equal((await docs.listLeadSubmissions('owner',one.token)).length,1);
   assert.deepEqual(await docs.listLeadSubmissions('other',one.token),[]);
   const [submission]=await docs.listLeadSubmissions('owner',one.token);
   assert.equal(submission.status,'pending');assert.ok(!('file_data' in submission));

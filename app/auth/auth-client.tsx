@@ -617,6 +617,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     );
 
     const requestedOffer=new URLSearchParams(window.location.search).get('offer');
+    if(requestedOffer==='free' && requestedAccountType==='business') setSignupPlan('free');
     if(requestedOffer && /^(owner-band-[123]|business-standard)-(monthly|annual)$/.test(requestedOffer)){
       setPlanKey(requestedOffer);setSignupPlan('paid');
     }
@@ -1193,7 +1194,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                                 }));
                               }}
                             />
-                            <small>{signupForm.accountType === 'owner' ? 'Value and manage your own assets.' : 'Work with assets shared by clients or choose the full Business workspace.'}</small>
+                            <small>{signupForm.accountType === 'owner' ? 'Value and manage your own assets.' : 'Use Business tools on your own or add staff with a paid plan.'}</small>
                           </div>
 
                           <div className={styles.field}>

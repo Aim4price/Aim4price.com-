@@ -31,7 +31,7 @@ export async function resolveOwnerWorkspaceContext(
   } catch (error) {
     return { ok: false, response: NextResponse.json({ ok: false, error: error instanceof TeamAccessError ? error.message : 'Workspace unavailable.' }, { status: error instanceof TeamAccessError ? error.status : 503 }) };
   }
-  const session = await getServerSession({ requireActive: true, allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  requireActive: true, allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return {

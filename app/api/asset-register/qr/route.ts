@@ -133,7 +133,7 @@ function buildQrFileName(assetTitle: string, plateLabel: string, extension: 'svg
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();

@@ -896,6 +896,7 @@ export async function adminDeleteDisposedAsset(input: {
 }
 
 export async function claimAssetTransfer(input: {
+  personalSession?:NonNullable<Awaited<ReturnType<typeof import('./auth-session').getServerSession>>>;
   buyerUserId: string;
   buyerName?: string | null;
   buyerEmail?: string | null;
@@ -912,7 +913,7 @@ export async function claimAssetTransfer(input: {
     throw new Error('ASSET_TRANSFER_INVALID_CREDENTIALS');
   }
 
-  const buyerProfile = await getAccountProfile({ id: input.buyerUserId, name: input.buyerName, email: input.buyerEmail });
+  const buyerProfile = await getAccountProfile({ id: input.buyerUserId, name: input.buyerName, email: input.buyerEmail },{businessToolsFor:input.personalSession});
   if (!isAssetRegisterAccountType(buyerProfile.accountType) || buyerProfile.accountStatus !== 'active') {
     throw new Error('ASSET_TRANSFER_ACCOUNT_REQUIRED');
   }
@@ -1035,6 +1036,7 @@ export async function claimAssetTransfer(input: {
         await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [asset.register_id, offer.seller_user_id]);
       }
       await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [buyerRegister.id, input.buyerUserId]);
+      if (input.personalSession) await (await import('./business-credits')).spendBusinessCredit(client,input.buyerUserId,'Claimed an asset','claim:'+offer.id);
       await client.query('commit');
       await recordClaimAttempt(input.buyerUserId, normalizedIdentifier, true);
 

@@ -131,10 +131,11 @@ test('only activated Paid Business owners gain desktop access on migration; free
 test('the Business details wizard saves all three steps together and preserves review evidence and tier', async () => {
     const {pg,mod} = await setup();
     try {
-        await pg.exec('ALTER TABLE account_profiles ADD display_name text, ADD marketplace_email text, ADD province text, ADD town_city text, ADD address_line_1 text, ADD address_line_2 text, ADD logo_url text, ADD website_url text');
+        await pg.exec('ALTER TABLE account_profiles ADD display_name text, ADD marketplace_seller_name text, ADD marketplace_phone text, ADD marketplace_location text, ADD marketplace_email text, ADD province text, ADD town_city text, ADD address_line_1 text, ADD address_line_2 text, ADD logo_url text, ADD website_url text');
         await mod.saveBusinessDetails('business',{businessName:'Workshop',phone:'123',website:'',evidence:'Existing review evidence'});
-        await mod.saveBusinessDetails('business',{editProfile:true,displayName:'Alex',businessName:'Workshop',marketplaceEmail:'INFO@example.com',phone:'123',province:'Western Cape',townCity:'George',addressLine1:'1 Main Road',addressLine2:'Unit 2',website:'https://example.com',logoUrl:'/logos/workshop.png'});
+        await mod.saveBusinessDetails('business',{editProfile:true,marketplaceSellerName:'Workshop Sales',displayName:'Alex',businessName:'Workshop',marketplaceEmail:'INFO@example.com',phone:'123',province:'Western Cape',townCity:'George',addressLine1:'1 Main Road',addressLine2:'Unit 2',website:'https://example.com',logoUrl:'/logos/workshop.png'});
         const {rows:[record]} = await pg.query("SELECT p.*,r.evidence FROM account_profiles p JOIN business_account_reviews r USING(user_id) WHERE p.user_id='business'");
+        assert.equal(record.marketplace_seller_name,'Workshop Sales');
         assert.deepEqual([record.display_name,record.marketplace_email,record.province,record.town_city,record.address_line_1,record.address_line_2,record.website_url,record.logo_url,record.evidence,record.account_type],['Alex','info@example.com','Western Cape','George','1 Main Road','Unit 2','https://example.com','/logos/workshop.png','Existing review evidence','business']);
     } finally { await pg.close(); }
 });

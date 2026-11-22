@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../lib/account-profile';
+import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession, isDealerAppSession } from '../../../lib/auth-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { listPublishedMarketplaceAssetListings } from '../../../lib/marketplace-db';
@@ -13,14 +13,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 async function getMiddlemanContext() {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) return null;
   if (isDealerAppSession(session) && !dealerRoleCan(session.dealerApp.role, 'showroom')) return null;
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   return { session, profile };
 }
 

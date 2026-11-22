@@ -59,7 +59,7 @@ export async function requireExternalLeadAction(token: string, permission: Exter
         throw new ExternalLeadAccessError('This action was not shared.', 403);
     if (!user || (access !== 'owner' && access !== 'active'))
         throw new ExternalLeadAccessError('This action requires the recipient’s signed-in, approved account.', user ? 403 : 401);
-    if (business) await (await import('./business-credits')).checkBusinessWrite(user.id,token);
+    if (business) await (await import('./business-credits')).ensureCreditSchema();
     return { lead, user };
 }
 // Reuse the existing owner approval and revaluation workflow for external proposals.

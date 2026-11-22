@@ -1,5 +1,5 @@
+import { getAccountProfile } from '../../../lib/account-profile';
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountProfile } from "../../../lib/account-profile";
 import { getServerSession } from "../../../lib/auth-session";
 import {
   createAssetDiscoveryEnquiry,
@@ -52,7 +52,7 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({
+  const session = await getServerSession({allowBusinessWorkspace:true,
     allowDealerApp: true,
     allowOwnerApp: true,
   });
@@ -69,11 +69,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (session?.user?.id) {
-      const profile = await getAccountProfile({
-        id: session.user.id,
-        name: session.user.name,
-        email: session.user.email,
-      });
+      const profile = await getAccountProfile(session.user,{businessToolsFor:session});
       const permittedAccount = ["dealer", "owner"].includes(
         profile.accountType,
       );
@@ -130,7 +126,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({
+  const session = await getServerSession({allowBusinessWorkspace:true,
     allowDealerApp: true,
     allowOwnerApp: true,
   });
@@ -148,11 +144,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
 
     if (!["dealer", "owner"].includes(profile.accountType)) {
       return forbidden();

@@ -176,7 +176,7 @@ const appCode =
     let shareContactAllowed=true,shareContactDetails=true;
     const sharedActions=[];
     let shareLinks=[{id:"share-1",url:"https://example.test/parts-share/"+"a".repeat(64),created_at:"2026-11-16",protected:true,allow_download:true,allow_enquiry:true,recipient_name:"",revoked_at:null}];
-    page.on("request", (r) => {
+    page.on("request", async (r) => {
       if (/\/brand\/(pdf|sheet)\.png$/.test(r.url())) return r.respond({contentType:"image/png",body:fs.readFileSync(path.join(root,"public",new URL(r.url()).pathname))});
       if (r.url().includes('/api/parts-share/')) {
         const input=JSON.parse(r.postData()||'{}');
@@ -195,6 +195,11 @@ const appCode =
         const response={contentType:'application/json',body:JSON.stringify({name:'Landini Parts List',owner:'Example Agricultural',town:'George',updatedAt:row.uploaded_at,total:sharedRows.length,page:0,signedIn:shareAccess==='active',access:shareAccess,allowDownload:true,allowEnquiry:true,vatIncluded:false,rows:sharedRows})};
         if(input.search==='slow'){setTimeout(()=>r.respond(response).catch(()=>{}),900);return;}
         return r.respond(response);
+      }
+      if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "xlsx") {
+        const {buildPartsWorkbook}=require('../tests/helpers/load-ts.cjs')('lib/parts-network-report.ts');
+        const workbook=await buildPartsWorkbook([{part:row.part_number,description:row.description,brand:row.brand,quantity:row.quantity,price:Number(row.price),vat:'Excl. VAT',dealer:row.business_name,town:row.town}]);
+        return r.respond({status:200,contentType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',body:Buffer.from(await workbook.xlsx.writeBuffer())});
       }
       if (r.url().includes("/api/parts-network") && new URL(r.url()).searchParams.get("format") === "pdf") {
         pdfRequest = Object.fromEntries(new URL(r.url()).searchParams);

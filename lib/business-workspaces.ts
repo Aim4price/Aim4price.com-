@@ -41,7 +41,7 @@ export async function ensureBusinessWorkspace(userId: string) {
  } catch(error) { await db.query('ROLLBACK'); throw error; } finally { db.release(); }
 }
 
-export async function ensureBusinessMembership(db: import('pg').PoolClient, userId: string) {
+export async function ensureBusinessMembership(db: Pick<import('pg').PoolClient,'query'>, userId: string) {
   const profile = (await db.query("SELECT user_id FROM account_profiles WHERE user_id=$1 AND (account_type='business' OR (account_type='dealer' AND account_subtype <> 'equipment-middleman')) FOR UPDATE", [userId])).rows[0];
   if (!profile) return null;
   await db.query(`INSERT INTO business_workspaces(id,owner_user_id)

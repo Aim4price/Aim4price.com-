@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ok:true,item:{id:item.id,lastKnownLat:item.lastKnownLat,lastKnownLng:item.lastKnownLng,lastKnownLocationText:item.lastKnownLocationText,updatedAtIso:item.updatedAtIso}});
     } catch { return NextResponse.json({ok:false,error:'The location could not be saved with your current access.'},{status:403}); }
   }
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();

@@ -1,6 +1,6 @@
+import { getAccountProfile } from '../../lib/account-profile';
 import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
-import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession } from '../../lib/auth-session';
 import { listInitialDealerTrackedAssets } from '../../lib/dealer-maintenance-initial-load';
 import TrackingClient from './tracking-client';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 const INITIAL_MAINTENANCE_BATCH_SIZE = 10;
 
 export default async function TrackingPage({ searchParams }: { searchParams?: { open?: string } }) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     redirect('/login');
@@ -20,11 +20,7 @@ export default async function TrackingPage({ searchParams }: { searchParams?: { 
 
   const initialOpenAccessId = String(searchParams?.open ?? '').trim() || null;
   const [profile, initialLoad] = await Promise.all([
-    getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    }),
+    getAccountProfile(session.user,{businessToolsFor:session}),
     listInitialDealerTrackedAssets({
       dealerUserId: session.user.id,
       limit: INITIAL_MAINTENANCE_BATCH_SIZE,

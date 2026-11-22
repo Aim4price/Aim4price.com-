@@ -399,6 +399,8 @@ test("account and staff gates reject inactive dealers, other account types and t
     },
     staff = false;
   const access = load("lib/parts-network-access.ts", {
+    "./business-accounts":{canBusinessRead:async()=>profile.accountStatus==="active"},
+    "./business-credits":{ensureCreditSchema:async()=>{}},
     "./desktop-workspace":{getDesktopScope:async()=>null},
     "./auth-session": {
       getServerSession: async () => session,
@@ -424,8 +426,8 @@ test("account and staff gates reject inactive dealers, other account types and t
   profile.accountType = "owner";
   assert.equal(await access.getPartsActor(), null);
   profile.accountType = "business";
-  assert.equal((await access.getPartsActor()).canContribute,false);
-  assert.equal((await access.getPartsActor()).viewerOnly,true);
+  assert.equal((await access.getPartsActor()).canContribute,true);
+  assert.equal((await access.getPartsActor()).viewerOnly,false);
   profile.accountStatus='suspended'; assert.equal(await access.getPartsActor(),null);
   profile.accountStatus='active';
   profile.accountType = "dealer";

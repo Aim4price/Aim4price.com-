@@ -9,7 +9,7 @@ export async function requireLiveSharedAsset(token: string, assetId: string, per
   const {access,user,business} = await externalLeadAccess(lead);
   if (access !== 'owner' && !(permission === 'reply' ? lead.details?.allowReply === true : leadAllows(lead, permission))) throw new ExternalLeadAccessError('This action was not shared.',403);
   if (!user || !(write ? ['active','owner'].includes(access) : ['active','read-only','owner'].includes(access))) throw new ExternalLeadAccessError('Sign in with an authorised account.',403);
-  if(business && write && permission!=='reply') await (await import('./business-credits')).checkBusinessWrite(user.id,token,assetId);
+  if(business && write && permission!=='reply') await (await import('./business-credits')).ensureCreditSchema();
   return {lead,user,token,assetId,permission,business};
 }
 

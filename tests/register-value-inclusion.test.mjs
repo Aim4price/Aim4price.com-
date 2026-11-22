@@ -102,6 +102,7 @@ test('register create/edit persists inclusion and SQL totals match umbrella and 
     await db.query('INSERT INTO asset_registers(id,user_id,business_name,is_primary,is_selected) VALUES ($1,\'owner\',\'Original\',true,true)',[registerId]);
     await db.query('INSERT INTO asset_register_items(id,user_id,register_id,value,replacement_price_ex_vat) VALUES ($1,\'owner\',$3,100,500),($2,\'owner\',$3,200,600)',[a,b,registerId]);
     const api = await loadModule('../lib/asset-registers.ts', {
+      './business-credits':{saveBusinessResult:async (_user,_label,save)=>save(db)},
       './db': { getDb: () => db }, './database-schema-readiness': { isDatabaseSchemaReady: async () => true }, './report-branding': { selectReportLogoUrl: () => '' },
     });
     const created = await api.createAssetRegister('owner', { businessName:'Excluded register',includeInCombinedTotals:false });

@@ -1,5 +1,5 @@
+import { getAccountProfile } from '../../../../lib/account-profile';
 import { NextRequest, NextResponse } from "next/server";
-import { getAccountProfile } from "../../../../lib/account-profile";
 import { setOwnerDiscoveryParticipation } from "../../../../lib/asset-discovery";
 import { getServerSession } from "../../../../lib/auth-session";
 
@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function PATCH(request: NextRequest) {
-  const session = await getServerSession({ allowOwnerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowOwnerApp: true });
   if (!session?.user?.id) {
     return NextResponse.json(
       { ok: false, error: "You must be signed in." },
@@ -26,11 +26,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
+    const profile = await getAccountProfile(session.user,{businessToolsFor:session});
     if (profile.accountType !== "owner") {
       return NextResponse.json(
         {

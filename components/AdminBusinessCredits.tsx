@@ -5,14 +5,16 @@ import styles from '../app/admin/sharing/sharing.module.css';
 export async function getAdminBusinessCredits(period:'month'|'all'){
  await ensureCreditSchema();
  const query=getDb();
- const totals=(await query.query(`SELECT owner.email,w.monthly_allowance,sum(e.units)::int AS used, (select coalesce(sum(r.credits),0)::int from business_owner_referrals r where r.business_id=w.id and r.rewarded_at>=(date_trunc('month',now() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg')) as bonus FROM business_credit_events e
+ const activity = `(SELECT business_id,actor_id,action,units,created_at FROM business_credit_events WHERE state='complete'
+   UNION ALL SELECT business_id,actor_id,action,1,created_at FROM business_completed_actions)`;
+ const totals=(await query.query(`SELECT owner.email,w.monthly_allowance,sum(e.units)::int AS used, (select coalesce(sum(r.credits),0)::int from business_owner_referrals r where r.business_id=w.id and r.rewarded_at>=(date_trunc('month',now() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg')) as bonus FROM ${activity} e
  JOIN business_workspaces w ON w.id=e.business_id JOIN "user" owner ON owner.id=w.owner_user_id
- WHERE e.state='complete' AND w.paid_since IS NULL AND e.created_at>=(date_trunc('month',now() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg')
+ WHERE w.paid_since IS NULL AND e.created_at>=(date_trunc('month',now() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg')
  GROUP BY w.id,owner.email ORDER BY used DESC,owner.email`)).rows;
  const requests=(await query.query(`SELECT w.id,u.email FROM business_workspaces w JOIN "user" u ON u.id=w.owner_user_id WHERE upgrade_requested_at IS NOT NULL AND paid_since IS NULL ORDER BY upgrade_requested_at`)).rows;
- const events=(await query.query(`SELECT owner.email AS business,actor.email AS actor,e.action,e.units,e.created_at FROM business_credit_events e
+ const events=(await query.query(`SELECT owner.email AS business,actor.email AS actor,e.action,e.units,e.created_at FROM ${activity} e
  JOIN business_workspaces w ON w.id=e.business_id JOIN "user" owner ON owner.id=w.owner_user_id LEFT JOIN "user" actor ON actor.id=e.actor_id
- WHERE e.state='complete' AND ($1='all' OR e.created_at>=(date_trunc('month',now() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg')) ORDER BY e.created_at DESC LIMIT 100`,[period])).rows;
+ WHERE ($1='all' OR e.created_at>=(date_trunc('month',now() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg')) ORDER BY e.created_at DESC LIMIT 100`,[period])).rows;
  return {requests,events,totals};
 }
 export default function AdminBusinessCredits({requests,events,totals}:Awaited<ReturnType<typeof getAdminBusinessCredits>>){

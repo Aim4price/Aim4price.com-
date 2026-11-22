@@ -8,8 +8,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export default async function AssetTransfersPage() {
-  const { session } = await requireActivePageAccess();
-  const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
+  const { session } = await requireActivePageAccess({allowBusinessWorkspace:true});
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (!isAssetRegisterAccountType(profile.accountType)) redirect('/account');
   return <AssetTransfersClient isDealerAccount={profile.accountType === 'dealer'} />;
 }

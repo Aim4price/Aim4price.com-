@@ -1311,26 +1311,19 @@ export default function PartsClient({
           <footer data-download-footer="true">
             <button type="button" disabled={busy} onClick={close}>Cancel</button>
             <button type="button" data-download-primary="true" disabled={busy || !reportName.trim()} onClick={()=>void run(async()=>{
-              const { buildPartsWorkbook } = await import("../../../lib/parts-network-report");
-              const vatLabel = displayVatIncluded ? "Incl. VAT" : "Excl. VAT";
               const fileName = reportName.trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").replace(/\.+$/g, "") || "Parts";
-              let blob: Blob;
-              if (downloadFormat === "pdf") {
-                const query = new URLSearchParams({network,view:current?.owned ? "mine" : "search",search,format:"pdf",vat:displayVatIncluded ? "incl" : "excl",title:reportName.trim()});
+                const query = new URLSearchParams({network,view:current?.owned ? "mine" : "search",search,format:downloadFormat,vat:displayVatIncluded ? "incl" : "excl",title:reportName.trim()});
                 const membership = new URLSearchParams(window.location.search).get("desktopMembershipId");
                 if (membership) query.set("desktopMembershipId", membership);
                 const response = await fetch(`/api/parts-network?${query}`, {
                   credentials:"same-origin", cache:"no-store", signal:AbortSignal.timeout(90000),
                   headers:{"x-aim4price-client-realm":appRealmForPath(window.location.pathname) ?? "website"},
                 });
-                if (!response.ok || !response.headers.get("content-type")?.includes("application/pdf")) throw new Error("The PDF could not be prepared. Please try again.");
-                blob = await response.blob();
-              } else {
-                const data=await api(undefined,`?network=${network}&view=${current?.owned ? "mine" : "search"}&search=${encodeURIComponent(search)}&download=true`);
-                const exportRows = (data.rows as Row[]).map(r=>({details:Object.fromEntries((data.fields as PartDetailField[] || []).filter(f=>r.details?.[f.id]).map(f=>[f.label+(f.private ? " (private)" : ""),r.details![f.id]])),part:r.part_number,description:r.description || "",brand:r.brand || "",quantity:r.quantity,price:r.price === null ? null : Number(displayedPrice(r).toFixed(2)),vat:vatLabel,dealer:r.business_name,town:r.town || ""}));
-                const book = await buildPartsWorkbook(exportRows);
-                blob = new Blob([new Uint8Array(await book.xlsx.writeBuffer())], {type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-              }
+                if (!response.ok) {
+                  const result = await response.json().catch(()=>null);
+                  throw new Error(result?.error || 'The report could not be prepared. Please try again.');
+                }
+                const blob = await response.blob();
               const url=URL.createObjectURL(blob);
               const link=document.createElement("a");link.href=url;link.download=fileName+"."+downloadFormat;
               document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);

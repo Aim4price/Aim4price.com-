@@ -513,7 +513,7 @@ function formatUnknownError(error: unknown, fallback: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -621,7 +621,7 @@ async function readAssetRegister(request: NextRequest, userId: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -759,7 +759,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -923,7 +923,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -1115,7 +1115,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();

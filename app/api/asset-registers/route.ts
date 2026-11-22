@@ -121,7 +121,7 @@ function errorResponse(error: unknown, fallback: string) {
 }
 
 export async function GET() {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -141,7 +141,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -172,7 +172,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -206,7 +206,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();

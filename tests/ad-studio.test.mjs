@@ -13,6 +13,7 @@ async function loadTypeScriptModule(path, dependencies = {}) {
   }).outputText;
   const module = { exports: {} };
   const loadDependency = (specifier) => {
+    if (specifier === './business-credits') return {spendBusinessCredit:async()=>{}};
     if (specifier === './ad-custom-design') return loadTs('lib/ad-custom-design.ts');
     if (specifier === './ad-custom-renderer') return loadTs('lib/ad-custom-renderer.ts');
     if (specifier === './selling-price') return loadTs('lib/selling-price.ts');
@@ -431,14 +432,14 @@ test('owners manage a private-by-default showroom from Account without owner nav
   assert.doesNotMatch(ownerNav, /showroom|my-showroom/i);
   assert.match(header, /href: '\/my-showroom', label: 'My Showroom', accountTypes: \['dealer'\]/);
 
-  assert.match(myShowroomPage, /getServerSession\(\{ allowDealerApp: true \}\)/);
+  assert.match(myShowroomPage, /getServerSession\(\{allowBusinessWorkspace:true,\s+allowDealerApp: true \}\)/);
   assert.doesNotMatch(myShowroomPage, /allowOwnerApp/);
   assert.match(myShowroomPage, /active=\{profile\.accountType === 'owner' \? 'account' : 'showroom'\}/);
   assert.match(myShowroomPage, /viewerUserId: session\.user\.id/);
   assert.match(myShowroomPage, /sellerUserId: session\.user\.id/);
   assert.match(myShowroomPage, /exposeContact: true/);
 
-  assert.match(route, /getServerSession\(\{ allowDealerApp: true \}\)/);
+  assert.match(route, /getServerSession\(\{allowBusinessWorkspace:true,\s+allowDealerApp: true \}\)/);
   assert.doesNotMatch(route, /allowOwnerApp/);
   assert.match(route, /isDealerAppSession\(session\) && !dealerRoleCan\(session\.dealerApp\.role, 'showroom'\)/);
   assert.equal(route.match(/message === 'SHOWROOM_FORBIDDEN' \? 403/g)?.length, 3);

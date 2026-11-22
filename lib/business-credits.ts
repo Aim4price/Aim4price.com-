@@ -31,6 +31,12 @@ export const CREDIT_SCHEMA = `
    units smallint NOT NULL CHECK(units IN (0,1)),
    PRIMARY KEY(business_id,actor_id,action,request_id)
  );
+ CREATE TABLE IF NOT EXISTS business_completed_actions (
+   business_id uuid NOT NULL REFERENCES business_workspaces(id) ON DELETE CASCADE,
+   result_key text NOT NULL, action text NOT NULL, actor_id text NOT NULL,
+   created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(business_id,result_key)
+ );
+ CREATE INDEX IF NOT EXISTS business_completed_month ON business_completed_actions(business_id,created_at);
  CREATE INDEX IF NOT EXISTS business_credit_month ON business_credit_events(business_id,created_at);
 `;
 let ready: Promise<void> | undefined;
@@ -52,73 +58,62 @@ const monthFilter = `created_at >= (${monthStart} AT TIME ZONE 'Africa/Johannesb
 export class CreditLimitError extends Error {
   constructor() { super('Your monthly Business credits have been used.'); }
 }
-export async function workspaceForCredits(db: PoolClient, userId: string) {
+export async function workspaceForCredits(db: Pick<PoolClient,'query'>, userId: string) {
   const member = await ensureBusinessMembership(db,userId);
   if (!member) throw Error('This Business workspace is unavailable.');
   const row = (await db.query(`SELECT w.id,w.owner_invite_id,w.monthly_allowance,w.referral_reward,w.enforce_credits,w.paid_since,w.upgrade_requested_at, EXISTS(SELECT 1 FROM account_profiles p WHERE p.user_id=w.owner_user_id AND p.account_type='dealer') AS desktop FROM business_workspaces w WHERE w.id=$1 FOR UPDATE`,[member.business_id])).rows[0];
   return {...member,...row};
 }
-export async function creditBalance(db: PoolClient, businessId: string) {
-  return (await db.query(`SELECT (select coalesce(sum(credits),0)::int from business_owner_referrals where business_id=$1 and rewarded_at>=(${monthStart} AT TIME ZONE 'Africa/Johannesburg')) as bonus, coalesce(sum(units) FILTER (WHERE state='complete'),0)::int AS used,
+export async function creditBalance(db: Pick<PoolClient,'query'>, businessId: string) {
+  return (await db.query(`SELECT (select coalesce(sum(credits),0)::int from business_owner_referrals where business_id=$1 and rewarded_at>=(${monthStart} AT TIME ZONE 'Africa/Johannesburg')) as bonus, (coalesce(sum(units) FILTER (WHERE state='complete'),0) +
+    (SELECT count(*) FROM business_completed_actions WHERE business_id=$1 AND ${monthFilter}))::int AS used,
     coalesce(sum(units) FILTER (WHERE state='reserved' AND expires_at>now()),0)::int AS held,
     ((${monthStart} + interval '1 month') AT TIME ZONE 'Africa/Johannesburg') AS resets
     FROM business_credit_events WHERE business_id=$1 AND ${monthFilter}`,[businessId])).rows[0];
 }
-type CreditInput = {userId:string; action:'manage'|'send'|'share'; requestId:string; token:string; assetKey:string;visitId?:string};
-export async function recordCredit(db: PoolClient,input: CreditInput, phase:'complete'|'reserve'|'cancel'|'close'='complete') {
-  const workspace=await workspaceForCredits(db,input.userId);
-  const keys=[workspace.id,input.userId,input.action,input.requestId];
-  const match='business_id=$1 AND actor_id=$2 AND action=$3 AND request_id=$4';
-  const event=(await db.query(`SELECT *, expires_at>now() AS valid FROM business_credit_events WHERE ${match}`,keys)).rows[0];
-  if(event && (event.token!==input.token || event.asset_key!==input.assetKey)) throw Error('This action identifier is already in use.');
-  if(phase==='cancel') {
-    await db.query(`DELETE FROM business_credit_events WHERE ${match} AND state='reserved'`,keys);
-    return;
-  }
-  if(phase==='close') {
-    await db.query(`UPDATE business_credit_events SET closed_at=now() WHERE ${match} AND closed_at IS NULL`,keys);
-    return;
-  }
-  if(event?.state==='complete'){
-    if(input.action==='manage'&&event.closed_at)throw Error('This Manage visit has ended. Please reopen Manage.');
-    return;
-  }
-  if(phase==='complete' && input.action==='share') {
-    if(!event?.valid) throw Error('This sharing reservation expired. Reopen Share to try again.');
-    await db.query(`UPDATE business_credit_events SET state='complete',expires_at=NULL WHERE ${match}`,keys);
-    return;
-  }
-  if(event?.valid) return;
-  if(event) await db.query(`DELETE FROM business_credit_events WHERE ${match}`,keys);
-  let included=false;
-  if(input.visitId){
-    const visit=await db.query(`SELECT 1 FROM business_credit_events WHERE business_id=$1 AND actor_id=$2 AND action='manage' AND request_id=$3
-      AND token=$4 AND asset_key=$5 AND closed_at IS NULL AND created_at>now()-interval '12 hours'`,[workspace.id,input.userId,input.visitId,input.token,input.assetKey]);
-    if(!visit.rows.length)throw Error('This Manage visit has ended. Reopen Manage to continue.');
-    included=true;
-  }
-  const balance=await creditBalance(db,workspace.id);
-  if(!included && !workspace.desktop && !workspace.paid_since && creditLimitsActive(workspace.enforce_credits) && balance.used+balance.held>=(workspace.monthly_allowance??MONTHLY_BUSINESS_CREDITS)+Number(balance.bonus||0)) throw new CreditLimitError();
-  await db.query(`INSERT INTO business_credit_events(business_id,actor_id,action,request_id,token,asset_key,state,units,expires_at)
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,CASE WHEN $7='reserved' THEN LEAST(now()+interval '30 minutes',((${monthStart}+interval '1 month') AT TIME ZONE 'Africa/Johannesburg')) END)`,
-    [...keys,input.token,input.assetKey,phase==='reserve'?'reserved':'complete',workspace.desktop||workspace.paid_since||included?0:1]);
+/** The caller owns the transaction that creates the result. */
+export async function spendBusinessCredit(db: Pick<PoolClient,'query'>, userId:string, action:string, resultKey:string) {
+  const profile = (await db.query('SELECT account_type FROM account_profiles WHERE user_id=$1',[userId])).rows[0];
+  if (profile?.account_type !== 'business') return;
+  const workspace = await workspaceForCredits(db,userId);
+  if (workspace.desktop || workspace.paid_since) return;
+  const existing = await db.query('SELECT 1 FROM business_completed_actions WHERE business_id=$1 AND result_key=$2',[workspace.id,resultKey]);
+  if (existing.rows.length) return;
+  const balance = await creditBalance(db,workspace.id);
+  if (creditLimitsActive(workspace.enforce_credits) && balance.used + balance.held >= workspace.monthly_allowance + balance.bonus) throw new CreditLimitError();
+  await db.query('INSERT INTO business_completed_actions(business_id,result_key,action,actor_id) VALUES($1,$2,$3,$4)',[workspace.id,resultKey,action,userId]);
 }
-export async function creditHistory(db: PoolClient,businessId:string) {
-  return (await db.query(`SELECT e.action,e.units,e.created_at,u.name FROM business_credit_events e
-   LEFT JOIN "user" u ON u.id=e.actor_id WHERE business_id=$1 AND state='complete'
-   ORDER BY created_at DESC,request_id DESC LIMIT 50`,[businessId])).rows;
-}
-export async function checkBusinessWrite(userId:string,token:string,assetKey?:string) {
 
-  await creditTransaction(async db=>{
-    const workspace=await workspaceForCredits(db,userId);
-    if(workspace.desktop || workspace.paid_since || !creditLimitsActive(workspace.enforce_credits)) return;
-    const balance=await creditBalance(db,workspace.id);
-    if(balance.used+balance.held<(workspace.monthly_allowance??MONTHLY_BUSINESS_CREDITS)+Number(balance.bonus||0)) return;
-    const visit=await db.query(`SELECT 1 FROM business_credit_events WHERE business_id=$1 AND actor_id=$2 AND token=$3
-      AND ($4::text IS NULL OR asset_key=$4) AND action='manage' AND closed_at IS NULL AND created_at>now()-interval '12 hours' LIMIT 1`,[workspace.id,userId,token,assetKey??null]);
-    if(!visit.rowCount) throw new CreditLimitError();
+/** Run a standalone save and its debit on the same connection. */
+export async function saveBusinessResult<T>(
+  userId:string, label:string,
+  save:(writer:Pick<PoolClient,'query'>)=>Promise<T>,
+  resultKey:(saved:T)=>string|null,
+):Promise<T> {
+  const db = getDb();
+  const account = await db.query('SELECT account_type FROM account_profiles WHERE user_id=$1',[userId]);
+  if (account.rows[0]?.account_type !== 'business') return save(db);
+  return creditTransaction(async client => {
+    const saved = await save(client);
+    const key = resultKey(saved);
+    if (key) await spendBusinessCredit(client,userId,label,key);
+    return saved;
   });
+}
+
+/** Reopening the same report, including another format, reuses its credit. */
+export async function recordBusinessReport(userId:string,kind:string,scope:unknown) {
+  const {createHash} = await import('node:crypto');
+  const fingerprint = createHash('sha256').update(JSON.stringify(scope)).digest('hex');
+  await creditTransaction(db=>spendBusinessCredit(db,userId,kind,kind+':'+fingerprint));
+}
+
+export async function creditHistory(db: PoolClient,businessId:string) {
+  return (await db.query(`SELECT activity.*,u.name FROM (
+    SELECT action,units,created_at,actor_id FROM business_credit_events WHERE business_id=$1 AND state='complete'
+    UNION ALL
+    SELECT action,1,created_at,actor_id FROM business_completed_actions WHERE business_id=$1
+  ) activity LEFT JOIN "user" u ON u.id=activity.actor_id ORDER BY created_at DESC LIMIT 50`,[businessId])).rows;
 }
 
 export async function changeBusinessPlan(db:PoolClient, businessId:string, actorId:string, plan:'free'|'paid', pendingOnly=false) {

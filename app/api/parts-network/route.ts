@@ -36,6 +36,7 @@ function reply(data: unknown, status = 200) {
   });
 }
 function failure(error: unknown) {
+  if (error instanceof Error && error.message === 'Your monthly Business credits have been used.') return reply({error:error.message,code:'BUSINESS_CREDIT_LIMIT'},402);
   if (error instanceof PartsError || error instanceof TeamAccessError)
     return reply({ error: error.message }, error.status);
   console.error("Parts network request failed", error);
@@ -75,7 +76,7 @@ export async function GET(request: NextRequest) {
         staff: actor.staff,
         desktop: Boolean(actor.team),
       });
-    if (q.get("format") === "pdf") {
+    if (q.get("format") === "pdf" || q.get("format") === "xlsx") {
       const data = await partsData(actor, networkId(q.get("network")), q.get("view") === "mine" ? "mine" : "search", q.get("search") || "", 0, true);
       const { buildPartsStockReportHtml } = await import("../../../lib/parts-network-report");
       const { renderReportHtmlToPdf } = await import("../../../lib/report-pdf");
@@ -94,10 +95,21 @@ export async function GET(request: NextRequest) {
         price: row.price === null ? null : Number((Number(row.price) * (row.vat_included === included ? 1 : included ? 1.15 : 1 / 1.15)).toFixed(2)),
         vat, dealer: row.business_name, town: row.town || "",
       }));
+      const countReport = async () => {
+        if (actor.metered) await (await import('../../../lib/business-credits')).recordBusinessReport(actor.id,'Generated a parts report',[q.get('network'),vat,rows]);
+      };
+      if (q.get("format") === "xlsx") {
+        const {buildPartsWorkbook} = await import("../../../lib/parts-network-report");
+        const book = await buildPartsWorkbook(rows);
+        const bytes = new Uint8Array(await book.xlsx.writeBuffer());
+        await countReport();
+        return new NextResponse(bytes,{headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Cache-Control':'private, no-store'}});
+      }
       const scope = q.get("search")?.trim() ? `Matching parts for “${q.get("search")!.trim()}”` : "Complete parts list";
       const date = new Intl.DateTimeFormat("en-ZA", {dateStyle:"medium",timeZone:"Africa/Johannesburg"}).format(new Date());
       const pdf = await renderReportHtmlToPdf(buildPartsStockReportHtml(title, rows, vat, scope, date, {logoUrl}), {baseUrl:request.url,cookie:request.headers.get("cookie") || ""});
       const filename = normaliseReportPdfFileName(title).replace(/[^\x20-\x7e]/g, "_");
+      await countReport();
       return new NextResponse(pdf, {headers:{"Content-Type":"application/pdf","Content-Disposition":`attachment; filename="${filename}"`,"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
     }
     return reply(

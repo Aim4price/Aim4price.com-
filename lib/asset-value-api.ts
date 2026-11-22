@@ -12,7 +12,7 @@ import {notifyValueSuggestion} from './asset-value-mail';
 export function valueApiError(e:unknown){if(e instanceof ExternalLeadAccessError)return businessJson({error:e.message},e.status);const message=e instanceof Error?e.message:'';const safe=/^(Enter |Please |Reopen |Choose |Replacement |Manual |This |The asset|Asset unavailable|Suggestion unavailable|Invalid save|Sign in|Owner access)/.test(message);if(!safe)console.error('Value review failed',e);return businessJson({error:safe?message:'Unable to save this value. Please reload and try again.'},400);}
 export async function ownerValueApi(request:NextRequest,assetId?:string){try{
  if(request.method!=='GET')requireBusinessOrigin(request);
- const session=await getServerSession({allowOwnerApp:true,allowDealerApp:true});
+ const session=await getServerSession({allowBusinessWorkspace:true, allowOwnerApp:true,allowDealerApp:true});
  if(!session?.user)return businessJson({error:'Sign in to review values.'},401);
  if(!await getAssetRegisterAccountAccess(session))return businessJson({error:'Owner access required.'},403);
  if(isOwnerAppSession(session)){const access=await getOwnerAppAccess();if(!access||!ownerAppCan(access,'manage_assets')||(assetId&&!ownerAppCanAccessAsset(access,assetId)))return businessJson({error:'Owner access required.'},403);}

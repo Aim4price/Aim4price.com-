@@ -70,7 +70,7 @@ test('dealer schedule creation is bound to the active share, permission and exac
   assert.match(tracker, /access\.dealer_user_id = \$1 and access\.id = \$2::uuid and access\.is_active = true/);
   assert.match(tracker, /canCreateMaintenanceSchedules/);
   assert.match(tracker, /owner_user_id = \$2[\s\S]*partner_user_id = \$3[\s\S]*asset_register_item_id = \$4::uuid/);
-  assert.match(dealerRoute, /getServerSession\(\{ allowDealerApp: true \}\)/);
+  assert.match(dealerRoute, /getServerSession\(\{allowBusinessWorkspace:true,\s+allowDealerApp: true \}\)/);
 });
 
 test('legacy owner approval atomically creates the official maintenance record', () => {

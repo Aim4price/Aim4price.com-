@@ -7,9 +7,9 @@ import type { PushApp, PushCategory } from './push-policy';
 export async function desktopNotificationAccount() {
   // Website credentials only. App members cannot change account-wide policy.
   if (await currentAppRealm()) return null;
-  const session = await getServerSession();
+  const session = await getServerSession({allowBusinessWorkspace:true});
   if (!session?.user?.id || isDealerAppSession(session) || isOwnerAppSession(session)) return null;
-  const profile = await getAccountProfile(session.user);
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountStatus !== 'active' || !['owner','dealer'].includes(profile.accountType)) return null;
   const app: PushApp = profile.accountType === 'owner' ? 'owner' : isMiddlemanAccountSubtype(profile.accountSubtype) ? 'middleman' : 'dealer';
   const categories: PushCategory[] = app === 'owner' ? ['maintenance','licensing','enquiries','approvals','costs','listings']

@@ -11,16 +11,12 @@ export type DealerCostRequestContext = {
 };
 
 export async function getDealerCostRequestContext(): Promise<DealerCostRequestContext | null> {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({allowBusinessWorkspace:true,  allowDealerApp: true });
   if (!session?.user?.id) return null;
   const dealerAppSession = await getDealerAppSession();
   if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'client_costs')) return null;
 
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const profile = await getAccountProfile(session.user,{businessToolsFor:session});
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return null;
 
   const supplierName = profile.businessName || profile.displayName || profile.name || 'Dealer';
