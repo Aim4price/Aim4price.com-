@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import ShareDisclosureDialog from '../../components/asset-register/ShareDisclosureDialog';
 import PageHelp from '../../components/PageHelp';
 import { BusinessSubscriptionButton, type BusinessSubscription } from '../../components/BusinessCreditControls';
 import type { workspaceCards, WorkspaceRole } from '../../lib/workspace-navigation';
@@ -44,19 +45,23 @@ export default function WorkspaceGrid({cards, role, userId, subscription}: {
   return <>
     <header className={styles.heading}><h1>Workspace</h1>
       <div className={styles.actions}>
-        <button type="button" className={styles.setting} aria-expanded={editing} aria-controls="workspace-settings" onClick={() => setEditing(!editing)}>{editing ? 'Done' : 'Customise workspace'}</button>
+        <button type="button" className={styles.setting} aria-label="Customise workspace" aria-haspopup="dialog" onClick={() => setEditing(true)}>Customise</button>
         {subscription && <div id="workspace-upgrade" className={styles.subscription} tabIndex={-1}>
-          <BusinessSubscriptionButton plan={subscription} className={styles.upgrade} icon={subscription.remaining !== null && <span>{subscription.remaining.toLocaleString('en-ZA')} credits available</span>}/>
+          <BusinessSubscriptionButton plan={subscription} className={styles.upgrade} icon={subscription.remaining !== null && <span>{subscription.remaining.toLocaleString('en-ZA')} credits</span>}/>
         </div>}
       </div>
     </header>
-    <section hidden={!editing} id="workspace-settings" className={styles.settings}>
-      <h2>Show cards</h2>
+    {editing && <ShareDisclosureDialog title="Customise workspace" titleId="workspace-card-options" closeLabel="Close workspace settings" onClose={() => setEditing(false)}>
+      <fieldset className={styles.fields}><legend>Show cards</legend>
       <div className={styles.options}>{cards.map(card => <label key={card.key}>
         <input type="checkbox" checked={!hidden.includes(card.key)} onChange={event => save(event.target.checked ? hidden.filter(key => key !== card.key) : [...hidden, card.key])}/>{card.label}
       </label>)}</div>
-      <button type="button" className={styles.setting} onClick={() => save([])}>Restore defaults</button>
-    </section>
+      </fieldset>
+      <footer className={styles.editorActions}>
+        <button type="button" className={styles.setting} onClick={() => save([])}>Restore defaults</button>
+        <button type="button" className={styles.done} onClick={event => event.currentTarget.closest('dialog')?.close()}>Done</button>
+      </footer>
+    </ShareDisclosureDialog>}
     {visible.length > 0 && <nav className={styles.grid} aria-label="Workspace pages">
       {[...available, ...paid].map(card => <WorkspaceTile key={card.key} card={card} role={role} free={Boolean(subscription)}/>)}
     </nav>}
