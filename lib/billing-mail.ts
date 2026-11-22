@@ -2,7 +2,7 @@ import { getBillingEmailPreference } from './billing-preferences';
 import { getDb } from './db';
 import { ensureBillingSchema, processSignupInvoices, processRecurringInvoices, mapInvoice } from './billing';
 import { renderReportHtmlToPdf } from './report-pdf';
-import { getSiteOrigin } from './email';
+import { getSiteOrigin, sendAim4priceEmail } from './email';
 import { buildBillingEmail } from './billing-email-template';
 
 export async function billingPdf(id: string): Promise<Buffer> {
@@ -14,6 +14,29 @@ export async function billingPdf(id: string): Promise<Buffer> {
   // The first stored PDF wins, including concurrent preview/send renders.
   const result=await getDb().query('update aim4price_billing_invoices set pdf=coalesce(pdf,$2) where id=$1 returning pdf',[id,pdf]);
   return Buffer.from(result.rows[0].pdf);
+}
+async function dispatchSubscriptionMail() {
+  // Some upgraded installations have not yet visited a profile page to install the trial columns.
+  await getDb().query(`insert into aim4price_subscription_mail(event_key,user_id,subject,body)
+    select 'trial:'||p.user_id||':'||r.days,p.user_id,'Your Aim4price Owner trial',
+      'Your Owner trial ends on '||to_char(t.ends_at at time zone 'Africa/Johannesburg','DD Mon YYYY')||'. Review your subscription in Account.'
+    from account_profiles p cross join lateral (select (to_jsonb(p)->>'owner_trial_ends_at')::timestamptz as ends_at) t
+    cross join (values(1),(7)) r(days)
+    where p.account_type='owner' and p.account_status='pending_payment' and to_jsonb(p)->>'owner_trial_requested'='true'
+    and t.ends_at>now()+(r.days-1)*interval '1 day' and t.ends_at<=now()+r.days*interval '1 day'
+    and not exists(select 1 from aim4price_billing_signup_jobs j where j.user_id=p.user_id) on conflict do nothing`);
+  const result=await getDb().query(`with jobs as(select event_key from aim4price_subscription_mail where sent_at is null and next_attempt_at<=now() and created_at>now()-interval '23 hours' order by created_at limit 10 for update skip locked)
+    update aim4price_subscription_mail m set next_attempt_at=now()+interval '5 minutes'
+    from jobs,"user" u where m.event_key=jobs.event_key and u.id=m.user_id returning m.*,u.email`);
+  for(const m of result.rows){
+    const url=getSiteOrigin()+'/account';
+    const body=String(m.body);
+    const escaped=body.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+    try{
+      await sendAim4priceEmail({to:m.email,subject:m.subject,text:body+' '+url,html:'<p>'+escaped+'</p><p><a href="'+url+'">Open Account</a></p>',idempotencyKey:'subscription-'+m.event_key});
+      await getDb().query('update aim4price_subscription_mail set sent_at=now() where event_key=$1',[m.event_key]);
+    }catch{console.warn('Subscription email pending retry.');}
+  }
 }
 export async function dispatchBillingMail(): Promise<void> {
   await ensureBillingSchema();
@@ -62,6 +85,6 @@ export async function startBillingSender() {
   if(process.env.NODE_ENV!=='production'||process.env.AIM4PRICE_BILLING_DISABLED==='1')return;
   const state=globalThis as typeof globalThis & {aim4priceBillingTimer?:ReturnType<typeof setInterval>};if(state.aim4priceBillingTimer)return;
   let running=false;
-  state.aim4priceBillingTimer=setInterval(async()=>{if(running)return;running=true;try{await processSignupInvoices();await processRecurringInvoices();await dispatchBillingMail();}catch{console.warn('Billing sender unavailable; will retry.');}finally{running=false;}},30000);
+  state.aim4priceBillingTimer=setInterval(async()=>{if(running)return;running=true;try{await processSignupInvoices();await processRecurringInvoices();await dispatchBillingMail();await dispatchSubscriptionMail();}catch{console.warn('Billing sender unavailable; will retry.');}finally{running=false;}},30000);
   state.aim4priceBillingTimer.unref();
 }

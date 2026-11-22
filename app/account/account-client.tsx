@@ -43,6 +43,7 @@ type AccountActionModal =
   | "email";
 
 type AccountProfile = {
+  trialEndsAt?: string | null;
   userId: string;
   name: string;
   displayName: string;
@@ -98,6 +99,7 @@ type ScanPinApiResponse = {
 type AccountClientProps = {
   showAccounting?: boolean;
   canManageDesktopUsers?: boolean;
+  inviteLink?: string;
   subscription?: BusinessSubscription;
   sharedAccount?: boolean;
   canEditSignInSettings?: boolean;
@@ -484,7 +486,7 @@ function LockedBusinessAction({ icon, label }: { icon: QuickActionIconName; labe
 export default function AccountClient({
   showAccounting = false,
   canManageDesktopUsers = false,
-  subscription,
+  subscription, inviteLink,
   sharedAccount = false,
   directoryEmailVerified = false,
   canEditSignInSettings = true,
@@ -1825,6 +1827,8 @@ export default function AccountClient({
                     <strong>Edit business details</strong>
                   </button>}
 
+                  {initialProfile?.trialEndsAt && <a href="/account/owner-trial" className={styles.quickActionButton}>Owner trial · ends {new Date(initialProfile.trialEndsAt).toLocaleDateString('en-ZA')}</a>}
+                  {inviteLink && <button type="button" className={styles.quickActionButton} onClick={async()=>{const url=new URL(inviteLink,window.location.origin).href;try{await navigator.clipboard.writeText(url);window.alert('Owner invite link copied. Earn bonus credits when an invited Owner verifies their email and adds their first asset.');}catch{window.prompt('Copy your Owner invite link',url);}}}>Copy Owner invite link</button>}
                   {subscription && <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />}
 
                   <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")} data-tooltip="View and download your Aim4price invoices." data-tooltip-style="description">

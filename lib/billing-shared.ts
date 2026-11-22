@@ -3,7 +3,7 @@ export const BILLING_ISSUER = {
   email: 'Aim4price@gmail.com', bank: 'ABSA', accountNumber: '4113 0591 64', vat: 'No VAT applicable',
 } as const;
 export const BILLING_ACCOUNT_TYPES = ['owner', 'business'] as const;
-export type BillingPlan = { accountType: string; description: string; amountCents: number; interval: 'once' | 'monthly' | 'annual'; dueDays: number; version: number; enabled: boolean };
+export type BillingPlan = { key?: string; accountType: string; description: string; amountCents: number; interval: 'once' | 'monthly' | 'annual'; dueDays: number; version: number; enabled: boolean };
 export type BillingLine = { description: string; quantity: number; unitCents: number; totalCents: number; workSessionId?: string };
 export type BillingCustomer = { name: string; email: string; address: string; businessName?: string; reference?: string };
 export type BillingInvoice = { id: string; userId: string; number: string | null; status: 'draft' | 'issued' | 'void'; customer: BillingCustomer; lines: BillingLine[]; totalCents: number; paidCents: number; dueDate: string; issuedAt: string | null; createdAt: string; note: string; deliveryStatus: string | null; version: number; voidReason?: string; accountStatus?: string; contactPhone?: string; contactEmail?: string };

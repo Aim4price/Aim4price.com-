@@ -39,6 +39,7 @@ export async function POST(request: Request) {
   if (typeof userId !== "string" || !userId) return adminApiError("Select an account.");
 
   try {
+    if(create && input.billingHold===true) await (await import('../../../../../lib/billing')).ensureBillingSchema();
     await ensureAccountProfileColumns();
     await ensureSharingFoundation();
     if (type === "business") await ensureBusinessWorkspaceSchema();
@@ -58,6 +59,10 @@ export async function POST(request: Request) {
         }
         await db.query(`INSERT INTO account_profiles(user_id,display_name,account_type,account_subtype,account_status,introduced_by_option)
           VALUES($1,$2,$3,$4,$5,'direct')`, [userId,name,storedType,input.subtype,input.status]);
+        if(input.billingHold===true){
+          await db.query('insert into aim4price_billing_controls(user_id,held) values($1,true)',[userId]);
+          await db.query("insert into aim4price_billing_agreement_events(user_id,actor_id,action,detail) values($1,$2,'billing_held',$3)",[userId,access.actor.userId,JSON.stringify({reason:'Created with billing on hold'})]);
+        }
       } else {
         const user = (await db.query('SELECT email,name FROM "user" WHERE id=$1 FOR UPDATE',[userId])).rows[0];
         if (!user) throw new InvalidChange("Account no longer exists.",404);

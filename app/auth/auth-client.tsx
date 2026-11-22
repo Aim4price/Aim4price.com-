@@ -565,15 +565,16 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   const [createdBusinessEmail,setCreatedBusinessEmail]=useState('');
   const [verificationSent,setVerificationSent]=useState(false);
   async function sendBusinessVerification(email:string){
-    await postAuth('/send-verification-email',{email,callbackURL:sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/business'});
+    await postAuth('/send-verification-email',{email,callbackURL:sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||(signupForm.accountType==='owner'?'/asset-register':'/business')});
     setVerificationSent(true);
   }
+  const [terms,setTerms]=useState({trial_days:30,monthly_credits:500,version:0});
   const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
   const [billingPricingError, setBillingPricingError] = useState("");
   const [billing, setBilling] = useState({name:"",email:"",address:"",accepted:false});
   useEffect(() => {
     let active=true;
-    fetch('/api/billing/plans', {cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(active)setBillingPlans(data.plans);}).catch(()=>{if(active)setBillingPricingError('Signup pricing could not be loaded. Refresh before creating an account.');});
+    fetch('/api/billing/plans', {cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(active){setBillingPlans(data.plans);if(data.terms)setTerms(data.terms);}}).catch(()=>{if(active)setBillingPricingError('Signup pricing could not be loaded. Refresh before creating an account.');});
     return()=>{active=false;};
   }, []);
 
@@ -583,7 +584,11 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupForm, setSignupForm] =
     useState<SignupFormState>(()=>businessSignup?{...initialSignupState,accountType:'business',accountSubtype:isBusinessService(initialBusinessType)?initialBusinessType:BUSINESS_SERVICE_OPTIONS[0].value,email:initialEmail||'',directoryParticipation:true}:initialSignupState);
-  const accountAccess = signupForm.accountType === 'business' ? 'free' : 'desktop';
+  const [signupPlan,setSignupPlan] = useState<"free" | "paid" | null>(null);
+  const [planKey,setPlanKey]=useState('');
+  const offers=billingPlans.filter(plan=>plan.accountType===signupForm.accountType);
+  const planOffer=offers.find(plan=>(plan.key??plan.accountType)===planKey)??offers[0];
+  const accountAccess = signupPlan === 'paid' ? 'desktop' : signupForm.accountType === 'owner' ? 'trial' : 'free';
   const [loginForm, setLoginForm] = useState<LoginFormState>(initialLoginState);
   const [forgotForm, setForgotForm] =
     useState<ForgotFormState>(initialForgotState);
@@ -601,6 +606,10 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
       window.location.search,
     );
 
+    const requestedOffer=new URLSearchParams(window.location.search).get('offer');
+    if(requestedOffer && /^(owner-band-[123]|business-standard)-(monthly|annual)$/.test(requestedOffer)){
+      setPlanKey(requestedOffer);setSignupPlan('paid');
+    }
     if (requestedAccountType) {
       setSignupForm((current) => ({
         ...current,
@@ -702,7 +711,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   };
 
   const validateSignupStep = (step: SignupStep) => {
-    if (step === 3 && accountAccess !== 'free' && signupForm.accountType !== "business" && (billingPricingError || (selectedBillingPlan && (!billing.accepted || !billing.address.trim())))) {
+    if (step === 3 && accountAccess === 'desktop' && (billingPricingError || (selectedBillingPlan && (!billing.accepted || !billing.address.trim())))) {
       setNotice({tone:"error",title:"Invoice details required",text:billingPricingError || "Add your billing address and accept the signup invoice price."});
       returnToSignupStep(3);return false;
     }
@@ -713,6 +722,10 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     const townCity = signupForm.townCity.trim();
 
     if (step === 1) {
+      if (!signupPlan || (signupPlan === 'paid' && !planOffer)) {
+        setNotice({tone:'error',title:'Choose how to start',text:'Select a free or paid plan to continue.'});
+        return false;
+      }
       return true;
     }
 
@@ -807,8 +820,8 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     return true;
   };
 
-  const selectedBillingPlan = (accountAccess === "free" || signupForm.accountType === "business") ? undefined : billingPlans.find(plan=>plan.accountType===signupForm.accountType);
-  useEffect(()=>{setBilling(current=>({...current,accepted:false}));},[selectedBillingPlan?.accountType,selectedBillingPlan?.version]);
+  const selectedBillingPlan = accountAccess === 'desktop' ? planOffer : undefined;
+  useEffect(()=>{setBilling(current=>({...current,accepted:false}));},[selectedBillingPlan?.key,selectedBillingPlan?.accountType,selectedBillingPlan?.version]);
 
   const handleSignupSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -848,6 +861,10 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         billingEmail: billing.email.trim() || email,
         billingAddress: billing.address,
         billingAccepted: billing.accepted,
+        ownerInvite: signupForm.accountType === "owner" ? new URLSearchParams(window.location.search).get("invite") : null,
+        termsVersion:terms.version,
+        signupPlan,
+        planKey:selectedBillingPlan?.key,
         billingPlanVersion: selectedBillingPlan?.version,
         phone,
         businessName: signupForm.businessName.trim(),
@@ -866,7 +883,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         callbackURL: getCallbackUrl(email),
       });
 
-      if(signupForm.accountType==='business'||accountAccess==='free'){
+      if(accountAccess !== 'desktop' || (signupForm.accountType==='owner' && new URLSearchParams(window.location.search).has('invite'))){
         setCreatedBusinessEmail(email);
         try{await sendBusinessVerification(email);}catch{
           setNotice({tone:'error',title:'Verification email not sent',text:'Your account was created. Please resend the verification email below.'});
@@ -1099,7 +1116,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                 {notice&&<p role="alert">{notice.text}</p>}
                 <div className={styles.signupFooter}>
                   <button type="button" className={styles.secondaryButton} disabled={isSubmitting} onClick={async()=>{setIsSubmitting(true);setNotice(null);try{await sendBusinessVerification(createdBusinessEmail);}catch{setNotice({tone:'error',title:'Unable to send email',text:'Please try resending the verification email.'});}finally{setIsSubmitting(false);}}}>{isSubmitting?'Sending…':'Resend verification email'}</button>
-                  <a className={`${styles.primaryButton} ${styles.signupPrimaryButton}`} href={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/business'}>Continue</a>
+                  <a className={`${styles.primaryButton} ${styles.signupPrimaryButton}`} href={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||(signupForm.accountType==='owner'?'/asset-register':'/business')}>Continue</a>
                 </div>
               </section>
             ) : mode === "signup" ? (
@@ -1156,6 +1173,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                               value={signupForm.accountType}
                               options={PUBLIC_SIGNUP_OPTIONS}
                               onChange={(accountType) => {
+                                setSignupPlan(null);setPlanKey('');
                                 setSignupForm((current) => ({
                                   ...current,
                                   accountType,
@@ -1165,7 +1183,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                                 }));
                               }}
                             />
-                            <small>{signupForm.accountType === 'owner' ? 'Value and manage your own assets.' : 'Work with assets shared by clients. Start free with credits and upgrade when you need more.'}</small>
+                            <small>{signupForm.accountType === 'owner' ? 'Value and manage your own assets.' : 'Work with assets shared by clients or choose the full Business workspace.'}</small>
                           </div>
 
                           <div className={styles.field}>
@@ -1187,6 +1205,16 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           </div>
 
 
+                          <fieldset className={styles.planChoice}>
+                            <legend className={styles.label}>How would you like to start?</legend>
+                            <div className={styles.planChoices}>
+                              {(['free','paid'] as const).map(choice => <label key={choice} className={styles.checkboxRow}>
+                                <input type="radio" name="signupPlan" checked={signupPlan===choice} disabled={choice==='paid'&&!planOffer} onChange={()=>setSignupPlan(choice)} />
+                                <span>{choice==='free' ? signupForm.accountType==='owner' ? terms.trial_days+'-day free trial' : 'Free · '+terms.monthly_credits+' credits per month' : planOffer ? 'Choose a paid plan' : billingPricingError || 'Paid plan unavailable'}</span>
+                              </label>)}
+                            </div>
+                            {signupPlan==='paid' && planOffer && <CustomSelect name="subscriptionPlan" ariaLabel="Subscription plan" value={planOffer.key??planOffer.accountType} options={offers.map(p=>({value:p.key??p.accountType,label:p.description+' · '+money(p.amountCents)+' '+p.interval}))} onChange={setPlanKey}/>}
+                          </fieldset>
                           {signupForm.accountType === "business" ? (
                             <label className={`${styles.checkboxRow} ${styles.signupFieldWide} ${styles.directoryChoice}`}>
                               <input
@@ -1358,7 +1386,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           </div>
                         </div>
 
-                        {billingPricingError && accountAccess!=="free" && signupForm.accountType!=="business" ? <p role="alert">{billingPricingError}</p> : null}
+                        {billingPricingError && accountAccess==='desktop' ? <p role="alert">{billingPricingError}</p> : null}
                         {selectedBillingPlan ? <div className={styles.billingSignup}>
                           <strong>Your signup invoice · {money(selectedBillingPlan.amountCents)}</strong>
                           <p>{selectedBillingPlan.description} · {selectedBillingPlan.interval === 'once' ? 'One-time charge' : selectedBillingPlan.interval === 'monthly' ? 'Monthly' : 'Annual'} · No VAT applicable.</p>
@@ -1366,7 +1394,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           <label>Billing name<input value={billing.name} placeholder={signupForm.name || 'Name or business name'} onChange={e=>setBilling({...billing,name:e.target.value})}/></label>
                           <label>Billing email<input type="email" value={billing.email} placeholder={signupForm.email || 'Uses your account email if left blank'} onChange={e=>setBilling({...billing,email:e.target.value})}/></label>
                           <label>Billing address<textarea required value={billing.address} maxLength={600} onChange={e=>setBilling({...billing,address:e.target.value})}/></label>
-                          <label><input type="checkbox" checked={billing.accepted} onChange={e=>setBilling({...billing,accepted:e.target.checked})}/> I accept this charge and billing interval.</label>
+                          <label><input type="checkbox" checked={billing.accepted} onChange={e=>setBilling({...billing,accepted:e.target.checked})}/> I agree to this price and billing interval. Recurring invoices start after my first payment.</label>
                         </div> : null}
                         <div className={styles.signupFieldGrid}>
                           <label className={`${styles.field} ${styles.signupFieldWide}`}>

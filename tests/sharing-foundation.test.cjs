@@ -139,3 +139,31 @@ test('History deletion is owner-only, requires revocation and keeps the revoked 
   assert.deepEqual((await history.json()).shares.map(r=>r.token),[active]);
  } finally {await pg.close();}
 });
+
+test('Owner referrals credit one verified owner with a saved asset in either order', async()=>{
+ const pg=new PGlite();
+ try{
+  await pg.exec(`create table "user"(id text primary key,"emailVerified" boolean default false);
+    insert into "user"(id) values('business'),('first'),('second');
+    create table account_profiles(user_id text primary key,account_type text,account_status text);
+    insert into account_profiles values('business','business','active');
+    create table business_workspaces(id uuid primary key,owner_user_id text);
+    create table asset_register_items(user_id text);`);
+  const credits=load('lib/business-credits.ts',{'./db':{},'./sharing-foundation':{},'./business-workspaces':{}});
+  await pg.exec(credits.CREDIT_SCHEMA);
+  const b=(await pg.query("insert into business_workspaces(id,owner_user_id) values(gen_random_uuid(),'business') returning id,owner_invite_id")).rows[0];
+  const db={query:async(sql,params)=>{
+   const r=params?await pg.query(sql,params):(await pg.exec(sql)).at(-1);
+   return {...r,rowCount:r.rows.length||r.affectedRows};
+  }};
+  const referrals=load('lib/owner-referrals.ts',{'./business-credits':{creditTransaction:fn=>fn(db)}});
+  for(const id of ['first','second'])await referrals.registerOwnerReferral(id,b.owner_invite_id);
+  await pg.query('insert into asset_register_items values($1)',['first']);
+  assert.equal((await credits.creditBalance(db,b.id)).bonus,0);
+  await pg.query('update "user" set "emailVerified"=true where id in ($1,$2)',['first','second']);
+  assert.equal((await credits.creditBalance(db,b.id)).bonus,50);
+  await pg.query("insert into asset_register_items values('first'),('second'),('second')");
+  await referrals.registerOwnerReferral('first',b.owner_invite_id);
+  assert.equal((await credits.creditBalance(db,b.id)).bonus,100);
+ }finally{await pg.close();}
+});

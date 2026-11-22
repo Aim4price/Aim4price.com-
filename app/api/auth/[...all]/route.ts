@@ -1,6 +1,6 @@
 import { isMiddlemanAccountSubtype } from "../../../../lib/middleman-account";
 import { isSupportedSignupAccountType } from "../../../../lib/retired-workspaces";
-import { BillingError, validateSignupBilling } from "../../../../lib/billing";
+import { BillingError, signupTerms, validateSignupBilling } from "../../../../lib/billing";
 import { toNextJsHandler } from "better-auth/next-js";
 import { auth } from "../../../../lib/auth";
 import { withSignupWorkspaceInput } from "../../../../lib/signup-workspace-context";
@@ -31,16 +31,23 @@ export async function POST(request: Request): Promise<Response> {
     if (!isSupportedSignupAccountType(signupInput?.accountType) || isMiddlemanAccountSubtype(signupInput?.accountSubtype)) {
       return Response.json({ message: 'Choose an Owner or Business account.' }, { status: 400 });
     }
-    const accountType = String(signupInput?.accountType ?? 'owner').trim().toLowerCase();
-    if (accountType === 'business' && (typeof signupInput.businessName !== 'string' || !signupInput.businessName.trim() || signupInput.businessName.length > 200 || signupInput.acceptedTerms !== true)) {
+    const publicType = String(signupInput?.accountType ?? 'owner').trim().toLowerCase();
+    const choice = signupInput?.signupPlan;
+    if (choice != null && !['free','paid'].includes(choice)) return Response.json({message:'Choose a signup plan.'},{status:400});
+    const ownerTrial = publicType === 'owner' && choice === 'free';
+    const accountType = publicType === 'business' && choice === 'paid' ? 'dealer' : publicType;
+    if (publicType === 'business' && (typeof signupInput.businessName !== 'string' || !signupInput.businessName.trim() || signupInput.businessName.length > 200 || signupInput.acceptedTerms !== true)) {
       return Response.json({ message: 'Enter your business name and accept the terms.' }, { status: 400 });
     }
-    const accountAccess = signupInput?.accountAccess === 'free' || accountType === 'business' ? 'free' : 'desktop';
+    const accountAccess = ownerTrial ? 'trial' : accountType === 'business' || (choice == null && signupInput?.accountAccess === 'free') ? 'free' : 'desktop';
     if (accountAccess === 'free' && accountType !== 'business') {
       return Response.json({message:'Free sharing is available for Business accounts only.'},{status:400});
     }
-    const billingSignup = accountAccess === 'free' ? null : await validateSignupBilling({ ...signupInput, accountType });
-    return await withSignupWorkspaceInput({ ...signupInput, accountType, accountAccess, billingSignup }, () => authHandlers.POST(request));
+    const billingSignup = accountAccess !== 'desktop' ? null : await validateSignupBilling({ ...signupInput, accountType });
+    if (choice === 'paid' && !billingSignup) throw new BillingError('This paid plan is unavailable. Refresh to review the available plans.');
+    const terms=choice==='free'?await signupTerms():null;
+    if(terms && Number(signupInput.termsVersion)!==terms.version)throw new BillingError('Free signup terms have changed. Refresh to review them.');
+    return await withSignupWorkspaceInput({ ...signupInput, accountType, accountAccess, billingSignup, signupTerms:terms }, () => authHandlers.POST(request));
   } catch (error) {
     if (error instanceof BillingError) return Response.json({ message: error.message }, { status: 400 });
     console.error("Signup billing preparation failed", error);

@@ -6,7 +6,8 @@ const date=(value:Date,withTime=false)=>new Intl.DateTimeFormat('en-ZA',{dateSty
 export async function getBusinessCredits(userId:string){
  return creditTransaction(async db=>{
    const workspace=await workspaceForCredits(db,userId);
-   return {workspace,balance:{...await creditBalance(db,workspace.id),limit:MONTHLY_BUSINESS_CREDITS},history:await creditHistory(db,workspace.id)};
+   const balance=await creditBalance(db,workspace.id);
+   return {workspace,balance:{...balance,limit:(workspace.monthly_allowance??MONTHLY_BUSINESS_CREDITS)+Number(balance.bonus||0)},history:await creditHistory(db,workspace.id)};
  }).catch(error=>{
    if(error instanceof Error&&error.message==='This Business workspace is unavailable.')return null;
    throw error;
@@ -19,8 +20,9 @@ export default async function BusinessCredits({userId,data}:{userId:string;data:
  const usage=await sharingUsageSummary(userId);
  return <section id="business-credits" className={styles.panel}><h2>Credits</h2>
  {workspace.paid_since?<p><strong>Paid Business</strong> · No monthly credit limit</p>:<>
- <p><strong>{Math.max(0,MONTHLY_BUSINESS_CREDITS-balance.used-balance.held)} of {MONTHLY_BUSINESS_CREDITS} credits available</strong> · Resets {date(balance.resets)}</p>
- <p>{creditLimitsActive()?'One credit per Manage visit, sent message or completed share.':'Trial period · Usage is tracked and access stays open.'}</p>
+ <p><strong>{Math.max(0,balance.limit-balance.used-balance.held)} of {balance.limit} credits available</strong> · Resets {date(balance.resets)}</p>
+ <p>{creditLimitsActive(workspace.enforce_credits)?'One credit per Manage visit, sent message or completed share.':'Trial period · Usage is tracked and access stays open.'}</p>
+ {Number(balance.bonus)>0&&<p>{balance.bonus} referral credits earned this month.</p>}
  {balance.held>0&&<p>{balance.held} reserved for sharing in progress.</p>}
  <p><strong>Add team members with Paid Business.</strong></p>
  </>}

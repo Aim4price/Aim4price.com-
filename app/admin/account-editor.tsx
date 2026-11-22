@@ -19,6 +19,7 @@ export default function AccountEditor({account, onSaved, onCancel, onExisting}: 
   const [type, setType] = useState<SignupAccountType>(() => SIGNUP_ACCOUNT_TYPE_OPTIONS.find(option => option.value === existingType)?.value ?? "owner");
   const [subtype, setSubtype] = useState(account?.accountSubtype ?? "farmer");
   const [status, setStatus] = useState<AccountStatus>("active");
+  const [billingHold,setBillingHold]=useState(false);
   const [busy, setBusy] = useState(false);
   const saving = useRef(false);
   const [error, setError] = useState("");
@@ -36,7 +37,7 @@ export default function AccountEditor({account, onSaved, onCancel, onExisting}: 
     try {
       const body = account
         ? {action:"change_type",userId:account.userId,previousType:account.accountType,previousSubtype:account.accountSubtype}
-        : {action:"create",name:form.get("name"),email:form.get("email"),status};
+        : {action:"create",name:form.get("name"),email:form.get("email"),status,billingHold};
       const response = await fetch("/api/admin/users/manage", {
         method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({...body,type,subtype}),
       });
@@ -74,7 +75,9 @@ export default function AccountEditor({account, onSaved, onCancel, onExisting}: 
       <AdminSelect value={status} disabled={busy} onChange={event => setStatus(event.target.value as AccountStatus)}>
         {ACCOUNT_STATUS_VALUES.map(value => <option key={value} value={value}>{accountStatusLabel(value)}</option>)}
       </AdminSelect></label>}
+    {!account && <label className={styles.notificationField}><span><input type="checkbox" checked={billingHold} disabled={busy} onChange={e=>setBillingHold(e.target.checked)}/> Hold billing until enabled by Admin</span></label>}
     {account && <section className={styles.typePreview} aria-label="Account change preview">
+      <a className={styles.nameSecondaryButton} href={'/admin/billing?account='+encodeURIComponent(account.userId)}>Manage billing and holds</a>
       <h3>Review the change for {account.name}</h3>
       <p>{account.email} · {account.accountStatusLabel}</p>
       <table><thead><tr><th scope="col">Account details</th><th scope="col">Current</th><th scope="col">After saving</th></tr></thead>

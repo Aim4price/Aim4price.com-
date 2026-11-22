@@ -1,8 +1,9 @@
+import { ensureAccountProfileColumns } from "./account-profile";
 import { registerFreeSharingAccount } from './sharing-foundation';
 import { ensureBusinessWorkspace } from './business-workspaces';
 import { getSiteOrigin } from './email';
 import { buildAccessEmail } from './access-email';
-import { queueSignupInvoice, type SignupBilling } from "./billing";
+import { signupTerms,queueSignupInvoice, type SignupBilling } from "./billing";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { isAim4priceAdminEmail } from "./account-constants";
@@ -141,6 +142,10 @@ function createAuth() {
   },
   emailVerification: {
     sendOnSignUp: false,
+    afterEmailVerification: async user => {
+      await ensureAccountProfileColumns();
+      await getDb().query("update account_profiles set owner_trial_ends_at=now()+owner_trial_days*interval '1 day' where user_id=$1 and account_type='owner' and owner_trial_requested and owner_trial_ends_at is null and account_status='pending_payment'",[user.id]);
+    },
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url, token }) => {
       await sendAim4priceEmail({to:user.email,...buildAccessEmail({url,origin:getSiteOrigin(),emailChange:Boolean(JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).updateTo)})});
@@ -155,6 +160,7 @@ function createAuth() {
       },
       create: {
         after: async (user, context) => {
+          const terms=readSignupWorkspaceField('signupTerms') as {trial_days:number;monthly_credits:number;referral_credits:number}|null;
           try {
             await createInitialAccountProfile(
               {
@@ -164,6 +170,8 @@ function createAuth() {
               },
               {
                 accountType: readSignupField(context, "accountType"),
+                trialDays:terms?.trial_days,
+                ownerTrial: readSignupWorkspaceField("accountAccess") === "trial",
                 businessName: readSignupField(context, "businessName"),
                 accountSubtype: readSignupField(context, "accountSubtype"),
                 introducedByOption: readSignupField(
@@ -181,14 +189,25 @@ function createAuth() {
               },
             );
           } catch (error) {
-            if (readSignupField(context, "accountType") === "business" || readSignupField(context, "accountAccess") === "free") throw error;
+            if (readSignupWorkspaceField("accountType") != null) throw error;
             console.error(
               "Failed to create initial Aim4price account profile",
               error,
             );
           }
           if (readSignupField(context, "accountType") === "business") await registerFreeSharingAccount(user.id);
-          if (readSignupField(context, "accountType") === "business") await ensureBusinessWorkspace(user.id);
+          if (readSignupField(context, "accountType") === "business") {
+            await ensureBusinessWorkspace(user.id);
+            const {ensureCreditSchema}=await import("./business-credits");
+            await ensureCreditSchema();
+            const allowances=terms??await signupTerms();
+            await getDb().query('update business_workspaces set enforce_credits=true,monthly_allowance=$2,referral_reward=$3 where owner_user_id=$1',[user.id,allowances.monthly_credits,allowances.referral_credits]);
+          }
+          const invite=readSignupWorkspaceField("ownerInvite");
+          if (readSignupWorkspaceField("accountType")==="owner" && typeof invite==="string") {
+            const {registerOwnerReferral}=await import("./owner-referrals");
+            await registerOwnerReferral(user.id,invite);
+          }
           const billing = readSignupWorkspaceField("billingSignup") as SignupBilling | null;
           if (billing) await queueSignupInvoice(user.id, billing);
 
