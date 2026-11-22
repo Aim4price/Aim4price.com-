@@ -5,24 +5,14 @@ import { useEffect, useState } from 'react';
 import PageHelp from '../../components/PageHelp';
 import { BusinessSubscriptionButton, type BusinessSubscription } from '../../components/BusinessCreditControls';
 import type { workspaceCards, WorkspaceRole } from '../../lib/workspace-navigation';
-import CardPreview, { cardTopic } from './card-preview';
+import { cardTopic } from './card-help';
 import styles from './workspace.module.css';
 
 type Cards = ReturnType<typeof workspaceCards>;
 
 function WorkspaceTile({card, role, free}: {card: Cards[number]; role: WorkspaceRole; free: boolean}) {
-  const [hovered, setHovered] = useState(false);
-  const [focused, setFocused] = useState(false);
   const {key, label, href, locked} = card;
-  function allowMotion() {
-    return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  }
-  return <article className={styles.card}
-    onPointerEnter={event => setHovered(event.pointerType === 'mouse' && allowMotion())}
-    onPointerLeave={() => setHovered(false)}
-    onFocus={() => setFocused(allowMotion())}
-    onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}>
-    {(hovered || focused) && <CardPreview cardKey={key} label={label}/>}
+  return <article className={styles.card}>
     <Link className={styles.cardLink} href={locked ? '#workspace-upgrade' : href} prefetch={false}
       aria-label={locked ? label + ' — see Paid Business upgrade' : label}>
       {locked && <span className={styles.plan}><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="4" y="8" width="12" height="9" rx="2"/><path d="M7 8V6a3 3 0 0 1 6 0v2"/></svg>Paid Business</span>}
