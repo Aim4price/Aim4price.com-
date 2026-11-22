@@ -4,8 +4,8 @@
   box-sizing: border-box;
   margin: var(--layout-section-gap, 1.5rem) auto;
   padding: clamp(1.2rem, 3%, 2.25rem);
-  background: var(--workspace-panel, #fafcfb);
-  color: var(--app-text, var(--brand-900));
+  background: #fff;
+  color: #163c30;
   border: 1px solid rgba(80, 120, 102, .18);
   border-radius: 1.75rem;
   box-shadow: 0 1rem 3rem rgba(18, 54, 43, .09);
@@ -46,4 +46,3 @@
   .grid { grid-template-columns:minmax(0,1fr); }
   .cardLink { min-height:6.5rem; }
 }
-:global([data-theme="dark"]) .shell { --workspace-panel:#132c23; }
