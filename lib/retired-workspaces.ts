@@ -14,5 +14,5 @@ export function isRetiredAssistanceAccount(user: { id?: unknown; email?: unknown
   return String(user.id ?? '').startsWith('aim4price-assistance-');
 }
 export function isSupportedSignupAccountType(value: unknown): boolean {
-  return ['owner', 'dealer', 'business', 'middleman'].includes(String(value ?? 'owner').trim().toLowerCase());
+  return ['owner', 'business'].includes(String(value ?? 'owner').trim().toLowerCase());
 }
