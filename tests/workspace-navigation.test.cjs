@@ -40,7 +40,7 @@ test('both Business tiers keep the same inventory with their own inbox and paid 
   assert.equal(free.find(card=>card.key==='parts').locked,true);
   assert.equal(paid.find(card=>card.key==='parts').label,'Parts & Stock');
   assert.ok(paid.every(card=>!card.locked));
-  assert.ok(free.filter(card=>['account','value','shared','marketplace'].includes(card.key)).every(card=>!card.locked));
+  assert.ok(free.filter(card=>['account','value','shared','marketplace','discovery'].includes(card.key)).every(card=>!card.locked));
   for (const role of ['business','middleman']) {
     const links = nav.workspaceCards(role,false,'/leads').map(card=>card.href);
     assert.ok(links.includes('/ad-studio?mode=template') && links.includes('/ad-studio?mode=create'));
