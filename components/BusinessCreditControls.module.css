@@ -2,7 +2,7 @@
   display: grid;
   gap: .6rem;
   width: 100%;
-  padding: clamp(1rem, 2.5vw, 1.4rem);
+  padding: 1.25rem;
   font: inherit;
   color: var(--app-text, #173f31);
   text-align: start;
@@ -27,7 +27,7 @@
 .cardHeading { font-size: 1.25rem; }
 .card .balance { gap: .7rem; }
 .dialog.dialog { width: min(43rem,calc(100% - 2rem)); }
-.body { display: grid; gap: 1rem; padding-top: 1rem; font-size: 1rem; line-height: 1.45; }
+.body { container: credit-dialog / inline-size; display: grid; gap: 1rem; padding-top: 1rem; font-size: 1rem; line-height: 1.45; }
 .body p, .body h3 { margin: 0; }
 .summary { padding: 1rem 1.2rem; border-radius: 1rem; background: #194c3d; color: white; }
 .summary .balance strong { font-size: 2rem; }
@@ -43,7 +43,7 @@
 .reward { background: var(--app-success-soft,#e5f2eb); color: var(--app-text,#204b37); border-radius: 2rem; padding: .16rem .55rem; font-size: .86rem; font-weight: 700; }
 .options p { grid-column: 1; }
 .options button, .options a { grid-column: 2; grid-row: 1 / 3; align-self: center; min-height: 2.75rem; font: inherit; font-weight: 700; }
-@media (max-width: 640px) {
+@container credit-dialog (max-width: 32rem) {
   .options > section { grid-template-columns: 1fr; }
   .options button, .options a { grid-area: auto; justify-self: start; margin-top: .4rem; }
 }
@@ -55,8 +55,8 @@
 .card .balance strong { font-size: 1.42rem; }
 .card .arrow { grid-area: 1 / 3; }
 .card .track { grid-area: 2 / 1 / 3 / -1; }
-@media (max-width: 420px) {
-  .card.card { grid-template-columns: 1fr auto; }
+.card.card { container: credit-card / inline-size; }
+@container credit-card (max-width: 18rem) {
   .card .balance > span:first-child { grid-area: 2 / 1 / 3 / -1; justify-self: start; }
   .card .arrow { grid-area: 1 / 2; }
   .card .track { grid-row: 3; }
