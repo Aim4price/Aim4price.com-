@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import ShareDisclosureDialog from '../../components/asset-register/ShareDisclosureDialog';
-import BusinessCardIcon from './business-card-icon';
 import PageHelp from '../../components/PageHelp';
 import { BusinessSubscriptionButton, type BusinessSubscription } from '../../components/BusinessCreditControls';
 import type { workspaceCards, WorkspaceRole } from '../../lib/workspace-navigation';
@@ -14,10 +13,9 @@ type Cards = ReturnType<typeof workspaceCards>;
 
 function WorkspaceTile({card, role, free}: {card: Cards[number]; role: WorkspaceRole; free: boolean}) {
   const {key, label, href, locked} = card;
-  return <article className={styles.card} data-business={role === 'business' || undefined}>
+  return <article className={styles.card}>
     <Link className={styles.cardLink} href={locked ? '#workspace-upgrade' : href} prefetch={false}
       aria-label={locked ? label + ' — see Paid Business upgrade' : label}>
-      {role === 'business' && <BusinessCardIcon name={key}/>}
       <strong>{label}</strong>
       {locked && <span title="Included with Paid Business" aria-hidden="true" className={styles.plan}><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="4" y="8" width="12" height="9" rx="2"/><path d="M7 8V6a3 3 0 0 1 6 0v2"/></svg></span>}
     </Link>
@@ -47,10 +45,10 @@ export default function WorkspaceGrid({cards, role, userId, subscription}: {
   return <>
     <header className={styles.heading}><h1>Workspace</h1>
       <div className={styles.actions}>
-        <button type="button" className={styles.setting} aria-label="Customise workspace" aria-haspopup="dialog" onClick={() => setEditing(true)}>Customise</button>
         {subscription && <div id="workspace-upgrade" className={styles.subscription} tabIndex={-1}>
           <BusinessSubscriptionButton plan={subscription} className={styles.upgrade} icon={subscription.remaining !== null && <span>{subscription.remaining.toLocaleString('en-ZA')} credits</span>}/>
         </div>}
+        <button type="button" className={styles.setting} aria-label="Customise workspace" aria-haspopup="dialog" onClick={() => setEditing(true)}>Customise</button>
       </div>
     </header>
     {editing && <ShareDisclosureDialog title="Customise workspace" titleId="workspace-card-options" closeLabel="Close workspace settings" onClose={() => setEditing(false)}>
