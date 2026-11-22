@@ -17,15 +17,16 @@
 .selectTrigger > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .calendar .selectTrigger svg, .selectMenu svg { display: block; flex: 0 0 1rem; width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .selectTrigger[aria-expanded='true'] { border-color: var(--app-line, #479575); box-shadow: 0 0 0 2px var(--app-shadow-colour, #e1eee7); }
-.selectMenu { position: absolute; top: calc(100% + .45rem); left: 0; z-index: 2; min-width: 100%; width: max-content; max-height: 14rem; overflow-y: auto; overscroll-behavior: contain; padding: .35rem; border: 1px solid var(--app-line, #c9dbd0); border-radius: .9rem; background: var(--app-surface, #fff); box-shadow: 0 12px 28px var(--app-shadow-colour, #173f3026); scrollbar-width: thin; scrollbar-color: #82a995 #edf4f0; }
-.calendar .selectMenu button { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 2.65rem; padding: .55rem .75rem; border: 0; border-radius: .6rem; background: var(--app-surface, #fff); text-align: left; white-space: nowrap; font-size: .95rem; font-weight: 450; }
-.calendar .selectMenu button:hover, .calendar .selectMenu button:focus-visible { background: var(--app-surface-soft, #edf6f0); outline: none; }
+.selectMenu { position: absolute; top: calc(100% + .45rem); left: 0; z-index: 2; min-width: 100%; width: max-content; max-height: 14rem; overflow-y: auto; overscroll-behavior: contain; padding: .35rem; border: 1px solid var(--app-line, #c9dbd0); border-radius: .9rem; background: var(--app-surface, #fff); box-shadow: 0 12px 28px var(--app-shadow-colour, #173f3026); scrollbar-gutter: stable; }
+.calendar .selectMenu button { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 2.65rem; padding: .55rem .75rem; border: 0; border-radius: .6rem; background: var(--app-surface, #fff); text-align: left; white-space: nowrap; font-size: 1rem; font-weight: 600; color: var(--app-text, #173f30); }
+.calendar .selectMenu button:hover, .calendar .selectMenu button:focus-visible { background: var(--app-surface-soft, #edf6f0); }
+.calendar .selectMenu button:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
 .calendar .selectMenu button[aria-selected='true'] { background: var(--app-surface-soft, #dceee3); color: var(--app-text, #165540); font-weight: 600; }
 
 
 /* Shared calendar standard. Size against the zoom-aware canvas, not the device. */
 .dateDialog.dateDialog { width: min(34rem, calc(var(--website-visible-width, 100vw) - 2rem)); max-width: calc(var(--website-visible-width, 100vw) - 2rem); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); margin: auto; padding: 0; overflow: auto; container-type: inline-size; scrollbar-gutter: auto; overscroll-behavior: contain; border: 1px solid var(--app-line, #dce8e2); border-radius: 1.5rem; background: var(--app-surface, #fff); color: var(--app-text, #173f30); box-shadow: 0 28px 90px #00000045; font-family: var(--font-body, 'Montserrat'), sans-serif; font-size: 1rem; line-height: 1.4; }
-.dateDialog::backdrop { background: rgb(19 36 29 / 40%); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.dateDialog::backdrop { background: rgb(12 22 18 / 68%); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 .dateDialog *, .dateDialog *::before, .dateDialog *::after { box-sizing: border-box; }
 .calendar { padding: clamp(.65rem, calc(var(--website-visible-height, 100dvh) * .025), 1.5rem); display: grid;  }
 /* Lock only while this top-layer calendar is open; closing restores page scrolling. */
@@ -43,7 +44,7 @@
 .dialogHeader > button svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 .navigation { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .selectors { display: flex; align-items: center; gap: .5rem; min-width: 0; }
-.calendar .selectTrigger { min-height: 3rem; gap: .4rem; font-size: 1rem; font-weight: 600; }
+.calendar .selectTrigger { min-height: 3rem; gap: .4rem; font-size: 1rem; font-weight: 700; color: var(--app-text, #173f30); }
 .selectRoot:last-child { flex-basis: 6.2rem; }
 .selectRoot:last-child .selectTrigger > span { flex-shrink: 0; }
 .navigationActions { display: flex; align-items: center; gap: .5rem; }
