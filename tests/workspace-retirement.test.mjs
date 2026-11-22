@@ -13,9 +13,9 @@ function load(path, deps = {}) {
   return module.exports;
 }
 const retirement = load('lib/retired-workspaces.ts');
-test('signup supports the four core account choices and excludes assistance identities', () => {
-  for (const type of ['owner', 'dealer', 'business', 'middleman']) assert.equal(retirement.isSupportedSignupAccountType(type), true);
-  for (const type of ['insurance', 'finance', 'accounting', 'accountant', 'licensing', 'broker']) assert.equal(retirement.isSupportedSignupAccountType(type), false);
+test('signup supports the two public account choices and excludes assistance identities', () => {
+  for (const type of ['owner', 'business']) assert.equal(retirement.isSupportedSignupAccountType(type), true);
+  for (const type of ['insurance', 'finance', 'accounting', 'accountant', 'licensing', 'broker', 'dealer', 'middleman']) assert.equal(retirement.isSupportedSignupAccountType(type), false);
   for (const email of ['insurance', 'finance', 'Accounting', 'licensing', 'dealers']) assert.equal(retirement.isRetiredAssistanceAccount({ email: email + '@aim4price.com' }), false);
   assert.equal(retirement.isRetiredAssistanceAccount({ id: 'aim4price-assistance-insurance' }), true);
   assert.equal(retirement.isRetiredAssistanceAccount({ id: 'real-business', email: 'insurance@example.com' }), false);
@@ -99,23 +99,24 @@ test('migration is repeatable, preserves records and disables only retired billi
 test('retired roles are rejected but former assistance emails can sign in and register core accounts', async () => {
   let authCalls = 0, billingCalls = 0;
   const route = load('app/api/auth/[...all]/route.ts', {
+    '../../../../lib/middleman-account':load('lib/middleman-account.ts',{}),
     '../../../../lib/retired-workspaces': retirement,
     '../../../../lib/billing': { BillingError: class extends Error {}, validateSignupBilling: async () => { billingCalls++; } },
     '../../../../lib/auth': { auth: {} },
     'better-auth/next-js': { toNextJsHandler: () => ({ POST: async () => { authCalls++; return Response.json({ok:true}); } }) },
     '../../../../lib/signup-workspace-context': { withSignupWorkspaceInput: async (_, fn) => fn() },
   });
-  for (const role of ['insurance','finance','accounting','licensing']) {
+  for (const role of ['insurance','finance','accounting','licensing','dealer','middleman']) {
     const res = await route.POST(new Request('https://example.com/api/auth/sign-up/email', {method:'POST',body:JSON.stringify({email:'normal@example.com',accountType:role})}));
     assert.equal(res.status,400);
   }
   const res = await route.POST(new Request('https://example.com/api/auth/sign-in/email', {method:'POST',body:JSON.stringify({email:'Accounting@aim4price.com'})}));
   assert.equal(res.status,200); assert.equal(authCalls,1); assert.equal(billingCalls,0);
   for (const email of ['insurance', 'finance', 'Accounting', 'licensing', 'dealers']) {
-    for (const accountType of ['owner', 'dealer', 'business', 'middleman']) {
+    for (const accountType of ['owner', 'business']) {
       const response = await route.POST(new Request('https://example.com/api/auth/sign-up/email', {method:'POST',body:JSON.stringify({email:email+'@aim4price.com',accountType,businessName:'Example',acceptedTerms:true})}));
       assert.equal(response.status,200, `${email}: ${accountType}`);
     }
   }
-  assert.equal(authCalls,21); assert.equal(billingCalls,15);
+  assert.equal(authCalls,11); assert.equal(billingCalls,5);
 });
