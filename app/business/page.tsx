@@ -28,5 +28,5 @@ export default async function BusinessPage({searchParams}:{searchParams?:{return
  const selectedAsset = selectedShare && selectedShare.assets.find(asset => asset.id && asset.id === searchParams?.asset);
  const selection = selectedShare && selectedAsset ? {token:selectedShare.token, assetId:selectedAsset.id} : null;
  const detail = selection && <AssetShareView inline params={{token:selection.token}} searchParams={{open:'1',asset:selection.assetId}}/>;
- return <><AppHeader active="leads"/><BusinessSharedAssets freeBusiness={account.profile.accountType==='business'} shares={shares} notice={notice} {...(selection ? {selection,detail} : {})}/></>;
+ return <><AppHeader active="leads"/><BusinessSharedAssets shares={shares} notice={notice} {...(selection ? {selection,detail} : {})}/></>;
 }
