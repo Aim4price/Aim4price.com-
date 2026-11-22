@@ -84,12 +84,12 @@
 }
 
 @media (max-height: 500px) and (min-width: 600px) {
-  .calendar { padding: .5rem 1rem; }
-  .dialogHeader, .navigation { margin-bottom: .25rem; }
-  .dialogHeader { padding-bottom: .25rem; }
-  .dialogHeader > button, .headingIcon { height: 2rem; flex-basis: 2rem; }
-  .calendar .selectTrigger, .navigationActions > button, .summary > button { min-height: 2.25rem; height: 2.25rem; padding-block: .25rem; }
-  .weekday { padding-block: .125rem; }
-  .days button, .outsideDay, .days button > span { min-height: 1.875rem; height: 1.875rem; }
-  .summary { margin-top: .25rem; padding-top: .25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .calendar { padding: .5rem 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialogHeader, :global(:where(html:not(:has([data-website-canvas])))) .navigation { margin-bottom: .25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialogHeader { padding-bottom: .25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialogHeader > button, :global(:where(html:not(:has([data-website-canvas])))) .headingIcon { height: 2rem; flex-basis: 2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .calendar .selectTrigger, :global(:where(html:not(:has([data-website-canvas])))) .navigationActions > button, :global(:where(html:not(:has([data-website-canvas])))) .summary > button { min-height: 2.25rem; height: 2.25rem; padding-block: .25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .weekday { padding-block: .125rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .days button, :global(:where(html:not(:has([data-website-canvas])))) .outsideDay, :global(:where(html:not(:has([data-website-canvas])))) .days button > span { min-height: 1.875rem; height: 1.875rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .summary { margin-top: .25rem; padding-top: .25rem; }
 }
