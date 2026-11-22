@@ -277,7 +277,9 @@ test('replacement styling reuses the year slider visual language and does not in
 
   const basicCss = valuationStyles.split('/* === Family-first Basic Estimate ===')[1] ?? '';
   assert.ok(basicCss, 'Basic Estimate styling block should be present');
-  assert.doesNotMatch(basicCss, /font-family\s*:/, 'Basic Estimate must inherit Aim4price typography');
+  for (const [,family] of basicCss.matchAll(/font-family\s*:\s*([^;}]+)/g)) {
+    assert.equal(family.trim(), 'inherit', 'Basic Estimate must inherit Aim4price typography');
+  }
   assert.match(valuationStyles, /\.estimateModeSectorLabel[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?right: 0;[\s\S]*?justify-content: flex-end;/);
   assert.match(valuationStyles, /\.basicFamilyContextStage[^\{]*\{[\s\S]*?position: relative;/);
   assert.match(valuationStyles, /\.basicIdentityIntro[^\{]*\{[\s\S]*?max-width: none;[\s\S]*?white-space: nowrap;/);
