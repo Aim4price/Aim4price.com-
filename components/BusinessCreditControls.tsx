@@ -36,13 +36,24 @@ export function UpgradeBusiness({businessId}:{businessId?:string}) {
  </ShareDisclosureDialog>}</>;
 }
 
-export type BusinessSubscription = { resets?:string; bonus?:number; reward?:number; history?:{action:string;units:number;date:string}[]; fullAccess?:boolean; paidSince:string|null; pending:boolean; owner:boolean; remaining:number|null; limit:number|null };
+export type BusinessSubscription = { allowance?:number; resets?:string; bonus?:number; reward?:number; history?:{action:string;units:number;date:string}[]; fullAccess?:boolean; paidSince:string|null; pending:boolean; owner:boolean; remaining:number|null; limit:number|null };
 
-export function BusinessSubscriptionButton({plan,className,icon}:{plan:BusinessSubscription;className:string;icon:ReactNode}) {
+export function BusinessSubscriptionButton({plan,className,icon,credits=false,inviteLink}:{plan:BusinessSubscription;className:string;icon?:ReactNode;credits?:boolean;inviteLink?:string}) {
  const router=useRouter(), titleId=useId();
  const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const fullAccess=plan.fullAccess ?? Boolean(plan.paidSince);
  const label=fullAccess?'Manage subscription':plan.pending?'Upgrade requested':'Upgrade Account';
+ const [copied,setCopied]=useState(false);
+ async function copyInvite() {
+   if (!inviteLink) return;
+   const url = new URL(inviteLink, window.location.origin).href;
+   try {
+     await navigator.clipboard.writeText(url);
+     setCopied(true);
+   } catch {
+     window.prompt('Copy your owner invite link', url);
+   }
+ }
  async function requestUpgrade(){
    setBusy(true);setError('');
    try {
@@ -52,13 +63,20 @@ export function BusinessSubscriptionButton({plan,className,icon}:{plan:BusinessS
    } catch(e){setError(e instanceof Error?e.message:'Could not request upgrade.');}
    finally{setBusy(false);}
  }
- return <><button type="button" className={className} onClick={()=>{setError('');setOpen(true);}}>
+ return <><button type="button" className={className} aria-haspopup="dialog" onClick={()=>{setError('');setCopied(false);setOpen(true);}}>
    {icon}
-   <strong>{label}</strong>
- </button>{open && <ShareDisclosureDialog title={label} titleId={titleId} closeLabel="Close" onClose={()=>setOpen(false)}>
+   <strong>{credits ? 'Credits' : label}</strong>
+ </button>{open && <ShareDisclosureDialog title={credits ? 'Business credits' : label} titleId={titleId} closeLabel="Close" onClose={()=>setOpen(false)}>
  {!fullAccess && plan.remaining !== null && plan.limit !== null && (
    <p><strong>{plan.remaining} of {plan.limit} credits remaining</strong></p>
  )}
+ {credits && <>
+   <p>{plan.allowance != null ? `Your monthly allowance is ${plan.allowance} credits.` : 'Your credit allowance renews monthly.'} Saving a cost, document or maintenance record uses one credit. Viewing, messaging and sharing are free.</p>
+   {inviteLink && <p>Earn {plan.reward != null ? `${plan.reward} extra credits` : 'extra credits'} this month for each new owner who signs up with your link, verifies their email and adds their first asset.</p>}
+ </>}
+ {inviteLink && <button type="button" className={styles.secondaryButton} onClick={()=>void copyInvite()}>
+   <span aria-live="polite">{copied ? 'Invite link copied' : 'Copy owner invite link'}</span>
+ </button>}
  {fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
  <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
  plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
