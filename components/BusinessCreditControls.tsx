@@ -80,31 +80,31 @@ export function BusinessSubscriptionButton({plan,className,icon,credits=false,in
  const subscriptionAction = fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
  <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
  plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
- plan.owner ? <><p>Paid Business adds staff access and removes the monthly credit limit. Aim4price will contact you to arrange activation.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
+ plan.owner ? <><p>Add staff and use unlimited credits. We’ll contact you to arrange activation.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
  plan.limit === null ? <><p>Contact Aim4price to request an upgrade for this account.</p><a className={styles.button} href="/contact-us">Contact Aim4price</a></> :
  <p>Your business owner can request an upgrade.</p>;
  return <><button type="button" className={credits ? className + ' ' + creditStyles.card : className}
    aria-haspopup="dialog" onClick={()=>{setError('');setCopied(false);setOpen(true);}}>
    {credits ? <>
-     <span className={creditStyles.cardHeading}><strong>Credits</strong><span className={creditStyles.arrow} aria-hidden="true">›</span></span>
+     <span className={creditStyles.cardHeading}><strong>Credits</strong><span className={creditStyles.arrow} aria-hidden="true" /></span>
      <CreditBalance plan={plan} />
    </> : <>{icon}<strong>{label}</strong></>}
  </button>{open && <ShareDisclosureDialog title={credits ? 'Business credits' : label} titleId={titleId}
    className={credits ? creditStyles.dialog : undefined} closeLabel="Close" onClose={()=>setOpen(false)}>
  {credits ? <div className={creditStyles.body}>
    <div className={creditStyles.summary}>
-     <span className={creditStyles.summaryTitle}>Credit balance</span>
+     
      <CreditBalance plan={plan} />
      {plan.allowance != null && <p>Monthly allowance · {plan.allowance} credits</p>}
    </div>
    <section className={creditStyles.usage}>
-     <h3>Using credits</h3>
-     <p>Saving a cost, document or maintenance record uses one credit. Viewing, messaging and sharing are free.</p>
+     <p><strong>1 credit</strong><span>Save a cost, document or maintenance record.</span></p>
+     <p><strong>Free</strong><span>View assets, message and share.</span></p>
    </section>
    <div className={creditStyles.options}>
      {inviteLink && <section>
-       <h3>Invite an owner</h3>
-       <p>Earn {plan.reward != null ? plan.reward + ' extra credits' : 'extra credits'} this month when a new owner uses your link, verifies their email and adds their first asset.</p>
+       <h3>Invite an owner {plan.reward != null && <span className={creditStyles.reward}>+{plan.reward} credits</span>}</h3>
+       <p>Earn credits for the month when a new owner joins through your link, verifies their email and adds their first asset.</p>
        {inviteAction}
      </section>}
      <section><h3>Paid Business</h3>{subscriptionAction}</section>
