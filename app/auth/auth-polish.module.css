@@ -4,41 +4,42 @@
 
 /* Keep the signup wizard roomy horizontally, but trim the vertical stack so a
    full step reads as one composition on ordinary laptop displays. */
-.scope :global(main:has(form [name="accountType"]) > div) {
+.scope :global(main:has(form [aria-labelledby^="signup-step-"]) > div) {
   width: min(100% - 2rem, 55.5rem);
   padding-top: 1rem;
   padding-bottom: 2rem;
 }
 
-.scope :global(main:has(form [name="accountType"]) section[aria-labelledby="auth-heading"]) {
+.scope :global(main:has(form [aria-labelledby^="signup-step-"]) section[aria-labelledby="auth-heading"]) {
   gap: 0.78rem;
   padding: 1.2rem 1.35rem 1.05rem;
 }
 
-.scope :global(main:has(form [name="accountType"]) [aria-label="Authentication mode"]) {
+.scope :global(main:has(form [aria-labelledby^="signup-step-"]) [aria-label="Authentication mode"]) {
   gap: 0.24rem;
   padding: 0.24rem;
   border-radius: 0.98rem;
   background: #f2f6f4;
 }
 
-.scope :global(main:has(form [name="accountType"]) [aria-label="Authentication mode"] > button) {
+.scope :global(main:has(form [aria-labelledby^="signup-step-"]) [aria-label="Authentication mode"] > button) {
   min-height: 2.72rem;
   border-radius: 0.76rem;
 }
 
-.scope :global(main:has(form [name="accountType"]) #auth-heading) {
+.scope :global(main:has(form [aria-labelledby^="signup-step-"]) #auth-heading) {
   font-size: clamp(2.1rem, calc(var(--website-design-vw) * 3.25), 2.55rem);
   line-height: 1;
-  letter-spacing: -0.047em;
+  letter-spacing: -0.035em;
+  font-weight: 750;
 }
 
-.scope :global(main:has(form [name="accountType"]) #auth-heading + p) {
+.scope :global(main:has(form [aria-labelledby^="signup-step-"]) #auth-heading + p) {
   font-size: 0.92rem;
   line-height: 1.42;
 }
 
-.scope :global(form:has([name="accountType"]) > div:first-child > p:first-child) {
+.scope :global(form:has([aria-labelledby^="signup-step-"]) > div:first-child > p:first-child) {
   font-size: 0.88rem;
   line-height: 1.4;
 }
@@ -68,7 +69,7 @@
   margin-left: 0.65rem;
 }
 
-.scope :global(form:has([name="accountType"]) > div:first-child > div:last-child) {
+.scope :global(form:has([aria-labelledby^="signup-step-"]) > div:first-child > div:last-child) {
   margin-top: 0.88rem;
 }
 
@@ -111,22 +112,22 @@
 }
 
 .scope :global(section[aria-labelledby^="signup-step-"] > div:last-child) {
-  gap: 0.72rem 0.88rem;
+  gap: 1.05rem 1.1rem;
   margin-top: 0.92rem;
 }
 
-.scope :global(form:has([name="accountType"]) input:not([type="checkbox"])) {
+.scope :global(form:has([aria-labelledby^="signup-step-"]) input:not([type="checkbox"]):not([type="radio"])) {
   min-height: 3.08rem;
   border-color: #d4e0dc;
   border-radius: 0.82rem;
   background: #ffffff;
 }
 
-.scope :global(form:has([name="accountType"]) input:not([type="checkbox"]):hover) {
+.scope :global(form:has([aria-labelledby^="signup-step-"]) input:not([type="checkbox"]):not([type="radio"]):hover) {
   border-color: #b9d0c7;
 }
 
-.scope :global(form:has([name="accountType"]) input:not([type="checkbox"]):focus) {
+.scope :global(form:has([aria-labelledby^="signup-step-"]) input:not([type="checkbox"]):not([type="radio"]):focus) {
   border-color: #8ab9a7;
   box-shadow: 0 0 0 4px rgba(16, 123, 87, 0.08);
 }
@@ -160,7 +161,7 @@
 
 .scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"] > span:first-child) {
   font-size: 0.92rem;
-  font-weight: 780;
+  font-weight: 650;
 }
 
 .scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"] > span:last-child) {
@@ -201,25 +202,25 @@
 
 /* The signup/login rail already provides the mode switch. Remove the duplicate
    signup footer completely from the rendered layout. */
-.scope :global(section[aria-labelledby="auth-heading"]:has(> form [name="accountType"]) > p:last-child),
-.scope :global(form:has([name="accountType"]) + p) {
+.scope :global(section[aria-labelledby="auth-heading"]:has(> form [aria-labelledby^="signup-step-"]) > p:last-child),
+.scope :global(form:has([aria-labelledby^="signup-step-"]) + p) {
   display: none !important;
 }
 
-.scope :global(form:has([name="accountType"]) > div:last-child) {
+.scope :global(form:has([aria-labelledby^="signup-step-"]) > div:last-child) {
   min-height: 3.7rem;
   gap: 0.65rem;
   margin-top: 0.82rem;
   padding-top: 0.78rem;
 }
 
-.scope :global(form:has([name="accountType"]) > div:last-child > a),
-.scope :global(form:has([name="accountType"]) > div:last-child > button) {
+.scope :global(form:has([aria-labelledby^="signup-step-"]) > div:last-child > a),
+.scope :global(form:has([aria-labelledby^="signup-step-"]) > div:last-child > button) {
   min-height: 2.85rem;
   border-radius: 0.8rem;
 }
 
-.scope :global(form:has([name="accountType"]) > div:last-child > button[type="submit"]) {
+.scope :global(form:has([aria-labelledby^="signup-step-"]) > div:last-child > button[type="submit"]) {
   min-width: 9.2rem;
   padding-right: 1.45rem;
   padding-left: 1.45rem;
@@ -251,7 +252,7 @@
   padding: 0.62rem 0.72rem;
   border-radius: 0.68rem;
   font-size: 0.9rem;
-  font-weight: 760;
+  font-weight: 600;
 }
 
 :global(body):has(.scope) :global(#accountType-dropdown-listbox [role="option"]:hover),
