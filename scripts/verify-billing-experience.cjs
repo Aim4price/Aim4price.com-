@@ -471,7 +471,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.waitForFunction(type=>document.querySelector('input[name="accountType"]')?.value===type,{},mode.slice(7));
      await page.click('button[aria-label^="What would you like to use Aim4price for?"]');
      await page.waitForSelector('[role="option"]');
-     assert.deepEqual(await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent.trim())),['Owner','Business']);
+     assert.deepEqual(await page.$$eval('[role="option"]',els=>els.map(e=>e.querySelector('span').textContent)),['Owner','Business']);
      await page.keyboard.press('Escape');
      assert.doesNotMatch(await page.$eval('main', e=>e.textContent), /Create enquiry account/);
      await page.click('button[aria-label^="Which best describes your work?"]');await page.waitForSelector('[role="option"]');
