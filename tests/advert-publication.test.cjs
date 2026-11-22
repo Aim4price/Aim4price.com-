@@ -33,8 +33,9 @@ test('listing-only publication uses stable identity, owner-scoped updates and ne
  const js=ts.transpileModule(fn,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  let sql,params,blocked=false;
  const module={exports:{}};
- new Function('exports','getDb','ensureMarketplaceColumns','buildMarketplaceListing',js)(module.exports,
- ()=>({query:async(s,p)=>{sql=s;params=p;return {rows:blocked?[]:[{id:p[0]}]};}}),async()=>{},row=>row);
+ const writer={query:async(s,p)=>{sql=s;params=p;return {rows:blocked?[]:[{id:p[0]}]};}};
+ new Function('exports','require','ensureMarketplaceColumns','buildMarketplaceListing',js)(module.exports,
+ name=>{assert.equal(name,'./business-credits');return {saveBusinessResult:async(_user,_label,save)=>save(writer)};},async()=>{},row=>row);
  const publish=module.exports.publishStudioAdvert,value=normalizeAdvertPublication(body);
  assert.deepEqual(await publish('seller',value),await publish('seller',value));
  assert.equal(params[0],body.id);assert.equal(params[1],'seller');assert.equal(params[4],500000);
