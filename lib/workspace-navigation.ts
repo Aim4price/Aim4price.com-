@@ -36,7 +36,7 @@ const cards = {
   registers: ['Manage Registers','/asset-registers'],
   map: ['Asset Map','/asset-map'],
   maintenance: ['Maintenance','/maintenance'],
-  costs: ['Cost Ledger','/my-invoices'],
+  costs: ['Cost Ledger','/my-invoices?view=costs'],
   budgets: ['Budgets','/budgets'],
   fuel: ['Fuel Slips','/fuel?view=slips'],
   storage: ['Fuel Storage','/fuel?view=storage'],
