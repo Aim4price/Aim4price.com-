@@ -19,8 +19,6 @@ async function sharedAccountPage(user: NonNullable<Awaited<ReturnType<typeof get
   const businessAccount = profile.accountType === 'business' || (profile.accountType === 'dealer' && !isMiddlemanAccountSubtype(profile.accountSubtype));
   const credits = businessAccount ? await getBusinessCredits(user.id) : null;
   const subscription = credits ? {
-    history:credits.history?.map(event=>({action:({manage:'Opened Manage',send:'Sent message',share:'Shared asset'} as Record<string,string>)[event.action] || String(event.action),units:Number(event.units),date:new Date(event.created_at).toISOString()})),
-    resets:credits.balance.resets ? new Date(credits.balance.resets).toISOString() : undefined,bonus:credits.balance.bonus,reward:credits.workspace.referral_reward,
     fullAccess: Boolean(credits.workspace.desktop || credits.workspace.paid_since), paidSince: credits.workspace.paid_since ? new Date(credits.workspace.paid_since).toISOString() : null, pending: Boolean(credits.workspace.upgrade_requested_at), owner: credits.workspace.role==='owner', remaining: Math.max(0,credits.balance.limit-credits.balance.used-credits.balance.held), limit:credits.balance.limit } : businessAccount ? { paidSince:null, pending:false, owner:false, remaining:null, limit:null } : undefined;
   const initialProfile = business?.review.website ? { ...profile, websiteUrl: business.review.website } : profile;
   const inviteLink=credits?.workspace.owner_invite_id ? '/auth?accountType=owner&invite='+credits.workspace.owner_invite_id+'#signup' : undefined;

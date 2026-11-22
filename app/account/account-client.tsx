@@ -1651,10 +1651,6 @@ export default function AccountClient({
                   <span style={{ width: `${100 * subscription.remaining / subscription.limit}%` }} />
                 </div>
               )}
-              <p>One credit per completed action. Viewing, messaging and sharing are free.</p>
-              {subscription.resets && <p>Monthly reset on {new Date(subscription.resets).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg',day:'numeric',month:'long'})}. Referral credits earned this month: {subscription.bonus || 0}.</p>}
-              {subscription.reward !== undefined && <p>Earn {subscription.reward} credits when a new owner uses your invite, verifies their email and adds their first asset.</p>}
-              <details><summary>Recent credit activity</summary>{subscription.history?.length ? <ul>{subscription.history.map((event,index)=><li key={index}>{new Date(event.date).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})} · {event.action} · {event.units} {event.units===1?'credit':'credits'}</li>)}</ul> : <p>No credit activity yet.</p>}</details>
             </section>
           )}
           <section className={`${styles.card} ${styles.quickActionsCard}`}>
@@ -1826,7 +1822,10 @@ export default function AccountClient({
                   </button>}
 
                   {initialProfile?.trialEndsAt && <a href="/account/owner-trial" className={styles.quickActionButton}>Owner trial · ends {new Date(initialProfile.trialEndsAt).toLocaleDateString('en-ZA')}</a>}
-                  {inviteLink && <button type="button" className={styles.quickActionButton} onClick={async()=>{const url=new URL(inviteLink,window.location.origin).href;try{await navigator.clipboard.writeText(url);window.alert('Owner invite link copied. Earn bonus credits when an invited Owner verifies their email and adds their first asset.');}catch{window.prompt('Copy your Owner invite link',url);}}}>Copy Owner invite link</button>}
+                  {inviteLink && <button type="button" className={styles.quickActionButton} onClick={async()=>{const url=new URL(inviteLink,window.location.origin).href;try{await navigator.clipboard.writeText(url);window.alert('Owner invite link copied.');}catch{window.prompt('Copy your Owner invite link',url);}}}>
+                    <QuickActionIcon name="connections" />
+                    <strong>Copy owner invite link</strong>
+                  </button>}
                   {subscription && <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />}
 
                   <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")} data-tooltip="View and download your Aim4price invoices." data-tooltip-style="description">
