@@ -33,8 +33,10 @@ export default async function WorkspacePage() {
   } : null;
   return <>
     <AppHeader active="workspace"/>
-    <main className={styles.shell}>
-      <WorkspaceGrid key={session.user.id + role} cards={cards} role={role} userId={session.user.id} subscription={subscription}/>
+    <main data-workspace-page>
+      <div className={styles.shell}>
+        <WorkspaceGrid key={session.user.id + role} cards={cards} role={role} userId={session.user.id} subscription={subscription}/>
+      </div>
     </main>
   </>;
 }
