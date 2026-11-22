@@ -28,6 +28,8 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
   await pg.exec('create table "user"(id text primary key,name text,email text); create table account_profiles(user_id text primary key,business_name text,address_line_1 text,address_line_2 text,town_city text,province text,phone text,account_status text); create table admin_work_sessions(id text primary key,client_user_id text,started_at timestamptz default now(),stopped_at timestamptz,duration_seconds integer,note text);');
   await pg.exec("insert into \"user\" values('one','Customer One','one@example.test'),('two','Customer Two','two@example.test');insert into admin_work_sessions(id,client_user_id,stopped_at,duration_seconds,note) values('work-one','one',now(),5400,'Capture work'),('work-two','two',now(),3600,'Private work'),('running','one',null,3600,'Still running');");
   await billing.ensureBillingSchema();
+  assert.equal((await billing.globalBillingControl()).held,true);
+  await billing.setGlobalBillingHold({held:false,version:1},'admin');
   await pg.exec("insert into account_profiles values('one','Farm Business','Road 10','Unit 2','George','Western Cape','0821234567','active')");
   const initialWorkspace=await billing.getBillingWorkspace('one');
   assert.equal(initialWorkspace.customer.businessName,'Farm Business');assert.equal(initialWorkspace.customer.address,'Road 10\nUnit 2\nGeorge\nWestern Cape');
@@ -41,6 +43,10 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
   for(const work of ['work-one','work-two','running'])await assert.rejects(billing.createBillingDraft({...draft,id:randomUUID(),workSessionIds:[work]},'admin'));
   await billing.actOnBillingInvoice(draft.id,{action:'update_draft',version:1,customer,lines:[{description:'Updated subscription',quantity:1,unitCents:12000}],dueDate:'2026-09-30'},'admin');
   await assert.rejects(billing.actOnBillingInvoice(draft.id,{action:'issue',version:1},'admin'),/changed/);
+  await billing.setGlobalBillingHold({held:true,version:2},'admin');
+  await assert.rejects(billing.actOnBillingInvoice(draft.id,{action:'issue',version:2},'admin'),/on hold/);
+  await assert.rejects(billing.setGlobalBillingHold({held:false,version:2},'admin'),/Refresh/);
+  await billing.setGlobalBillingHold({held:false,version:3},'admin');
   await billing.actOnBillingInvoice(draft.id,{action:'issue',version:2},'admin');await billing.actOnBillingInvoice(draft.id,{action:'issue',version:2},'admin');
   inv=await billing.getBillingInvoice(draft.id,'one',false);assert.match(inv.number,/^A4P-\d{4}-\d{6}$/);assert.equal(Number(inv.total_cents),42000);assert.match(inv.report_html,/No VAT applicable/);assert.match(inv.report_html,/4113 0591 64/);
   await assert.rejects(billing.getBillingInvoice(draft.id,'two',false),/not found/);
@@ -111,6 +117,8 @@ test('recurring agreements are opt-in, audited, versioned and issue only once pe
   await pg.exec('create table "user"(id text primary key,name text,email text); insert into "user" values(\'one\',\'Example\',\'one@example.test\');');
   await pg.exec('create table account_profiles(user_id text primary key,phone text,account_status text)');
   await billing.ensureBillingSchema();
+  assert.equal((await billing.globalBillingControl()).held,true);
+  await billing.setGlobalBillingHold({held:false,version:1},'admin');
   const input={userId:'one',version:0,customer:{name:'Example',email:'one@example.test',address:'George'},lines:[{description:'Approved package',quantity:1,unitCents:25000}],interval:'monthly',nextInvoiceDate:'2090-01-31',dueDays:7,enabled:false};
   await billing.saveBillingAgreement(input,'admin');
   await billing.processRecurringInvoices('2090-01-31');
@@ -146,6 +154,12 @@ test('recurring agreements are opt-in, audited, versioned and issue only once pe
   assert.equal(hosted.rows.length,1);
   assert.equal(Number(hosted.rows[0].total_cents),25000+2475+4975);
   assert.deepEqual(hosted.rows[0].lines.slice(1).map(l=>l.quantity),[1,1]);
+  await billing.setGlobalBillingHold({version:2,held:true},'admin');
+  await pg.query("update aim4price_billing_agreements set next_invoice_date=current_date where user_id='one'");
+  await billing.processRecurringInvoices();
+  await billing.setGlobalBillingHold({version:3,held:false},'admin');
+  assert.equal((await billing.getBillingAgreement('one')).enabled,false);
+  assert.equal((await pg.query('select count(*)::int as n from aim4price_billing_invoices where generation_key=$1',['recurring:one:'+shared.dateKey()])).rows[0].n,0);
   const events=await pg.query('select actor_id,action from aim4price_billing_agreement_events');
   assert.ok(events.rows.some(e=>e.actor_id==='admin'&&e.action==='paused'));
   assert.ok(events.rows.some(e=>e.action==='review_required'));
@@ -193,6 +207,7 @@ test('Owner trial conversion, current terms, payment and account billing holds',
      create table account_profiles(user_id text primary key,account_type text,account_status text,owner_trial_requested boolean,owner_trial_ends_at timestamptz);
      insert into account_profiles values('trial','owner','pending_payment',true,now()+interval '30 days'),('pilot','owner','active',false,null);`);
    const plans=await billing.listBillingPlans(true);
+   await billing.setGlobalBillingHold({held:false,version:1},'admin');
    const plan=plans.find(p=>p.key==='owner-band-1-monthly');
    const input={billingAccepted:true,planKey:plan.key,billingPlanVersion:plan.version,billingName:'Test Owner',billingEmail:'owner@example.test',billingAddress:'George'};
    await billing.subscribeOwnerTrial('trial',input);

@@ -570,11 +570,12 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   }
   const [terms,setTerms]=useState({trial_days:30,monthly_credits:500,version:0});
   const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
+  const [billingHeld,setBillingHeld]=useState(false);
   const [billingPricingError, setBillingPricingError] = useState("");
   const [billing, setBilling] = useState({name:"",email:"",address:"",accepted:false});
   useEffect(() => {
     let active=true;
-    fetch('/api/billing/plans', {cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(active){setBillingPlans(data.plans);if(data.terms)setTerms(data.terms);}}).catch(()=>{if(active)setBillingPricingError('Signup pricing could not be loaded. Refresh before creating an account.');});
+    fetch('/api/billing/plans', {cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(active){setBillingHeld(data.billingHeld===true);setBillingPlans(data.plans);if(data.terms)setTerms(data.terms);}}).catch(()=>{if(active)setBillingPricingError('Signup pricing could not be loaded. Refresh before creating an account.');});
     return()=>{active=false;};
   }, []);
 
@@ -1388,9 +1389,9 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
 
                         {billingPricingError && accountAccess==='desktop' ? <p role="alert">{billingPricingError}</p> : null}
                         {selectedBillingPlan ? <div className={styles.billingSignup}>
-                          <strong>Your signup invoice · {money(selectedBillingPlan.amountCents)}</strong>
+                          <strong>{billingHeld ? 'Selected plan' : 'Your signup invoice'} · {money(selectedBillingPlan.amountCents)}</strong>
                           <p>{selectedBillingPlan.description} · {selectedBillingPlan.interval === 'once' ? 'One-time charge' : selectedBillingPlan.interval === 'monthly' ? 'Monthly' : 'Annual'} · No VAT applicable.</p>
-                          <p>Payment due {selectedBillingPlan.dueDays === 0 ? 'on issue' : `within ${selectedBillingPlan.dueDays} days`}. Your invoice will be available in your account and emailed after signup.</p>
+                          {billingHeld ? <p>Billing is on hold. You won’t receive a signup invoice.</p> : <p>Payment due {selectedBillingPlan.dueDays === 0 ? 'on issue' : `within ${selectedBillingPlan.dueDays} days`}. Your invoice will be available in your account and emailed after signup.</p>}
                           <label>Billing name<input value={billing.name} placeholder={signupForm.name || 'Name or business name'} onChange={e=>setBilling({...billing,name:e.target.value})}/></label>
                           <label>Billing email<input type="email" value={billing.email} placeholder={signupForm.email || 'Uses your account email if left blank'} onChange={e=>setBilling({...billing,email:e.target.value})}/></label>
                           <label>Billing address<textarea required value={billing.address} maxLength={600} onChange={e=>setBilling({...billing,address:e.target.value})}/></label>

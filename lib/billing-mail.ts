@@ -1,6 +1,6 @@
 import { getBillingEmailPreference } from './billing-preferences';
 import { getDb } from './db';
-import { ensureBillingSchema, processSignupInvoices, processRecurringInvoices, mapInvoice } from './billing';
+import { globalBillingControl, ensureBillingSchema, processSignupInvoices, processRecurringInvoices, mapInvoice } from './billing';
 import { renderReportHtmlToPdf } from './report-pdf';
 import { getSiteOrigin, sendAim4priceEmail } from './email';
 import { buildBillingEmail } from './billing-email-template';
@@ -40,12 +40,15 @@ async function dispatchSubscriptionMail() {
 }
 export async function dispatchBillingMail(): Promise<void> {
   await ensureBillingSchema();
+  if ((await globalBillingControl()).held) return;
   // Restore only unsent messages suppressed by the former opt-out control.
   await getDb().query("update aim4price_billing_mail set status='queued',last_error=null,next_attempt_at=now() where status='needs_review' and last_error='Not sent: account opted out of billing emails.'");
   for(let i=0;i<5;i++) {
     const db=await getDb().connect();let mail;
     try {
       await db.query('begin');
+      const control=await db.query('select held from aim4price_global_billing where singleton for share');
+      if(control.rows[0]?.held!==false){await db.query('commit');break;}
       const result=await db.query(`select m.* from aim4price_billing_mail m where
         ((status in ('queued','retry') and next_attempt_at<=now()) or (status='sending' and locked_until<now()))
         order by created_at for update skip locked limit 1`);
