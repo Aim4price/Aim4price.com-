@@ -1,10 +1,11 @@
+import { ensureCreditSchema } from "./business-credits";
 import { registerOwnerReferral } from "./owner-referrals";
 import { ensureAccountProfileColumns } from "./account-profile";
 import { registerFreeSharingAccount } from './sharing-foundation';
 import { ensureBusinessWorkspace } from './business-workspaces';
 import { getSiteOrigin } from './email';
 import { buildAccessEmail } from './access-email';
-import { queueSignupInvoice, type SignupBilling } from "./billing";
+import { signupTerms,queueSignupInvoice, type SignupBilling } from "./billing";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 import { isAim4priceAdminEmail } from "./account-constants";
@@ -145,7 +146,7 @@ function createAuth() {
     sendOnSignUp: false,
     afterEmailVerification: async user => {
       await ensureAccountProfileColumns();
-      await getDb().query("update account_profiles set owner_trial_ends_at=now()+interval '30 days' where user_id=$1 and account_type='owner' and owner_trial_requested and owner_trial_ends_at is null and account_status='pending_payment'",[user.id]);
+      await getDb().query("update account_profiles set owner_trial_ends_at=now()+owner_trial_days*interval '1 day' where user_id=$1 and account_type='owner' and owner_trial_requested and owner_trial_ends_at is null and account_status='pending_payment'",[user.id]);
     },
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url, token }) => {
@@ -161,6 +162,7 @@ function createAuth() {
       },
       create: {
         after: async (user, context) => {
+          const terms=readSignupWorkspaceField('signupTerms') as {trial_days:number;monthly_credits:number;referral_credits:number}|null;
           try {
             await createInitialAccountProfile(
               {
@@ -170,6 +172,7 @@ function createAuth() {
               },
               {
                 accountType: readSignupField(context, "accountType"),
+                trialDays:terms?.trial_days,
                 ownerTrial: readSignupWorkspaceField("accountAccess") === "trial",
                 businessName: readSignupField(context, "businessName"),
                 accountSubtype: readSignupField(context, "accountSubtype"),
@@ -195,7 +198,12 @@ function createAuth() {
             );
           }
           if (readSignupField(context, "accountType") === "business") await registerFreeSharingAccount(user.id);
-          if (readSignupField(context, "accountType") === "business") await ensureBusinessWorkspace(user.id);
+          if (readSignupField(context, "accountType") === "business") {
+            await ensureBusinessWorkspace(user.id);
+            await ensureCreditSchema();
+            const allowances=terms??await signupTerms();
+            await getDb().query('update business_workspaces set enforce_credits=true,monthly_allowance=$2,referral_reward=$3 where owner_user_id=$1',[user.id,allowances.monthly_credits,allowances.referral_credits]);
+          }
           const invite=readSignupWorkspaceField("ownerInvite");
           if (readSignupWorkspaceField("accountType")==="owner" && typeof invite==="string") await registerOwnerReferral(user.id,invite);
           const billing = readSignupWorkspaceField("billingSignup") as SignupBilling | null;

@@ -1,6 +1,6 @@
 import { isMiddlemanAccountSubtype } from "../../../../lib/middleman-account";
 import { isSupportedSignupAccountType } from "../../../../lib/retired-workspaces";
-import { BillingError, validateSignupBilling } from "../../../../lib/billing";
+import { BillingError, signupTerms, validateSignupBilling } from "../../../../lib/billing";
 import { toNextJsHandler } from "better-auth/next-js";
 import { auth } from "../../../../lib/auth";
 import { withSignupWorkspaceInput } from "../../../../lib/signup-workspace-context";
@@ -45,7 +45,9 @@ export async function POST(request: Request): Promise<Response> {
     }
     const billingSignup = accountAccess !== 'desktop' ? null : await validateSignupBilling({ ...signupInput, accountType });
     if (choice === 'paid' && !billingSignup) throw new BillingError('This paid plan is unavailable. Refresh to review the available plans.');
-    return await withSignupWorkspaceInput({ ...signupInput, accountType, accountAccess, billingSignup }, () => authHandlers.POST(request));
+    const terms=choice==='free'?await signupTerms():null;
+    if(terms && Number(signupInput.termsVersion)!==terms.version)throw new BillingError('Free signup terms have changed. Refresh to review them.');
+    return await withSignupWorkspaceInput({ ...signupInput, accountType, accountAccess, billingSignup, signupTerms:terms }, () => authHandlers.POST(request));
   } catch (error) {
     if (error instanceof BillingError) return Response.json({ message: error.message }, { status: 400 });
     console.error("Signup billing preparation failed", error);

@@ -4,8 +4,8 @@ import { creditTransaction } from './business-credits';
 export async function registerOwnerReferral(ownerId:string, invite:string) {
   if (!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(invite)) return;
   await creditTransaction(async db=>{
-    const attached=await db.query(`insert into business_owner_referrals(owner_id,business_id)
-      select $1,w.id from business_workspaces w join account_profiles p on p.user_id=w.owner_user_id
+    const attached=await db.query(`insert into business_owner_referrals(owner_id,business_id,credits)
+      select $1,w.id,w.referral_reward from business_workspaces w join account_profiles p on p.user_id=w.owner_user_id
       where w.owner_invite_id=$2 and w.owner_user_id<>$1 and p.account_type in ('business','dealer')
       and p.account_status='active' on conflict do nothing returning owner_id`,[ownerId,invite]);
     if(!attached.rowCount)return;

@@ -43,6 +43,7 @@ type AccountActionModal =
   | "email";
 
 type AccountProfile = {
+  trialEndsAt?: string | null;
   userId: string;
   name: string;
   displayName: string;
@@ -1827,7 +1828,7 @@ export default function AccountClient({
                   </button>}
 
                   {initialProfile?.trialEndsAt && <a href="/account/owner-trial" className={styles.quickActionButton}>Owner trial · ends {new Date(initialProfile.trialEndsAt).toLocaleDateString('en-ZA')}</a>}
-                  {inviteLink && <button type="button" className={styles.quickActionButton} onClick={async()=>{try{await navigator.clipboard.writeText(inviteLink);window.alert('Owner invite link copied. Earn 50 bonus credits when an invited Owner verifies their email and adds an asset.');}catch{window.prompt('Copy your Owner invite link',inviteLink);}}}>Copy Owner invite link</button>}
+                  {inviteLink && <button type="button" className={styles.quickActionButton} onClick={async()=>{try{await navigator.clipboard.writeText(inviteLink);window.alert('Owner invite link copied. Earn bonus credits when an invited Owner verifies their email and adds their first asset.');}catch{window.prompt('Copy your Owner invite link',inviteLink);}}}>Copy Owner invite link</button>}
                   {subscription && <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />}
 
                   <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")} data-tooltip="View and download your Aim4price invoices." data-tooltip-style="description">

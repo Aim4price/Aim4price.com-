@@ -568,12 +568,13 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     await postAuth('/send-verification-email',{email,callbackURL:sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||(signupForm.accountType==='owner'?'/asset-register':'/business')});
     setVerificationSent(true);
   }
+  const [terms,setTerms]=useState({trial_days:30,monthly_credits:500,version:0});
   const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
   const [billingPricingError, setBillingPricingError] = useState("");
   const [billing, setBilling] = useState({name:"",email:"",address:"",accepted:false});
   useEffect(() => {
     let active=true;
-    fetch('/api/billing/plans', {cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(active)setBillingPlans(data.plans);}).catch(()=>{if(active)setBillingPricingError('Signup pricing could not be loaded. Refresh before creating an account.');});
+    fetch('/api/billing/plans', {cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(active){setBillingPlans(data.plans);if(data.terms)setTerms(data.terms);}}).catch(()=>{if(active)setBillingPricingError('Signup pricing could not be loaded. Refresh before creating an account.');});
     return()=>{active=false;};
   }, []);
 
@@ -857,6 +858,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         billingAddress: billing.address,
         billingAccepted: billing.accepted,
         ownerInvite: signupForm.accountType === "owner" ? new URLSearchParams(window.location.search).get("invite") : null,
+        termsVersion:terms.version,
         signupPlan,
         planKey:selectedBillingPlan?.key,
         billingPlanVersion: selectedBillingPlan?.version,
@@ -1177,7 +1179,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                                 }));
                               }}
                             />
-                            <small>{signupForm.accountType === 'owner' ? 'Value and manage your own assets.' : 'Work with assets shared by clients. Start free with credits and upgrade when you need more.'}</small>
+                            <small>{signupForm.accountType === 'owner' ? 'Value and manage your own assets.' : 'Work with assets shared by clients or choose the full Business workspace.'}</small>
                           </div>
 
                           <div className={styles.field}>
@@ -1199,12 +1201,12 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           </div>
 
 
-                          <fieldset className={styles.signupFieldWide} style={{border:0,padding:0,margin:0}}>
+                          <fieldset className={styles.planChoice}>
                             <legend className={styles.label}>How would you like to start?</legend>
-                            <div className={styles.signupFieldGrid}>
+                            <div className={styles.planChoices}>
                               {(['free','paid'] as const).map(choice => <label key={choice} className={styles.checkboxRow}>
                                 <input type="radio" name="signupPlan" checked={signupPlan===choice} disabled={choice==='paid'&&!planOffer} onChange={()=>setSignupPlan(choice)} />
-                                <span>{choice==='free' ? signupForm.accountType==='owner' ? '30-day free trial' : 'Free · 500 credits per month' : planOffer ? 'Choose a paid plan' : billingPricingError || 'Paid plan unavailable'}</span>
+                                <span>{choice==='free' ? signupForm.accountType==='owner' ? terms.trial_days+'-day free trial' : 'Free · '+terms.monthly_credits+' credits per month' : planOffer ? 'Choose a paid plan' : billingPricingError || 'Paid plan unavailable'}</span>
                               </label>)}
                             </div>
                             {signupPlan==='paid' && planOffer && <CustomSelect name="subscriptionPlan" ariaLabel="Subscription plan" value={planOffer.key??planOffer.accountType} options={offers.map(p=>({value:p.key??p.accountType,label:p.description+' · '+money(p.amountCents)+' '+p.interval}))} onChange={setPlanKey}/>}

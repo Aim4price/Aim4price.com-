@@ -690,8 +690,8 @@ async function ensureAccountProfileColumnsOnce(): Promise<void> {
   `));
 
   if (schemaReady) {
-    if (!await isDatabaseSchemaReady(() => db.query('select owner_trial_requested,owner_trial_ends_at from account_profiles where false'))) {
-      await db.query('alter table account_profiles add column if not exists owner_trial_requested boolean not null default false, add column if not exists owner_trial_ends_at timestamptz');
+    if (!await isDatabaseSchemaReady(() => db.query('select owner_trial_requested,owner_trial_days,owner_trial_ends_at from account_profiles where false'))) {
+      await db.query('alter table account_profiles add column if not exists owner_trial_requested boolean not null default false, add column if not exists owner_trial_days integer not null default 30, add column if not exists owner_trial_ends_at timestamptz');
     }
     await ensureAccountRoleSchema(db);
     accountProfileColumnsEnsured = true;
@@ -752,6 +752,7 @@ async function ensureAccountProfileColumnsOnce(): Promise<void> {
       add column if not exists account_subtype text not null default 'farmer',
       add column if not exists owner_trial_requested boolean not null default false,
       add column if not exists owner_trial_ends_at timestamptz,
+      add column if not exists owner_trial_days integer not null default 30,
       add column if not exists account_status text,
       add column if not exists suspension_reason text,
       add column if not exists billing_suspension_invoice_id uuid,
@@ -985,6 +986,7 @@ export async function createInitialAccountProfile(
     phone?: unknown;
     businessName?: unknown;
     ownerTrial?: boolean;
+    trialDays?: number;
   },
 ): Promise<void> {
   await ensureAccountProfileColumns();
@@ -1033,10 +1035,10 @@ export async function createInitialAccountProfile(
         province,
         town_city,
         partner_directory_enabled,
-        owner_trial_requested, created_at,
+        owner_trial_requested, owner_trial_days, created_at,
         updated_at
       )
-      values ($1, $2, $13, $3, $4, $5, $6, $7, $8, $9, $10, $11, $14, now(), now())
+      values ($1, $2, $13, $3, $4, $5, $6, $7, $8, $9, $10, $11, $14, $15, now(), now())
       on conflict (user_id) do update set
         account_type = case
           when $12 then excluded.account_type
@@ -1071,6 +1073,7 @@ export async function createInitialAccountProfile(
       hasExplicitAccountType,
       asText(input?.businessName).slice(0, 200) || null,
       initialAccountType === "owner" && input?.ownerTrial === true,
+      input?.trialDays??30,
     ],
   );
 }

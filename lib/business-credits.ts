@@ -4,10 +4,12 @@ import { getDb } from './db';
 import { ensureBusinessWorkspaceSchema, ensureBusinessMembership } from './business-workspaces';
 
 export const MONTHLY_BUSINESS_CREDITS = 500;
-export const creditLimitsActive = () => process.env.AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT === 'true';
+export const creditLimitsActive = (enforced=false) => enforced || process.env.AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT === 'true';
 export const CREDIT_SCHEMA = `
  ALTER TABLE business_workspaces ADD COLUMN IF NOT EXISTS upgrade_requested_at timestamptz,
  ADD COLUMN IF NOT EXISTS paid_since timestamptz, ADD COLUMN IF NOT EXISTS activated_by text;
+ ALTER TABLE business_workspaces ADD COLUMN IF NOT EXISTS monthly_allowance integer NOT NULL DEFAULT 500, ADD COLUMN IF NOT EXISTS referral_reward integer NOT NULL DEFAULT 50;
+ ALTER TABLE business_workspaces ADD COLUMN IF NOT EXISTS enforce_credits boolean NOT NULL DEFAULT false;
  ALTER TABLE business_workspaces ADD COLUMN IF NOT EXISTS owner_invite_id uuid DEFAULT gen_random_uuid();
  CREATE UNIQUE INDEX IF NOT EXISTS business_owner_invite ON business_workspaces(owner_invite_id);
  CREATE TABLE IF NOT EXISTS business_owner_referrals (
@@ -53,7 +55,7 @@ export class CreditLimitError extends Error {
 export async function workspaceForCredits(db: PoolClient, userId: string) {
   const member = await ensureBusinessMembership(db,userId);
   if (!member) throw Error('This Business workspace is unavailable.');
-  const row = (await db.query(`SELECT w.id,w.owner_invite_id,w.paid_since,w.upgrade_requested_at, EXISTS(SELECT 1 FROM account_profiles p WHERE p.user_id=w.owner_user_id AND p.account_type='dealer') AS desktop FROM business_workspaces w WHERE w.id=$1 FOR UPDATE`,[member.business_id])).rows[0];
+  const row = (await db.query(`SELECT w.id,w.owner_invite_id,w.monthly_allowance,w.referral_reward,w.enforce_credits,w.paid_since,w.upgrade_requested_at, EXISTS(SELECT 1 FROM account_profiles p WHERE p.user_id=w.owner_user_id AND p.account_type='dealer') AS desktop FROM business_workspaces w WHERE w.id=$1 FOR UPDATE`,[member.business_id])).rows[0];
   return {...member,...row};
 }
 export async function creditBalance(db: PoolClient, businessId: string) {
@@ -96,7 +98,7 @@ export async function recordCredit(db: PoolClient,input: CreditInput, phase:'com
     included=true;
   }
   const balance=await creditBalance(db,workspace.id);
-  if(!included && !workspace.desktop && !workspace.paid_since && creditLimitsActive() && balance.used+balance.held>=MONTHLY_BUSINESS_CREDITS+Number(balance.bonus||0)) throw new CreditLimitError();
+  if(!included && !workspace.desktop && !workspace.paid_since && creditLimitsActive(workspace.enforce_credits) && balance.used+balance.held>=(workspace.monthly_allowance??MONTHLY_BUSINESS_CREDITS)+Number(balance.bonus||0)) throw new CreditLimitError();
   await db.query(`INSERT INTO business_credit_events(business_id,actor_id,action,request_id,token,asset_key,state,units,expires_at)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,CASE WHEN $7='reserved' THEN LEAST(now()+interval '30 minutes',((${monthStart}+interval '1 month') AT TIME ZONE 'Africa/Johannesburg')) END)`,
     [...keys,input.token,input.assetKey,phase==='reserve'?'reserved':'complete',workspace.desktop||workspace.paid_since||included?0:1]);
@@ -107,12 +109,12 @@ export async function creditHistory(db: PoolClient,businessId:string) {
    ORDER BY created_at DESC,request_id DESC LIMIT 50`,[businessId])).rows;
 }
 export async function checkBusinessWrite(userId:string,token:string,assetKey?:string) {
-  if(!creditLimitsActive()) return;
+
   await creditTransaction(async db=>{
     const workspace=await workspaceForCredits(db,userId);
-    if(workspace.desktop || workspace.paid_since) return;
+    if(workspace.desktop || workspace.paid_since || !creditLimitsActive(workspace.enforce_credits)) return;
     const balance=await creditBalance(db,workspace.id);
-    if(balance.used+balance.held<MONTHLY_BUSINESS_CREDITS+Number(balance.bonus||0)) return;
+    if(balance.used+balance.held<(workspace.monthly_allowance??MONTHLY_BUSINESS_CREDITS)+Number(balance.bonus||0)) return;
     const visit=await db.query(`SELECT 1 FROM business_credit_events WHERE business_id=$1 AND actor_id=$2 AND token=$3
       AND ($4::text IS NULL OR asset_key=$4) AND action='manage' AND closed_at IS NULL AND created_at>now()-interval '12 hours' LIMIT 1`,[workspace.id,userId,token,assetKey??null]);
     if(!visit.rowCount) throw new CreditLimitError();

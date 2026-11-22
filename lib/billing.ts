@@ -18,6 +18,8 @@ export function ensureBillingSchema(): Promise<void> {
   if (!schema) schema = (async () => {
     const db = await getDb().connect();
     try { await db.query('begin'); await db.query("select pg_advisory_xact_lock(hashtext('aim4price-billing-schema-v1'))"); await db.query(BILLING_SCHEMA_SQL);
+      await db.query(`create table if not exists aim4price_signup_terms(id boolean primary key default true check(id),trial_days integer not null default 30,monthly_credits integer not null default 500,referral_credits integer not null default 50,version integer not null default 1)`);
+      await db.query('insert into aim4price_signup_terms(id) values(true) on conflict do nothing');
       const offers=[...ownerHosting.map((band,i)=>({key:'owner-band-'+(i+1),name:'Owner · '+band.range+' assets',rates:band})),{key:'business-standard',name:'Paid Business',rates:businessHosting}];
       for(const offer of offers){
         for(const period of ['monthly','annual'] as const){
@@ -43,6 +45,19 @@ export function mapInvoice(row: QueryResultRow): BillingInvoice {
 }
 async function event(db: PoolClient, id: string, actor: string, action: string, detail='') {
   await db.query('insert into aim4price_billing_events(invoice_id,actor_id,action,detail) values($1,$2,$3,$4)',[id,actor,action,detail]);
+}
+export async function signupTerms() {
+  await ensureBillingSchema();
+  return (await getDb().query('select trial_days,monthly_credits,referral_credits,version from aim4price_signup_terms where id')).rows[0];
+}
+export async function saveSignupTerms(input:Record<string,unknown>,actor:string){
+  const values=[input.trial_days,input.monthly_credits,input.referral_credits].map(Number);
+  if(values.some(v=>!Number.isSafeInteger(v)||v<1)||values[0]>365||values.slice(1).some(v=>v>100000))throw new BillingError('Use 1–365 trial days and 1–100,000 credits.');
+  await transaction(async db=>{
+    const result=await db.query('update aim4price_signup_terms set trial_days=$1,monthly_credits=$2,referral_credits=$3,version=version+1 where id and version=$4 returning id',[...values,input.version]);
+    if(!result.rowCount)throw new BillingError('Signup terms changed. Refresh before saving.');
+    await db.query("insert into aim4price_billing_agreement_events(actor_id,action,detail) values($1,'signup_terms',$2)",[actor,JSON.stringify(values)]);
+  });
 }
 export async function listBillingPlans(onlyEnabled=false): Promise<BillingPlan[]> {
   await ensureBillingSchema(); const result = await getDb().query('select * from aim4price_billing_plans order by account_type');
@@ -83,7 +98,10 @@ export async function getBillingWorkspace(userId: string) {
   const p=profile.rows[0];
   const accountCustomer=billingAccountCustomer(p,p.account_profile??{});
   const control=(await getDb().query('select held,version from aim4price_billing_controls where user_id=$1',[userId])).rows[0];
-  return { control:control??{held:false,version:0}, signupType:p.account_profile?.account_type, trialEnd:p.account_profile?.owner_trial_ends_at??null, supportsHostedRegisters:p.account_profile?.account_type === 'dealer' && p.account_profile?.account_subtype !== 'equipment-middleman', agreement:await getBillingAgreement(userId), agreementHistory:(await getDb().query('select action,detail,created_at from aim4price_billing_agreement_events where user_id=$1 order by id desc limit 20',[userId])).rows, accountCustomer, customer:{...accountCustomer,...p.customer,businessName:p.customer?.businessName||accountCustomer.businessName,address:p.customer?.address||accountCustomer.address,reference:''}, nextBillingDate:p.next_billing_date, interval:p.interval ?? 'once', amountCents:Number(p.amount_cents ?? 0), work:work.rows };
+  const selected=(await getDb().query("select quote->'plan' as plan from aim4price_billing_signup_jobs where user_id=$1",[userId])).rows[0]?.plan;
+  const ap=p.account_profile;
+  const planLabel=selected ? selected.description+' · '+selected.interval : ap?.account_type==='owner'&&ap.owner_trial_requested ? 'Owner trial' : ap?.account_type==='business'?'Free Business':ap?.account_type==='dealer'?(ap.account_subtype==='equipment-middleman'?'Free Middleman':'Paid Business'):'Owner';
+  return { planLabel,accessStatus:ap?.account_status,control:control??{held:false,version:0}, signupType:p.account_profile?.account_type, trialEnd:p.account_profile?.owner_trial_ends_at??null, supportsHostedRegisters:p.account_profile?.account_type === 'dealer' && p.account_profile?.account_subtype !== 'equipment-middleman', agreement:await getBillingAgreement(userId), agreementHistory:(await getDb().query('select action,detail,created_at from aim4price_billing_agreement_events where user_id=$1 order by id desc limit 20',[userId])).rows, accountCustomer, customer:{...accountCustomer,...p.customer,businessName:p.customer?.businessName||accountCustomer.businessName,address:p.customer?.address||accountCustomer.address,reference:''}, nextBillingDate:p.next_billing_date, interval:p.interval ?? 'once', amountCents:Number(p.amount_cents ?? 0), work:work.rows };
 }
 async function billingHeld(db: PoolClient, userId: string) {
   await db.query('select pg_advisory_xact_lock(hashtext($1))',['billing-control:'+userId]);
@@ -193,7 +211,7 @@ export async function actOnBillingInvoice(id: string, input: Record<string,unkno
         await db.query('insert into aim4price_subscription_mail(event_key,user_id,subject,body) values($1,$2,$3,$4) on conflict do nothing',['paid:'+id,row.user_id,'Aim4price payment received','Payment received in full for invoice '+row.number+'.']);
         if(row.generation_key==='signup:'+row.user_id){
           const job=(await db.query('select quote from aim4price_billing_signup_jobs where user_id=$1',[row.user_id])).rows[0];
-          if(job?.quote?.plan?.key && !await billingHeld(db,row.user_id)){
+          if(job?.quote?.subscription && !await billingHeld(db,row.user_id)){
             const plan:BillingPlan=job.quote.plan;
             const expected=plan.accountType==='business'?'dealer':'owner';
             const profile=await db.query("update account_profiles set account_status='active',owner_trial_requested=false where user_id=$1 and account_type=$2 and account_status in ('active','pending_payment') returning user_id",[row.user_id,expected]);
@@ -222,7 +240,7 @@ export async function billingHistory(id: string) {
     getDb().query('select status,provider_id,attempts,last_error,created_at,accepted_at from aim4price_billing_mail where invoice_id=$1 order by created_at desc',[id]),
   ]);return {events:events.rows,payments:payments.rows,mail:mail.rows};
 }
-export type SignupBilling = { plan: BillingPlan; customer: ReturnType<typeof cleanCustomer> };
+export type SignupBilling = { subscription?: boolean; plan: BillingPlan; customer: ReturnType<typeof cleanCustomer> };
 export async function validateSignupBilling(input: Record<string,unknown>): Promise<SignupBilling | null> {
   const requested=String(input.accountType??'owner');
   if(requested==='business' && input.accountAccess!=='desktop') return null;
@@ -232,13 +250,15 @@ export async function validateSignupBilling(input: Record<string,unknown>): Prom
   const plan=(await listBillingPlans(true)).find(p=>p.accountType===accountType && (input.planKey?p.key===input.planKey:!p.key||p.key===(accountType==='business'?'dealer':'owner')));
   if(!plan)return null;
   if(input.billingAccepted!==true||Number(input.billingPlanVersion)!==plan.version)throw new BillingError('Please review and accept the current signup invoice price.');
-  try { return {plan,customer:cleanCustomer({name:input.billingName,email:input.billingEmail,address:input.billingAddress})}; }catch(e){throw new BillingError((e as Error).message);}
+  try { return {subscription:input.signupPlan==='paid',plan,customer:cleanCustomer({name:input.billingName,email:input.billingEmail,address:input.billingAddress})}; }catch(e){throw new BillingError((e as Error).message);}
 }
 export async function createSignupInvoice(userId: string, signup: SignupBilling): Promise<void> {
   const {plan,customer}=signup;const start=dateKey(),due=new Date(start+'T00:00:00Z');due.setUTCDate(due.getUTCDate()+plan.dueDays);
   await transaction(async db=>{
     await db.query('select pg_advisory_xact_lock(hashtext($1))',['billing-signup:'+userId]);
     if(await billingHeld(db,userId))return;
+    const skipped=await db.query('select 1 from aim4price_billing_signup_jobs where user_id=$1 and processed_at is not null',[userId]);
+    if(skipped.rowCount)return;
     const key='signup:'+userId;
     await db.query('select pg_advisory_xact_lock(hashtext($1))',['billing-generation:'+key]);
     if((await db.query('select id from aim4price_billing_invoices where generation_key=$1',[key])).rowCount || (await db.query('select 1 from aim4price_billing_deletions where generation_key=$1',[key])).rowCount)return;
@@ -250,7 +270,7 @@ export async function createSignupInvoice(userId: string, signup: SignupBilling)
 }
 
 export async function subscribeOwnerTrial(userId:string, input:Record<string,unknown>) {
-  const quote=await validateSignupBilling({...input,accountType:'owner'});
+  const quote=await validateSignupBilling({...input,accountType:'owner',signupPlan:'paid'});
   if(!quote)throw new BillingError('Owner billing is currently unavailable.');
   await transaction(async db=>{
     if(await billingHeld(db,userId))throw new BillingError('Your account has a billing hold. Contact Aim4price to review it.');
