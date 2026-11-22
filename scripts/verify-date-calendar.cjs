@@ -50,7 +50,7 @@ const chromium = require('@sparticuz/chromium');
       const layout=await page.$eval('dialog',el=>{const r=el.getBoundingClientRect();return {width:r.width,height:r.height,x:r.x,y:r.y,overflow:el.scrollWidth>el.clientWidth+1};});
       assert.ok(layout.x>=0&&layout.y>=0&&layout.width<=width&&layout.height<=height,JSON.stringify(layout));
       assert.equal(layout.overflow,false,'No horizontal scroll');
-      if(width>=1000) {assert.ok(layout.width>900,'Wide desktop calendar');assert.equal(await page.$eval('dialog',el=>el.scrollHeight>el.clientHeight+1),false,'Desktop needs no scrollbar');}
+      if(width>=1000) {assert.ok(layout.width>=500 && layout.width<=550,'Compact desktop calendar');assert.equal(await page.$eval('dialog',el=>el.scrollHeight>el.clientHeight+1),false,'Desktop needs no scrollbar');}
       await page.click('.summary > button');
     }
     // Six-week months must fit without clipping, including the user's enlarged desktop view.
