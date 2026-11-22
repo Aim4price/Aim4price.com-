@@ -42,7 +42,7 @@ export default function Fixture(){const [mode,setMode]=useState('signup'),[ready
     await page.waitForSelector('[data-mobile-landscape-entry]',{hidden:true});
    }
    assert.equal(await page.$eval('[data-website-canvas]',e=>e.style.width),'1440px');
-   assert.equal(await page.$eval('h1',e=>e.textContent),'Create your free account','Recipients go directly to free signup');
+   assert.equal(await page.$eval('h1',e=>e.textContent),'Create your Business account','Recipients go directly to free signup');
    await page.waitForSelector('input[name=password]');
    assert.equal(await page.$eval('input[name=password]',e=>e.autocomplete),'new-password');
    assert.equal(await page.$eval('input[name=email]',e=>e.autocomplete),'username');
