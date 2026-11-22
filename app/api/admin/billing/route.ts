@@ -3,7 +3,7 @@ import { suspendBillingAccount } from '../../../../lib/billing-suspension';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiAccess } from '../../../../lib/admin-api-access';
 import { isTrustedRequestOrigin } from '../../../../lib/trusted-request-origin';
-import { BillingError, listBillingInvoices, getBillingWorkspace, listBillingPlans, createBillingDraft, actOnBillingInvoice, saveBillingPlan, billingHistory, processSignupInvoices, billingPreparationStatus, saveBillingAgreement, pauseBillingAgreement, listBillingAgreements } from '../../../../lib/billing';
+import { setBillingHold, BillingError, listBillingInvoices, getBillingWorkspace, listBillingPlans, createBillingDraft, actOnBillingInvoice, saveBillingPlan, billingHistory, processSignupInvoices, billingPreparationStatus, saveBillingAgreement, pauseBillingAgreement, listBillingAgreements } from '../../../../lib/billing';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 const json=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{'Cache-Control':'private, no-store'}});
 function failure(error:unknown){if(error instanceof BillingError)return json({error:error.message},400);console.error('Billing API failed',error);return json({error:'Billing could not be loaded or saved. Please retry.'},500);}
@@ -23,6 +23,7 @@ export async function POST(request:NextRequest){
   const input=await request.json().catch(()=>{throw new BillingError('Invalid JSON request.');});if(!input||typeof input!=='object'||Array.isArray(input))throw new BillingError('Invalid request.');
   if(input.action==='hard_delete')await hardDeleteBillingInvoice(input,access.actor.userId);
   else if(input.action==='suspend_account')await suspendBillingAccount(input,access.actor.userId);
+  else if(input.action==='set_billing_hold')await setBillingHold(input,access.actor.userId);
   else if(input.action==='save_agreement')await saveBillingAgreement(input,access.actor.userId);
   else if(input.action==='pause_agreement')await pauseBillingAgreement(input,access.actor.userId);
   else if(input.action==='save_plan')await saveBillingPlan(input);

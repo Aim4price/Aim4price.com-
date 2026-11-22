@@ -478,6 +478,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      const options=await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent));
      assert.equal(options.includes('Other business'),mode==='signup-business',mode+' shows the applicable business categories');
      await page.keyboard.press('Escape');
+     await page.click('input[name="signupPlan"]');
      await clickText('Next');await page.waitForSelector('input[name="name"]');await settledStep('signup-step-details');
      assert.ok(await page.$('#signup-step-details'),'Every account uses the same second step');
      await page.screenshot({path:path.join(evidence,mode+'-step2-'+width+'.png'),fullPage:true});

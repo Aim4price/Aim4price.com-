@@ -1,3 +1,5 @@
+import { registerOwnerReferral } from "./owner-referrals";
+import { ensureAccountProfileColumns } from "./account-profile";
 import { registerFreeSharingAccount } from './sharing-foundation';
 import { ensureBusinessWorkspace } from './business-workspaces';
 import { getSiteOrigin } from './email';
@@ -141,6 +143,10 @@ function createAuth() {
   },
   emailVerification: {
     sendOnSignUp: false,
+    afterEmailVerification: async user => {
+      await ensureAccountProfileColumns();
+      await getDb().query("update account_profiles set owner_trial_ends_at=now()+interval '30 days' where user_id=$1 and account_type='owner' and owner_trial_requested and owner_trial_ends_at is null and account_status='pending_payment'",[user.id]);
+    },
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url, token }) => {
       await sendAim4priceEmail({to:user.email,...buildAccessEmail({url,origin:getSiteOrigin(),emailChange:Boolean(JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()).updateTo)})});
@@ -164,6 +170,7 @@ function createAuth() {
               },
               {
                 accountType: readSignupField(context, "accountType"),
+                ownerTrial: readSignupWorkspaceField("accountAccess") === "trial",
                 businessName: readSignupField(context, "businessName"),
                 accountSubtype: readSignupField(context, "accountSubtype"),
                 introducedByOption: readSignupField(
@@ -181,7 +188,7 @@ function createAuth() {
               },
             );
           } catch (error) {
-            if (readSignupField(context, "accountType") === "business" || readSignupField(context, "accountAccess") === "free") throw error;
+            if (readSignupWorkspaceField("accountType") != null) throw error;
             console.error(
               "Failed to create initial Aim4price account profile",
               error,
@@ -189,6 +196,8 @@ function createAuth() {
           }
           if (readSignupField(context, "accountType") === "business") await registerFreeSharingAccount(user.id);
           if (readSignupField(context, "accountType") === "business") await ensureBusinessWorkspace(user.id);
+          const invite=readSignupWorkspaceField("ownerInvite");
+          if (readSignupWorkspaceField("accountType")==="owner" && typeof invite==="string") await registerOwnerReferral(user.id,invite);
           const billing = readSignupWorkspaceField("billingSignup") as SignupBilling | null;
           if (billing) await queueSignupInvoice(user.id, billing);
 

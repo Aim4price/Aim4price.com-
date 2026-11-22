@@ -20,6 +20,7 @@ import { isDatabaseSchemaReady } from "./database-schema-readiness";
 import { isMiddlemanAccountSubtype } from "./middleman-account";
 
 export type AccountProfile = {
+  trialEndsAt?: string | null;
   userId: string;
   name: string;
   displayName: string;
@@ -106,6 +107,7 @@ type AccountProfileRow = {
   phone: string | null;
   account_type: string | null;
   account_subtype: string | null;
+  owner_trial_ends_at?: Date | string | null;
   account_status: string | null;
   introduced_by_option: string | null;
   introduced_by_name: string | null;
@@ -688,6 +690,9 @@ async function ensureAccountProfileColumnsOnce(): Promise<void> {
   `));
 
   if (schemaReady) {
+    if (!await isDatabaseSchemaReady(() => db.query('select owner_trial_requested,owner_trial_ends_at from account_profiles where false'))) {
+      await db.query('alter table account_profiles add column if not exists owner_trial_requested boolean not null default false, add column if not exists owner_trial_ends_at timestamptz');
+    }
     await ensureAccountRoleSchema(db);
     accountProfileColumnsEnsured = true;
     return;
@@ -745,6 +750,8 @@ async function ensureAccountProfileColumnsOnce(): Promise<void> {
       add column if not exists phone text,
       add column if not exists account_type text not null default 'owner',
       add column if not exists account_subtype text not null default 'farmer',
+      add column if not exists owner_trial_requested boolean not null default false,
+      add column if not exists owner_trial_ends_at timestamptz,
       add column if not exists account_status text,
       add column if not exists suspension_reason text,
       add column if not exists billing_suspension_invoice_id uuid,
@@ -892,6 +899,7 @@ function mapAccountProfileRow(
 
   return {
     userId: user.id,
+    trialEndsAt: row?.owner_trial_ends_at ? new Date(row.owner_trial_ends_at).toISOString() : null,
     name: displayName,
     displayName,
     email: asText(user.email),
@@ -976,6 +984,7 @@ export async function createInitialAccountProfile(
     partnerDirectoryEnabled?: unknown;
     phone?: unknown;
     businessName?: unknown;
+    ownerTrial?: boolean;
   },
 ): Promise<void> {
   await ensureAccountProfileColumns();
@@ -1024,10 +1033,10 @@ export async function createInitialAccountProfile(
         province,
         town_city,
         partner_directory_enabled,
-        created_at,
+        owner_trial_requested, created_at,
         updated_at
       )
-      values ($1, $2, $13, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), now())
+      values ($1, $2, $13, $3, $4, $5, $6, $7, $8, $9, $10, $11, $14, now(), now())
       on conflict (user_id) do update set
         account_type = case
           when $12 then excluded.account_type
@@ -1061,6 +1070,7 @@ export async function createInitialAccountProfile(
       initialPartnerDirectoryEnabled,
       hasExplicitAccountType,
       asText(input?.businessName).slice(0, 200) || null,
+      initialAccountType === "owner" && input?.ownerTrial === true,
     ],
   );
 }
@@ -1086,7 +1096,8 @@ export async function getAccountProfile(user: {
         phone,
         account_type,
         account_subtype,
-        account_status,
+        case when account_type='owner' and account_status='pending_payment' and owner_trial_requested then owner_trial_ends_at end as owner_trial_ends_at,
+        case when account_type='owner' and account_status='pending_payment' and owner_trial_requested and owner_trial_ends_at>now() then 'active' else account_status end as account_status,
         introduced_by_option,
         introduced_by_name,
         vat_number,
@@ -1343,7 +1354,7 @@ export async function getAccountStatusForUser(user: {
   const db = getDb();
   const result = await db.query<{ account_status: string | null }>(
     `
-      select account_status
+      select case when account_type='owner' and account_status='pending_payment' and owner_trial_requested and owner_trial_ends_at>now() then 'active' else account_status end as account_status
       from account_profiles
       where user_id = $1
       limit 1
@@ -1361,7 +1372,7 @@ export async function isAccountActive(user: {
   if (isAim4priceAdminEmail(user.email)) return true;
   await ensureAccountProfileColumns();
   const result = await getDb().query<{ account_type: string; account_status: string }>(
-    'SELECT account_type, account_status FROM account_profiles WHERE user_id = $1 LIMIT 1', [user.id],
+    `SELECT account_type, case when account_type='owner' and account_status='pending_payment' and owner_trial_requested and owner_trial_ends_at>now() then 'active' else account_status end as account_status FROM account_profiles WHERE user_id = $1 LIMIT 1`, [user.id],
   );
   return await sharingPlan(user.id, result.rows[0]?.account_type) !== 'free' && !isRetiredAssistanceAccount(user) && hasDesktopAccess({accountType: result.rows[0]?.account_type, accountStatus: normalizeAccountStatus(result.rows[0]?.account_status)});
 }

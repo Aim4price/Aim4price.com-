@@ -3,6 +3,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 const SIGNUP_WORKSPACE_FIELDS = [
   "accountType",
   "accountAccess",
+  "ownerInvite",
   "businessName",
   "accountSubtype",
   "introducedByOption",

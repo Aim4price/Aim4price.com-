@@ -75,6 +75,7 @@ export default function AccountEditor({account, onSaved, onCancel, onExisting}: 
         {ACCOUNT_STATUS_VALUES.map(value => <option key={value} value={value}>{accountStatusLabel(value)}</option>)}
       </AdminSelect></label>}
     {account && <section className={styles.typePreview} aria-label="Account change preview">
+      <a className={styles.nameSecondaryButton} href={'/admin/billing?account='+encodeURIComponent(account.userId)}>Manage billing and holds</a>
       <h3>Review the change for {account.name}</h3>
       <p>{account.email} · {account.accountStatusLabel}</p>
       <table><thead><tr><th scope="col">Account details</th><th scope="col">Current</th><th scope="col">After saving</th></tr></thead>
