@@ -970,3 +970,15 @@
 .periodSwitch input:focus-visible + span { outline: 2px solid #246345; }
 .singlePlan { display: flex; align-items: center; min-height: 3.08rem; color: #194633; font-size: 1rem; font-weight: 650; }
 .longSelectMenu { grid-template-columns: repeat(auto-fit, minmax(min(100%, 8.7rem), 1fr)); }
+
+.authCard, .authCard :is(button, input, textarea, select), .customSelectMenu {
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
+}
+.authTitle, .signupForm :is(h2, h3) {
+  font-family: var(--font-heading, 'Montserrat'), sans-serif;
+  font-weight: 800;
+}
+.introducerChoices { display: flex; flex-wrap: wrap; gap: .65rem 1.25rem; padding: 0; margin: 0; border: 0; min-width: 0; }
+.introducerChoices legend { margin-bottom: .55rem; }
+.introducerChoices label { display: inline-flex; align-items: center; gap: .5rem; font: inherit; }
+.introducerChoices input { margin: 0; accent-color: var(--app-accent, #187451); }
