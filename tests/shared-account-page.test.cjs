@@ -178,7 +178,7 @@ test('Business opens its inbox directly and only reads shares for active verifie
   'next/navigation':{redirect:path=>{throw Error(path);}}
  });
  const inbox=async()=> (await page.default({})).props.children[1].props;
- assert.deepEqual(await inbox(),{freeBusiness:true,shares:['share'],notice:''});
+ assert.deepEqual(await inbox(),{shares:['share'],notice:''});
  await assert.rejects(page.default({searchParams:{returnTo:link}}),{message:link});
  verified=false;assert.deepEqual((await inbox()).shares,[]);
  paused=true;verified=true;assert.match((await inbox()).notice,/paused/);
