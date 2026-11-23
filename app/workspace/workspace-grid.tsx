@@ -45,8 +45,8 @@ export default function WorkspaceGrid({cards, role, userId, freeBusiness}: {
     </header>
     {editing && <ShareDisclosureDialog title="Customise workspace" titleId="workspace-card-options" closeLabel="Close workspace settings" onClose={() => setEditing(false)}>
       <fieldset className={styles.fields}><legend>Show cards</legend>
-      {freeBusiness && <p>Hiding a page here also hides it from Manage. Sign out is always available.</p>}
-      <div className={styles.options}>{cards.map(card => <label key={card.key}>
+      {(freeBusiness || role === 'owner') && <p>Hiding a page here also hides it from Manage. Sign out is always available.</p>}
+      <div className={styles.options} data-role={role}>{cards.map(card => <label key={card.key}>
         <input type="checkbox" checked={!hidden.includes(card.key)} onChange={event => save(event.target.checked ? hidden.filter(key => key !== card.key) : [...hidden, card.key])}/>{card.label}
       </label>)}</div>
       </fieldset>
