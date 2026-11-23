@@ -87,6 +87,36 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  });assert.equal(pages.length,5);assert(pages.every(n=>n.includes('RED-17')));assert.deepEqual(await page.evaluate(()=>window.renderedText),['1','1','1','1','1']);
  await click('Reset message');assert((await page.$eval('textarea',e=>e.value)).includes('Landini Super 110'));
  await page.screenshot({path:'/tmp/editable-outside-share.png'});
+ // Render the actual Business inbox card under the same desktop style scope as Leads.
+ await page.evaluate(()=>{
+   const lead=require('app/leads/page.module.css');
+   const item={...window.assets[0],assetId:'test-tractor'};
+   const inbox=React.createElement(require('components/asset-register/SharedAssetCards').default,{
+     inline:true,canRemove:true,initialAssetId:item.assetId,trackingAccessId:'grant',
+     share:{createdAt:'2026-10-01',senderName:'Farm',assets:[item]},
+   });
+   window.fixtureRoot.render(React.createElement('main',{className:[lead.leadsPage,lead.dealerOwnerParity,lead.dealerDesktopLeads].join(' ')},inbox));
+ });
+ await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Remove'));
+ const appearance=await page.evaluate(()=>{
+   const article=document.getElementById('asset-test-tractor');
+   const button=label=>[...article.querySelectorAll('button')].find(b=>b.textContent.trim()===label);
+   const controls=['Remove','Tracking','Close'].map(button);
+   const inner=article.querySelector('h2').closest('.'+require('app/leads/page.module.css').leadAssetCard);
+   return {
+     background:getComputedStyle(article).backgroundImage,
+     inset:inner.getBoundingClientRect().left-article.getBoundingClientRect().left,
+     widths:controls.map(b=>b.getBoundingClientRect().width),
+     colours:controls.map(b=>getComputedStyle(b).backgroundColor),
+     chevron:!!button('View details').querySelector('svg'),
+   };
+ });
+ assert.match(appearance.background,/radial-gradient/);
+ assert(appearance.inset>5,'The white asset card sits inside the mint frame');
+ assert(Math.max(...appearance.widths)-Math.min(...appearance.widths)<2,'Inbox controls have equal widths');
+ assert.notEqual(appearance.colours[0],appearance.colours[1],'Remove has the danger colour');
+ assert.equal(appearance.colours[1],appearance.colours[2]);
+ assert(appearance.chevron);
  console.log('PASS grouped asset identities, photo-to-asset mapping, multipage identity, editable outbound message, reset and preserved edits');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

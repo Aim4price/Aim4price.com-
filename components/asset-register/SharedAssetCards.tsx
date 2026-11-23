@@ -22,6 +22,7 @@ import SharedAssetFacts, {factStatusMark as statusMark} from "../leads/SharedAss
 import {useRouter} from "next/navigation";
 import LeadPhotoViewerModal from "../LeadPhotoViewerModal";
 import assetStyles from "../../app/asset-register/page.module.css";
+import workspaceStyles from "../WorkspacePrimitives.module.css";
 import leadStyles from "../../app/leads/page.module.css";
 import styles from "./SharedAssetCards.module.css";
 
@@ -205,14 +206,20 @@ export default function SharedAssetCards({
                   key={item.assetId || index}
                   id={item.assetId ? `asset-${item.assetId}` : undefined}
                   ref={isOpen ? openedCardRef : null}
-                  className={sharedStyles.frame}
+                  className={inline && isOpen
+                    ? `${assetStyles.cardToggleSurface} ${workspaceStyles.card} ${leadStyles.leadThread} ${leadStyles.leadThreadActive} ${leadStyles.leadThreadTracking} ${leadStyles.leadThreadOpen}`
+                    : sharedStyles.frame}
                 >
                   {isOpen ? (
                     <div className={sharedStyles.detailActions}>
-                      {inline ? <SharedAssetControls open workspace removing={removing} onToggle={closeCard}
-                        onRemove={canRemove && item.assetId ? () => void removeAsset(item.assetId!, item.title) : undefined}
-                        onTracking={trackingAccessId ? () => router.push('/tracking?open=' + encodeURIComponent(trackingAccessId)) : undefined}
-                      /> : <button type="button" className={`${sharedStyles.toggle} ${sharedStyles.secondary}`} aria-expanded={true}
+                      {inline ? (
+                        <div className={`${leadStyles.clientActionRow} ${leadStyles.trackingLeadActions} ${leadStyles.trackingLeadActionsOpen} ${trackingAccessId ? '' : leadStyles.trackingLeadActionsSingle}`}>
+                          <SharedAssetControls open workspace removing={removing} onToggle={closeCard}
+                            onRemove={canRemove && item.assetId ? () => void removeAsset(item.assetId!, item.title) : undefined}
+                            onTracking={trackingAccessId ? () => router.push('/tracking?open=' + encodeURIComponent(trackingAccessId)) : undefined}
+                          />
+                        </div>
+                      ) : <button type="button" className={`${sharedStyles.toggle} ${sharedStyles.secondary}`} aria-expanded={true}
                         aria-controls={`${panelPrefix}-${index}`} aria-label={`Close ${item.title}`} onClick={closeCard}>Close</button>}
                     </div>
                   ) : (
@@ -268,7 +275,11 @@ export default function SharedAssetCards({
                               className={`${assetStyles.expandButton} ${assetStyles.cardViewDetailsButton} ${leadStyles.leadQuickActionButton}`}
                               aria-expanded={showDetails} aria-controls={`${panelPrefix}-${index}`}
                               onClick={() => setDetailsAsset(showDetails ? null : item.assetId!)}>
-                              {showDetails ? 'Hide details' : 'View details'}
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"
+                                className={`${assetStyles.buttonIcon} ${assetStyles.assetDetailsChevron}`}>
+                                <path d={showDetails ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'}/>
+                              </svg>
+                              <span>{showDetails ? 'Hide details' : 'View details'}</span>
                             </button> : (enquiry && item.assetId && <SharedAssetSend creditTarget={creditToken?{token:creditToken,assetKey:item.assetId}:undefined} enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>)}
                             <LeadManageButton
                               label={`Manage ${item.title}`}
