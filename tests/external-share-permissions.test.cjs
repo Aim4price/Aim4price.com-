@@ -174,7 +174,11 @@ test('shared Excel reports retain their format and remain gated like PDFs',async
   assert.equal((await x.leads.loadProtectedLeadReport(token,id)).status,403);
   x.signIn();x.state.approved=true;
   const downloaded=await x.leads.loadProtectedLeadReport(token,id);assert.equal(downloaded.status,200);assert.equal(downloaded.report.content_type,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-  const route=load('app/api/asset-share-links/[token]/reports/[reportId]/route.ts',{'../../../../../../lib/guest-leads':x.leads});
+  const route=load('app/api/asset-share-links/[token]/reports/[reportId]/route.ts',{
+   '../../../../../../lib/guest-leads':x.leads,
+   '../../../../../../lib/auth-session':{getServerSession:async()=>({user:{id:'recipient'}})},
+   '../../../../../../lib/business-report-response':{meteredReport:async(response,request,actor)=>{assert.equal(actor,'recipient');assert.equal(request.method,'GET');return response;}},
+  });
   const response=await route.GET(new Request('https://local.test'),{params:{token,reportId:id}});
   assert.equal(response.headers.get('content-type'),downloaded.report.content_type);assert.match(response.headers.get('content-disposition'),/^attachment/);
   await x.base.revokeAssetShareLink('owner',token);assert.equal((await x.leads.loadProtectedLeadReport(token,id)).status,404);

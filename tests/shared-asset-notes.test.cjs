@@ -10,10 +10,12 @@ test('shared replies preserve live access, canonical owner notes and retry-safe 
  const query=(s,a)=>/create extension/i.test(s)?Promise.resolve({rows:[]}):a?pg.query(s,a):pg.exec(s).then(r=>r.at(-1));const db={getDb:()=>({query,connect:async()=>({query,release(){}})})};
  const state={access:'active',allowReply:true};class AccessError extends Error{constructor(m,status){super(m);this.status=status;}}
  const live=load('lib/live-shared-asset-access.ts',{'./external-lead-access':{externalLeadAccess:async()=>({access:state.access,user:{id:'recipient',email:'test@example.test'}}),leadAllows:()=>false,ExternalLeadAccessError:AccessError},'./guest-leads':{readLeadPage:async()=>({ownerId:'owner',share:{assets:[{assetId}]},details:{allowReply:state.allowReply}})}});
- const foundation=load('lib/sharing-foundation.ts',{'./db':db});
+ const debits=[];
+ const foundation=load('lib/sharing-foundation.ts',{'./db':db,'./business-credits':{spendBusinessCredit:async (_client,actor,label,key)=>debits.push({actor,label,key})}});
  const service=load('lib/shared-asset-notes.ts',{'./db':db,'./live-shared-asset-access':live,'./partner-access':{ensurePartnerAccessTables:async()=>{}},'./sharing-foundation':foundation,'./public-invoice-drop-security':{validatePublicInvoiceFiles:async([f])=>[{fileName:f.name,contentType:f.type,data:Buffer.from(await f.arrayBuffer())}]}});
  function form(quote=false,id=randomUUID()){const f=new FormData();f.set('note','Please see quote');f.set('requestId',id);if(quote)f.set('attachment',new File(['%PDF-test'],'quote.pdf',{type:'application/pdf'}));return f;}
  const id=randomUUID();await service.sendSharedAssetNote(token,assetId,form(true,id));await service.sendSharedAssetNote(token,assetId,form(true,id));
+ assert.deepEqual(debits,[{actor:'recipient',label:'Added a note',key:'shared-note:'+id}]);
  const rows=(await pg.query('SELECT * FROM asset_partner_notes')).rows;assert.equal(rows.length,1);assert.equal(rows[0].owner_user_id,'owner');assert.equal(rows[0].partner_user_id,'recipient');assert.equal(rows[0].asset_register_item_id,assetId);assert.equal(rows[0].attachment_file_name,'quote.pdf');
  assert.equal((await foundation.sharingUsageSummary('recipient')).contribution.count,1);assert.equal((await foundation.sharingUsageSummary('recipient')).upload.count,1);
  state.access='sign-in';await assert.rejects(service.sendSharedAssetNote(token,assetId,form()),/authorised/);state.access='active';

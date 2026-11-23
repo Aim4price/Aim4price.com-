@@ -1,3 +1,4 @@
+import { meteredReport } from '../../../../lib/business-report-response';
 import { publicValuationThrottle } from '../../../../lib/public-valuation-throttle';
 import { getAnyServerSession } from '../../../../lib/auth-session';
 import { canUseEstimateBreakdown } from '../../../../lib/estimate-breakdown-access';
@@ -1098,14 +1099,14 @@ export async function POST(request: NextRequest) {
     const baseHtml = renderValuationReportHtml(payload);
     const html = breakdown ? appendEstimateBreakdownHtml(baseHtml, breakdown, isPlainRecord(rawPayload) && rawPayload.includeBreakdown === true) : baseHtml;
 
-    return new NextResponse(html, {
+    return meteredReport(new NextResponse(html, {
       status: 200,
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Content-Disposition': `inline; filename="${payload.fileName.replace(/\.pdf$/i, '.html')}"`,
         'Cache-Control': 'no-store',
       },
-    });
+    }), request, (await getAnyServerSession())?.user.id, 'Downloaded a valuation report');
   } catch (error) {
     console.error('valuation report failed', error);
     return NextResponse.json(

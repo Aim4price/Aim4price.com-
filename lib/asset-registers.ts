@@ -1278,7 +1278,6 @@ export async function createAssetRegister(userId: string, input: AssetRegisterIn
 }
 
 export async function updateAssetRegister(userId: string, registerId: string, input: AssetRegisterInput): Promise<AssetRegisterSummary> {
-  const db = getDb();
   await getOrCreatePrimaryAssetRegister(userId);
 
   const businessName = normalizeRegisterName(input.businessName);
@@ -1290,7 +1289,8 @@ export async function updateAssetRegister(userId: string, registerId: string, in
   const hasLogoUrls = Object.prototype.hasOwnProperty.call(input, 'logoUrls');
   const hasLogoVisibility = Object.prototype.hasOwnProperty.call(input, 'showLogosOnRegister');
 
-  const result = await db.query<AssetRegisterRow>(
+  const {saveBusinessResult} = await import('./business-credits');
+  const result = await saveBusinessResult(userId, 'Updated a register', writer => writer.query<AssetRegisterRow>(
     `
       update public.asset_registers
       set
@@ -1334,7 +1334,7 @@ export async function updateAssetRegister(userId: string, registerId: string, in
       normalizeLogoVisibility(input.showLogosOnRegister, true),
       input.includeInCombinedTotals ?? null,
     ],
-  );
+  ), saved => saved.rows.length ? 'register-edit:' + crypto.randomUUID() : null);
 
   if (!result.rows[0]) {
     throw new Error('ASSET_REGISTER_NOT_FOUND');
@@ -1350,7 +1350,6 @@ export async function updateAssetRegisterLogo(input: {
   logoUrls: string[];
   showLogosOnRegister?: boolean | null;
 }): Promise<AssetRegisterSummary> {
-  const db = getDb();
   const registerId = cleanText(input.registerId);
 
   if (!registerId) {
@@ -1359,7 +1358,8 @@ export async function updateAssetRegisterLogo(input: {
 
   await getOrCreatePrimaryAssetRegister(input.userId);
 
-  const result = await db.query<AssetRegisterRow>(
+  const {saveBusinessResult} = await import('./business-credits');
+  const result = await saveBusinessResult(input.userId, 'Updated a register', writer => writer.query<AssetRegisterRow>(
     `
       update public.asset_registers
       set
@@ -1391,7 +1391,7 @@ export async function updateAssetRegisterLogo(input: {
       JSON.stringify(normalizeLogoUrls(input.logoUrls)),
       normalizeLogoVisibility(input.showLogosOnRegister, true),
     ],
-  );
+  ), saved => saved.rows.length ? 'register-edit:' + crypto.randomUUID() : null);
 
   if (!result.rows[0]) {
     throw new Error('ASSET_REGISTER_NOT_FOUND');

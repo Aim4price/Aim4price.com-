@@ -1,5 +1,5 @@
 'use client';
-import { useEffect,useId,useState,type ReactNode } from 'react';
+import { useEffect,useId,useRef,useState,type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { money, type BillingPlan } from '../lib/billing-shared';
 import creditStyles from './BusinessCreditControls.module.css';
@@ -7,10 +7,27 @@ import ShareDisclosureDialog from './asset-register/ShareDisclosureDialog';
 import styles from '../app/business/page.module.css';
 
 export type CreditTarget={token:string;assetKey:string;visitId?:string};
-export async function creditAction(target:CreditTarget,action:'manage'|'share'|'send'|'check',phase:'complete'|'reserve'|'cancel'|'close',requestId:string,visitId?:string) {
+export async function creditAction(target:CreditTarget,action:'manage'|'report'|'share'|'send'|'check',phase:'complete'|'reserve'|'cancel'|'close',requestId:string,visitId?:string) {
  const response=await fetch('/api/business-credits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...target,action,phase,requestId,visitId:visitId??target.visitId}),keepalive:phase==='close'||phase==='cancel'});
  const result=await response.json();
  if(!response.ok) throw Error(result.code||result.error||'Please try again.');
+}
+export function useMeteredManage(metered: boolean, onError: (message:string)=>void) {
+ const busy = useRef(false);
+ const attempt = useRef<{key:string; id:string} | null>(null);
+ return async (key:string, open:()=>void) => {
+   if (!metered) { open(); return; }
+   if (busy.current) return;
+   busy.current = true;
+   try {
+     if (attempt.current?.key !== key) attempt.current = {key,id:crypto.randomUUID()};
+     await creditAction({token:'',assetKey:key},'manage','complete',attempt.current.id);
+     attempt.current = null;
+     open();
+   } catch (error) {
+     onError(error instanceof Error && error.message === 'BUSINESS_CREDIT_LIMIT' ? 'Your monthly credits have been used.' : 'Could not open Manage. Please try again.');
+   } finally { busy.current = false; }
+ };
 }
 export function CreditNotice({message,onClose}:{message:string;onClose:()=>void}) {
  const id=useId(),limit=message==='BUSINESS_CREDIT_LIMIT';

@@ -96,7 +96,8 @@ export async function GET(request: NextRequest) {
         vat, dealer: row.business_name, town: row.town || "",
       }));
       const countReport = async () => {
-        if (actor.metered) await (await import('../../../lib/business-credits')).recordBusinessReport(actor.id,'Generated a parts report',[q.get('network'),vat,rows]);
+        if (request.method === 'HEAD') return;
+        if (actor.metered) await (await import('../../../lib/business-credits')).recordBusinessReport(actor.id,'Generated a parts report');
       };
       if (q.get("format") === "xlsx") {
         const {buildPartsWorkbook} = await import("../../../lib/parts-network-report");

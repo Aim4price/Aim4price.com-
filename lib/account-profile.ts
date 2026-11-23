@@ -20,6 +20,7 @@ import { isDatabaseSchemaReady } from "./database-schema-readiness";
 import { isMiddlemanAccountSubtype } from "./middleman-account";
 
 export type AccountProfile = {
+  meteredBusiness?: boolean;
   inviteId?: string;
   trialEndsAt?: string | null;
   userId: string;

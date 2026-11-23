@@ -3,11 +3,18 @@ import type { OwnerWorkspaceContext } from './owner-workspace-access';
 import type { TeamPermission } from './team-access-policy';
 import { TeamAccessError } from './team-access-policy';
 import { lockTeamPermission, requireTeamAsset, auditTeam } from './team-access';
-export type WorkspaceWriteGuard = {before?: (client:PoolClient)=>Promise<void>; after?: (client:PoolClient)=>Promise<void>};
+export type WorkspaceWriteGuard = {skipReplayDebit?: boolean; before?: (client:PoolClient)=>Promise<void>; after?: (client:PoolClient)=>Promise<void>};
 /** Run inside the mutation transaction, before record locks. Revocation and scope changes serialize with writes. */
 export function teamWriteGuard(workspace:OwnerWorkspaceContext, permission:TeamPermission, target:{assetId?:string;storageId?:string;fuelSlipId?:string;invoiceId?:string;budgetId?:string;globalBudget?:boolean} = {}):WorkspaceWriteGuard {
   const scope = workspace.team;
-  if (!scope) return {};
+  if (!scope && !workspace.meteredBusiness) return {};
+  if (!scope) {
+    const key = 'ledger:' + crypto.randomUUID();
+    return {skipReplayDebit:true, after:async client => {
+      const {spendBusinessCredit} = await import('./business-credits');
+      await spendBusinessCredit(client,workspace.actorUserId,'Saved a ledger entry',key);
+    }};
+  }
   return {
     before:async client=>{
       const grant = await lockTeamPermission(client, scope, permission);

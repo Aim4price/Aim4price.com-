@@ -98,8 +98,8 @@ test('normal report routes return their own HTML builders as canonical PDFs and 
     assert.doesNotMatch(route, /buildBrandedReportPdfFromHtml/);
   }
 
-  assert.match(routes[0], /buildDepreciationReport\([\s\S]*?return buildReportDocumentResponse\(html, request, baseFileName, reportFormat\)/);
-  assert.match(routes[0], /buildFuelReport\([\s\S]*?buildMaintenanceReport\([\s\S]*?return buildReportDocumentResponse\(html, request, baseFileName, reportFormat\)/);
+  assert.match(routes[0], /buildDepreciationReport\([\s\S]*?return meteredReport\(await buildReportDocumentResponse\(html, request, baseFileName, reportFormat\)/);
+  assert.match(routes[0], /buildFuelReport\([\s\S]*?buildMaintenanceReport\([\s\S]*?return meteredReport\(await buildReportDocumentResponse\(html, request, baseFileName, reportFormat\)/);
   assert.match(routes[1], /const html = buildAssetMaintenanceReportHtml\(options\);[\s\S]*?renderReportHtmlToPdf\(html/);
   assert.match(routes[2], /const html = buildMyInvoicesReportHtml\(options\);[\s\S]*?renderReportHtmlToPdf\(html/);
 });

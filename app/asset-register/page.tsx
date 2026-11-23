@@ -43,6 +43,7 @@ export default async function AssetRegisterPage({
         <>
           <AnnualReviewNotice />
           <AssetRegisterClient
+            meterBusinessCredits={Boolean(profile.meteredBusiness)}
             dealerRegisterMode="dealer"
             registerManagementHref="/asset-registers"
           />
@@ -56,6 +57,7 @@ export default async function AssetRegisterPage({
         <>
           <AnnualReviewNotice />
           <AssetRegisterClient
+            meterBusinessCredits={Boolean(profile.meteredBusiness)}
             dealerRegisterMode="client"
             registerManagementHref="/asset-registers"
           />
@@ -74,6 +76,7 @@ export default async function AssetRegisterPage({
         <>
           <AnnualReviewNotice />
           <AssetRegisterClient
+            meterBusinessCredits={Boolean(profile.meteredBusiness)}
             dealerRegisterMode={dealerRegisterMode}
             registerManagementHref="/asset-registers"
           />

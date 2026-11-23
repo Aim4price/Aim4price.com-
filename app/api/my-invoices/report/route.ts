@@ -1,3 +1,4 @@
+import { meteredReport } from '../../../../lib/business-report-response';
 import { requireLiveSharedAsset } from '../../../../lib/live-shared-asset-access';
 import { expandOwnershipBudgetHistory } from '../../../../lib/ownership-budget-tracker';
 import { listCostBudgetHistory } from '../../../../lib/cost-budgets';
@@ -258,27 +259,27 @@ export async function GET(request: NextRequest) {
       const workbook = buildMyInvoicesWorkbook(options);
       const buffer = createXlsxWorkbook(workbook);
 
-      return new NextResponse(buffer, {
+      return meteredReport(new NextResponse(buffer, {
         status: 200,
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'Content-Disposition': `attachment; filename="${formatForHeader(filename)}"`,
           'Cache-Control': 'no-store',
         },
-      });
+      }), request, workspace.actorUserId, 'Downloaded a cost of ownership report');
     }
 
     const html = buildMyInvoicesReportHtml(options);
 
     if (format === 'html') {
-      return new NextResponse(html, {
+      return meteredReport(new NextResponse(html, {
         status: 200,
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Content-Disposition': `inline; filename="${formatForHeader(filename)}"`,
           'Cache-Control': 'no-store',
         },
-      });
+      }), request, workspace.actorUserId, 'Downloaded a cost of ownership report');
     }
 
     const pdf = await renderReportHtmlToPdf(html, {
@@ -286,7 +287,7 @@ export async function GET(request: NextRequest) {
       cookie: request.headers.get('cookie') ?? '',
     });
 
-    return new NextResponse(pdf, {
+    return meteredReport(new NextResponse(pdf, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
@@ -295,7 +296,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'no-store',
         'X-Content-Type-Options': 'nosniff',
       },
-    });
+    }), request, workspace.actorUserId, 'Downloaded a cost of ownership report');
   } catch (error) {
     console.error('Aim4price My Cost Ledger report failed.', error);
     return NextResponse.json({ ok: false, error: 'The Cost of Ownership report could not be generated.' }, { status: 500 });

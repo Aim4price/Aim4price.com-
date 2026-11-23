@@ -1,3 +1,4 @@
+import { maintenanceEntryDebit } from '../../../../lib/business-credits';
 import { teamMaintenanceResponse } from '../../../../lib/team-maintenance';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
@@ -61,7 +62,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const record = await updateAssetMaintenanceRecord(userId, maintenanceId, body);
+    const record = await updateAssetMaintenanceRecord(userId, maintenanceId, body, maintenanceEntryDebit(userId,true));
     const data = await listAssetMaintenanceData(userId, {});
     return NextResponse.json({ ok: true, record, ...data });
   } catch (error) {

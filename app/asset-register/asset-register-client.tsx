@@ -1,4 +1,5 @@
 'use client';
+import { useMeteredManage } from '../../components/BusinessCreditControls';
 import AssetAverageUsage from '../../components/asset-register/AssetAverageUsage';
 import { PageHelpHeading } from '../../components/PageHelp';
 import MarketplacePublishReview from '../../components/MarketplacePublishReview';
@@ -6277,6 +6278,7 @@ function renderManualAssetTypeIcon(assetKind: AssetKind, className?: string) {
 }
 
 export default function AssetRegisterClient({
+  meterBusinessCredits = false,
   desktopAccess,
   showAppHeader = true,
   registerManagementHref = '/asset-registers',
@@ -6284,6 +6286,7 @@ export default function AssetRegisterClient({
   dealerRegisterBaseHref = '/asset-register',
 }: {
 
+  meterBusinessCredits?: boolean;
   desktopAccess?: { data: TeamRegisterData; membership: string; onManage: (id: string, section?: "details" | "maintenance" | "documents" | "photos") => void; onUpload: (id: string, kind: "photos" | "documents", files: File[]) => Promise<void>; onSave: (id: string, patch: Record<string, unknown>) => Promise<void>; onRefresh: () => void };
   showAppHeader?: boolean;
   registerManagementHref?: string;
@@ -6291,6 +6294,7 @@ export default function AssetRegisterClient({
   dealerRegisterBaseHref?: string;
 } = {}) {
 
+  const openManage = useMeteredManage(meterBusinessCredits,message => setNotice({tone:'error',message}));
   const desktop = useDesktopControls();
   const buildOwnerAssetPageHref = (...args: Parameters<typeof ownerAssetPageHref>) => desktopUrl(ownerAssetPageHref(...args), desktopAccess?.membership);
   // The shared renderer must never call owner endpoints while displaying a delegated identity.
@@ -16751,7 +16755,7 @@ export default function AssetRegisterClient({
                                     data-access-restricted={desktopAccess ? "true" : undefined}
                                     type="button"
                                     className={`${styles.optionsButton} ${styles.cardManageButton}`}
-                                    onClick={() => groupAnchorAsset && openAssetGroupManager(groupAnchorAsset)}
+                                    onClick={() => groupAnchorAsset && void openManage(group.id, () => openAssetGroupManager(groupAnchorAsset))}
                                       data-tooltip="Manage umbrella"
                                     disabled={!groupAnchorAsset}
                                     aria-label={`Edit ${group.name}`}
@@ -17050,7 +17054,7 @@ export default function AssetRegisterClient({
                               <button
                                 type="button"
                                 className={`${styles.optionsButton} ${styles.cardManageButton}`}
-                                onClick={() => openActionDialog(asset)}
+                                onClick={() => void openManage(asset.id, () => openActionDialog(asset))}
                                       data-tooltip="Manage asset"
                               >
                                 <ManageIcon className={styles.buttonIcon} />

@@ -1,3 +1,4 @@
+import { meteredReport } from '../../../../lib/business-report-response';
 import { requireLiveSharedAsset } from '../../../../lib/live-shared-asset-access';
 import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextRequest, NextResponse } from 'next/server';
@@ -4143,7 +4144,7 @@ export async function GET(request: NextRequest) {
         buildDepreciationReportWorkbook(asset, logEntries, annualSummary, logSummary, ownerDetails, generatedAt, reportDateRange.label),
       );
 
-      return new NextResponse(workbook, {
+      return meteredReport(new NextResponse(workbook, {
         status: 200,
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -4152,12 +4153,12 @@ export async function GET(request: NextRequest) {
           'Cache-Control': 'private, no-store',
           'X-Content-Type-Options': 'nosniff',
         },
-      });
+      }), request, session.user.id, 'Downloaded an asset report');
     }
 
     const html = buildDepreciationReport(asset, logEntries, ownerDetails, generatedAt, logoUrl, reportDateRange.label, reportAssets);
 
-    return buildReportDocumentResponse(html, request, baseFileName, reportFormat);
+    return meteredReport(await buildReportDocumentResponse(html, request, baseFileName, reportFormat), request, session.user.id, 'Downloaded an asset report');
   }
 
   const eventGroups = await Promise.all(
@@ -4191,7 +4192,7 @@ export async function GET(request: NextRequest) {
         : buildMaintenanceReportWorkbook(asset, events, ownerDetails, generatedAt, reportDateRange.label, maintenanceReportType),
     );
 
-    return new NextResponse(workbook, {
+    return meteredReport(new NextResponse(workbook, {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -4200,12 +4201,12 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'private, no-store',
         'X-Content-Type-Options': 'nosniff',
       },
-    });
+    }), request, session.user.id, 'Downloaded an asset report');
   }
 
   const html = reportKind === 'fuel'
     ? buildFuelReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, reportAssets)
     : buildMaintenanceReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, maintenanceReportType);
 
-  return buildReportDocumentResponse(html, request, baseFileName, reportFormat);
+  return meteredReport(await buildReportDocumentResponse(html, request, baseFileName, reportFormat), request, session.user.id, 'Downloaded an asset report');
 }

@@ -39,6 +39,7 @@ import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
+import { creditAction, useMeteredManage } from '../../components/BusinessCreditControls';
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { createPortal } from '../../components/WebsitePortal';
 import dynamic from 'next/dynamic';
@@ -1547,7 +1548,7 @@ function buildMethodCards(lead: AssetLead): ReportMethodCard[] {
   return cards;
 }
 
-function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = 'full'): boolean {
+function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = 'full', target?: Window): boolean {
   const snapshot = registerLeadSnapshot(lead);
   const allRegisterAssets = registerLeadAssets(lead);
   const reportAssets = filterRegisterLeadAssetsByPdfReportKind(allRegisterAssets, reportKind);
@@ -1648,12 +1649,12 @@ function downloadFullRegisterLead(lead: AssetLead, reportKind: PdfReportKind = '
     ],
     rows,
     footerNote: "This PDF is generated from a once-off full-register lead snapshot. It does not provide live access to the owner's asset register.",
-  });
+  }, target);
 }
 
-function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'): boolean {
+function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full', target?: Window): boolean {
   if (isFullRegisterLead(lead)) {
-    return downloadFullRegisterLead(lead, reportKind);
+    return downloadFullRegisterLead(lead, reportKind, target);
   }
 
   const value = assetValue(lead);
@@ -1712,7 +1713,7 @@ function downloadLeadAsset(lead: AssetLead, reportKind: PdfReportKind = 'full'):
       { label: 'Business email', value: ownerEmail(lead) || '—' },
     ],
     footerNote: 'Lead asset valuation PDF. This lead is for private partner follow-up outside Aim4price.',
-  });
+  }, target);
 
   return Boolean(didOpen);
 }
@@ -1790,6 +1791,7 @@ function leadMatchesSearch(lead: AssetLead, search: string): boolean {
 }
 
 type LeadsClientProps = {
+  meterBusinessCredits?: boolean;
   dealerAppMode?: boolean;
   dealerWorkspaceMode?: boolean;
   allowDealerCosts?: boolean;
@@ -1799,6 +1801,7 @@ type LeadsClientProps = {
 };
 
 export default function LeadsClient({
+  meterBusinessCredits = false,
   dealerAppMode = false,
   dealerWorkspaceMode,
   allowDealerCosts = true,
@@ -1831,6 +1834,7 @@ export default function LeadsClient({
   const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
   const [assetPhotoModal, setAssetPhotoModal] = useState<PhotoModalState | null>(null);
   const [sentPhotoModal, setSentPhotoModal] = useState<PhotoModalState | null>(null);
+  const openManage = useMeteredManage(meterBusinessCredits,message => setNotice({tone:'error',message}));
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [qrLeadAsset, setQrLeadAsset] = useState<LeadQrModalState | null>(null);
   const [copiedQrLeadId, setCopiedQrLeadId] = useState<string | null>(null);
@@ -2597,8 +2601,8 @@ export default function LeadsClient({
     }
   }
 
-  function handleDownloadLead(lead: AssetLead, reportKind: PdfReportKind = 'full'): boolean {
-    const didOpen = downloadLeadAsset(lead, reportKind);
+  function handleDownloadLead(lead: AssetLead, reportKind: PdfReportKind = 'full', target?: Window): boolean {
+    const didOpen = downloadLeadAsset(lead, reportKind, target);
     if (!didOpen) {
       setNotice({ tone: 'error', message: 'Enable pop-ups to download or print the lead report PDF.' });
     }
@@ -2666,7 +2670,25 @@ export default function LeadsClient({
     if (isDownloadingLeadReport) return;
 
     const reportOption = getPdfReportOption(reportKind);
-    const didOpen = handleDownloadLead(lead, reportKind);
+    let target: Window | undefined;
+    if (meterBusinessCredits) {
+      target = window.open('', '_blank') ?? undefined;
+      if (!target) {
+        setNotice({tone:'error',message:'Allow pop-ups to download the report.'});
+        return;
+      }
+      setIsDownloadingLeadReport(true);
+      try {
+        await creditAction({token:'',assetKey:lead.id},'report','complete',crypto.randomUUID());
+      } catch (error) {
+        target.close();
+        setNotice({tone:'error',message:error instanceof Error && error.message === 'BUSINESS_CREDIT_LIMIT' ? 'Your monthly credits have been used.' : 'Could not download the report. Please try again.'});
+        return;
+      } finally {
+        setIsDownloadingLeadReport(false);
+      }
+    }
+    const didOpen = handleDownloadLead(lead, reportKind, target);
 
     if (didOpen) {
       setReportLead(null);
@@ -3651,7 +3673,7 @@ export default function LeadsClient({
                   </button>
                   )}
 
-                  <LeadManageButton onClick={() => setManagedLead(lead)} />
+                  <LeadManageButton onClick={() => void openManage(lead.id, () => setManagedLead(lead))} />
                 </div>
             </>}
           >

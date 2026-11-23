@@ -3282,10 +3282,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Asset Register export is only available to Owner and Business inventory accounts.' }, { status: 403 });
     }
 
-    const countReport = async (bundles:RegisterExportBundle[]) => {
+    const countReport = async () => {
+      if (request.method === 'HEAD') return;
       if (profile.accountType !== 'business' && !sharedScope?.business) return;
       const {recordBusinessReport} = await import('../../../../lib/business-credits');
-      await recordBusinessReport(sharedScope?.user.id || ownerUserId,'Generated a register report',[ownerUserId,reportKind,bundles]);
+      await recordBusinessReport(sharedScope?.user.id || ownerUserId,'Generated a register report');
     };
     const scopeParam = cleanText(params.get('scope')).toLowerCase();
     const isScopedExport = scopeParam === 'all' || scopeParam === 'single' || scopeParam === 'combined';
@@ -3404,7 +3405,7 @@ export async function GET(request: NextRequest) {
           : await renderFullRegisterReportHtml(bundles, exportProfile, generatedAt, request.url);
         const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
 
-        await countReport(bundles);
+        await countReport();
 
         return buildRegisterSummaryHtmlResponse(html, fileName);
       }
@@ -3419,7 +3420,7 @@ export async function GET(request: NextRequest) {
           });
           const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.pdf`;
 
-          await countReport(bundles);
+          await countReport();
 
           return new NextResponse(pdf, {
             status: 200,
@@ -3439,7 +3440,7 @@ export async function GET(request: NextRequest) {
         });
         const fileName = `aim4price-asset-registers-${ownerSlug}-${filenameDate}.pdf`;
 
-        await countReport(bundles);
+        await countReport();
 
         return new NextResponse(pdf, {
           status: 200,
@@ -3466,7 +3467,7 @@ export async function GET(request: NextRequest) {
         ? `aim4price-register-summary-${ownerSlug}-${filenameDate}.xlsx`
         : `aim4price-asset-registers-${ownerSlug}-${filenameDate}.xlsx`;
 
-      await countReport(bundles);
+      await countReport();
 
       return new NextResponse(workbook, {
         status: 200,
@@ -3540,7 +3541,7 @@ export async function GET(request: NextRequest) {
         : await renderFullRegisterReportHtml([{ register, items }], exportProfile, generatedAt, request.url);
       const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
 
-      await countReport([{register,items}]);
+      await countReport();
 
       return buildRegisterSummaryHtmlResponse(html, fileName);
     }
@@ -3556,7 +3557,7 @@ export async function GET(request: NextRequest) {
         });
         const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.pdf`;
 
-        await countReport([{register,items}]);
+        await countReport();
 
         return new NextResponse(pdf, {
           status: 200,
@@ -3576,7 +3577,7 @@ export async function GET(request: NextRequest) {
       });
       const fileName = `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.pdf`;
 
-      await countReport([{register,items}]);
+      await countReport();
 
       return new NextResponse(pdf, {
         status: 200,
@@ -3598,7 +3599,7 @@ export async function GET(request: NextRequest) {
       ? `aim4price-register-summary-${ownerSlug}-${filenameDate}.xlsx`
       : `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.xlsx`;
 
-    await countReport([{register,items}]);
+    await countReport();
 
     return new NextResponse(workbook, {
       status: 200,

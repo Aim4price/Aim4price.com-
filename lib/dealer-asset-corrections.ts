@@ -734,6 +734,7 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       loaded.rows[0] = accepted.rows[0];
     }
     if(input.sourceType==='external')await recordSharingUsage({accountId:input.dealerUserId,actorId:input.dealerUserId,token:sourceId.split(':')[0],assetId:asset.id,metric:'contribution',eventKey:correctionId+':'+input.field},client);
+    else await (await import('./business-credits')).spendBusinessCredit(client,input.dealerUserId,'Submitted an asset correction','correction:'+correctionId);
     await client.query('commit');
     if (!loaded.rows[0]) throw new Error('CORRECTION_NOT_CREATED');
     if (directUpdates) {

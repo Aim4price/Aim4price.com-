@@ -802,8 +802,8 @@ export function openCanonicalReportHtml(title: string, html: string): boolean {
   return writeCanonicalReportHtml(window.open('', '_blank'), title, html);
 }
 
-function openPrintWindow(title: string, html: string): boolean {
-  return openCanonicalReportHtml(title, html);
+function openPrintWindow(title: string, html: string, target?: Window): boolean {
+  return target ? writeCanonicalReportHtml(target, title, html) : openCanonicalReportHtml(title, html);
 }
 
 function renderLogoBlock(logoUrl: string, documentLabel: string): string {
@@ -2470,10 +2470,11 @@ export function buildAssetSheetReportHtml(payload: AssetSheetPayload): string {
 </html>`;
 }
 
-export function openAssetSheetPrint(payload: AssetSheetPayload): boolean {
+export function openAssetSheetPrint(payload: AssetSheetPayload, target?: Window): boolean {
   return openPrintWindow(
     `${payload.heroTitle} - Aim4price asset report`,
     buildAssetSheetReportHtml(payload),
+    target,
   );
 }
 
@@ -3519,10 +3520,11 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
   return html;
 }
 
-export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPayload): boolean {
+export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPayload, target?: Window): boolean {
   return openPrintWindow(
     `${payload.ownerName} - Aim4price asset register report`,
     buildAssetRegisterSummaryReportHtml(payload),
+    target,
   );
 }
 

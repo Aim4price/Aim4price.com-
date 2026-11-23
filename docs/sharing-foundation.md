@@ -15,7 +15,7 @@ New free registrations use the Business account type and the normal permanent us
 
 ## Usage and sessions
 
-Business credits are pooled per workspace and reset at midnight in South Africa on the first of each month. The 500-credit trial counts Manage opens, successfully saved messages and confirmed external shares. A completed action inside its active Manage visit has zero additional cost. External drafts require sender confirmation. Account shows balances, recent usage and the paid upgrade request. Admin confirms the subscription in Sharing usage, preserving the Business identity. Set `AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT=true` to enforce the cap after the trial. Without this setting, activity is recorded beyond 500.
+Business credits are pooled per workspace and reset at midnight in South Africa on the first of each month. Free Business uses one credit per Manage open, report download or saved entry. Saving inside Manage is a separate action. Repeated report downloads each use one credit. Viewing assets and sharing links are free. Account shows the balance and upgrade option. Admin confirms the subscription in Sharing usage, preserving the Business identity. Set `AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT=true` to enforce the cap after the trial. Without this setting, activity is recorded beyond 500.
 
 The original sharing analytics and draft allowances are separate from this ledger. All draft allowances are observation-only. Zero does not block access. Their totals do not debit the Business credit balance.
 

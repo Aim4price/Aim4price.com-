@@ -2707,7 +2707,7 @@ export async function updateAssetRegisterItemNames(
   userId: string,
   input: UpdateAssetRegisterItemNamesInput,
 ): Promise<AssetRegisterItem> {
-  const db = getDb();
+  const { saveBusinessResult } = await import('./business-credits');
   const schema = await getAssetRegisterSchema();
   const existing = await getAssetRegisterItemById(userId, input.assetId);
 
@@ -2749,7 +2749,7 @@ export async function updateAssetRegisterItemNames(
 
   const update = buildUpdateSetClause(fields);
   const registerPlaceholder = `$${update.values.length + 3}`;
-  const result = await db.query<AssetRegisterRow>(
+  const result = await saveBusinessResult(userId, 'Updated asset details', writer => writer.query<AssetRegisterRow>(
     `
       update asset_register_items
       set
@@ -2761,7 +2761,7 @@ export async function updateAssetRegisterItemNames(
         ${buildSelectList(schema)}
     `,
     [userId, input.assetId, ...update.values, asText(input.registerId)],
-  );
+  ), saved => saved.rows.length ? 'asset-edit:' + crypto.randomUUID() : null);
 
   const row = result.rows[0];
   if (!row) {
@@ -2780,7 +2780,7 @@ export async function updateAssetRegisterItemMedia(
     documents?: AssetRegisterDocument[];
   },
 ): Promise<AssetRegisterItem> {
-  const db = getDb();
+  const { saveBusinessResult } = await import('./business-credits');
   const schema = await getAssetRegisterSchema();
   const existing = await getAssetRegisterItemById(userId, input.assetId);
 
@@ -2800,7 +2800,7 @@ export async function updateAssetRegisterItemMedia(
   }
 
   const update = buildUpdateSetClause(fields);
-  const result = await db.query<AssetRegisterRow>(
+  const result = await saveBusinessResult(userId, 'Updated asset details', writer => writer.query<AssetRegisterRow>(
     `
       update asset_register_items
       set
@@ -2810,7 +2810,7 @@ export async function updateAssetRegisterItemMedia(
         ${buildSelectList(schema)}
     `,
     [userId, input.assetId, ...update.values],
-  );
+  ), saved => saved.rows.length ? 'asset-edit:' + crypto.randomUUID() : null);
 
   const row = result.rows[0];
   if (!row) {
@@ -2827,7 +2827,7 @@ export async function updateAssetRegisterItemFlag(
     isFlagged: boolean;
   },
 ): Promise<AssetRegisterItem> {
-  const db = getDb();
+  const { saveBusinessResult } = await import('./business-credits');
   const schema = await getAssetRegisterSchema();
   const existing = await getAssetRegisterItemById(userId, input.assetId);
 
@@ -2848,7 +2848,7 @@ export async function updateAssetRegisterItemFlag(
   }
 
   const update = buildUpdateSetClause(fields);
-  const result = await db.query<AssetRegisterRow>(
+  const result = await saveBusinessResult(userId, 'Updated asset details', writer => writer.query<AssetRegisterRow>(
     `
       update asset_register_items
       set
@@ -2858,7 +2858,7 @@ export async function updateAssetRegisterItemFlag(
         ${buildSelectList(schema)}
     `,
     [userId, input.assetId, ...update.values],
-  );
+  ), saved => saved.rows.length ? 'asset-edit:' + crypto.randomUUID() : null);
 
   const row = result.rows[0];
   if (!row) {
@@ -2888,7 +2888,12 @@ export async function updateAssetRegisterItemYearModel(
   input: UpdateAssetRegisterItemYearModelInput,
   transaction?: import('pg').PoolClient,
 ): Promise<AssetRegisterItem> {
-  if (!transaction) return withAssetInputTransaction(client => updateAssetRegisterItemYearModel(userId, input, client));
+  if (!transaction) return withAssetInputTransaction(async client => {
+    const item = await updateAssetRegisterItemYearModel(userId, input, client);
+    const { spendBusinessCredit } = await import('./business-credits');
+    await spendBusinessCredit(client,userId,'Updated asset details','asset-edit:' + crypto.randomUUID());
+    return item;
+  });
   const db = transaction;
   const schema = await getAssetRegisterSchema();
   const existing = await getAssetRegisterItemById(userId, input.assetId, transaction);
@@ -3077,7 +3082,11 @@ export async function updateAssetRegisterItemLocation(
       [assetId, latitude, longitude, locationText, capturedAt, gpsAccuracyMeters, activityText, eventNote, input.actorName || null],
     );
 
-    if (!transaction) await client.query('COMMIT');
+    if (!transaction) {
+      const {spendBusinessCredit} = await import('./business-credits');
+      await spendBusinessCredit(client,userId,'Updated asset location','location:' + crypto.randomUUID());
+      await client.query('COMMIT');
+    }
 
     return mapAssetRegisterRow(row);
   } catch (error) {
@@ -3190,7 +3199,12 @@ export async function updateAssetRegisterItem(
   input: UpdateAssetRegisterItemInput,
   transaction?: import('pg').PoolClient,
 ): Promise<AssetRegisterItem> {
-  if (!transaction) return withAssetInputTransaction(client => updateAssetRegisterItem(userId, input, client));
+  if (!transaction) return withAssetInputTransaction(async client => {
+    const item = await updateAssetRegisterItem(userId, input, client);
+    const { spendBusinessCredit } = await import('./business-credits');
+    await spendBusinessCredit(client,userId,'Updated asset details','asset-edit:' + crypto.randomUUID());
+    return item;
+  });
   const db = transaction;
   const schema = await getAssetRegisterSchema();
   const existing = await getAssetRegisterItemById(userId, input.assetId, transaction);

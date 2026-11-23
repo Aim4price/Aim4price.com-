@@ -132,6 +132,7 @@ function loadRoute(file, mocks, suffix = '') {
 
 let session = null;
 const reportRoute = loadRoute('app/api/valuation/report/route.ts', {
+  '../../../../lib/business-report-response': { meteredReport: async response => response },
   '../../../../lib/auth-session': { getAnyServerSession: async () => session, getServerSession: async () => null },
   '../../../../lib/asset-registers': { getAssetRegisterReportLogoUrl: async () => '' },
   '../../../../lib/report-logo': { resolveReportLogoUrlForHtml: async () => `data:image/png;base64,${readFileSync('public/brand/Aim4price_Home_Logo.png').toString('base64')}` },
