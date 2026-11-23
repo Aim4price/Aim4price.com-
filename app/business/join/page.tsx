@@ -1,3 +1,4 @@
+import { signupIntroducer } from '../../../lib/signup-introducer';
 import { redirect } from 'next/navigation';
 import { sharedEnquiryReturnTo } from '../../../lib/external-share-permissions';
 import { getAnyServerSession } from '../../../lib/auth-session';
@@ -18,5 +19,5 @@ export default async function JoinPage({searchParams}:{searchParams?:{returnTo?:
  }
  // Old guest sessions may prefill an email, but never confer account access.
  const guest=await getGuestViewer();
- return <BusinessSignup returnTo={returnTo} initialEmail={guest?.email}/>;
+ return <BusinessSignup sender={await signupIntroducer(null, returnTo)} returnTo={returnTo} initialEmail={guest?.email}/>;
 }
