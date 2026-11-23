@@ -1954,7 +1954,7 @@ export default function LeadsClient({
     if (statusFilter === 'completed') labels.push('Handled leads');
     if (statusFilter === 'tracking') labels.push(isDealerLeadsMode ? 'Shared for tracking' : 'Tracking requests');
 
-    if (!labels.length) return 'Filter';
+    if (!labels.length) return isDealerLeadsMode ? 'Filter shared assets' : 'Filter';
     if (labels.length === 1) return labels[0];
     return `${labels.length} filters`;
   }, [monthFilter, statusFilter, yearFilter, isDealerLeadsMode]);
@@ -2329,6 +2329,7 @@ export default function LeadsClient({
   }
 
   function resetLeadFilters() {
+    setDraftLeadFilters({ month: 'all', year: 'all', status: 'all' });
     setMonthFilter('all');
     setYearFilter('all');
     setStatusFilter('all');
@@ -3789,7 +3790,7 @@ export default function LeadsClient({
               </button>
 
               <button
-                type="button" data-tooltip="Filter leads"
+                type="button" data-tooltip={isDealerLeadsMode ? 'Filter shared assets' : 'Filter leads'}
                 className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionMint}` : ''} ${styles.leadFilterButton} ${hasActiveLeadFilter ? assetStyles.filterTriggerButtonActive : ''}`}
                 onClick={openLeadFilterModal}
                 disabled={isLoading}
@@ -3897,21 +3898,21 @@ export default function LeadsClient({
       ) : null}
 
       {isFilterModalOpen ? (
-        <FilterFlow title={'Filter leads'} onClose={closeLeadFilterModal} onClear={resetLeadFilters} onApply={() => { setMonthFilter(draftLeadFilters.month); setYearFilter(draftLeadFilters.year); setStatusFilter(draftLeadFilters.status); closeLeadFilterModal(); }}>
+        <FilterFlow overview={isDealerLeadsMode} title={isDealerLeadsMode ? 'Filter shared assets' : 'Filter leads'} onClose={closeLeadFilterModal} onClear={resetLeadFilters} onApply={() => { setMonthFilter(draftLeadFilters.month); setYearFilter(draftLeadFilters.year); setStatusFilter(draftLeadFilters.status); closeLeadFilterModal(); }}>
           <FilterQuestion
-            label="Which year?"
+            label={isDealerLeadsMode ? 'Year' : 'Which year?'}
             value={draftLeadFilters.year}
             options={yearFilterOptions}
             onChange={(value) => setDraftLeadFilters((current) => ({ ...current, year: value }))}
           />
           <FilterQuestion
-            label="Which month?"
+            label={isDealerLeadsMode ? 'Month' : 'Which month?'}
             value={draftLeadFilters.month}
             options={MONTH_OPTIONS}
             onChange={(value) => setDraftLeadFilters((current) => ({ ...current, month: value }))}
           />
           <FilterQuestion
-            label="Which status?"
+            label={isDealerLeadsMode ? 'Status' : 'Which status?'}
             value={draftLeadFilters.status}
             options={isDealerLeadsMode ? DEALER_STATUS_FILTER_OPTIONS : STATUS_FILTER_OPTIONS}
             onChange={(value) => setDraftLeadFilters((current) => ({ ...current, status: value as LeadStatusFilter }))}
