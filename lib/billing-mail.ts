@@ -18,7 +18,7 @@ export async function billingPdf(id: string): Promise<Buffer> {
 async function dispatchSubscriptionMail() {
   // Some upgraded installations have not yet visited a profile page to install the trial columns.
   await getDb().query(`insert into aim4price_subscription_mail(event_key,user_id,subject,body)
-    select 'trial:'||p.user_id||':'||r.days,p.user_id,'Your Aim4price Owner trial',
+    select 'trial:'||p.user_id||':'||r.days||case when exists(select 1 from aim4price_billing_agreement_events e where e.user_id=p.user_id and e.action='trial_restarted') then ':'||extract(epoch from t.ends_at)::text else '' end,p.user_id,'Your Aim4price Owner trial',
       'Your Owner trial ends on '||to_char(t.ends_at at time zone 'Africa/Johannesburg','DD Mon YYYY')||'. Review your subscription in Account.'
     from account_profiles p cross join lateral (select (to_jsonb(p)->>'owner_trial_ends_at')::timestamptz as ends_at) t
     cross join (values(1),(7)) r(days)

@@ -36,6 +36,11 @@ export const CREDIT_SCHEMA = `
    result_key text NOT NULL, action text NOT NULL, actor_id text NOT NULL,
    created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(business_id,result_key)
  );
+ CREATE TABLE IF NOT EXISTS business_credit_refills (
+   business_id uuid NOT NULL REFERENCES business_workspaces(id) ON DELETE CASCADE,
+   request_id uuid NOT NULL, actor_id text NOT NULL, units integer NOT NULL CHECK(units>=0),
+   created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(business_id,request_id)
+ );
  CREATE INDEX IF NOT EXISTS business_completed_month ON business_completed_actions(business_id,created_at);
  CREATE INDEX IF NOT EXISTS business_credit_month ON business_credit_events(business_id,created_at);
 `;
@@ -66,10 +71,19 @@ export async function workspaceForCredits(db: Pick<PoolClient,'query'>, userId: 
 }
 export async function creditBalance(db: Pick<PoolClient,'query'>, businessId: string) {
   return (await db.query(`SELECT (select coalesce(sum(credits),0)::int from business_owner_referrals where business_id=$1 and rewarded_at>=(${monthStart} AT TIME ZONE 'Africa/Johannesburg')) as bonus, (coalesce(sum(units) FILTER (WHERE state='complete'),0) +
-    (SELECT count(*) FROM business_completed_actions WHERE business_id=$1 AND ${monthFilter}))::int AS used,
+    (SELECT count(*) FROM business_completed_actions WHERE business_id=$1 AND ${monthFilter}) - (SELECT coalesce(sum(units),0) FROM business_credit_refills WHERE business_id=$1 AND ${monthFilter}))::int AS used,
     coalesce(sum(units) FILTER (WHERE state='reserved' AND expires_at>now()),0)::int AS held,
     ((${monthStart} + interval '1 month') AT TIME ZONE 'Africa/Johannesburg') AS resets
     FROM business_credit_events WHERE business_id=$1 AND ${monthFilter}`,[businessId])).rows[0];
+}
+/** Restore spent credits for this month without removing usage or referral history. */
+export async function refillBusinessCredits(db: PoolClient, owner: string, actor: string, requestId: string) {
+  const w = await workspaceForCredits(db,owner);
+  const profile = (await db.query('SELECT account_type FROM account_profiles WHERE user_id=$1 FOR SHARE',[owner])).rows[0];
+  if (w.role !== 'owner' || w.desktop || w.paid_since || profile?.account_type !== 'business') throw Error('Choose a Free Business account.');
+  const balance = await creditBalance(db,w.id);
+  await db.query(`INSERT INTO business_credit_refills(business_id,request_id,actor_id,units)
+    VALUES($1,$2,$3,$4) ON CONFLICT(business_id,request_id) DO NOTHING`,[w.id,requestId,actor,balance.used]);
 }
 /** The caller owns the transaction that creates the result. */
 export async function spendBusinessCredit(db: Pick<PoolClient,'query'>, userId:string, action:string, resultKey:string) {

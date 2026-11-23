@@ -4,6 +4,7 @@ import {isMiddlemanAccountSubtype} from '../../lib/middleman-account';
 import AccountInvitation from "./account-invitation";
 import { adminAccountLabel, adminCategoryLabel } from "../../lib/account-type-options";
 import type { AdminUserRow } from "../../lib/admin-users";
+import OwnerTrialAdmin from './owner-trial-admin';
 import BusinessPlanAdmin from './business-plan-admin';
 import AccountEditor from "./account-editor";
 import AdminSelect from "../../components/AdminSelect";
@@ -2263,6 +2264,7 @@ export default function AdminClient({
 
               </section>
             </div>
+            {accountActionModal.accountType==='owner' && <OwnerTrialAdmin key={accountActionModal.userId} owner={accountActionModal.userId}/>}
             {(accountActionModal.accountType==='business' || (accountActionModal.accountType==='dealer' && !isMiddlemanAccountSubtype(accountActionModal.accountSubtype))) && <BusinessPlanAdmin key={accountActionModal.userId} owner={accountActionModal.userId} onChanged={paid => {
               const updated: AdminUserRow = { ...accountActionModal, paidBusiness: paid, accountType: paid ? "dealer" : "business", sharingPlan: paid ? "desktop" : "free" };
               setUsers(current => current.map(user => user.userId === updated.userId ? updated : user));
