@@ -20,6 +20,7 @@ import { isDatabaseSchemaReady } from "./database-schema-readiness";
 import { isMiddlemanAccountSubtype } from "./middleman-account";
 
 export type AccountProfile = {
+  inviteId?: string;
   trialEndsAt?: string | null;
   userId: string;
   name: string;
@@ -107,6 +108,7 @@ type AccountProfileRow = {
   phone: string | null;
   account_type: string | null;
   account_subtype: string | null;
+  invite_id?: string;
   owner_trial_ends_at?: Date | string | null;
   account_status: string | null;
   introduced_by_option: string | null;
@@ -473,6 +475,9 @@ async function ensureAccountRoleSchema(
       perform pg_advisory_xact_lock(
         hashtext('aim4price:account-profiles:licensing-role')
       );
+      if not exists (select 1 from pg_attribute where attrelid='account_profiles'::regclass and attname='invite_id' and not attisdropped) then
+        alter table account_profiles add column invite_id uuid not null default gen_random_uuid() unique;
+      end if;
 
       if exists (
         select 1
@@ -900,6 +905,7 @@ function mapAccountProfileRow(
 
   return {
     userId: user.id,
+    inviteId: row?.invite_id,
     trialEndsAt: row?.owner_trial_ends_at ? new Date(row.owner_trial_ends_at).toISOString() : null,
     name: displayName,
     displayName,
@@ -1099,6 +1105,7 @@ export async function getAccountProfile(user: {
         phone,
         account_type,
         account_subtype,
+        invite_id,
         case when account_type='owner' and account_status='pending_payment' and owner_trial_requested then owner_trial_ends_at end as owner_trial_ends_at,
         case when account_type='owner' and account_status='pending_payment' and owner_trial_requested and owner_trial_ends_at>now() then 'active' else account_status end as account_status,
         introduced_by_option,

@@ -14,7 +14,16 @@ export async function POST(req:NextRequest) {
       await creditTransaction(async db=>{
         const workspace=await workspaceForCredits(db,userId);
         if(workspace.role!=='owner') throw Error('The business owner can request an upgrade.');
-        await db.query('UPDATE business_workspaces SET upgrade_requested_at=coalesce(upgrade_requested_at,now()) WHERE id=$1 AND paid_since IS NULL',[workspace.id]);
+        if(workspace.paid_since || workspace.desktop || workspace.upgrade_requested_at) return;
+        let offer=null;
+        if(body.planKey!==undefined) {
+          const result=await db.query(`select account_type as key,description,amount_cents,interval,version from aim4price_billing_plans
+            where account_type=$1 and (account_type='dealer' or account_type in ('business-standard-monthly','business-standard-annual'))
+            and enabled and version=$2 for share`,[body.planKey,Number(body.planVersion)]);
+          offer=result.rows[0];
+          if(!offer) throw Error('This offer changed. Reopen the plans and try again.');
+        }
+        await db.query('UPDATE business_workspaces SET upgrade_requested_at=now(),requested_plan=$2 WHERE id=$1',[workspace.id,offer]);
       });
       return businessJson({ok:true});
     }

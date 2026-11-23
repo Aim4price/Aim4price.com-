@@ -298,14 +298,23 @@ export async function createSignupInvoice(userId: string, signup: SignupBilling)
   });
 }
 
+export async function isAccountBillingHeld(userId:string) {
+  await ensureBillingSchema();
+  return transaction(db=>billingHeld(db,userId));
+}
+
 export async function subscribeOwnerTrial(userId:string, input:Record<string,unknown>) {
   const quote=await validateSignupBilling({...input,accountType:'owner',signupPlan:'paid'});
   if(!quote)throw new BillingError('Owner billing is currently unavailable.');
   await transaction(async db=>{
-    if(await billingHeld(db,userId))throw new BillingError('Your account has a billing hold. Contact Aim4price to review it.');
+    const held=await billingHeld(db,userId);
+    if(input.reviewedHold !== undefined && held !== input.reviewedHold) throw new BillingError('Billing status changed. Review the plan again.');
     const trial=(await db.query("select owner_trial_ends_at from account_profiles where user_id=$1 and account_type='owner' and account_status='pending_payment' and owner_trial_requested and owner_trial_ends_at is not null for update",[userId])).rows[0];
     if(!trial)throw new BillingError('This account has no verified Owner trial.');
-    await db.query('insert into aim4price_billing_signup_jobs(user_id,quote,next_attempt_at) values($1,$2,greatest(now(),$3::timestamptz)) on conflict do nothing',[userId,JSON.stringify(quote),trial.owner_trial_ends_at]);
+    await db.query(`insert into aim4price_billing_signup_jobs(user_id,quote,next_attempt_at,processed_at)
+      values($1,$2,greatest(now(),$3::timestamptz),case when $4::boolean then now() end)
+      on conflict(user_id) do update set quote=excluded.quote,next_attempt_at=excluded.next_attempt_at,processed_at=excluded.processed_at
+      where aim4price_billing_signup_jobs.quote->>'requestedWhileHeld'='true' and not $4::boolean`,[userId,JSON.stringify({...quote,requestedWhileHeld:held}),trial.owner_trial_ends_at,held]);
   });
 }
 

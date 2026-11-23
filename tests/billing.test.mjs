@@ -210,6 +210,17 @@ test('Owner trial conversion, current terms, payment and account billing holds',
    await billing.setGlobalBillingHold({held:false,version:1},'admin');
    const plan=plans.find(p=>p.key==='owner-band-1-monthly');
    const input={billingAccepted:true,planKey:plan.key,billingPlanVersion:plan.version,billingName:'Test Owner',billingEmail:'owner@example.test',billingAddress:'George'};
+   await pg.exec(`insert into "user" values ('held-owner');
+     insert into account_profiles values ('held-owner','owner','pending_payment',true,now()-interval '1 day')`);
+   await billing.setBillingHold({userId:'held-owner',version:0,held:true,reason:'Trial pilot'},'admin');
+   await billing.subscribeOwnerTrial('held-owner',{...input,reviewedHold:true});
+   const heldJob=(await query("select quote,processed_at from aim4price_billing_signup_jobs where user_id='held-owner'")).rows[0];
+   assert.ok(heldJob.processed_at);
+   assert.equal(heldJob.quote.requestedWhileHeld,true);
+   await billing.setBillingHold({userId:'held-owner',version:1,held:false,reason:'Ready for review'},'admin');
+   await assert.rejects(billing.subscribeOwnerTrial('held-owner',{...input,reviewedHold:true}),/Billing status changed/);
+   await billing.processSignupInvoices();
+   assert.equal((await query("select count(*)::int as n from aim4price_billing_invoices where user_id='held-owner'")).rows[0].n,0);
    await billing.subscribeOwnerTrial('trial',input);
    await billing.subscribeOwnerTrial('trial',input);
    await billing.processSignupInvoices();

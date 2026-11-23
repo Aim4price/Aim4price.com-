@@ -1,10 +1,18 @@
 export async function signupIntroducer(invite: unknown, returnTo: string | null) {
   const ownerInvite = typeof invite === 'string' && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(invite);
+  const accountInvite = typeof invite === 'string' && /^account-([0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})$/i.exec(invite);
   const partsToken = returnTo?.match(/^\/parts-share\/([0-9a-f]{64})$/)?.[1];
   const token = returnTo?.match(/^\/asset-share\/([A-Za-z0-9_-]{43})(?:\?|$)/)?.[1];
-  if (!ownerInvite && !partsToken && !token) return null;
+  if (!ownerInvite && !accountInvite && !partsToken && !token) return null;
   const { getDb } = await import('./db');
   const name = "coalesce(nullif(trim(p.business_name), ''), nullif(trim(u.name), ''))";
+  if (accountInvite) {
+    const {ensureAccountProfileColumns} = await import('./account-profile');
+    await ensureAccountProfileColumns();
+    const result = await getDb().query(`select ${name} as name from account_profiles p join "user" u on u.id=p.user_id
+      where p.invite_id=$1 and p.account_status <> 'suspended'`, [accountInvite[1]]);
+    return result.rows[0]?.name || null;
+  }
   if (ownerInvite) {
     const result = await getDb().query(`select ${name} as name from business_workspaces w
       join account_profiles p on p.user_id=w.owner_user_id join "user" u on u.id=p.user_id
