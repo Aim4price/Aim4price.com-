@@ -53,10 +53,16 @@ test('Business credits pool across members and preserve trial, upgrade, retry an
   await save(firstVisit); await save(firstVisit);
   await save('manage:owner:' + randomUUID());
   assert.equal((await balance()).used,7);
+  const refill=(key,user='owner')=>credits.creditTransaction(client=>credits.refillBusinessCredits(client,user,'admin',key));
+  const refillId=randomUUID();
+  await assert.rejects(refill(randomUUID(),'member'));
+  await refill(refillId);assert.equal((await balance()).used,0);
+  await save('cost:after-refill');await refill(refillId);assert.equal((await balance()).used,1);
+  await pg.query("UPDATE business_credit_refills SET created_at=now()-interval '2 months'");
   await pg.query("UPDATE business_completed_actions SET created_at=now()-interval '2 months'");
   const setPlan=(plan)=>credits.creditTransaction(db=>credits.changeBusinessPlan(db,owner.business_id,'owner',plan));
   await pg.query('UPDATE business_workspaces SET upgrade_requested_at=now()');
-  await setPlan('paid');await setPlan('paid');
+  await setPlan('paid');await setPlan('paid');await assert.rejects(refill(randomUUID()));
   assert.equal((await pg.query("select account_type from account_profiles where user_id='owner'")).rows[0].account_type,'dealer');
   assert.equal((await pg.query("select plan from sharing_account_access where user_id='owner'")).rows[0].plan,'desktop');
   await save('cost:after-plan-change');assert.equal((await balance()).used,0);

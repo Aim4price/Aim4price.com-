@@ -303,6 +303,28 @@ export async function isAccountBillingHeld(userId:string) {
   return transaction(db=>billingHeld(db,userId));
 }
 
+const freeOwnerTrial = `account_type='owner' and account_status='pending_payment' and owner_trial_requested and owner_trial_ends_at is not null`;
+
+export async function adminOwnerTrial(userId:string) {
+  await ensureBillingSchema();
+  return (await getDb().query(`select owner_trial_ends_at as ends_at,owner_trial_ends_at::text as version from account_profiles p
+    where user_id=$1 and ${freeOwnerTrial} and not exists(select 1 from aim4price_billing_signup_jobs j where j.user_id=p.user_id)`,[userId])).rows[0] ?? null;
+}
+
+export async function restartOwnerTrial(userId:string,actor:string,version:string) {
+  return transaction(async db=>{
+    const trial=(await db.query(`select owner_trial_ends_at::text as version from account_profiles where user_id=$1 and ${freeOwnerTrial} for update`,[userId])).rows[0];
+    if (!trial || trial.version!==version || (await db.query('select 1 from aim4price_billing_signup_jobs where user_id=$1',[userId])).rowCount)
+      throw new BillingError('This trial has changed. Reopen the account to check its status.');
+    const result=(await db.query(`update account_profiles set owner_trial_days=30,owner_trial_ends_at=now()+interval '30 days',updated_at=now()
+      where user_id=$1 returning owner_trial_ends_at as ends_at,owner_trial_ends_at::text as version`,[userId])).rows[0];
+    await db.query(`insert into aim4price_billing_agreement_events(user_id,actor_id,action,detail) values($1,$2,'trial_restarted',$3)`,
+      [userId,actor,JSON.stringify({previous:version,endsAt:result.ends_at})]);
+    await db.query("delete from aim4price_subscription_mail where user_id=$1 and event_key like 'trial:%' and sent_at is null",[userId]);
+    return result;
+  });
+}
+
 export async function subscribeOwnerTrial(userId:string, input:Record<string,unknown>) {
   const quote=await validateSignupBilling({...input,accountType:'owner',signupPlan:'paid'});
   if(!quote)throw new BillingError('Owner billing is currently unavailable.');

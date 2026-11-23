@@ -6,7 +6,8 @@ export async function getAdminBusinessCredits(period:'month'|'all'){
  await ensureCreditSchema();
  const query=getDb();
  const activity = `(SELECT business_id,actor_id,action,units,created_at FROM business_credit_events WHERE state='complete'
-   UNION ALL SELECT business_id,actor_id,action,1,created_at FROM business_completed_actions)`;
+   UNION ALL SELECT business_id,actor_id,action,1,created_at FROM business_completed_actions
+   UNION ALL SELECT business_id,actor_id,'Admin credit refill',-units,created_at FROM business_credit_refills WHERE units>0)`;
  const totals=(await query.query(`SELECT owner.email,w.monthly_allowance,sum(e.units)::int AS used, (select coalesce(sum(r.credits),0)::int from business_owner_referrals r where r.business_id=w.id and r.rewarded_at>=(date_trunc('month',now() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg')) as bonus FROM ${activity} e
  JOIN business_workspaces w ON w.id=e.business_id JOIN "user" owner ON owner.id=w.owner_user_id
  WHERE w.paid_since IS NULL AND e.created_at>=(date_trunc('month',now() AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'Africa/Johannesburg')

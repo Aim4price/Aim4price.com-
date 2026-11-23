@@ -213,7 +213,15 @@ test('Owner trial conversion, current terms, payment and account billing holds',
    await pg.exec(`insert into "user" values ('held-owner');
      insert into account_profiles values ('held-owner','owner','pending_payment',true,now()-interval '1 day')`);
    await billing.setBillingHold({userId:'held-owner',version:0,held:true,reason:'Trial pilot'},'admin');
+   await pg.exec('alter table account_profiles add column owner_trial_days integer, add column updated_at timestamptz');
+   const expired=await billing.adminOwnerTrial('held-owner');
+   const renewed=await billing.restartOwnerTrial('held-owner','admin',expired.version);
+   assert.ok(Math.abs(Date.parse(renewed.ends_at)-Date.now()-30*86400000)<60000);
+   await assert.rejects(billing.restartOwnerTrial('held-owner','admin',expired.version));
+   assert.equal(await billing.adminOwnerTrial('pilot'),null);
    await billing.subscribeOwnerTrial('held-owner',{...input,reviewedHold:true});
+   assert.equal(await billing.adminOwnerTrial('held-owner'),null);
+   await assert.rejects(billing.restartOwnerTrial('held-owner','admin',renewed.version));
    const heldJob=(await query("select quote,processed_at from aim4price_billing_signup_jobs where user_id='held-owner'")).rows[0];
    assert.ok(heldJob.processed_at);
    assert.equal(heldJob.quote.requestedWhileHeld,true);
