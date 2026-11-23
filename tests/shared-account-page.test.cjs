@@ -65,6 +65,7 @@ test('malformed asset share tokens stop before password or database checks',asyn
 test('signed-in free Dealers return to their enquiry or hub instead of the unpaid-account screen',async()=>{
  let status='pending_payment';
  const page=load('app/auth/page.tsx',{
+  '../../lib/signup-introducer':{signupIntroducer:async()=>null},
   '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
   '../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
   '../../components/AppHeader':{default:'Header'},'../../components/SwitchAccountButton':{default:'Switch'},'./page.module.css':{default:{}},
@@ -132,6 +133,7 @@ test('suspended free accounts still follow the account access block',async()=>{
 
 test('free Business login defaults to Shared enquiries while preserving explicit asset links',async()=>{
  const page=load('app/auth/page.tsx',{
+  '../../lib/signup-introducer':{signupIntroducer:async()=>null},
   '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
   '../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
   '../../components/AppHeader':{default:'Header'},'../../components/SwitchAccountButton':{default:'Switch'},'./page.module.css':{default:{}},

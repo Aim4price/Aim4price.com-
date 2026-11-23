@@ -1,11 +1,13 @@
 'use client';
+import { introducedByFields, introducedByOptions, type SignupIntroducedByOption } from '../../../lib/signup-introducer-options';
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import SignupFlow from '../../../components/SignupFlow';
 import styles from '../../../components/SignupFlow.module.css';
 import auth from '../../auth/page.module.css';
 
-export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:string|null;initialEmail?:string}) {
+export default function BusinessSignup({returnTo,initialEmail='',sender}:{sender?:string|null;returnTo:string|null;initialEmail?:string}) {
+ const [source,setSource]=useState<SignupIntroducedByOption>(sender?'sender':'direct');
  const [showPassword,setShowPassword]=useState(false);
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[createdEmail,setCreatedEmail]=useState('');
  const destination=returnTo||'/business';
@@ -19,9 +21,11 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
  async function submit(event:FormEvent<HTMLFormElement>) {
   event.preventDefault();if(busy)return;
   const form=new FormData(event.currentTarget),email=String(form.get('email')||'').trim();
+  const manualName=String(form.get('introducedByName')||'').trim();
+  if(source==='other' && !manualName){setNotice('Enter the person or source who introduced you.');return;}
   setBusy(true);setNotice('');
   try {
-   const response=await fetch('/api/auth/sign-up/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:String(form.get('name')||'').trim(),businessName:String(form.get('businessName')||(joiningTeam?form.get('name'):'')||'').trim(),email,password:form.get('password'),acceptedTerms:form.get('terms')==='on',accountType:'business',accountSubtype:'contributor',accountAccess:'free',callbackURL:destination})});
+   const response=await fetch('/api/auth/sign-up/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:String(form.get('name')||'').trim(),businessName:String(form.get('businessName')||(joiningTeam?form.get('name'):'')||'').trim(),email,password:form.get('password'),acceptedTerms:form.get('terms')==='on',accountType:'business',accountSubtype:'contributor',...introducedByFields(source,manualName,sender),accountAccess:'free',callbackURL:destination})});
    const data=await response.json().catch(()=>null);
    if(!response.ok)throw Error(data?.message||'Unable to create your account. If you already have one, sign in instead.');
    setCreatedEmail(email);await verify(email);
@@ -39,6 +43,11 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
      <button type="button" className={auth.passwordToggle} aria-label={showPassword?'Hide password':'Show password'} onClick={()=>setShowPassword(value=>!value)}>{showPassword?'Hide':'Show'}</button>
     </div>
    </div>
+   <fieldset className={auth.introducerChoices}>
+     <legend className={auth.label}>Who introduced you to Aim4price?</legend>
+     {introducedByOptions(sender).map(option=><label key={option.value}><input type="radio" name="introducedByOption" value={option.value} checked={source===option.value} onChange={()=>setSource(option.value)}/>{option.label}</label>)}
+   </fieldset>
+   {source==='other' && <label className={auth.field}><span className={auth.label}>Person or source</span><input className={auth.input} name="introducedByName" maxLength={120} required /></label>}
    <label className={auth.checkboxRow}><input className={auth.checkbox} name="terms" type="checkbox" required/><span>I accept the <Link href="/terms-of-service" target="_blank">Terms</Link> and <Link href="/privacy-policy" target="_blank">Privacy Policy</Link>.</span></label>
    <button type="submit" className={auth.primaryButton} disabled={busy}>{busy?'Creating account…':'Create free account'}</button>
    <p className={styles.muted}>Already registered? <Link href={`/auth${returnTo?'?returnTo='+encodeURIComponent(returnTo):''}#login`}>Sign in</Link>.</p>

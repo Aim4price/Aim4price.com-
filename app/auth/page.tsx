@@ -1,3 +1,4 @@
+import { signupIntroducer } from '../../lib/signup-introducer';
 import { sharingPlan } from '../../lib/sharing-foundation';
 import { sharedEnquiryReturnTo } from '../../lib/external-share-permissions';
 import AppHeader from '../../components/AppHeader';
@@ -13,7 +14,7 @@ import AuthClient from "./auth-client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AuthPage({ searchParams }: { searchParams?: { switchAccount?: string; returnTo?: string; accountAccess?: string; reauth?: string } }) {
+export default async function AuthPage({ searchParams }: { searchParams?: { invite?: string; switchAccount?: string; returnTo?: string; accountAccess?: string; reauth?: string } }) {
   const session = await getAnyServerSession();
 
   // Render the normal password form for an AI approval even when a session exists.
@@ -71,5 +72,5 @@ export default async function AuthPage({ searchParams }: { searchParams?: { swit
   }
 
   const returnTo = sharedEnquiryReturnTo(searchParams?.returnTo);
-  return <AuthClient businessSignup={Boolean(returnTo) && searchParams?.accountAccess !== 'desktop'} returnTo={returnTo}/>;
+  return <AuthClient sender={await signupIntroducer(searchParams?.invite, returnTo)} businessSignup={Boolean(returnTo) && searchParams?.accountAccess !== 'desktop'} returnTo={returnTo}/>;
 }
