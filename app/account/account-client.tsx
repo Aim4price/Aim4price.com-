@@ -1,6 +1,6 @@
 "use client";
 import { PageHelpHeading } from '../../components/PageHelp';
-import {BusinessSubscriptionButton, type BusinessSubscription} from '../../components/BusinessCreditControls';
+import {ShareAim4priceButton,BusinessSubscriptionButton, type BusinessSubscription} from '../../components/BusinessCreditControls';
 
 import { useAccountDirectoryListing } from "../../components/AccountDirectoryListing";
 import QuickActionIcon, { type QuickActionIconName } from "./QuickActionIcon";
@@ -1812,8 +1812,10 @@ export default function AccountClient({
                     <strong>Edit business details</strong>
                   </button>}
 
-                  {initialProfile?.trialEndsAt && <a href="/account/owner-trial" className={styles.quickActionButton}><QuickActionIcon name="subscription" /><strong>Owner trial · ends {new Date(initialProfile.trialEndsAt).toLocaleDateString('en-ZA')}</strong></a>}
-                  {subscription && <BusinessSubscriptionButton plan={subscription} inviteLink={isFreeBusiness ? undefined : inviteLink} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />}
+                  {inviteLink && <ShareAim4priceButton inviteLink={inviteLink} className={styles.quickActionButton} icon={<QuickActionIcon name="connections" />} />}
+                  {isMiddlemanAccount || isMiddlemanAccountSubtype(initialProfile?.accountSubtype) ? <Link href="/contact-us" className={styles.quickActionButton}><QuickActionIcon name="subscription" /><strong>Contact Aim4price</strong></Link>
+                    : subscription ? <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />
+                    : isOwnerAccount && <Link href={initialProfile?.trialEndsAt ? '/account/owner-trial' : '/account/subscription'} className={styles.quickActionButton}><QuickActionIcon name="subscription" /><strong>{initialProfile?.trialEndsAt ? 'Subscribe' : 'Manage subscription'}</strong></Link>}
 
                   <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")} data-tooltip="View and download your Aim4price invoices." data-tooltip-style="description">
                     <QuickActionIcon name="invoices" />
