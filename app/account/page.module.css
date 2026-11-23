@@ -4641,3 +4641,11 @@ button.heroSignOut {
   gap: .85rem;
   padding: .7rem .85rem;
 }
+
+.overviewShare {
+  margin-top: 0.85rem;
+}
+
+.overviewShare > button {
+  width: 100%;
+}
