@@ -1,4 +1,5 @@
 'use client';
+import FilterFlow, {FilterQuestion} from '../../components/FilterFlow';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {useEffect, useState, useTransition, type ReactNode} from 'react';
@@ -14,13 +15,21 @@ import card from '../leads/shared-assets.module.css';
 type Share = Awaited<ReturnType<typeof listReceivedSharedEnquiries>>[number];
 const receivedDate = new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Africa/Johannesburg'});
 
+const defaults = {year: '', month: '', status: 'all' as SharedStatus, kind: 'All'};
+const periodFormat = new Intl.DateTimeFormat('en-GB', {month:'2-digit', year:'numeric', timeZone:'Africa/Johannesburg'});
+const monthNames = new Intl.DateTimeFormat('en-GB', {month:'long', timeZone:'UTC'});
+const months = Array.from({length:12}, (_, i) => ({
+  value: String(i + 1).padStart(2, '0'),
+  label: monthNames.format(Date.UTC(2000, i, 1)),
+}));
+
 export default function BusinessSharedAssets({shares,notice,selection,detail}:{shares:Share[];notice:string;selection?:{token:string;assetId:string};detail?:ReactNode}) {
   const router = useRouter();
   const [refreshing,startTransition] = useTransition();
-  const [status,setStatus] = useState<SharedStatus>('all');
+  const [applied,setApplied] = useState(defaults);
+  const [draft,setDraft] = useState<typeof defaults | null>(null);
+  const {status, kind} = applied;
   const [query,setQuery] = useState('');
-  const [kind,setKind] = useState('All');
-  const [filters,setFilters] = useState(false);
   const [open,setOpen] = useState<Set<string>>(new Set(selection ? [selection.token] : []));
   useEffect(()=>{
     const refresh = () => router.refresh();
@@ -29,10 +38,16 @@ export default function BusinessSharedAssets({shares,notice,selection,detail}:{s
     window.addEventListener('focus',refresh);
     return () => {window.removeEventListener('pageshow',refresh);window.removeEventListener('focus',refresh);};
   },[router]);
-  const members = shares.flatMap(share=>share.assets);
+  const years = new Set<string>();
+  const periodShares = shares.filter(share => {
+    const [month, year] = periodFormat.format(new Date(share.created_at)).split('/');
+    years.add(year);
+    return (!applied.year || applied.year === year) && (!applied.month || applied.month === month);
+  });
+  const members = periodShares.flatMap(share=>share.assets);
   const viewed = members.filter(member=>member.viewed).length;
   const needle = query.trim().toLowerCase();
-  const rows = shares.flatMap(share=>{
+  const rows = periodShares.flatMap(share=>{
     const group = Boolean(share.umbrella) || share.assets.length > 1;
     if ((kind==='Umbrellas' && !group) || (kind==='Individual assets' && group)) return [];
     const assets = share.assets.filter(item=>
@@ -53,13 +68,15 @@ export default function BusinessSharedAssets({shares,notice,selection,detail}:{s
     <section className={`${asset.shell} ${workspaceStyles.shell}`}><section id="received-enquiries" className={`${asset.registerPanel} ${lead.leadsRegisterPanel}`}>
       <WorkspaceTitlePanel title="Shared Assets" helpTopic="sharedEnquiries"/>
       {notice ? <p role="status" className={asset.notice}>{notice}</p> : <>
-        <SharedAssetStatus statusFilter={status} chooseLeadStatusFilter={setStatus} newLeadCount={members.length-viewed} viewedLeadCount={viewed} total={members.length}/>
+        <SharedAssetStatus statusFilter={status} chooseLeadStatusFilter={status=>setApplied(previous=>({...previous,status}))} newLeadCount={members.length-viewed} viewedLeadCount={viewed} total={members.length}/>
         <div className={`${asset.toolbar} ${workspaceStyles.controlsRow} ${lead.leadSearchToolbar}`}>
           <label className={`${asset.searchWrap} ${workspaceStyles.searchField}`}><input className={asset.searchInput} type="search" value={query} onChange={e=>setQuery(e.target.value)} aria-label="Search shared assets" placeholder="Search sender, umbrella, asset or serial"/></label>
           <div className={lead.leadToolbarActions}><button type="button" className={`${card.toggle} ${card.secondary}`} disabled={refreshing} onClick={()=>startTransition(()=>router.refresh())}>{refreshing?'Refreshing…':'Refresh'}</button>
-            <button type="button" className={`${card.toggle} ${card.secondary}`} aria-expanded={filters} aria-controls="share-filters" onClick={()=>setFilters(!filters)}>Filter{kind==='All'?'':' · '+kind}</button></div>
+            <button type="button" className={`${asset.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionMint} ${lead.leadFilterButton} ${asset.filterTriggerButton}`} aria-haspopup="dialog" aria-expanded={draft !== null} onClick={()=>setDraft(applied)}>
+              <svg className={asset.buttonIcon} aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M6 12h12M9 18h6"/><circle cx="9" cy="6" r="2" fill="currentColor"/><circle cx="15" cy="12" r="2" fill="currentColor"/></svg>
+              Filter shared assets
+            </button></div>
         </div>
-        {filters && <div id="share-filters" role="group" aria-label="Filter by share type" className={card.actions}>{['All','Individual assets','Umbrellas'].map(type=><button type="button" key={type} aria-pressed={kind===type} className={`${card.toggle} ${kind===type?'':card.secondary}`} onClick={()=>setKind(type)}>{type}</button>)}</div>}
         <div className={`${lead.leadResultSummary} ${lead.leadResultSummaryDealer}`}><strong>{assetCount} shared {assetCount===1?'asset':'assets'} · {individualCount} individual {individualCount===1?'asset':'assets'} · {umbrellaCount} {umbrellaCount===1?'umbrella':'umbrellas'}</strong></div>
         <div className={lead.leadStack}>{rows.map(({share,assets,group})=>{
           const date=receivedDate.format(new Date(share.created_at));
@@ -74,5 +91,13 @@ export default function BusinessSharedAssets({shares,notice,selection,detail}:{s
         {!rows.length && <p className={asset.emptyState}>{shares.length?'No assets match your search or filters.':'Assets shared with your business will appear here.'}</p>}
       </>}
     </section></section>
+    {draft && <FilterFlow overview title="Filter shared assets" onClose={()=>setDraft(null)}
+      onClear={()=>{setApplied(defaults);setDraft(defaults);}}
+      onApply={()=>{setApplied(draft);setDraft(null);}}>
+      <FilterQuestion label="Year" value={draft.year} options={[{value:'',label:'All years'}, ...Array.from(years).sort().reverse().map(year=>({value:year,label:year}))]} onChange={year=>setDraft({...draft,year})}/>
+      <FilterQuestion label="Month" value={draft.month} options={[{value:'',label:'All months'}, ...months]} onChange={month=>setDraft({...draft,month})}/>
+      <FilterQuestion label="Status" value={draft.status} options={[{value:'all',label:'All shared'},{value:'new',label:'New'},{value:'viewed',label:'Viewed'}]} onChange={status=>setDraft({...draft,status:status as SharedStatus})}/>
+      <FilterQuestion label="Share type" value={draft.kind} options={['All','Individual assets','Umbrellas'].map(kind=>({value:kind,label:kind}))} onChange={kind=>setDraft({...draft,kind})}/>
+    </FilterFlow>}
   </main>;
 }
