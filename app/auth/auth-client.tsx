@@ -19,6 +19,7 @@ import { refreshCachedHeaderSession } from "../../lib/header-session-cache";
 import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
 
+import { introducedByFields, introducedByOptions, type SignupIntroducedByOption } from '../../lib/signup-introducer-options';
 import BusinessSignup from "../business/join/business-signup";
 import { BUSINESS_SERVICE_OPTIONS, isBusinessService } from "../../lib/business-service-options";
 
@@ -26,7 +27,7 @@ import { PUBLIC_SIGNUP_OPTIONS, SIGNUP_ACCOUNT_SUBTYPE_OPTIONS, type PublicSignu
 
 type Mode = "signup" | "login" | "forgot";
 type SignupStep = 1 | 2 | 3;
-type SignupIntroducedByOption = "" | "kuyler" | "andre" | "direct" | "other";
+
 type SignupProvince =
   | ""
   | "Eastern Cape"
@@ -116,12 +117,6 @@ const AUTH_BASE_PATH = "/api/auth";
 const POST_LOGIN_REDIRECT = "/asset-register";
 const ADMIN_EMAIL = "aim4price@gmail.com";
 
-const INTRODUCED_BY_OPTIONS: Array<SelectOption<SignupIntroducedByOption>> = [
-  { value: "kuyler", label: "Kuyler Geldenhuys" },
-  { value: "andre", label: "Andre Van Rooyen" },
-  { value: "direct", label: "No one / direct signup" },
-  { value: "other", label: "Other person or source" },
-];
 
 const PROVINCE_OPTIONS: Array<SelectOption<Exclude<SignupProvince, "">>> = [
   { value: "Eastern Cape", label: "Eastern Cape" },
@@ -561,7 +556,7 @@ async function postAuth(path: string, body: Record<string, unknown>) {
   return payload;
 }
 
-export default function AuthClient({businessSignup=false,initialBusinessType,initialEmail,returnTo}:{businessSignup?:boolean;initialBusinessType?:string;initialEmail?:string;returnTo?:string|null} = {}) {
+export default function AuthClient({businessSignup=false,initialBusinessType,initialEmail,returnTo,sender}:{sender?:string|null;businessSignup?:boolean;initialBusinessType?:string;initialEmail?:string;returnTo?:string|null} = {}) {
   const [createdBusinessEmail,setCreatedBusinessEmail]=useState('');
   const [verificationSent,setVerificationSent]=useState(false);
   async function sendBusinessVerification(email:string){
@@ -584,7 +579,16 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupForm, setSignupForm] =
-    useState<SignupFormState>(()=>businessSignup?{...initialSignupState,accountType:'business',accountSubtype:isBusinessService(initialBusinessType)?initialBusinessType:BUSINESS_SERVICE_OPTIONS[0].value,email:initialEmail||'',directoryParticipation:true}:initialSignupState);
+    useState<SignupFormState>(() => ({
+      ...initialSignupState,
+      ...(businessSignup ? {
+        accountType: 'business' as const,
+        accountSubtype: isBusinessService(initialBusinessType) ? initialBusinessType : BUSINESS_SERVICE_OPTIONS[0].value,
+        email: initialEmail || '',
+        directoryParticipation: true,
+      } : {}),
+      introducedByOption: sender ? 'sender' : '',
+    }));
   const [signupPlan,setSignupPlan] = useState<"free" | "paid" | null>(null);
   const [planKey,setPlanKey]=useState('');
   const offers=billingPlans.filter(plan=>plan.accountType===signupForm.accountType);
@@ -888,9 +892,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         partnerDirectoryEnabled:
           signupForm.accountType === "business" &&
           signupForm.directoryParticipation,
-        introducedByOption: signupForm.introducedByOption,
-        introducedByName:
-          signupForm.introducedByOption === "other" ? introducedByName : "",
+        ...introducedByFields(signupForm.introducedByOption, introducedByName, sender),
         callbackURL: getCallbackUrl(email),
       });
 
@@ -905,7 +907,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
       const redirectUrl = extractRedirectUrl(payload);
 
       setBilling({name:"",email:"",address:"",accepted:false});
-      setSignupForm(initialSignupState);
+      setSignupForm({...initialSignupState, introducedByOption: sender ? 'sender' : ''});
       setSignupStep(1);
       setNotice({
         tone: "success",
@@ -1059,7 +1061,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     }
   };
 
-  if (businessSignup && mode === 'signup') return <BusinessSignup returnTo={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())} initialEmail={initialEmail}/>;
+  if (businessSignup && mode === 'signup') return <BusinessSignup sender={sender} returnTo={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())} initialEmail={initialEmail}/>;
 
   return (
     <main className={styles.page} data-public-photo="auth">
@@ -1334,7 +1336,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                               name="introducedByOption"
                               ariaLabel="Who introduced you to Aim4price?"
                               value={signupForm.introducedByOption}
-                              options={INTRODUCED_BY_OPTIONS}
+                              options={introducedByOptions(sender)}
                               placeholder="Choose one"
                               onChange={(value) => {
                                 setSignupForm((current) => ({
