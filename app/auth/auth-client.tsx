@@ -372,7 +372,7 @@ function getDefaultSubtype(
   return SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[accountType][0].value;
 }
 
-const initialSignupState: SignupFormState = {
+const signupDefaults: SignupFormState = {
   accountType: "owner",
   accountSubtype: "farmer",
   introducedByOption: "",
@@ -578,6 +578,10 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   const [signupStep, setSignupStep] = useState<SignupStep>(1);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const initialSignupState: SignupFormState = {
+    ...signupDefaults,
+    introducedByOption: sender ? 'sender' : '',
+  };
   const [signupForm, setSignupForm] =
     useState<SignupFormState>(() => ({
       ...initialSignupState,
@@ -587,7 +591,6 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         email: initialEmail || '',
         directoryParticipation: true,
       } : {}),
-      introducedByOption: sender ? 'sender' : '',
     }));
   const [signupPlan,setSignupPlan] = useState<"free" | "paid" | null>(null);
   const [planKey,setPlanKey]=useState('');
@@ -907,7 +910,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
       const redirectUrl = extractRedirectUrl(payload);
 
       setBilling({name:"",email:"",address:"",accepted:false});
-      setSignupForm({...initialSignupState, introducedByOption: sender ? 'sender' : ''});
+      setSignupForm(initialSignupState);
       setSignupStep(1);
       setNotice({
         tone: "success",
