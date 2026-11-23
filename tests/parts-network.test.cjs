@@ -710,7 +710,14 @@ test("row edits are scoped, validated and reject stale saves", async () => {
   };
   const pool = { ...client, connect: async () => client };
   const messages = [];
+  const debits = [];
+  let blockDebit = true;
   const network = load("lib/parts-network.ts", {
+    "./business-credits": { spendBusinessCredit:async (writer, actor, label, key)=>{
+      assert.equal(writer,client);
+      if (blockDebit) throw Error("Monthly credits used");
+      debits.push({actor,key});
+    }},
     "./team-access": {lockTeamPermission:async(_,s,p)=>{if(!s.grant.permissions[p])throw Error("Permission denied");return s.grant;},auditTeam:async()=>{}},
     "./db": { getDb: () => pool },
     "./parts-network-schema": load("lib/parts-network-schema.ts"),
@@ -731,7 +738,12 @@ test("row edits are scoped, validated and reject stale saves", async () => {
   await assert.rejects(()=>network.editPartsRow({...dealer,id:'other'},id,edit),/approval/);
   await assert.rejects(()=>network.editPartsRow(dealer,id,{...edit,partNumber:'002'}),/already exists/);
   await assert.rejects(()=>network.editPartsRow(dealer,id,{...edit,quantity:'-1'}));
-  await network.editPartsRow(dealer,id,edit);
+  const metered = {...dealer,metered:true};
+  await assert.rejects(()=>network.editPartsRow(metered,id,edit),/Monthly credits used/);
+  blockDebit = false;
+  await network.editPartsRow(metered,id,edit);
+  await assert.rejects(()=>network.editPartsRow(metered,id,edit),/changed/);
+  assert.deepEqual(debits,[{actor:dealer.id,key:`stock-edit:${id}:${dealer.id}:2`}]);
   const rows=(await network.partsData(dealer,id,'mine','',0)).rows;
   assert.equal(rows.length,2);
   assert.equal(rows.find(r=>r.part_number==='002').quantity,4);

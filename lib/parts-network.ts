@@ -675,6 +675,11 @@ export async function editPartsRow(actor: PartsActor, id: string, input: Record<
     } catch(e) { throw new PartsError((e as Error).message); }
     await db.query("UPDATE parts_network_rows SET part_number=$4,part_key=upper($4),quantity=COALESCE($5,quantity),price=$6,brand=$7,description=$8,details=$9::jsonb WHERE network_id=$1 AND dealer_id=$2 AND part_key=$3", [id, actor.id, originalKey, row.partNumber, keepQuantity ? null : row.quantity, row.price, row.brand || "", row.description || "", JSON.stringify(extraDetails)]);
     await db.query("UPDATE parts_network_members SET revision=revision+1,uploaded_at=now(),extra_fields=$3::jsonb WHERE network_id=$1 AND dealer_id=$2", [id, actor.id, JSON.stringify(extraFields)]);
+    if (actor.metered) {
+      const { spendBusinessCredit } = await import('./business-credits');
+      const revision = Number(member.revision) + 1;
+      await spendBusinessCredit(db, actor.id, 'Edited a stocklist row', `stock-edit:${id}:${actor.id}:${revision}`);
+    }
     await audit(db, id, actor, "edit-part", row.partNumber);
     return {updated:true};
   });

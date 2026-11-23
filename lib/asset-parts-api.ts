@@ -53,7 +53,7 @@ export async function assetPartsRequest(request: NextRequest, target: Contributi
       scope = app.scope; canView = app.canView; canAdd = app.canAdd; canReadMaintenance = app.canReadMaintenance;
       if (writing ? !canAdd : !canView && !canAdd) throw new ExternalLeadAccessError('This login cannot manage parts.', 403);
     } else if ('ownerAssetId' in target) {
-      const session = await getServerSession({ requireActive: true });
+      const session = await getServerSession({ requireActive: true, allowBusinessWorkspace: true });
       if (!session?.user?.id) throw new ExternalLeadAccessError('Sign in to manage parts.', 401);
       const user = session.user;
       scope = { ownerId: user.id, assetId: target.ownerAssetId, user, lock: async client => {
@@ -180,7 +180,10 @@ export async function assetPartsRequest(request: NextRequest, target: Contributi
       const actorName = scope.user.name || scope.user.email;
       await client.query(`INSERT INTO asset_parts (id, owner_id, asset_id, item_key, item_label, name, part_number, brand, notes, maintenance_id, actor_id, added_by) VALUES ($1::uuid,$2,$3::uuid,$4,$5,$6,$7,$8,$9,$10::uuid,$11,$12)`, [input.id,scope.ownerId,scope.assetId,input.itemKey,partChoice?.label || suggestion?.label || 'Other part',input.name,input.partNumber,input.brand,input.notes,input.maintenanceId,scope.user.id,actorName]);
       await recordSharedAssetActivity(client, { id: input.id, ownerId: scope.ownerId, assetId: scope.assetId, actorId: scope.user.id, actorName, action: 'Part added', after: { name: input.name, partNumber: input.partNumber, maintenanceId: input.maintenanceId } });
-      if (scope.sharingAccountId || (!('ownerAssetId' in target) && !('appScope' in target))) await recordSharingUsage({ accountId: scope.user.id, actorId: scope.user.id, assetId: scope.assetId, token: scope.token, metric: 'contribution', eventKey: `part:${input.id}` }, client);
+      if ('ownerAssetId' in target) {
+        const { spendBusinessCredit } = await import('./business-credits');
+        await spendBusinessCredit(client, scope.user.id, 'Added a part', `part:${input.id}`);
+      } else if (scope.sharingAccountId || !('appScope' in target)) await recordSharingUsage({ accountId: scope.user.id, actorId: scope.user.id, assetId: scope.assetId, token: scope.token, metric: 'contribution', eventKey: `part:${input.id}` }, client);
       await client.query('COMMIT'); return businessJson({ ok: true });
     } catch (error) { await client.query('ROLLBACK'); throw error; } finally { client.release(); }
   } catch (error) { return error instanceof ExternalLeadAccessError ? businessJson({ error: error.message }, error.status) : businessError(error); }
