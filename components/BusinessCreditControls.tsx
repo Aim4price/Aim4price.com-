@@ -1,6 +1,7 @@
 'use client';
-import { useId,useState,type ReactNode } from 'react';
+import { useEffect,useId,useState,type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { money, type BillingPlan } from '../lib/billing-shared';
 import creditStyles from './BusinessCreditControls.module.css';
 import ShareDisclosureDialog from './asset-register/ShareDisclosureDialog';
 import styles from '../app/business/page.module.css';
@@ -49,13 +50,9 @@ function CreditBalance({plan}:{plan:BusinessSubscription}) {
  </span>;
 }
 
-export function BusinessSubscriptionButton({plan,className,icon,credits=false,inviteLink}:{plan:BusinessSubscription;className:string;icon?:ReactNode;credits?:boolean;inviteLink?:string}) {
- const router=useRouter(), titleId=useId();
- const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const fullAccess=plan.fullAccess ?? Boolean(plan.paidSince);
- const label=fullAccess?'Manage subscription':plan.pending?'Upgrade requested':'Upgrade Account';
+function InviteActions({inviteLink}:{inviteLink:string}) {
  const [copied,setCopied]=useState(false);
- const inviteUrl = open && inviteLink ? new URL(inviteLink, window.location.origin).href : undefined;
+ const inviteUrl = new URL(inviteLink, window.location.origin).href;
  const inviteMessage = inviteUrl ? encodeURIComponent(`Join me on Aim4price to value and manage your assets: ${inviteUrl}`) : undefined;
  async function copyInvite() {
    if (!inviteUrl) return;
@@ -63,38 +60,69 @@ export function BusinessSubscriptionButton({plan,className,icon,credits=false,in
      await navigator.clipboard.writeText(inviteUrl);
      setCopied(true);
    } catch {
-     window.prompt('Copy your owner invite link', inviteUrl);
+     window.prompt('Copy your invite link', inviteUrl);
    }
  }
- async function requestUpgrade(){
-   setBusy(true);setError('');
-   try {
-     const response=await fetch('/api/business-credits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'upgrade'})});
-     if(!response.ok) throw Error((await response.json()).error || 'Could not request upgrade.');
-     router.refresh();setOpen(false);
-   } catch(e){setError(e instanceof Error?e.message:'Could not request upgrade.');}
-   finally{setBusy(false);}
- }
- const inviteAction = inviteUrl && <div className={creditStyles.inviteActions} role="group" aria-label="Share owner invite">
+ return <div className={creditStyles.inviteActions} role="group" aria-label="Share Aim4price">
    <button type="button" onClick={()=>void copyInvite()} aria-label="Copy invite link" title={copied ? 'Invite link copied' : 'Copy invite link'}>
      <svg aria-hidden="true" viewBox="0 0 24 24">{copied ? <path d="m4 12 5 5L20 6"/> : <><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></>}</svg>
    </button>
    <a href={'https://wa.me/?text=' + inviteMessage} target="_blank" rel="noopener noreferrer" aria-label="Share invite on WhatsApp" title="Share on WhatsApp">
      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 11.8a8.8 8.8 0 0 1-13 7.7L3 21l1.4-4.7a8.8 8.8 0 1 1 16.4-4.5Z"/><path d="M8 7.7c-.8 1.1.3 3.4 2.2 5.4 2 2 4.2 3.1 5.5 2.2l.8-1.5-2.5-1.2-.9 1c-1.6-.8-2.5-1.8-3.2-3.2l.9-.9-1.1-2.4Z" fill="currentColor" stroke="none"/></svg>
    </a>
-   <a href={'mailto:?subject=Your%20Aim4price%20owner%20invite&body=' + inviteMessage} aria-label="Share invite by email" title="Share by email">
+   <a href={'mailto:?subject=Your%20Aim4price%20invite&body=' + inviteMessage} aria-label="Share invite by email" title="Share by email">
      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg>
    </a>
    <span className={creditStyles.inviteStatus} role="status">{copied ? 'Invite link copied' : ''}</span>
  </div>;
+}
+
+export function ShareAim4priceButton({inviteLink,className,icon}:{inviteLink:string;className:string;icon:ReactNode}) {
+ const [open,setOpen]=useState(false), titleId=useId();
+ return <><button type="button" className={className} aria-haspopup="dialog" onClick={()=>setOpen(true)}>{icon}<strong>Share Aim4price</strong></button>
+ {open && <ShareDisclosureDialog title="Share Aim4price" titleId={titleId} closeLabel="Close" onClose={()=>setOpen(false)}>
+ <p>Invite someone to Aim4price. Your account will appear under “Who introduced you?” at signup.</p>
+ <InviteActions inviteLink={inviteLink} />
+ </ShareDisclosureDialog>}</>;
+}
+
+export function BusinessSubscriptionButton({plan,className,icon,credits=false,inviteLink}:{plan:BusinessSubscription;className:string;icon?:ReactNode;credits?:boolean;inviteLink?:string}) {
+ const router=useRouter(), titleId=useId();
+ const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const fullAccess=plan.fullAccess ?? Boolean(plan.paidSince);
+ const label=fullAccess?'Manage subscription':plan.pending?'Upgrade requested':'Upgrade Account';
+ const [offers,setOffers]=useState<BillingPlan[]>([]);
+ const [selected,setSelected]=useState('');
+ useEffect(()=>{
+   if (!open || fullAccess || plan.pending || !plan.owner) return;
+   let active=true;
+   fetch('/api/billing/plans',{cache:'no-store'}).then(async response=>{
+     if(!response.ok) throw Error();
+     const data=await response.json();
+     const plans:BillingPlan[]=data.plans.filter((offer:BillingPlan)=>offer.accountType==='business');
+     if(active){setOffers(plans);setSelected('');if(!plans.length)setError('No Business plans are currently available.');}
+   }).catch(()=>{if(active)setError('Could not load plans. Reopen this window to retry.');});
+   return ()=>{active=false;};
+ },[open,fullAccess,plan.pending,plan.owner]);
+ async function requestUpgrade(){
+   setBusy(true);setError('');
+   try {
+     const response=await fetch('/api/business-credits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'upgrade',planKey:selected,planVersion:offers.find(offer=>offer.key===selected)?.version})});
+     if(!response.ok) throw Error((await response.json()).error || 'Could not request upgrade.');
+     router.refresh();setOpen(false);
+   } catch(e){setError(e instanceof Error?e.message:'Could not request upgrade.');}
+   finally{setBusy(false);}
+ }
  const subscriptionAction = fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
  <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
  plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
- plan.owner ? <><p>Get staff access and unlimited credits. We’ll contact you to activate your plan.</p><button type="button" disabled={busy} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
+ plan.owner ? <><p>Choose a plan for staff access and unlimited credits. No charge is taken today. We’ll contact you before activation.</p>
+ <fieldset className={creditStyles.planChoices}><legend>Business plan</legend>{offers.map(offer=><label key={offer.key}><input type="radio" name={titleId+'-offer'} checked={selected===offer.key} onChange={()=>setSelected(offer.key||'')}/>{offer.description} · {money(offer.amountCents)} {offer.interval}</label>)}</fieldset>
+ <button type="button" disabled={busy || !selected} onClick={()=>void requestUpgrade()} className={styles.button}>{busy?'Requesting…':'Request upgrade'}</button></> :
  plan.limit === null ? <><p>Contact Aim4price to request an upgrade for this account.</p><a className={styles.button} href="/contact-us">Contact Aim4price</a></> :
  <p>Your business owner can request an upgrade.</p>;
  return <><button type="button" className={credits ? className + ' ' + creditStyles.card : className}
-   aria-haspopup="dialog" onClick={()=>{setError('');setCopied(false);setOpen(true);}}>
+   aria-haspopup="dialog" onClick={()=>{setError('');setOpen(true);}}>
    {credits ? <>
      <strong className={creditStyles.cardHeading}>Credits</strong>
      <CreditBalance plan={plan} />
@@ -110,13 +138,13 @@ export function BusinessSubscriptionButton({plan,className,icon,credits=false,in
      {inviteLink && <section>
        <h3>Invite an owner</h3>
        <p>Earn {plan.reward != null ? `${plan.reward} credits` : 'credits'} this month when an owner signs up with your link, verifies their email and adds their first asset.</p>
-       {inviteAction}
+       {inviteLink && <InviteActions inviteLink={inviteLink} />}
      </section>}
      <section><h3>Paid Business</h3>{subscriptionAction}</section>
    </div>
  </div> : <>
    {!fullAccess && plan.remaining !== null && plan.limit !== null && <p><strong>{plan.remaining} of {plan.limit} credits remaining</strong></p>}
-   {inviteAction}{subscriptionAction}
+   {inviteLink && <InviteActions inviteLink={inviteLink} />}{subscriptionAction}
  </>}
  {error && <p role="alert">{error}</p>}</ShareDisclosureDialog>}</>;
 }
