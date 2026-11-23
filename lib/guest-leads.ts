@@ -105,22 +105,24 @@ export async function listReceivedSharedEnquiries(){
  const session=await getServerSession({requireActive:false,allowDealerApp:true});
  if(!session?.user?.email)return[];
  await ensureGuestLeadSchema();await ensureSharingFoundation();
- const candidates = (await getDb().query<{token:string;request:string;sender:string;created_at:string;viewed:string[]}>(`SELECT ARRAY(SELECT v.asset_id::text FROM shared_asset_views v WHERE v.account_id=$2 AND v.token=s.token) AS viewed,token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE (lower(lead_details->>'recipientEmail')=$1 OR EXISTS(SELECT 1 FROM sharing_usage_events e WHERE e.token=s.token AND e.account_id=$2 AND e.metric='enquiry_opened')) AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC,token`,[session.user.email.toLowerCase(),session.user.id])).rows;
+ const candidates = (await getDb().query<{token:string;request:string;sender:string;created_at:string;viewed:string[];dismissed:string[]}>(`SELECT ARRAY(SELECT v.asset_id::text FROM shared_asset_views v WHERE v.account_id=$2 AND v.token=s.token) AS viewed, ARRAY(SELECT v.asset_id::text FROM shared_asset_views v WHERE v.account_id=$2 AND v.token=s.token AND v.dismissed) AS dismissed,token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE (lower(lead_details->>'recipientEmail')=$1 OR EXISTS(SELECT 1 FROM sharing_usage_events e WHERE e.token=s.token AND e.account_id=$2 AND e.metric='enquiry_opened')) AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC,token`,[session.user.email.toLowerCase(),session.user.id])).rows;
  const {externalLeadAccess}=await import('./external-lead-access');
  const result = [];
  for(const candidate of candidates){
   const lead=await readLeadPage(candidate.token);
   if(!lead||!['active','read-only','owner'].includes((await externalLeadAccess(lead)).access))continue;
   await recordDeliveredAssets(session.user.email,candidate.token,lead.share.assets.flatMap(asset=>asset.assetId?[asset.assetId]:[]));
+  const assets = lead.share.assets.filter(asset => !candidate.dismissed.includes(asset.assetId || ''));
+  if (!assets.length) continue;
   result.push({
     token: candidate.token,
     created_at: candidate.created_at,
     request: candidate.request,
     sender: lead.share.senderName || candidate.sender,
-    title: lead.share.umbrellaName || (lead.share.assets.length === 1 ? lead.share.assets[0].title : 'Shared Assets'),
+    title: lead.share.umbrellaName || (assets.length === 1 ? assets[0].title : 'Shared Assets'),
     umbrella: lead.share.umbrellaName || '',
-    assets: lead.share.assets.map(asset => ({id: asset.assetId || '', title: asset.title, serial: asset.serialNumber || '', viewed: candidate.viewed.includes(asset.assetId || '')})),
-    assetCount: lead.share.assets.length,
+    assets: assets.map(asset => ({id: asset.assetId || '', title: asset.title, serial: asset.serialNumber || '', viewed: candidate.viewed.includes(asset.assetId || '')})),
+    assetCount: assets.length,
   });
  }
  return result;

@@ -14,6 +14,7 @@ import sharedStyles from "../../app/leads/shared-assets.module.css";
 import SharedAssetExport from "../leads/SharedAssetExport";
 import SharedAssetSend from "./SharedAssetSend";
 import LeadManageButton from "../leads/LeadManageButton";
+import SharedAssetControls from "../leads/SharedAssetControls";
 import LeadAssetCard from "../leads/LeadAssetCard";
 import { useOutsideCardDismiss } from "../leads/useOutsideCardDismiss";
 import LeadAssetDetails from "../leads/LeadAssetDetails";
@@ -37,7 +38,7 @@ export default function SharedAssetCards({
   example = false,
   senderName = "",
   allowBusinessDetails = false,
-  guestReturnTo, creditToken, shareToken, initialAssetId, trackViews, inline = false,
+  guestReturnTo, creditToken, shareToken, initialAssetId, trackViews, inline = false, canRemove, trackingAccessId,
 }: {
   example?: boolean;
   share: PublicAssetShare | null;
@@ -46,6 +47,8 @@ export default function SharedAssetCards({
   enquiry?: ExternalLeadActionData;
   senderName?: string;
   allowBusinessDetails?: boolean;
+  canRemove?: boolean;
+  trackingAccessId?: string;
   inline?: boolean; initialAssetId?: string; trackViews?: boolean;
   guestReturnTo?: string; creditToken?: string; shareToken?: string;
 }) {
@@ -98,7 +101,25 @@ export default function SharedAssetCards({
   const [valueAsset,setValueAsset]=useState<{id:string;title:string}|null>(null);
   const [vatIncluded,setVatIncluded]=useState<Record<string,boolean>>({});
   const [opened, setOpened] = useState<number | null>(null);
+  const [detailsAsset, setDetailsAsset] = useState<string | null>(null);
+  const [removing, setRemoving] = useState(false);
+  async function removeAsset(assetId: string, title: string) {
+    const url = availabilityUrl(assetId);
+    if (!url || removing || !window.confirm(`Remove ${title} from your Shared Assets? The owner keeps the asset in their register.`)) return;
+    setRemoving(true);
+    try {
+      const response = await fetch(url, {method:'DELETE'});
+      if (!response.ok) throw new Error((await response.json()).error || 'Could not remove the shared asset.');
+      closeCard();
+      router.refresh();
+    } catch (error) {
+      setCreditError(error instanceof Error ? error.message : 'Could not remove the shared asset.');
+    } finally {
+      setRemoving(false);
+    }
+  }
   function closeCard() {
+    setDetailsAsset(null);
     setOpened(null);
     if (inline) router.replace('/business', {scroll:false});
   }
@@ -177,6 +198,7 @@ export default function SharedAssetCards({
             {share.assets.map((item, index) => {
               if (inline && item.assetId !== initialAssetId) return null;
               const isOpen = opened === index;
+              const showDetails = !inline || Boolean(item.assetId && detailsAsset === item.assetId);
               const photoIndex = photoIndexes[index] ?? 0;
               return (
                 <article
@@ -187,8 +209,11 @@ export default function SharedAssetCards({
                 >
                   {isOpen ? (
                     <div className={sharedStyles.detailActions}>
-                      <button type="button" className={`${sharedStyles.toggle} ${sharedStyles.secondary}`} aria-expanded={true}
-                        aria-controls={`${panelPrefix}-${index}`} aria-label={`Close ${item.title}`} onClick={closeCard}>Close</button>
+                      {inline ? <SharedAssetControls open workspace removing={removing} onToggle={closeCard}
+                        onRemove={canRemove && item.assetId ? () => void removeAsset(item.assetId!, item.title) : undefined}
+                        onTracking={trackingAccessId ? () => router.push('/tracking?open=' + encodeURIComponent(trackingAccessId)) : undefined}
+                      /> : <button type="button" className={`${sharedStyles.toggle} ${sharedStyles.secondary}`} aria-expanded={true}
+                        aria-controls={`${panelPrefix}-${index}`} aria-label={`Close ${item.title}`} onClick={closeCard}>Close</button>}
                     </div>
                   ) : (
                   <RecipientAssetSummary
@@ -211,7 +236,7 @@ export default function SharedAssetCards({
                   />
                   )}
                   {isOpen && (
-                    <LeadAssetCard
+                    <LeadAssetCard expanded={showDetails}
                       identity={
                         <>
                           <h2>{item.title}</h2>
@@ -239,7 +264,12 @@ export default function SharedAssetCards({
                             className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${leadStyles.exportHeaderActions}`}
                           >
                             <SharedAssetExport availabilityUrl={availabilityUrl(item.assetId, true)} creditTarget={creditToken?{token:creditToken,assetKey:item.assetId||String(index)}:undefined} signInReturnTo={guestReturnTo} title={item.title} photos={item.photoUrls} asset={item} attachments={enquiry && enquiry.permissions.reports && ['owner','active','read-only'].includes(enquiry.access) ? enquiry.reports.map(report => ({name:report.label, url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}`})) : []}/>
-                            {enquiry && item.assetId && <SharedAssetSend creditTarget={creditToken?{token:creditToken,assetKey:item.assetId}:undefined} enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>}
+                            {inline && item.assetId ? <button type="button"
+                              className={`${assetStyles.expandButton} ${assetStyles.cardViewDetailsButton} ${leadStyles.leadQuickActionButton}`}
+                              aria-expanded={showDetails} aria-controls={`${panelPrefix}-${index}`}
+                              onClick={() => setDetailsAsset(showDetails ? null : item.assetId!)}>
+                              {showDetails ? 'Hide details' : 'View details'}
+                            </button> : (enquiry && item.assetId && <SharedAssetSend creditTarget={creditToken?{token:creditToken,assetKey:item.assetId}:undefined} enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>)}
                             <LeadManageButton
                               label={`Manage ${item.title}`}
                               onClick={(event) => {
@@ -251,7 +281,7 @@ export default function SharedAssetCards({
                         </>
                       }
                     >
-                      <LeadAssetDetails
+                      {showDetails && <LeadAssetDetails
                         id={`${panelPrefix}-${index}`}
                         title={item.title}
                         photos={item.photoUrls}
@@ -290,7 +320,8 @@ export default function SharedAssetCards({
                             endpoint={`/api/asset-share-links/${enquiry?.token}/assets/${item.assetId}`} sourceId={`${enquiry?.token}:${item.assetId}`} externalShare={enquiry && item.assetId ? {token:enquiry.token,assetId:item.assetId}:undefined} directUpdates={enquiry?.access==='owner'||enquiry?.permissions.directUpdates} onSaved={()=>router.refresh()}/>
                         </>}
                       >
-                      </LeadAssetDetails>
+                        {inline && enquiry && item.assetId && <SharedAssetSend creditTarget={creditToken?{token:creditToken,assetKey:item.assetId}:undefined} enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>}
+                      </LeadAssetDetails>}
                     </LeadAssetCard>
                   )}
                 </article>

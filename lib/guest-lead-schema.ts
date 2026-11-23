@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS shared_asset_views (
  asset_id uuid NOT NULL,
  PRIMARY KEY(account_id, token, asset_id)
 );
+ALTER TABLE shared_asset_views ADD COLUMN IF NOT EXISTS dismissed boolean NOT NULL DEFAULT false;
 CREATE INDEX IF NOT EXISTS asset_share_reports_token ON asset_share_reports(token);
 `;
 let ready: Promise<void> | undefined;
