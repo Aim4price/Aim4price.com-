@@ -28,18 +28,16 @@
 .summary .track { background: #456e60; }
 .summary .track > span { background: #94dabe; }
 .summary p { margin-top: .65rem; color: #e1f1e9; font-size: .94rem; }
-.usage { display: grid; gap: .45rem; }
-.usage p { display: grid; grid-template-columns: 4.4rem 1fr; gap: .5rem; }
 .options { display: grid; }
-.options > section { display: grid; grid-template-columns: 1fr auto; gap: .25rem 1.1rem; padding: .9rem 0; border-top: 1px solid var(--app-line,#d3e1d9); }
+.options > section { display: grid; grid-template-columns: minmax(0, 1fr) 11.75rem; gap: .35rem 1.5rem; padding: 1.05rem 0; border-top: 1px solid var(--app-line,#d3e1d9); }
 .options > section:last-child { padding-bottom: 0; }
 .options h3 { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; font-size: 1.08rem; }
 
 .options p { grid-column: 1; text-wrap: pretty; }
-.options button, .options a { grid-column: 2; grid-row: 1 / 3; align-self: center; min-height: 2.75rem; font: inherit; font-weight: 700; }
+.options button, .options a { grid-column: 2; grid-row: 1 / 3; align-self: center; justify-content: center; width: 100%; box-sizing: border-box; min-height: 2.9rem; font: inherit; font-weight: 700; }
 @container credit-dialog (max-width: 36rem) {
   .options > section { grid-template-columns: 1fr; }
-  .options button, .options a { grid-area: auto; justify-self: start; margin-top: .4rem; }
+  .options button, .options a { grid-area: auto; justify-self: start; margin-top: .55rem; max-width: 100%; }
 }
 
 .card.card { grid-template-columns: auto 1fr; align-items: center; gap: .9rem .7rem; }
