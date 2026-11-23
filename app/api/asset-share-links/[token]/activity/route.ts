@@ -15,8 +15,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { token
     const lead = await readLeadPage(params.token);
     if (!assetId || !lead || !lead.share.assets.some(asset => asset.assetId === assetId))
         return NextResponse.json({ error: 'Share unavailable.' }, { status: 404 });
-    const { access, user, business } = await externalLeadAccess(lead);
-    if (!user || !business || !user.emailVerified || !['active', 'read-only'].includes(access) || !await canBusinessRead(user))
+    const { access, user } = await externalLeadAccess(lead);
+    if (!user || !user.emailVerified || !['active', 'read-only'].includes(access) || !await canBusinessRead(user))
         return NextResponse.json({ error: 'Sign in with authorised Business access.' }, { status: 403 });
     try {
         const fingerprint = createHash('sha256').update(params.token).digest('hex');
