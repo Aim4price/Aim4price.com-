@@ -4,6 +4,35 @@ import { externalLeadAccess } from '../../../../../lib/external-lead-access';
 import { getServerSession } from '../../../../../lib/auth-session';
 import { recordSharingUsage } from '../../../../../lib/sharing-foundation';
 import { isTrustedRequestOrigin } from '../../../../../lib/trusted-request-origin';
+import { createHash } from 'node:crypto';
+import { CreditLimitError, saveBusinessResult } from '../../../../../lib/business-credits';
+import { canBusinessRead } from '../../../../../lib/business-accounts';
+
+export async function DELETE(request: NextRequest, { params }: { params: { token: string } }) {
+    if (!isTrustedRequestOrigin(request.headers.get('origin'), request.nextUrl.origin))
+        return NextResponse.json({ error: 'Invalid origin.' }, { status: 403 });
+    const assetId = request.nextUrl.searchParams.get('asset');
+    const lead = await readLeadPage(params.token);
+    if (!assetId || !lead || !lead.share.assets.some(asset => asset.assetId === assetId))
+        return NextResponse.json({ error: 'Share unavailable.' }, { status: 404 });
+    const { access, user } = await externalLeadAccess(lead);
+    if (!user || !user.emailVerified || !['active', 'read-only'].includes(access) || !await canBusinessRead(user))
+        return NextResponse.json({ error: 'Sign in with authorised Business access.' }, { status: 403 });
+    try {
+        const fingerprint = createHash('sha256').update(params.token).digest('hex');
+        await saveBusinessResult(user.id, 'Remove received asset', db => db.query(
+            `INSERT INTO shared_asset_views(account_id, token, asset_id, dismissed) VALUES ($1,$2,$3,true)
+             ON CONFLICT (account_id, token, asset_id) DO UPDATE SET dismissed=true
+             WHERE NOT shared_asset_views.dismissed`, [user.id, params.token, assetId]),
+            result => result.rowCount ? `received-remove:${user.id}:${fingerprint}:${assetId}` : null);
+    } catch (error) {
+        if (error instanceof CreditLimitError)
+            return NextResponse.json({ error: error.message }, { status: 402 });
+        throw error;
+    }
+    return NextResponse.json({ ok: true });
+}
+
 export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest, { params }: {
     params: {

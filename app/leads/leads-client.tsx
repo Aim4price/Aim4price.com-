@@ -25,6 +25,7 @@ import AssetDetailIcon from '../../components/asset-register/AssetDetailIcon';
 import cardLayout from '../../components/asset-register/AssetCardDetails.module.css';
 import SharedAssetFacts from '../../components/leads/SharedAssetFacts';
 import SharedAssetExport from '../../components/leads/SharedAssetExport';
+import SharedAssetControls from '../../components/leads/SharedAssetControls';
 import LeadAssetCard from '../../components/leads/LeadAssetCard';
 import { useOutsideCardDismiss } from '../../components/leads/useOutsideCardDismiss';
 import LeadAssetDetails from '../../components/leads/LeadAssetDetails';
@@ -3547,39 +3548,10 @@ export default function LeadsClient({
                 }`}
               >
                 {isTrackingRequest ? (
-                  <>
-                    {isLeadOpen ? (
-                      <button
-                        type="button" data-tooltip="Remove from Shared Assets"
-                        className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionDanger}` : ''} ${styles.deleteLeadButton}`}
-                        onClick={() => setDeleteLeadTarget(lead)}
-                      >
-                        Remove
-                      </button>
-                    ) : null}
-                    {lead.maintenanceAccess?.hasMaintenanceRecords ? (
-                      <button
-                        type="button" data-tooltip="Open tracking"
-                        className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${assetStyles.secondaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}` : ''} ${styles.trackingOpenButton}`}
-                        onClick={() => openTracking(lead)}
-                      >
-                        Tracking
-                      </button>
-                    ) : null}
-                    <button
-                      type="button" data-tooltip={isLeadOpen ? 'Close lead' : 'Open lead'}
-                      className={`${assetStyles.controlTooltip} ${styles.leadControlTooltip} ${isLeadOpen ? assetStyles.secondaryButton : assetStyles.primaryButton} ${useDealerWorkspaceStyles ? `${workspaceStyles.actionButton} ${isLeadOpen ? workspaceStyles.actionNeutral : workspaceStyles.actionGreen}` : ''} ${isLeadOpen ? styles.trackingCloseButton : styles.openLeadButton}`}
-                      onClick={() => {
-                        if (isLeadOpen) {
-                          setOpenLeadId(null);
-                        } else {
-                          void openLead(lead);
-                        }
-                      }}
-                    >
-                      {isLeadOpen ? 'Close' : 'Open'}
-                    </button>
-                  </>
+                  <SharedAssetControls open={isLeadOpen} workspace={useDealerWorkspaceStyles}
+                    onRemove={() => setDeleteLeadTarget(lead)}
+                    onTracking={lead.maintenanceAccess?.hasMaintenanceRecords ? () => openTracking(lead) : undefined}
+                    onToggle={() => isLeadOpen ? setOpenLeadId(null) : void openLead(lead)} />
                 ) : (
                   <>
                     {!isDealerLeadsMode ? <button
