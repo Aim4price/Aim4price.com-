@@ -64,3 +64,10 @@ export function workspaceCards(role: WorkspaceRole, free: boolean, receivedHref:
     return {key,label,href:key === 'shared' ? receivedHref : href,locked:role !== 'business' && free && !freeCards.has(key)};
   });
 }
+
+export function freeBusinessManageItems(receivedHref: string, hidden: readonly string[]) {
+  const pages = workspaceCards('business', true, receivedHref);
+  const visible = pages.filter(page => !hidden.includes(page.key));
+  if (visible.length < pages.length) return visible;
+  return [{ href: '/account', label: 'Account' }, { href: '/', label: 'Home' }, ...pages];
+}

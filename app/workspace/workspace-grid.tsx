@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import ShareDisclosureDialog from '../../components/asset-register/ShareDisclosureDialog';
 import PageHelp from '../../components/PageHelp';
 import type { workspaceCards, WorkspaceRole } from '../../lib/workspace-navigation';
+import { useWorkspaceVisibility } from '../../lib/use-workspace-visibility';
 import { cardTopic } from './card-help';
 import styles from './workspace.module.css';
 
@@ -25,19 +26,8 @@ function WorkspaceTile({card, role, free}: {card: Cards[number]; role: Workspace
 export default function WorkspaceGrid({cards, role, userId, freeBusiness}: {
   cards: Cards; role: WorkspaceRole; userId: string; freeBusiness: boolean;
 }) {
-  const storageKey = 'aim4price.workspace.hidden.' + userId + '.' + role;
-  const [hidden, setHidden] = useState<string[]>([]);
+  const { hidden, save } = useWorkspaceVisibility(userId, role);
   const [editing, setEditing] = useState(false);
-  useEffect(() => {
-    try {
-      const saved: unknown = JSON.parse(localStorage.getItem(storageKey) || '[]');
-      if (Array.isArray(saved)) setHidden(saved.filter((key): key is string => typeof key === 'string'));
-    } catch { /* The workspace is also usable without browser storage. */ }
-  }, [storageKey]);
-  function save(keys: string[]) {
-    setHidden(keys);
-    try { localStorage.setItem(storageKey, JSON.stringify(keys)); } catch { /* Session-only preferences. */ }
-  }
   const visible = cards.filter(card => !hidden.includes(card.key));
   const available = visible.filter(card => !card.locked);
   const paid = visible.filter(card => card.locked);
@@ -55,6 +45,7 @@ export default function WorkspaceGrid({cards, role, userId, freeBusiness}: {
     </header>
     {editing && <ShareDisclosureDialog title="Customise workspace" titleId="workspace-card-options" closeLabel="Close workspace settings" onClose={() => setEditing(false)}>
       <fieldset className={styles.fields}><legend>Show cards</legend>
+      {freeBusiness && <p>Hiding a page here also hides it from Manage. Sign out is always available.</p>}
       <div className={styles.options}>{cards.map(card => <label key={card.key}>
         <input type="checkbox" checked={!hidden.includes(card.key)} onChange={event => save(event.target.checked ? hidden.filter(key => key !== card.key) : [...hidden, card.key])}/>{card.label}
       </label>)}</div>
