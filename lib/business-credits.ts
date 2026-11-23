@@ -6,7 +6,7 @@ import { ensureBusinessWorkspaceSchema, ensureBusinessMembership } from './busin
 export const MONTHLY_BUSINESS_CREDITS = 500;
 export const creditLimitsActive = (enforced=false) => enforced || process.env.AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT === 'true';
 export const CREDIT_SCHEMA = `
- ALTER TABLE business_workspaces ADD COLUMN IF NOT EXISTS upgrade_requested_at timestamptz,
+ ALTER TABLE business_workspaces ADD COLUMN IF NOT EXISTS upgrade_requested_at timestamptz, ADD COLUMN IF NOT EXISTS requested_plan jsonb,
  ADD COLUMN IF NOT EXISTS paid_since timestamptz, ADD COLUMN IF NOT EXISTS activated_by text;
  ALTER TABLE business_workspaces ADD COLUMN IF NOT EXISTS monthly_allowance integer NOT NULL DEFAULT 500, ADD COLUMN IF NOT EXISTS referral_reward integer NOT NULL DEFAULT 50;
  ALTER TABLE business_workspaces ADD COLUMN IF NOT EXISTS enforce_credits boolean NOT NULL DEFAULT false;
@@ -124,7 +124,7 @@ export async function changeBusinessPlan(db:PoolClient, businessId:string, actor
   if (plan==='paid' && workspace.account_status!=='active') throw Error('Only an active Business account can be upgraded.');
   if (pendingOnly && !workspace.upgrade_requested_at) throw Error('This upgrade is no longer pending.');
   await db.query(`UPDATE business_workspaces SET paid_since=CASE WHEN $2='paid' THEN now() END,
-    activated_by=CASE WHEN $2='paid' THEN $3 END,upgrade_requested_at=NULL WHERE id=$1`,[businessId,plan,actorId]);
+    activated_by=CASE WHEN $2='paid' THEN $3 END,upgrade_requested_at=NULL,requested_plan=NULL WHERE id=$1`,[businessId,plan,actorId]);
   await db.query('UPDATE account_profiles SET account_type=$2,updated_at=now() WHERE user_id=$1',
     [workspace.owner_user_id,plan==='paid'?'dealer':'business']);
   await db.query(`INSERT INTO sharing_account_access(user_id,plan,updated_by) VALUES($1,$2,$3)
