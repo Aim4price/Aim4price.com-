@@ -55,14 +55,15 @@ export function BusinessSubscriptionButton({plan,className,icon,credits=false,in
  const fullAccess=plan.fullAccess ?? Boolean(plan.paidSince);
  const label=fullAccess?'Manage subscription':plan.pending?'Upgrade requested':'Upgrade Account';
  const [copied,setCopied]=useState(false);
+ const inviteUrl = open && inviteLink ? new URL(inviteLink, window.location.origin).href : undefined;
+ const inviteMessage = inviteUrl ? encodeURIComponent(`Join me on Aim4price to value and manage your assets: ${inviteUrl}`) : undefined;
  async function copyInvite() {
-   if (!inviteLink) return;
-   const url = new URL(inviteLink, window.location.origin).href;
+   if (!inviteUrl) return;
    try {
-     await navigator.clipboard.writeText(url);
+     await navigator.clipboard.writeText(inviteUrl);
      setCopied(true);
    } catch {
-     window.prompt('Copy your owner invite link', url);
+     window.prompt('Copy your owner invite link', inviteUrl);
    }
  }
  async function requestUpgrade(){
@@ -74,9 +75,18 @@ export function BusinessSubscriptionButton({plan,className,icon,credits=false,in
    } catch(e){setError(e instanceof Error?e.message:'Could not request upgrade.');}
    finally{setBusy(false);}
  }
- const inviteAction = inviteLink && <button type="button" className={styles.secondaryButton} onClick={()=>void copyInvite()}>
-   <span aria-live="polite">{copied ? 'Invite link copied' : 'Copy invite link'}</span>
- </button>;
+ const inviteAction = inviteUrl && <div className={creditStyles.inviteActions} role="group" aria-label="Share owner invite">
+   <button type="button" onClick={()=>void copyInvite()} aria-label="Copy invite link" title={copied ? 'Invite link copied' : 'Copy invite link'}>
+     <svg aria-hidden="true" viewBox="0 0 24 24">{copied ? <path d="m4 12 5 5L20 6"/> : <><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></>}</svg>
+   </button>
+   <a href={'https://wa.me/?text=' + inviteMessage} target="_blank" rel="noopener noreferrer" aria-label="Share invite on WhatsApp" title="Share on WhatsApp">
+     <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 11.8a8.8 8.8 0 0 1-13 7.7L3 21l1.4-4.7a8.8 8.8 0 1 1 16.4-4.5Z"/><path d="M8 7.7c-.8 1.1.3 3.4 2.2 5.4 2 2 4.2 3.1 5.5 2.2l.8-1.5-2.5-1.2-.9 1c-1.6-.8-2.5-1.8-3.2-3.2l.9-.9-1.1-2.4Z" fill="currentColor" stroke="none"/></svg>
+   </a>
+   <a href={'mailto:?subject=Your%20Aim4price%20owner%20invite&body=' + inviteMessage} aria-label="Share invite by email" title="Share by email">
+     <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg>
+   </a>
+   <span className={creditStyles.inviteStatus} role="status">{copied ? 'Invite link copied' : ''}</span>
+ </div>;
  const subscriptionAction = fullAccess ? <><p><strong>Paid Business Account</strong>{plan.paidSince && <> · Active since {new Date(plan.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</>}</p>
  <p>Aim4price Admin manages your subscription. Contact us to change your plan.</p><a href="/contact-us" className={styles.button}>Contact Aim4price</a></> :
  plan.pending ? <p>Aim4price has received your request. Your Free Business Account stays active until the upgrade is confirmed.</p> :
