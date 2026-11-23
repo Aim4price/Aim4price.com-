@@ -96,10 +96,6 @@ export function BusinessSubscriptionButton({plan,className,icon,credits=false,in
      <CreditBalance plan={plan} />
      {plan.allowance != null && <p>{plan.allowance} credits per month</p>}
    </div>
-   <section className={creditStyles.usage}>
-     <p><strong>1 credit</strong><span>Save a cost, document or maintenance record.</span></p>
-     <p><strong>Free</strong><span>View assets, message and share.</span></p>
-   </section>
    <div className={creditStyles.options}>
      {inviteLink && <section>
        <h3>Invite an owner</h3>
