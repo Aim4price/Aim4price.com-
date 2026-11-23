@@ -9,7 +9,7 @@ type Session = NonNullable<Awaited<ReturnType<typeof getServerSession>>>;
 export async function businessToolProfile(session: Session, profile:AccountProfile) {
   if (profile.accountType === 'business' && !isDealerAppSession(session) && !isOwnerAppSession(session) && await canBusinessRead(session.user)) {
     await ensureCreditSchema();
-    return {...profile, accountType: 'dealer' as const};
+    return {...profile, accountType: 'dealer' as const, meteredBusiness:true};
   }
   return profile;
 }

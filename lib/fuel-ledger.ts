@@ -5304,7 +5304,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         const row = await loadFuelSlipRowForUpdate(client, userId, prior.rows[0].id);
         if (!row) throw new Error('Saved fuel slip could not be loaded.');
         const fuelSlip = mapFuelSlipRow(row);
-        await guard.after?.(client);
+        if (!guard.skipReplayDebit) await guard.after?.(client);
         await client.query('COMMIT'); committed = true;
         return { fuelSlip, storage: null, event: null, assets: [], pendingReview: fuelSlip.reviewRequired, message: 'Fuel slip already synced.' };
       }

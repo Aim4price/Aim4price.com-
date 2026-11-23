@@ -8,7 +8,7 @@ import { getDesktopScope } from './desktop-workspace';
 import { requireTeamAsset, listTeamOwnerAssets, type TeamScope } from './team-access';
 import { teamCanAccessAsset, TeamAccessError } from './team-access-policy';
 import { assertTeamWorkspaceRequest, projectTeamFuelLedger, projectTeamCosts } from './team-workspace-policy';
-export type OwnerWorkspaceContext = { team?: TeamScope; assetIds?: Promise<Set<string>>; ownerUserId: string; actorUserId: string; actorName: string; actorEmail: string };
+export type OwnerWorkspaceContext = { meteredBusiness?: boolean; team?: TeamScope; assetIds?: Promise<Set<string>>; ownerUserId: string; actorUserId: string; actorName: string; actorEmail: string };
 type ResolveOptions = { ledger?: 'fuel' | 'cost'; requireWrite?: boolean };
 type OwnerWorkspaceResolution = { ok: true; context: OwnerWorkspaceContext } | { ok: false; response: NextResponse };
 export async function resolveOwnerWorkspaceContext(
@@ -43,11 +43,12 @@ export async function resolveOwnerWorkspaceContext(
   if (new URL(request.url).searchParams.has('accountantShareId') || new URL(request.url).searchParams.has('accountantRegisterId')) {
     return { ok: false, response: NextResponse.json({ ok: false, error: 'Specialist workspaces have been retired.' }, { status: 410 }) };
   }
-  if (!await getAssetRegisterAccountAccess(session)) {
+  const access = await getAssetRegisterAccountAccess(session);
+  if (!access) {
     return { ok: false, response: NextResponse.json({ ok: false, error: 'This Asset Register is not available to this account.' }, { status: 403 }) };
   }
   return { ok: true, context: {
-    ownerUserId: session.user.id, actorUserId: session.user.id,
+    meteredBusiness:access.profile?.meteredBusiness, ownerUserId: session.user.id, actorUserId: session.user.id,
     actorName: String(session.user.name ?? '').trim(), actorEmail: String(session.user.email ?? '').trim(),
   } };
 }

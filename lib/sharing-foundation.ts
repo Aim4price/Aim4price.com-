@@ -56,11 +56,12 @@ export function completedActionLabel(key: string) {
     if (operation === 'photos') return 'Added photos';
     if (operation === 'schedule') return 'Scheduled maintenance';
     const labels: Record<string,string> = {
-        maintenance: 'Completed maintenance', cost: 'Recorded a cost', capture: 'Submitted a cost capture',
+        'shared-note': 'Added a note', details: 'Updated asset details', settings: 'Updated asset settings',
+        resolution: 'Resolved a problem', maintenance: 'Completed maintenance', cost: 'Recorded a cost', capture: 'Submitted a cost capture',
         document: 'Added a document', problem: 'Logged a problem', part: 'Recorded a part',
         'value-suggestion': 'Submitted a valuation', quote: 'Submitted a quote', invoice: 'Submitted an invoice',
     };
-    return Object.hasOwn(labels,kind) ? labels[kind] : null;
+    return Object.hasOwn(labels,kind) ? labels[kind] : 'Saved an asset entry';
 }
 
 export async function recordSharingUsage(input: {

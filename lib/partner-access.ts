@@ -1746,7 +1746,8 @@ export async function updateAssetLeadPhotosForPartner(input: {
 }): Promise<void> {
   await ensurePartnerAccessTables();
   const photos = Array.from(new Set(input.photos.map(asText).filter(Boolean)));
-  const result = await getDb().query<{ id: string }>(
+  const { saveBusinessResult } = await import('./business-credits');
+  const result = await saveBusinessResult(input.dealerUserId,'Updated lead photos',writer => writer.query<{ id: string }>(
     `
       update asset_leads
       set
@@ -1763,7 +1764,7 @@ export async function updateAssetLeadPhotosForPartner(input: {
       returning id::text
     `,
     [input.leadId, input.dealerUserId, JSON.stringify(photos)],
-  );
+  ), saved => saved.rows.length ? 'lead-photos:' + crypto.randomUUID() : null);
 
   if (!result.rows[0]) {
     throw new Error('LEAD_NOT_FOUND');
@@ -1892,7 +1893,8 @@ export async function createAssetLeadNote(input: {
     throw new Error('PARTNER_NOTE_FORBIDDEN');
   }
 
-  const created = await db.query<AssetPartnerNoteRow>(
+  const { saveBusinessResult } = await import('./business-credits');
+  const created = await saveBusinessResult(input.currentUserId, 'Added a note', writer => writer.query<AssetPartnerNoteRow>(
     `
       insert into asset_partner_notes (
         owner_user_id,
@@ -1935,7 +1937,7 @@ export async function createAssetLeadNote(input: {
       attachment?.byteSize ?? null,
       attachment?.data ?? null,
     ],
-  );
+  ), result => result.rows[0] ? 'lead-note:' + result.rows[0].id : null);
 
   const createdRow = created.rows[0];
   if (!createdRow) {

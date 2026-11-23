@@ -101,11 +101,17 @@ export async function saveBusinessResult<T>(
   });
 }
 
-/** Reopening the same report, including another format, reuses its credit. */
-export async function recordBusinessReport(userId:string,kind:string,scope:unknown) {
-  const {createHash} = await import('node:crypto');
-  const fingerprint = createHash('sha256').update(JSON.stringify(scope)).digest('hex');
-  await creditTransaction(db=>spendBusinessCredit(db,userId,kind,kind+':'+fingerprint));
+export function maintenanceEntryDebit(userId: string, edit = false) {
+  return {after: async (client: PoolClient, record: {id: string}) => {
+    const key = edit ? crypto.randomUUID() : record.id;
+    await spendBusinessCredit(client,userId,'Saved maintenance','maintenance-entry:' + key);
+  }};
+}
+
+/** Each generated download is a separate action, even for identical report data. */
+export async function recordBusinessReport(userId:string, kind:string) {
+  const { randomUUID } = await import('node:crypto');
+  await saveBusinessResult(userId, kind, async () => randomUUID(), id => 'report:' + id);
 }
 
 export async function creditHistory(db: PoolClient,businessId:string) {

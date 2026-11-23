@@ -63,6 +63,7 @@ export default async function DealerInventoryPage({
         </Link>
       </header>
       <AssetRegisterClient
+            meterBusinessCredits={Boolean(access.profile.meteredBusiness)}
         showAppHeader={false}
         registerManagementHref="/dealer/inventory/registers"
         dealerRegisterMode={registerMode}

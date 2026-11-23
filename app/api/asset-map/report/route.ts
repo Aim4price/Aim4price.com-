@@ -1,3 +1,4 @@
+import { meteredReport } from '../../../../lib/business-report-response';
 import {resolveAssetUsage, formatResolvedAssetUsage} from '../../../../lib/asset-usage';
 import { resolveOwnerWorkspaceContext, getWorkspaceAssetIds } from '../../../../lib/owner-workspace-access';
 import { restrictTeamReportItems } from '../../../../lib/team-report-policy';
@@ -2310,7 +2311,7 @@ export async function GET(request: Request) {
       );
       const filename = buildXlsxFilename(scopedResult.scopeSegment, now);
 
-      return new NextResponse(workbook, {
+      return meteredReport(new NextResponse(workbook, {
         status: 200,
         headers: {
           "Content-Type":
@@ -2319,7 +2320,7 @@ export async function GET(request: Request) {
           "Content-Length": String(workbook.length),
           "Cache-Control": "no-store",
         },
-      });
+      }), request, workspace?.actorUserId ?? session?.user.id, 'Downloaded an asset map report');
     }
 
     const rawLogoUrl = await getAssetRegisterReportLogoUrl(reportOwnerId).catch(
@@ -2339,14 +2340,14 @@ export async function GET(request: Request) {
       now,
     );
 
-    return new NextResponse(html, {
+    return meteredReport(new NextResponse(html, {
       status: 200,
       headers: {
         "Content-Type": "text/html; charset=utf-8",
         "Content-Disposition": `inline; filename="${filename}"`,
         "Cache-Control": "no-store",
       },
-    });
+    }), request, workspace?.actorUserId ?? session?.user.id, 'Downloaded an asset map report');
   } catch (error) {
     console.error("asset map report failed", error);
 

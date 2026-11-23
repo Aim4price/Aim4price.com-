@@ -31,6 +31,7 @@ export default async function LeadsPage() {
 
   return (
     <><LeadsClient
+      meterBusinessCredits={profile.accountType === "business"}
       dealerWorkspaceMode={profile.accountType === "dealer" || profile.accountType === "business"}
       allowDealerCosts={profile.accountType !== "business"}
       initialLeads={initialLeads.slice(0, INITIAL_LEAD_BATCH_SIZE)}

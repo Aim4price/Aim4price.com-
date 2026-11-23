@@ -1,3 +1,4 @@
+import { meteredReport } from '../../../../lib/business-report-response';
 import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 import { filterTeamMaintenance } from '../../../../lib/team-maintenance';
 import { NextRequest, NextResponse } from 'next/server';
@@ -233,27 +234,27 @@ export async function GET(request: NextRequest) {
       const workbook = buildAssetMaintenanceWorkbook(options);
       const buffer = createXlsxWorkbook(workbook);
 
-      return new NextResponse(buffer, {
+      return meteredReport(new NextResponse(buffer, {
         status: 200,
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           'Content-Disposition': `attachment; filename="${formatForHeader(filename)}"`,
           'Cache-Control': 'no-store',
         },
-      });
+      }), request, workspace.actorUserId, 'Downloaded a maintenance report');
     }
 
     const html = buildAssetMaintenanceReportHtml(options);
 
     if (format === 'html') {
-      return new NextResponse(html, {
+      return meteredReport(new NextResponse(html, {
         status: 200,
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
           'Content-Disposition': `inline; filename="${formatForHeader(filename)}"`,
           'Cache-Control': 'no-store',
         },
-      });
+      }), request, workspace.actorUserId, 'Downloaded a maintenance report');
     }
 
     const pdf = await renderReportHtmlToPdf(html, {
@@ -261,7 +262,7 @@ export async function GET(request: NextRequest) {
       cookie: request.headers.get('cookie') ?? '',
     });
 
-    return new NextResponse(pdf, {
+    return meteredReport(new NextResponse(pdf, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
@@ -270,7 +271,7 @@ export async function GET(request: NextRequest) {
         'Cache-Control': 'no-store',
         'X-Content-Type-Options': 'nosniff',
       },
-    });
+    }), request, workspace.actorUserId, 'Downloaded a maintenance report');
   } catch (error) {
     console.error('Aim4price Asset Maintenance report failed.', error);
     return NextResponse.json({ ok: false, error: 'The Asset Maintenance report could not be generated.' }, { status: 500 });

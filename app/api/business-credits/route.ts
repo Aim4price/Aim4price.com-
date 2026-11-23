@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
 import { canBusinessRead } from '../../../lib/business-accounts';
 import { businessBody,businessError,businessJson,requireBusinessOrigin } from '../../../lib/business-network-api';
-import { creditTransaction,workspaceForCredits } from '../../../lib/business-credits';
+import { creditTransaction,spendBusinessCredit,workspaceForCredits } from '../../../lib/business-credits';
 export async function POST(req:NextRequest) {
   try {
     requireBusinessOrigin(req);
@@ -27,7 +27,15 @@ export async function POST(req:NextRequest) {
       });
       return businessJson({ok:true});
     }
-    // Older clients still announce visits, messages and shares. These are free.
+    if ((body.action === 'manage' || body.action === 'report') && body.phase === 'complete') {
+      if (typeof body.requestId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.requestId)) {
+        return businessJson({error:'Invalid action identifier.'},400);
+      }
+      const label = body.action === 'manage' ? 'Opened Manage' : 'Generated a lead report';
+      await creditTransaction(db => spendBusinessCredit(db,userId,label,`${body.action}:${userId}:${body.requestId}`));
+      return businessJson({ok:true});
+    }
+    // Closing a visit, checking access and sharing do not consume credits.
     if (['check','manage','send','share'].includes(String(body.action))) return businessJson({ok:true});
     return businessJson({error:'Unknown credit action.'},400);
   } catch(e) {return businessError(e);}

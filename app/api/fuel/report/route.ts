@@ -1,3 +1,4 @@
+import { meteredReport } from '../../../../lib/business-report-response';
 import { teamFuelEventVisible, projectTeamFuelEvent } from '../../../../lib/team-workspace-policy';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
     if (format === 'xlsx') {
       const workbook = createXlsxWorkbook(buildFuelWorkbook(reportOptions));
 
-      return new NextResponse(workbook, {
+      return meteredReport(new NextResponse(workbook, {
         status: 200,
         headers: {
           'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -135,19 +136,19 @@ export async function GET(request: NextRequest) {
           'Content-Length': String(workbook.length),
           'Cache-Control': 'no-store',
         },
-      });
+      }), request, workspace.actorUserId, 'Downloaded a fuel report');
     }
 
     const html = buildReportHtml(reportOptions);
 
-    return new NextResponse(html, {
+    return meteredReport(new NextResponse(html, {
       status: 200,
       headers: {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store',
         'content-disposition': `inline; filename="${baseFileName}.html"`,
       },
-    });
+    }), request, workspace.actorUserId, 'Downloaded a fuel report');
   } catch (error) {
     console.error('fuel report failed', error);
     return NextResponse.json(

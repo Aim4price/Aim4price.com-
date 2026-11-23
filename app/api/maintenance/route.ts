@@ -1,3 +1,4 @@
+import { maintenanceEntryDebit } from '../../../lib/business-credits';
 import { teamMaintenanceResponse } from '../../../lib/team-maintenance';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
@@ -112,8 +113,8 @@ export async function POST(request: NextRequest) {
           completedAt: body.completedAt, completedUsage: body.completedUsage,
           completedNotes: body.completedNotes, completedBy: body.completedBy,
           maintenanceWork: body.maintenanceWork, sourceScanEventId: body.clientEventId,
-        })
-      : await createAssetMaintenanceRecord(userId, body);
+        }, maintenanceEntryDebit(userId))
+      : await createAssetMaintenanceRecord(userId, body, maintenanceEntryDebit(userId));
     const data = await listAssetMaintenanceData(userId, {});
 
     return NextResponse.json({ ok: true, record, ...data });

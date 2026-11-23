@@ -154,8 +154,9 @@ export async function GET(request: NextRequest) {
     const filename = `${slugify(`${scopeLabel}-${assetLabel}`)}.${format === 'xlsx' ? 'xlsx' : 'html'}`;
 
     const countReport = async () => {
+      if (request.method === 'HEAD') return;
       const {recordBusinessReport} = await import('../../../../../lib/business-credits');
-      await recordBusinessReport(session.user.id,'Generated a maintenance report',[ownerUserId,scope,selectedAsset?.id,data.summary,data.records]);
+      await recordBusinessReport(session.user.id,'Generated a maintenance report');
     };
 
     if (format === 'xlsx') {
