@@ -51,6 +51,7 @@ test('public enquiry renders an expandable Leads card for every selected asset',
       '../../lib/viewport-scrollbar':load('lib/viewport-scrollbar.ts'),
     }),
     '../leads/RecipientAssetSummary':load('components/leads/RecipientAssetSummary.tsx').default,
+    '../leads/SharedAssetControls':load('components/leads/SharedAssetControls.tsx').default,
     '../leads/LeadAssetCard':load('components/leads/LeadAssetCard.tsx').default,
     '../leads/LeadAssetDetails':load('components/leads/LeadAssetDetails.tsx').default,
     // Outside sharing is covered by verify-shared-asset-export.cjs.

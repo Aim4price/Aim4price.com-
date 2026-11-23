@@ -1,6 +1,6 @@
 import assetStyles from '../../app/asset-register/page.module.css';
 import styles from '../../app/leads/page.module.css';
-import { workspaceStyles } from '../WorkspacePrimitives';
+import workspaceStyles from '../WorkspacePrimitives.module.css';
 
 type Props = {
   open: boolean;

@@ -34,6 +34,8 @@ test('usage endpoint ignores supplied identity, rejects unauthorised reads and n
  const token='a'.repeat(43),assetId='10000000-0000-4000-8000-000000000001';
  const route=load('app/api/asset-share-links/[token]/activity/route.ts',{
   'next/server':require('next/server'),
+  '../../../../../lib/business-accounts':{canBusinessRead:()=>assert.fail('Viewing should not remove an asset')},
+  '../../../../../lib/business-credits':{saveBusinessResult:()=>assert.fail('Viewing should not spend a credit')},
   '../../../../../lib/guest-leads':{readLeadPage:async()=>available?{share:{assets:[{assetId}]}}:null},
   '../../../../../lib/external-lead-access':{externalLeadAccess:async()=>({access,user:access==='sign-in'?null:{id:'real-user'}})},
   '../../../../../lib/auth-session':{getServerSession:async()=>({user:{id:'real-user'},session:{id:'real-session'}})},

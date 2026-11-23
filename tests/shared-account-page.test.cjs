@@ -5,6 +5,7 @@ function load(file,mocks){const exports={};mocks={ '../../components/BusinessCre
 const token='a'.repeat(43);
 const lead={share:{senderName:'Private sender',assets:[{title:'Private tractor',serialNumber:'PRIVATE-SERIAL'}]},details:{recipientEmail:'private@example.test',request:'Private request'},reports:[{id:'report',label:'Private report'}]};
 const mocks={
+ '../../../lib/dealer-maintenance-tracker':{listActiveDealerMaintenanceLeadAccess:async()=>[]},
  '../../../components/SharedEnquiryLive':{default:'Live'},
  '../../../components/SharedEnquiryLanding':{default:'Landing'},
  '../../../components/AppHeader':{default:'Header'},
@@ -212,17 +213,23 @@ test('Admin opening a Free Business account sees that user’s subscription and 
 
 test('opening an inbox member inline keeps the selected asset and applies the share access checks',async()=>{
  const id='bbbbbbbb-bbbb-4bbb-9bbb-bbbbbbbbbbbb';
- const grouped={...lead,share:{...lead.share,assets:[{assetId:id,title:'Tractor'}]}};
+ const grouped={...lead,ownerId:'owner',share:{...lead.share,assets:[{assetId:id,title:'Tractor'}]}};
  for(const access of ['active','read-only','wrong-recipient']){
   const view=load('app/asset-share/[token]/AssetShareView.tsx',{...mocks,
+   '../../../lib/dealer-maintenance-tracker':{listActiveDealerMaintenanceLeadAccess:async input=>{
+    assert.deepEqual(input,{dealerUserId:'receiver',leads:[{ownerUserId:'owner',assetId:id}]});
+    return [{accessId:'tracking',hasMaintenanceRecords:access==='active'}];
+   }},
    '../../../lib/guest-leads':{readLeadPage:async()=>grouped},
-   '../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>false}});
+   '../../../lib/external-lead-access':{externalLeadAccess:async()=>({access,user:{id:'receiver'}}),leadAllows:()=>false}});
   const result=await view.default({inline:true,params:{token},searchParams:{open:'1',asset:id}});
   assert.equal(result.props.children[0],null);
   if(access==='wrong-recipient') assert.equal(result.props.children[1].type,'Landing');
   else {
    const card=result.props.children[2];
    assert.equal(card.type,'AssetCards');assert.equal(card.props.initialAssetId,id);
+   assert.equal(card.props.canRemove,true);
+   assert.equal(card.props.trackingAccessId,access==='active'?'tracking':undefined);
    assert.equal(card.props.inline,true);assert.equal(card.props.enquiry.access,access);
   }
  }
