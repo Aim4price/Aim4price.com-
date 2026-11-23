@@ -105,13 +105,14 @@ test('authenticated estimate reports load branding from the account, not the sub
   let throttled = null;
   const mocks = {
     'next/server': { NextResponse },
+    '../../../../lib/business-report-response': { meteredReport: async (response, _request, actor) => { assert.equal(actor, signedIn ? 'owner' : undefined); return response; } },
     '../../../../lib/public-valuation-throttle': { publicValuationThrottle: (_request, kind) => { assert.equal(kind, 'report'); return throttled; } },
     '../../../../lib/estimate-breakdown-access': { canUseEstimateBreakdown: () => assert.fail('Ordinary reports must not request private access') },
     '../../../../lib/estimate-breakdown-token': { verifyEstimateBreakdown: () => assert.fail('Ordinary reports have no breakdown token') },
     '../../../../lib/estimate-breakdown-report': { appendEstimateBreakdownHtml: () => assert.fail('Ordinary reports must retain the original template') },
     '../../../../lib/private-estimate-settings': { privateEstimateSettingsNotes: () => assert.fail('Ordinary reports have no custom settings') },
     '../../../../lib/report-theme.ts': { REPORT_THEME_CSS: '' },
-    '../../../../lib/auth-session': { getServerSession: async () => signedIn ? { user: { id: 'owner' } } : null },
+    '../../../../lib/auth-session': { getAnyServerSession: async () => signedIn ? { user: { id: 'owner' } } : null, getServerSession: async () => signedIn ? { user: { id: 'owner' } } : null },
     '../../../../lib/asset-registers': { getAssetRegisterReportLogoUrl: async userId => { seen.push(userId); return business; } },
     '../../../../lib/report-logo': { resolveReportLogoUrlForHtml: async url => url || 'data:image/png;base64,RkFMTEJBQ0s=' },
   };
