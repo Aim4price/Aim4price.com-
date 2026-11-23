@@ -60,7 +60,7 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
         <div className={styles.freeSummary}><span className={styles.accessIcon}><PricingIcon name="link" /></span><div><strong>Shared assets. No subscription fee.</strong><p>Work with records your clients choose to share.</p></div><strong className={styles.freePrice}>R0</strong></div>
         <dl className={styles.freeBenefits}>
           <div><dt>Shared Assets</dt><dd>View client assets and enquiries. Manage, message and share where the sender’s permissions allow.</dd></div>
-          <div><dt>{creditsLabel}</dt><dd>Opening Manage, downloading a report or saving an entry uses one credit each time. Browsing and sharing links are free. Check your balance in Account.</dd></div>
+          <div><dt>{creditsLabel}</dt><dd>Opening Manage, downloading a report or saving an entry uses one credit each time. Viewing uses no credits. Sharing links is free. Check your balance in Account.</dd></div>
           <div><dt>Invite an owner</dt><dd>Earn {referralCredits ?? 50} extra credits when an invited owner verifies their email and adds their first asset.</dd></div>
           <div><dt>Business workspace</dt><dd>Manage registers, stocklists, your showroom and adverts from your personal workspace.</dd></div>
         </dl>

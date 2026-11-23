@@ -67,3 +67,46 @@ test('Business credits pool across members and preserve trial, upgrade, retry an
   assert.deepEqual((await pg.query('SELECT plan,actor_id FROM business_plan_changes ORDER BY id')).rows,[{plan:'paid',actor_id:'owner'},{plan:'free',actor_id:'owner'}]);
  }finally{if(previous===undefined)delete process.env.AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT;else process.env.AIM4PRICE_BUSINESS_CREDIT_ENFORCEMENT=previous;await pg.close();}
 });
+
+test('Manage charges once for a click, including retries, and ignores close events',async()=>{
+ const actions=[];
+ const user={id:'member'};
+ const api=load('app/api/business-credits/route.ts',{
+  '../../../lib/auth-session':{getServerSession:async()=>({user})},
+  '../../../lib/business-accounts':{canBusinessRead:async()=>true},
+  '../../../lib/business-network-api':{
+   requireBusinessOrigin(){},businessBody:async req=>req,businessJson:(body,status=200)=>({body,status}),
+   businessError:e=>{throw e;},
+  },
+  '../../../lib/business-credits':{
+   creditTransaction:async run=>run({}),
+   spendBusinessCredit:async (_db,actor,label,key)=>actions.push({actor,label,key}),
+  },
+ });
+ const requestId=randomUUID();
+ assert.equal((await api.POST({action:'manage',phase:'complete',requestId:'bad'})).status,400);
+ await api.POST({action:'manage',phase:'close',requestId});
+ assert.equal(actions.length,0);
+ await api.POST({action:'manage',phase:'complete',requestId});
+ await api.POST({action:'manage',phase:'complete',requestId});
+ assert.deepEqual(actions[0],actions[1]);
+ assert.equal(actions[0].key,'manage:member:'+requestId);
+ await api.POST({action:'manage',phase:'complete',requestId:randomUUID()});
+ assert.notEqual(actions[0].key,actions[2].key);
+});
+
+test('Only successful report deliveries are charged',async()=>{
+ let charges=0;
+ class CreditLimitError extends Error {}
+ const {meteredReport}=load('lib/business-report-response.ts',{
+  'next/server':{NextResponse:{json:(_body,options)=>options}},
+  './business-credits':{CreditLimitError,recordBusinessReport:async()=>{if(++charges>1)throw new CreditLimitError();}},
+ });
+ const report={ok:true};
+ assert.equal(await meteredReport(report,{method:'HEAD'},'member','Report'),report);
+ await meteredReport({ok:false},{method:'GET'},'member','Report');
+ await meteredReport(report,{method:'GET'},undefined,'Report');
+ assert.equal(charges,0);
+ assert.equal(await meteredReport(report,{method:'GET'},'member','Report'),report);
+ assert.equal((await meteredReport(report,{method:'GET'},'member','Report')).status,402);
+});

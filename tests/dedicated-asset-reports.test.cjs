@@ -13,7 +13,8 @@ function route(permissions=null){let sheet,query;const ledger={assets:[{id:'a',t
 const mod=load('app/api/fuel/report/route.ts',{
   '../../../../lib/team-workspace-policy':load('lib/team-workspace-policy.ts',{'./team-access-policy':load('lib/team-access-policy.ts',{})}),
   '../../../../lib/fuel-report':load('lib/fuel-report.ts', {'./report-theme.ts':{REPORT_THEME_CSS:''}, './simple-xlsx.ts':{reportExcelDate:()=>null}}),
-  'next/server':{NextResponse},'../../../../lib/report-theme.ts':{REPORT_THEME_CSS:''},
+  '../../../../lib/business-report-response':{meteredReport: async response => response},
+    'next/server':{NextResponse},'../../../../lib/report-theme.ts':{REPORT_THEME_CSS:''},
   '../../../../lib/account-profile':{getAccountProfile:async()=>({name:'Owner'})},
   '../../../../lib/asset-registers':{getAssetRegisterReportLogoUrl:async()=>''},
   '../../../../lib/report-logo':{resolveReportLogoUrlForHtml:async()=>''},

@@ -3082,7 +3082,11 @@ export async function updateAssetRegisterItemLocation(
       [assetId, latitude, longitude, locationText, capturedAt, gpsAccuracyMeters, activityText, eventNote, input.actorName || null],
     );
 
-    if (!transaction) await client.query('COMMIT');
+    if (!transaction) {
+      const {spendBusinessCredit} = await import('./business-credits');
+      await spendBusinessCredit(client,userId,'Updated asset location','location:' + crypto.randomUUID());
+      await client.query('COMMIT');
+    }
 
     return mapAssetRegisterRow(row);
   } catch (error) {

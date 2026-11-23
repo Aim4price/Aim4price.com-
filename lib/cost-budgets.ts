@@ -536,7 +536,12 @@ export async function listCurrentCostBudgetAlertEvents(userId: string): Promise<
   });
 }
 
-async function budgetWrite(sql: string, values: unknown[], guard?: WorkspaceWriteGuard) {
+async function budgetWrite(sql: string, values: unknown[], guard?: WorkspaceWriteGuard, actorId?: string) {
+  if (actorId && !guard) {
+    const {saveBusinessResult} = await import('./business-credits');
+    return saveBusinessResult(actorId, 'Saved a cost budget', writer => writer.query<{id:string}>(sql,values),
+      saved => saved.rows.length ? 'budget:' + crypto.randomUUID() : null);
+  }
   if (!guard?.before && !guard?.after) return getDb().query<{id:string}>(sql, values);
   const client = await getDb().connect();
   try {
@@ -575,7 +580,7 @@ export async function createCostBudget(userId: string, input: CostBudgetInput, g
         returning id::text
       `,
       [userId, budget.assetId, budget.period, budget.amount, budget.warningPercent, budget.includeFuelSlipCosts],
-      guard,
+      guard, userId,
     );
     const id = result.rows[0]?.id;
     const created = (await listCostBudgetsWithProgress(userId)).find((entry) => entry.id === id);
@@ -623,7 +628,7 @@ export async function updateCostBudget(
         budget.warningPercent,
         budget.includeFuelSlipCosts,
       ],
-      guard,
+      guard, userId,
     );
     if (!result.rows[0]?.id) throw new Error('COST_BUDGET_NOT_FOUND');
     const updated = (await listCostBudgetsWithProgress(userId)).find((entry) => entry.id === budgetId);
