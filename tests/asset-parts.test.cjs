@@ -25,10 +25,12 @@ test('parts persist against the live asset; permissions, ownership, record links
  const client={query:async(sql,args)=>sql.includes('CREATE TABLE IF NOT EXISTS public.asset_parts')?db.exec(sql):sql.includes('pg_advisory_xact_lock')?{rows:[]}:db.query(sql,args),release(){}};
  const pool={...client,connect:async()=>client};
  let user={id:'owner',email:'owner@example.com'}, allowed=new Set(),revoked=false;
- const events=[],usage=[];
+ const events=[],usage=[],debits=[];
+ let blockDebit=false;
  const seed=load('lib/maintenance-catalogue-seed.ts');
  const catalogue=load('lib/maintenance-catalogue.ts',{'./maintenance-catalogue-seed':seed});
  const api=load('lib/asset-parts-api.ts',{
+ './business-credits':{spendBusinessCredit:async(writer,actor,label,key)=>{assert.equal(writer,client);if(blockDebit)throw Error('Monthly credits used');debits.push({actor,key});}},
  './asset-parts-pdf':{assetPartsPdfResponse:async(request,ownerId,asset,parts,maintenance)=>({status:200,data:{pdf:true,parts,maintenance}})},
  './db':{getDb:()=>pool},'./auth-session':{getServerSession:async()=>user?{user}:null},
  './asset-register-db':{getAssetRegisterItemById:async(owner,id)=>{const result=await db.query('SELECT * FROM asset_register_items WHERE id=$1 AND user_id=$2',[id,owner]);return result.rows.length?{id,maintenanceIdentity:{source:'advanced',familyId:38,sector:'agricultural'}}:null;}},
@@ -45,6 +47,12 @@ test('parts persist against the live asset; permissions, ownership, record links
   assert.equal((await call('POST')).status,200);
   assert.equal((await db.query('SELECT * FROM asset_parts')).rows.length,1);
   assert.equal(events.length,1);
+  assert.deepEqual(debits,[{actor:'owner',key:'part:'+draft.requestId}]);
+  blockDebit=true;
+  const blocked={...draft,requestId:'22222222-3333-4444-8555-666666666666'};
+  assert.equal((await call('POST',blocked)).status,400);
+  assert.equal((await db.query('SELECT * FROM asset_parts WHERE id=$1',[blocked.requestId])).rows.length,0);
+  blockDebit=false;
   let read=await call('GET');assert.equal(read.data.parts[0].partNumber,'ABC-001');assert.ok(read.data.suggestions.some(s=>s.id==='oil_filter'));assert.equal(read.data.maintenance.length,0);
   const linked={...draft,requestId:'55555555-5555-4555-8555-555555555555',maintenanceId:maintenance};
   assert.equal((await call('POST',linked)).status,400);
