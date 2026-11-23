@@ -18,7 +18,7 @@ import {
 import { closeWebsiteSession } from '../lib/close-website-session';
 import { isMiddlemanAccountSubtype } from '../lib/middleman-account';
 import { useWorkspaceVisibility } from '../lib/use-workspace-visibility';
-import { freeBusinessManageItems, workspaceHeader, workspaceRole, receivedAssetsHref } from '../lib/workspace-navigation';
+import { freeBusinessManageItems, workspaceCards, workspaceHeader, workspaceRole, receivedAssetsHref } from '../lib/workspace-navigation';
 import { isViewportScrollbarInteraction } from '../lib/viewport-scrollbar';
 import { attachHeaderNavDrag, getHeaderNavScrollTolerance, snapHeaderNav } from '../lib/header-nav-drag';
 import DealerCostDecisionModal from './DealerCostDecisionModal';
@@ -1028,7 +1028,7 @@ export default function AppHeader({
   const navAccountType = isLoadingSession ? null : (session?.sharingPlan === 'free' ? 'business' : session?.accountType ?? 'public');
   const role = desktopContext || isLoadingSession ? null : workspaceRole(session?.accountType, session?.accountSubtype, session?.sharingPlan);
   const freeBusinessMenu = role === 'business' && session?.sharingPlan === 'free';
-  const { hidden: hiddenWorkspacePages } = useWorkspaceVisibility(freeBusinessMenu ? session?.id : undefined, role);
+  const { hidden: hiddenWorkspacePages } = useWorkspaceVisibility(freeBusinessMenu || role === 'owner' ? session?.id : undefined, role);
   const navItems = useMemo<NavItem[]>(() => {
     if (role) return [...workspaceHeader(role, receivedAssetsHref(session?.accountType, session?.sharingPlan))];
     const items = buildNavItems(navAccountType, session?.accountSubtype);
@@ -2493,6 +2493,8 @@ export default function AppHeader({
                           <>
                             {sortAccountMenuItems<AccountMenuItem>(freeBusinessMenu
                                   ? freeBusinessManageItems(receivedAssetsHref(session?.accountType, session?.sharingPlan), hiddenWorkspacePages)
+                                  : role === 'owner' && hiddenWorkspacePages.length > 0
+                                  ? workspaceCards('owner', false, '').filter(card => !hiddenWorkspacePages.includes(card.key))
                                   : isMiddlemanAccount
                                   ? MIDDLEMAN_ACCOUNT_MENU_ITEMS
                                   : session?.sharingPlan === 'free' || session?.accountType === 'business' ? [
