@@ -1519,6 +1519,11 @@ export default function AccountClient({
     }
   }
 
+  const shareBelowOverview = !isMiddlemanAccount && (isOwnerAccount || normalizedAccountType === "business" || Boolean(subscription));
+  const shareButton = inviteLink && (
+    <ShareAim4priceButton inviteLink={inviteLink} className={styles.quickActionButton} icon={<QuickActionIcon name="connections" />} />
+  );
+
   return (
     <main className={styles.page}>
       <AppHeader active="none" />
@@ -1637,6 +1642,7 @@ export default function AccountClient({
                 </strong>
               </button>
             </div>
+            {shareBelowOverview && shareButton && <div className={styles.overviewShare}>{shareButton}</div>}
           </section>
 
           {isFreeBusiness && subscription && (
@@ -1812,7 +1818,7 @@ export default function AccountClient({
                     <strong>Edit business details</strong>
                   </button>}
 
-                  {inviteLink && <ShareAim4priceButton inviteLink={inviteLink} className={styles.quickActionButton} icon={<QuickActionIcon name="connections" />} />}
+                  {!shareBelowOverview && shareButton}
                   {isMiddlemanAccount || isMiddlemanAccountSubtype(initialProfile?.accountSubtype) ? <Link href="/contact-us" className={styles.quickActionButton}><QuickActionIcon name="subscription" /><strong>Contact Aim4price</strong></Link>
                     : subscription ? <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />
                     : isOwnerAccount && <Link href={initialProfile?.trialEndsAt ? '/account/owner-trial' : '/account/subscription'} className={styles.quickActionButton}><QuickActionIcon name="subscription" /><strong>{initialProfile?.trialEndsAt ? 'Subscribe' : 'Manage subscription'}</strong></Link>}
