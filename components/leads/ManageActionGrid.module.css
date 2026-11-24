@@ -66,3 +66,6 @@
 .grid.grid[data-manage-actions] > :is(button, a)[data-manage-action] small {
   color: var(--app-text, #34564b) !important;
 }
+
+/* The paperwork form already provides the menu's outer inset. */
+.paperworkHub.paperworkHub { padding: 0 !important; }
