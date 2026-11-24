@@ -20,6 +20,7 @@ import { AddPartField, PartDetailInputs, PartInput, DetailIcon } from "./PartsDe
 import VatPriceInput from "./VatPriceInput";
 import PartsChoice from "./PartsChoice";
 import ModalSelect from "./AssetModalSelect";
+import SpreadsheetUpload from "./SpreadsheetUpload";
 import importStyles from "./PartsImportForm.module.css";
 import PartsSheetTools, { type SheetTool } from "./PartsSheetTools";
 import priceStyles from "./asset-register/AssetDisposal.module.css";
@@ -80,7 +81,6 @@ export default function PartsImportForm({
   const [mapping, setMapping] = useState<string[]>([]);
   const columns = useMemo(() => mappedPartColumns(mapping), [mapping]);
   const mappedSignature = useRef("");
-  const [dragging, setDragging] = useState(false);
   const [issuesOnly, setIssuesOnly] = useState(false);
   const importHeading = useRef<HTMLHeadingElement>(null);
   const [rows, setRows] = useState<string[][]>(() => editSnapshot?.rows.length ? editSnapshot.rows : [emptyRow()]);
@@ -424,24 +424,8 @@ export default function PartsImportForm({
 
               </section>
           )}
-          {stage === "file" && <section className={importStyles.upload}>
-            <div className={importStyles.heading}><h3 ref={importHeading} tabIndex={-1}>Upload your stocklist</h3><p>Choose a file or paste cells from Excel.</p></div>
-            <div className={importStyles.tabs} role="group" aria-label="Import source">
-              <button type="button" aria-pressed={!pasteMode} onClick={() => setPasteMode(false)}>Upload file</button>
-              <button type="button" aria-pressed={pasteMode} onClick={() => setPasteMode(true)}>Paste cells</button>
-            </div>
-            {!pasteMode ? <label className={importStyles.drop} data-dragging={dragging || undefined}
-              onDragOver={e => {e.preventDefault(); if (!busy) setDragging(true);}}
-              onDragLeave={() => setDragging(false)}
-              onDrop={e => {e.preventDefault(); setDragging(false); if (!busy && e.dataTransfer.files[0]) void loadFile(e.dataTransfer.files[0]);}}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 13h8m-8 4h5"/></svg>
-              <strong>Drop your file here, or browse</strong><span>CSV or Excel (.xlsx)</span>
-              <input aria-label="Upload parts file" type="file" accept=".csv,.xlsx" onChange={e => {const file = e.target.files?.[0]; e.target.value = ""; if (file) void loadFile(file);}}/>
-            </label> : <div className={importStyles.paste}>
-              <label>Cells from Excel or Sheets<textarea aria-label="Paste spreadsheet cells" value={pastedTable} onChange={e => setPastedTable(e.target.value)} placeholder="Copy your cells, then paste them here."/></label>
-            </div>}
-            <p className={importStyles.uploadHint}>{pasteMode ? "With or without headings. Keep your columns in any order." : "CSV up to 2 MB · Excel up to 5 MB"}</p>
-          </section>}
+          {stage === "file" && <SpreadsheetUpload title="Upload your stocklist" fileLabel="Upload parts file" headingRef={importHeading}
+            busy={busy} pasteMode={pasteMode} onModeChange={setPasteMode} pasted={pastedTable} onPasteChange={setPastedTable} onFile={loadFile} />}
           {stage === "mapping" && <section className={importStyles.mapping}>
             <div className={importStyles.heading}><h3 ref={importHeading} tabIndex={-1}>Check your columns</h3></div>
             <div className={importStyles.fileSummary}><div><strong>{fileName}</strong><span>{sourceRows.length.toLocaleString()} {sourceRows.length === 1 ? "part" : "parts"} · {columnCount} columns</span></div>{sheets.length > 1 && <ModalSelect className={importStyles.worksheet} label="Worksheet" buttonLabel="Worksheet" value={String(sheetIndex)} options={sheets.map((sheet, i) => ({value: String(i), label: sheet.name}))} onChange={value => {const i = Number(value); setSheetIndex(i); loadTable(sheets[i].rows);}}/>}<button onClick={() => setStage("file")}>Change file</button></div>

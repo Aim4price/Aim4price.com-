@@ -1,5 +1,5 @@
 'use client';
-import { useState, type ClipboardEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type ClipboardEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAssetFlowTransition } from './useAssetFlowTransition';
@@ -7,10 +7,14 @@ import { useLeadDialog } from '../leads/useLeadDialog';
 import registerStyles from '../../app/asset-register/page.module.css';
 import Select from '../AssetModalSelect';
 import ShareModalCloseButton from './ShareModalCloseButton';
-import { readPartsCsv } from '../../lib/parts-network-csv';
+import { MAX_PARTS_CSV_BYTES, readPartsCsv } from '../../lib/parts-network-csv';
 import { readPartsExcel } from '../../lib/parts-network-excel';
-import { assetColumns, assetTitle, blankAsset, columns, mapAssetRow, mapHeading, maxAssets, rowErrors, usageUnit, targetColumn, type AssetRow, type Basis, type Column, type Mapping } from '../../lib/asset-sheet';
+import { assetColumns, assetTitle, blankAsset, columns, mapAssetRow, mapHeading, maxAssets, rowErrors, usageUnit, targetColumn, type Column, type Mapping } from '../../lib/asset-sheet';
 import parts from '../../app/dealer/parts/parts.module.css';
+import SpreadsheetUpload from '../SpreadsheetUpload';
+import uploadStyles from '../PartsImportForm.module.css';
+import { columnLetter } from '../../lib/parts-import-mapping';
+import AssetSheetEditor, { type AssetDraft } from './AssetSheetEditor';
 import css from './AssetSheetDialog.module.css';
 type Stage = 'choose' | 'one' | 'multiple' | 'file' | 'map' | 'edit' | 'review';
 type Sheet = {
@@ -32,8 +36,9 @@ const choices = {
   ],
 } as const;
 const startColumns: Column[] = ['title', 'year', 'serial'];
+type Match = Mapping | 'skip';
 const mappingChoices = [
-  { value: '', label: 'Skip column' }, ...columns.map(value => ({ value, label: assetColumns[value] })),
+  { value: '', label: 'Choose a field' }, { value: 'skip', label: 'Skip column' }, ...columns.map(value => ({ value, label: assetColumns[value] })),
   { value: 'hours', label: 'Usage in hours' }, { value: 'km', label: 'Usage in km' }, { value: 'percentage', label: 'Usage in %' },
 ];
 export default function AssetSheetDialog({ registerId, registerName, valuationHref, onManual, onBack, onClose, onSaved, request }: {
@@ -47,13 +52,14 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   request: typeof fetch;
 }) {
   const [stage, setStage] = useState<Stage>('choose');
-  const [rows, setRows] = useState<AssetRow[]>([blankAsset()]);
-  const [visible, setVisible] = useState<Column[]>(startColumns);
+  const [draft, setDraft] = useState<AssetDraft>(() => ({ rows: [blankAsset()], visible: startColumns, basis: '' }));
+  const { rows, visible, basis } = draft;
+  const [undo, setUndo] = useState<AssetDraft | null>(null);
+  const mappedSource = useRef<{ sheet: Sheet; signature: string } | null>(null);
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [sheetIndex, setSheetIndex] = useState(0);
-  const [mapping, setMapping] = useState<Mapping[]>([]);
+  const [mapping, setMapping] = useState<Match[]>([]);
   const [header, setHeader] = useState(true);
-  const [basis, setBasis] = useState<Basis>('');
   const [example, setExample] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -65,7 +71,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   const [hosting, setHosting] = useState('');
   const [metered, setMetered] = useState(false);
   const [page, setPage] = useState(0);
-  const [details, setDetails] = useState(false);
+  const [pasteMode, setPasteMode] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const filled = rows.filter(row => columns.some(key => row[key].trim()));
   const ready = checks.filter(c => !c.skip).length;
@@ -76,6 +82,12 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   const router = useRouter();
   const transition = useAssetFlowTransition();
   const dialog = useLeadDialog(onClose, busy || transition.pending);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const previousStage = useRef(stage);
+  useLayoutEffect(() => {
+    if (previousStage.current !== stage) heading.current?.focus({ preventScroll: true });
+    previousStage.current = stage;
+  }, [stage]);
   const [history, setHistory] = useState<Stage[]>([]);
   function change(next: Stage) {
     if (stage !== next) setHistory(previous => [...previous, stage]);
@@ -92,32 +104,61 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
     setError('');
   }
   const cards = stage === 'choose' || stage === 'one' || stage === 'multiple' ? choices[stage] : null;
-  function selectSheet(list: Sheet[], index: number, hasHeader: boolean) {
+  const importStep = stage === 'file' || stage === 'map';
+  const chosenFields = mapping.filter((key): key is Exclude<Mapping, ''> => !!key && key !== 'skip');
+  const needsIdentity = !chosenFields.includes('title') && !(chosenFields.includes('make') && chosenFields.includes('model'));
+  const unmatched = mapping.filter(key => !key).length;
+  const mappingIssue = needsIdentity ? 'Match Asset name, or both Make and Model.' : unmatched ? 'Choose a field or Skip for each column.' : '';
+  function updateDraft(next: Partial<AssetDraft>, remember = true) {
+    if (remember) setUndo(draft);
+    setDraft(previous => ({ ...previous, ...next }));
+    setError('');
+  }
+  function selectSheet(list: Sheet[], index: number, headerOverride?: boolean) {
     const table = list[index].rows;
     if (!table.length)
       throw Error('The sheet has no asset rows.');
+    const hasHeader = headerOverride ?? table[0].some(cell => mapHeading(cell));
     if (table.length - (hasHeader ? 1 : 0) > maxAssets)
       throw Error('Import up to ' + maxAssets + ' assets at a time.');
+    const width = table.reduce((max, cells) => Math.max(max, cells.length), 0);
+    if (width > 100) throw Error('Use up to 100 columns per import.');
+    const matched = new Set<Mapping>();
+    const guessed = Array.from({ length: width }, (_, i): Match => {
+      if (table.every(row => !row[i]?.trim())) return 'skip';
+      const key = hasHeader ? mapHeading(table[0][i] || '') : '';
+      if (!key || matched.has(key)) return '';
+      matched.add(key);
+      return key;
+    });
+    setError('');
     setSheets(list);
     setSheetIndex(index);
     setHeader(hasHeader);
-    const width = Math.max(...table.map(r => r.length));
-    setMapping(Array.from({ length: width }, (_, i) => hasHeader ? mapHeading(table[0][i] || '') : ''));
+    if (stage === 'map' && list === sheets && index === sheetIndex) {
+      const next = [...mapping];
+      if (hasHeader) guessed.forEach((key, i) => {
+        if (!next[i] && key && (key === 'skip' || !next.includes(key))) next[i] = key;
+      });
+      setMapping(next);
+    } else {
+      setMapping(guessed);
+    }
     if (stage !== 'map') transition.start(dialog.current, 'Match columns', () => change('map'));
   }
   async function load(file: File) {
     setBusy(true);
     setError('');
     try {
-      if (file.size > 5000000)
-        throw Error('Choose a file smaller than 5 MB.');
       const ext = file.name.toLowerCase().split('.').pop();
       if (ext !== 'xlsx' && ext !== 'csv')
         throw Error('Choose a CSV or .xlsx file.');
+      if (ext === 'csv' && file.size > MAX_PARTS_CSV_BYTES) throw Error('Use a CSV file smaller than 2 MB.');
+      if (ext === 'xlsx' && file.size > 5_000_000) throw Error('Use an Excel file smaller than 5 MB.');
       const list = ext === 'xlsx' ? await readPartsExcel(await file.arrayBuffer(), 'assets') : [{ name: file.name, rows: readPartsCsv(await file.text()) }];
       if (!list[0]?.rows.length)
         throw Error('This file has no populated rows.');
-      selectSheet(list, 0, true);
+      selectSheet(list, 0);
     }
     catch (e) {
       setError((e as Error).message);
@@ -127,13 +168,10 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
     }
   }
   function mapTable() {
-    const used = mapping.filter(Boolean).map(targetColumn);
-    if (!used.includes('title') && !(used.includes('make') && used.includes('model')))
-      return setError('Match Asset name, or match both Make and Model.');
-    const explicit = mapping.filter(Boolean);
-    if (new Set(explicit).size !== explicit.length)
-      return setError('Match each asset field only once.');
-    const readings = mapping.map((key, i) => targetColumn(key) === 'usage' ? i : -1).filter(i => i >= 0);
+    if (mappingIssue) return setError(mappingIssue);
+    const matched = mapping.map(key => key === 'skip' ? '' : key);
+    const used = chosenFields.map(targetColumn);
+    const readings = matched.map((key, i) => targetColumn(key) === 'usage' ? i : -1).filter(i => i >= 0);
     for (const cells of sheet.rows.slice(header ? 1 : 0)) {
       const populated = readings.filter(i => cells[i]?.trim());
       if (populated.length > 1)
@@ -142,17 +180,20 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       if (populated.length && suppliedUnit && mapping[populated[0]] !== 'usage' && usageUnit(suppliedUnit) !== mapping[populated[0]])
         return setError('The usage column and its unit disagree. Check the column matches.');
     }
-    const mapped = sheet.rows.slice(header ? 1 : 0).map(r => mapAssetRow(r, mapping));
+    const mapped = sheet.rows.slice(header ? 1 : 0).map(r => mapAssetRow(r, matched));
     if (!mapped.length)
       return setError('The sheet has no asset rows.');
     if (mapped.some(r => !columns.some(k => r[k])))
       return setError('Some rows have no mapped details. Check the column matches or remove empty asset rows from the source.');
-    setRows(mapped);
-    setVisible(columns.filter(k => k === 'title' || used.includes(k) || mapped.some(r => r[k])));
+    const signature = JSON.stringify([header, mapping]);
+    if (mappedSource.current?.sheet !== sheet || mappedSource.current.signature !== signature) {
+      setDraft({ rows: mapped, visible: columns.filter(k => k === 'title' || used.includes(k) || mapped.some(r => r[k])), basis: '' });
+      setUndo(null);
+      mappedSource.current = { sheet, signature };
+    }
     setValidate(false);
     transition.start(dialog.current, 'Edit asset sheet', () => change('edit'));
   }
-  function edit(i: number, k: Column, value: string) { setRows(rows.map((r, j) => i === j ? { ...r, [k]: value } : r)); }
   function paste(e: ClipboardEvent<HTMLInputElement>, index: number, key: Column) {
     const text = e.clipboardData.getData('text/plain');
     if (!/[\n\t]/.test(text))
@@ -173,8 +214,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
         throw Error('Import up to ' + maxAssets + ' assets at a time.');
       const next = rows.map(r => ({ ...r }));
       table.forEach((cells, i) => { const r = next[index + i] ||= blankAsset(); cells.forEach((v, j) => r[visible[offset + j]] = v); });
-      setRows(next);
-      setError('');
+      updateDraft({ rows: next });
     }
     catch (e) {
       setError((e as Error).message);
@@ -185,6 +225,8 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
     setError('');
     const invalid = rows.findIndex(r => columns.some(k => r[k]) && Object.keys(rowErrors(r, basis)).length);
     if (invalid >= 0) {
+      const invalidFields = columns.filter(k => rowErrors(rows[invalid], basis)[k] && !visible.includes(k));
+      if (invalidFields.length) setDraft({ ...draft, visible: [...visible, ...invalidFields] });
       setPage(Math.floor(invalid / size));
       return setError('Check the highlighted cells in row ' + (invalid + 1) + '.');
     }
@@ -247,14 +289,14 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
         <ShareModalCloseButton aria-label="Close add asset options" disabled={busy || transition.pending} onClick={onClose} />
       </div>
       <header className={parts.dialogHeader}>
-        <h2 id="add-asset-choice-title">{{ choose: 'Add assets', one: 'Add 1 asset', multiple: 'Add multiple assets', file: 'Import assets', map: 'Match columns', edit: 'Edit asset sheet', review: 'Review assets' }[stage]}</h2>
+        <h2 ref={heading} tabIndex={-1} id="add-asset-choice-title">{{ choose: 'Add assets', one: 'Add 1 asset', multiple: 'Add multiple assets', file: 'Import assets', map: 'Import assets', edit: 'Add in a sheet', review: 'Review assets' }[stage]}</h2>
         <p>{registerName}</p>
-        <div className={parts.partsProgress} aria-hidden="true">
+        {!importStep && <div className={parts.partsProgress} aria-hidden="true">
           <span style={{ width: ({ choose: 25, one: 50, multiple: 50, file: 60, map: 65, edit: 80, review: 100 }[stage]) + '%' }} />
-        </div>
+        </div>}
       </header>
       <div className={cards ? css.choiceScroll : css.transparentWrapper}>
-      <fieldset disabled={busy || transition.pending} className={css.body}>
+      <fieldset key={stage} disabled={busy || transition.pending} data-parts-import={importStep || undefined} className={css.body}>
         {cards && <div className={`${parts.shareChoices} ${parts.entryMethods} ${parts.partsIntent} ${css.pair}`}>
           {cards.map(([next, label, hint, tone, path]) => {
             const content = <>
@@ -299,82 +341,42 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
           </div>
         </div>}
         {stage === 'file' && <>
-          <label>Choose a CSV or Excel file<input aria-label="Upload asset file" type="file" accept=".xlsx,.csv" onChange={e => {
-            const f = e.target.files?.[0]; if (f)
-              void load(f);
-          }} />
-          </label>
-          <details>
-            <summary>Paste a table with headings</summary>
-            <textarea aria-label="Paste spreadsheet" value={pasteText} onChange={e => setPasteText(e.target.value)} />
-            <button disabled={!pasteText.trim()} onClick={() => {
-              try {
-                selectSheet([{ name: 'Pasted cells', rows: readPartsCsv(pasteText) }], 0, true);
-              }
-              catch (e) {
-                setError((e as Error).message);
-              }
-            }}>Match columns</button>
-          </details>
-          <button onClick={() => void template()}>Download blank Excel template</button>
+          <SpreadsheetUpload title="Upload your asset list" fileLabel="Upload asset file" busy={busy || transition.pending}
+            pasteMode={pasteMode} onModeChange={mode => { setPasteMode(mode); setError(''); }} pasted={pasteText} onPasteChange={setPasteText} onFile={load} />
+          <button className={css.template} onClick={() => void template()}>Download blank Excel template</button>
         </>}
-        {stage === 'map' && sheet && <>
-          <p>Match your headings to asset fields. Skip columns you do not need.</p>
-          {sheets.length > 1 && <Select label="Worksheet" usePortal value={String(sheetIndex)} options={sheets.map((s, i) => ({ value: String(i), label: s.name }))} onChange={v => {
-            try {
-              selectSheet(sheets, Number(v), true);
-            }
-            catch (e) {
-              setError((e as Error).message);
-            }
+        {stage === 'map' && sheet && <section className={uploadStyles.mapping}>
+          <div className={uploadStyles.heading}><h3>Match columns</h3><p>Choose which asset field to use for each column.</p></div>
+          <div className={uploadStyles.fileSummary}><div><strong>{sheet.name}</strong><span>{sheet.rows.length - Number(header)} rows</span></div>
+            {sheets.length > 1 && <Select label="Worksheet" buttonLabel="Worksheet" className={uploadStyles.worksheet} value={String(sheetIndex)}
+              options={sheets.map((s, i) => ({ value: String(i), label: s.name }))} onChange={v => {
+                try { selectSheet(sheets, Number(v)); } catch (e) { setError((e as Error).message); }
+              }} />}
+          </div>
+          <label className={uploadStyles.headerChoice}><input type="checkbox" checked={header} onChange={e => {
+            try { selectSheet(sheets, sheetIndex, e.target.checked); } catch (err) { setError((err as Error).message); }
+          }} /><span>First row contains headings</span></label>
+          <div className={uploadStyles.columnList} role="group" aria-label="File columns">
+            <div className={uploadStyles.columnHead} aria-hidden="true"><span>Your file</span><span>Sample values</span><span>Use as</span></div>
+            {mapping.map((v, i) => <div key={i} className={uploadStyles.columnRow} data-skipped={v === 'skip' || undefined}>
+              <div className={uploadStyles.columnName}><span className={uploadStyles.letter}>{columnLetter(i)}</span><strong>{header && sheet.rows[0][i] || 'Column ' + columnLetter(i)}</strong></div>
+              <div className={uploadStyles.samples}>{sheet.rows.slice(Number(header), Number(header) + 2).map((r, n) => <span key={n}>{r[i] || '—'}</span>)}</div>
+              <Select className={uploadStyles.columnSelect} label={'Match column ' + (i + 1)} buttonLabel={'Match column ' + (i + 1)} value={v}
+                options={mappingChoices.filter(o => !o.value || o.value === 'skip' || o.value === v || !mapping.includes(o.value as Match))}
+                onChange={next => { setMapping(mapping.map((m, j) => j === i ? next as Match : m)); setError(''); }} />
+            </div>)}
+          </div>
+        </section>}
+        {stage === 'edit' && <AssetSheetEditor draft={draft} register={registerName} validate={validate} page={currentPage} size={size}
+          onPage={setPage} onChange={updateDraft} onPaste={paste} canUndo={!!undo} onUndo={() => {
+            if (undo) { setDraft(undo); setUndo(null); setError(''); }
           }} />}
-          <label className={css.check}>
-            <input type="checkbox" checked={header} onChange={e => {
-              try {
-                selectSheet(sheets, sheetIndex, e.target.checked);
-              }
-              catch (err) {
-                setError((err as Error).message);
-              }
-            }} />First row contains headings</label>
-          <div className={css.mapping}>{mapping.map((v, i) => <div key={i}>
-            <b>{header ? sheet.rows[0][i] || 'Unnamed column' : 'Column ' + (i + 1)}</b>
-            <small>{sheet.rows[header ? 1 : 0]?.[i]}</small>
-            <Select label={'Match column ' + (i + 1)} usePortal value={v} options={mappingChoices} onChange={next => setMapping(mapping.map((m, j) => j === i ? next as Mapping : m))} />
-          </div>)}</div>
-        </>}
-        {stage === 'edit' && <>
-          <p>Add one asset per row. Enter an asset name, or use both make and model.</p>
-          <div className={parts.actions}>
-            <button onClick={() => setDetails(!details)} aria-expanded={details}>Add columns</button>
-          </div>
-          {details && <div className={parts.actions}>{columns.filter(k => !visible.includes(k)).map(k => <button key={k} onClick={() => setVisible([...visible, k])}>{assetColumns[k]}</button>)}</div>}
-          {visible.includes('value') && <Select usePortal label="Current values in rand" placeholder="Choose VAT basis" value={basis} options={[{ value: 'excluded', label: 'Current values exclude VAT' }, { value: 'included', label: 'Current values include VAT' }]} onChange={v => setBasis(v as Basis)} />}
-          <div className={css.scroll}>
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>{visible.map(k => <th key={k}>{assetColumns[k]}{k === 'title' ? ' (required)' : ''}</th>)}<th />
-                </tr>
-              </thead>
-              <tbody>{rows.slice(currentPage * size, (currentPage + 1) * size).map((r, j) => {
-                const i = currentPage * size + j, errors = validate && columns.some(k => r[k]) ? rowErrors(r, basis) : {};
-                return <tr key={i}>
-                  <th>{i + 1}</th>{visible.map(k => <td key={k}>
-                    <input aria-label={assetColumns[k] + ' row ' + (i + 1)} value={r[k]} placeholder={k === 'unit' ? 'hours, km or %' : undefined} aria-invalid={!!errors[k]} onPaste={e => paste(e, i, k)} onChange={e => edit(i, k, e.target.value)} />{errors[k] && <small>{errors[k]}</small>}</td>)}<td>
-                    <button aria-label={'Remove row ' + (i + 1)} onClick={() => setRows(rows.length === 1 ? [blankAsset()] : rows.filter((_, n) => n !== i))}>×</button>
-                  </td>
-                </tr>;
-              })}</tbody>
-            </table>
-          </div>
-          <button disabled={rows.length >= maxAssets} onClick={() => { setRows([...rows, blankAsset()]); setPage(Math.floor(rows.length / size)); }}>Add row</button>
-        </>}
         {stage === 'review' && <>
-          <p>
-            <strong>{ready} ready to add</strong> · {checks.length - ready} skipped{metered ? ' · ' + ready + ' Business credits' : ''}</p>
-          {hosting && <p>{hosting}</p>}
-          <div className={css.scroll}>
+          <div className={uploadStyles.importSummary}>
+            <strong>{ready} ready to add</strong><span>{checks.length - ready} skipped</span>
+            {metered && <span>{ready} Business credits</span>}{hosting && <small>{hosting}</small>}
+          </div>
+          <div className={css.reviewTable} role="region" aria-label="Assets to add" tabIndex={0}>
             <table>
               <thead>
                 <tr>
@@ -401,7 +403,12 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       {error && <p role="alert" className={parts.error}>{error}</p>}
       <footer className={parts.entryFooter}>
         <button disabled={busy || transition.pending} onClick={event => transition.start(event.currentTarget, 'Going back…', back)}>Back</button>
-        {stage === 'map' && <button className={parts.primary} disabled={busy || transition.pending} onClick={mapTable}>Edit sheet</button>}
+        {stage === 'file' && pasteMode && <button className={parts.primary} disabled={busy || transition.pending || !pasteText.trim()} onClick={() => {
+          try { selectSheet([{ name: 'Pasted cells', rows: readPartsCsv(pasteText) }], 0); }
+          catch (e) { setError((e as Error).message); }
+        }}>Check columns</button>}
+        {stage === 'map' && <p className={uploadStyles.footerStatus}>{mappingIssue || 'Columns matched'}</p>}
+        {stage === 'map' && <button className={parts.primary} disabled={busy || transition.pending || !!mappingIssue} onClick={mapTable}>Edit sheet</button>}
         {stage === 'edit' && <button className={parts.primary} disabled={busy || transition.pending} onClick={() => void submit()}>{busy ? 'Reviewing assets…' : 'Review assets'}</button>}
         {stage === 'review' && <button className={parts.primary} disabled={busy || transition.pending || !ready} onClick={() => void submit(true)}>{busy ? 'Adding assets…' : 'Add ' + ready + ' asset' + (ready === 1 ? '' : 's')}</button>}</footer>
     </section>
