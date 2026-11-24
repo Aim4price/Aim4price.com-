@@ -1,6 +1,8 @@
 'use client';
 import { useState, type ClipboardEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAssetFlowTransition } from './useAssetFlowTransition';
 import { useLeadDialog } from '../leads/useLeadDialog';
 import registerStyles from '../../app/asset-register/page.module.css';
 import Select from '../AssetModalSelect';
@@ -71,7 +73,9 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   const size = 20;
   const pages = Math.max(1, Math.ceil((stage === 'review' ? filled : rows).length / size));
   const currentPage = Math.min(page, pages - 1);
-  const dialog = useLeadDialog(onClose, busy);
+  const router = useRouter();
+  const transition = useAssetFlowTransition();
+  const dialog = useLeadDialog(onClose, busy || transition.pending);
   const [history, setHistory] = useState<Stage[]>([]);
   function change(next: Stage) {
     if (stage !== next) setHistory(previous => [...previous, stage]);
@@ -99,7 +103,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
     setHeader(hasHeader);
     const width = Math.max(...table.map(r => r.length));
     setMapping(Array.from({ length: width }, (_, i) => hasHeader ? mapHeading(table[0][i] || '') : ''));
-    change('map');
+    if (stage !== 'map') transition.start(dialog.current, 'Match columns', () => change('map'));
   }
   async function load(file: File) {
     setBusy(true);
@@ -146,7 +150,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
     setRows(mapped);
     setVisible(columns.filter(k => k === 'title' || used.includes(k) || mapped.some(r => r[k])));
     setValidate(false);
-    change('edit');
+    transition.start(dialog.current, 'Edit asset sheet', () => change('edit'));
   }
   function edit(i: number, k: Column, value: string) { setRows(rows.map((r, j) => i === j ? { ...r, [k]: value } : r)); }
   function paste(e: ClipboardEvent<HTMLInputElement>, index: number, key: Column) {
@@ -200,7 +204,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       setHosting(data.hosting);
       setChecks(data.checks);
       setMetered(data.metered);
-      change('review');
+      transition.start(dialog.current, 'Review assets', () => change('review'));
     }
     catch (e) {
       setError((e as Error).message);
@@ -234,12 +238,13 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   }
   return <div className={`${registerStyles.modalOverlay} ${registerStyles.assetEntryOverlay} ${css.overlay}`} data-website-overlay>
     <div className={registerStyles.modalBackdrop} data-website-overlay onClick={() => {
-      if (!busy)
+      if (!busy && !transition.pending)
         onClose();
     }} />
     <section ref={dialog} tabIndex={-1} data-dialog-initial-focus className={`${parts.modal} ${parts.entryModal} ${css.dialog}`} aria-labelledby="add-asset-choice-title" role="dialog" aria-modal="true">
+      {transition.feedback}
       <div className={parts.closeWrap}>
-        <ShareModalCloseButton aria-label="Close add asset options" disabled={busy} onClick={onClose} />
+        <ShareModalCloseButton aria-label="Close add asset options" disabled={busy || transition.pending} onClick={onClose} />
       </div>
       <header className={parts.dialogHeader}>
         <h2 id="add-asset-choice-title">{{ choose: 'Add assets', one: 'Add 1 asset', multiple: 'Add multiple assets', file: 'Import assets', map: 'Match columns', edit: 'Edit asset sheet', review: 'Review assets' }[stage]}</h2>
@@ -248,7 +253,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
           <span style={{ width: ({ choose: 25, one: 50, multiple: 50, file: 60, map: 65, edit: 80, review: 100 }[stage]) + '%' }} />
         </div>
       </header>
-      <fieldset disabled={busy} className={css.body}>
+      <fieldset disabled={busy || transition.pending} className={css.body}>
         {cards && <div className={`${parts.shareChoices} ${parts.entryMethods} ${css.pair}`}>
           {cards.map(([next, label, hint, tone, path]) => {
             const content = <>
@@ -256,9 +261,13 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
               <span><strong>{label}</strong><small>{hint}</small></span>
             </>;
             if (next === 'valuation') {
-              return <Link key={next} className={parts.choiceLink} data-tone={tone} href={valuationHref}>{content}</Link>;
+              return <Link key={next} className={parts.choiceLink} data-tone={tone} href={valuationHref} onClick={event => {
+                if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                event.preventDefault();
+                transition.start(event.currentTarget, label, () => router.push(valuationHref));
+              }}>{content}</Link>;
             }
-            return <button key={next} type="button" data-tone={tone} onClick={() => next === 'manual' ? onManual() : change(next)}>{content}</button>;
+            return <button key={next} type="button" data-tone={tone} onClick={event => transition.start(event.currentTarget, label, () => next === 'manual' ? onManual() : change(next))}>{content}</button>;
           })}
         </div>}
         {stage === 'multiple' && <>
@@ -390,10 +399,10 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       </fieldset>
       {error && <p role="alert" className={parts.error}>{error}</p>}
       <footer className={parts.entryFooter}>
-        <button disabled={busy} onClick={back}>Back</button>
-        {stage === 'map' && <button className={parts.primary} disabled={busy} onClick={mapTable}>Edit sheet</button>}
-        {stage === 'edit' && <button className={parts.primary} disabled={busy} onClick={() => void submit()}>Review assets</button>}
-        {stage === 'review' && <button className={parts.primary} disabled={busy || !ready} onClick={() => void submit(true)}>{busy ? 'Adding assets…' : 'Add ' + ready + ' asset' + (ready === 1 ? '' : 's')}</button>}</footer>
+        <button disabled={busy || transition.pending} onClick={event => transition.start(event.currentTarget, 'Going back…', back)}>Back</button>
+        {stage === 'map' && <button className={parts.primary} disabled={busy || transition.pending} onClick={mapTable}>Edit sheet</button>}
+        {stage === 'edit' && <button className={parts.primary} disabled={busy || transition.pending} onClick={() => void submit()}>{busy ? 'Reviewing assets…' : 'Review assets'}</button>}
+        {stage === 'review' && <button className={parts.primary} disabled={busy || transition.pending || !ready} onClick={() => void submit(true)}>{busy ? 'Adding assets…' : 'Add ' + ready + ' asset' + (ready === 1 ? '' : 's')}</button>}</footer>
     </section>
   </div>;
 }
