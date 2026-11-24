@@ -1,4 +1,5 @@
 'use client';
+import { categoryForLine } from '../../../../lib/accounting-serial';
 import { useState } from 'react';
 import { parseExport } from '../../../../lib/accounting-export';
 import { assetForLine } from '../../../../lib/accounting-serial';
@@ -35,7 +36,7 @@ export default function ExportPreview({assets}:{assets:{title:string;serialNumbe
       <option value={-1}>{i===3?'Use description':'Choose column'}</option>{rows[0].map((s,k)=><option key={k} value={k}>{s||'Column '+(k+1)}</option>)}</select></label></p>)}
       <button disabled={cols.slice(0,3).includes(-1)||new Set(cols.filter(c=>c>=0)).size!==cols.filter(c=>c>=0).length} onClick={()=>setPage(0)}>Preview allocations</button></>}
     {page>=0 && <section><h2>Allocation preview</h2><p>{rows.length-1} lines · Amounts as exported · Preview only</p>
-      <ul>{rows.slice(1+page*50,51+page*50).map((row,i)=><li key={i}><strong>{match(row)}</strong><br/>{row[cols[0]]} · {row[cols[1]]} · {row[cols[2]]}</li>)}</ul>
+      <ul>{rows.slice(1+page*50,51+page*50).map((row,i)=><li key={i}><strong>{match(row)}</strong> · {categoryForLine(row[cols[1]]) ?? 'Uncategorised'}<br/>{row[cols[0]]} · {row[cols[1]]} · {row[cols[2]]}</li>)}</ul>
       {page>0 && <button onClick={()=>setPage(page-1)}>Previous</button>}{(page+1)*50<rows.length-1 && <button onClick={()=>setPage(page+1)}>Next</button>}</section>}
   </>;
 }

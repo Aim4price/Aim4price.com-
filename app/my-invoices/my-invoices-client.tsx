@@ -1092,7 +1092,6 @@ export default function MyInvoicesClient({
   const manageCostRef = useRef<HTMLDivElement>(null);
   const manageCostTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('other');
-  const [pendingSource, setPendingSource] = useState<InvoiceSource>('manual');
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -2515,7 +2514,7 @@ export default function MyInvoicesClient({
       else setFlow('source-choice');
       return;
     }
-    if (flow === 'category') { setFlow('source-choice'); return; }
+    if (flow === 'category') { finishModal(); return; }
     if (flow === 'review') { setFlow('upload'); return; }
     if (flow === 'upload') { setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic'); return; }
     if (flow === 'asset-first') { finishModal(); return; }
@@ -2819,18 +2818,11 @@ export default function MyInvoicesClient({
     setManualCostWizardError('');
     setAssetLockedForFlow(Boolean(normalizedAssetId));
     setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
-    setFlow(dealerMode && !normalizedAssetId ? 'asset-first' : 'source-choice');
+    setFlow(dealerMode && !normalizedAssetId ? 'asset-first' : 'category');
   }
 
   function startFlow(source: InvoiceSource) {
     if (desktop.workspace && source === 'automatic') { desktop.unavailable(); return; }
-    setPendingSource(source);
-    setFlow('category');
-  }
-
-  function chooseCostCategory(category: string) {
-    const source = pendingSource;
-    setSelectedCategory(category);
     if (sourceDraftsRef.current[draft.source]) {
       sourceDraftsRef.current[draft.source] = { assetId: selectedAssetId, draft };
     }
@@ -2868,7 +2860,7 @@ export default function MyInvoicesClient({
       ? [selectedAssetId]
       : [];
     setNotice(null);
-    setRecurringDraft(buildRecurringCommitmentDraft());
+    setRecurringDraft({ ...buildRecurringCommitmentDraft(), category: selectedCategory });
     setRecurringAssetIds(presetAssetIds);
     setRecurringPickerAssetIds(presetAssetIds);
     setRecurringAssetPickerOpen(false);
@@ -3080,7 +3072,7 @@ export default function MyInvoicesClient({
         setExtractionWarnings([]);
         setDraft(buildDraftForAsset('manual', assetId));
       }
-      setFlow('source-choice');
+      setFlow('category');
       return;
     }
 
@@ -3649,6 +3641,7 @@ export default function MyInvoicesClient({
                       <h2 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h2>
                       {dealerMode && invoice.ownerName ? <p className={styles.invoiceOwner}>{invoice.ownerName}</p> : null}
                       <p className={styles.invoiceReference}>
+                        <span>{categorySummary([invoice.source === 'fuel_slip' ? 'fuel' : invoice.costCategory || 'other'])}</span>
                         <span>{invoice.invoiceNumber ? `Invoice ${invoice.invoiceNumber}` : 'No invoice number'}</span>
                         {invoice.invoiceDate ? <span>{formatDateTime(invoice.invoiceDate)}</span> : null}
                       </p>
@@ -3759,7 +3752,8 @@ export default function MyInvoicesClient({
             <div className={styles.modalDivider} />
 
             {budgetManagerView === 'choice' ? (
-              <div className={styles.sourceChoiceGrid}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setFlow('category')}>{categorySummary([selectedCategory])} · Change category</button>
+            <div className={styles.sourceChoiceGrid}>
                 <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption}`} onClick={openCreateBudget} disabled={budgetsLoading || Boolean(budgetLoadError)} data-budget-trigger="add">
                   <span className={styles.choiceGraphic} aria-hidden="true"><span className={styles.plusMark}>+</span></span>
                   <span className={styles.choiceTitleBlock}>
@@ -4613,14 +4607,14 @@ export default function MyInvoicesClient({
           <section className={`${styles.downloadModal} ${categoryStyles.dialog}`}>
             <div className={styles.modalHeader}>
               <h2 id="cost-category-title">Choose a cost category</h2>
-              <button type="button" className={accountStyles.modalCloseButton} onClick={finishModal} aria-label="Close">×</button>
+              <button type="button" className={accountStyles.modalCloseButton} onClick={finishModal} aria-label="Close cost categories" data-modal-close="true">×</button>
             </div>
             <div className={categoryStyles.cards}>
-              {costCategories.map(category => <button key={category.value} type="button" className={categoryStyles.card} onClick={() => chooseCostCategory(category.value)}>
+              {costCategories.map(category => <button key={category.value} type="button" className={categoryStyles.card} onClick={() => { setSelectedCategory(category.value); setFlow('source-choice'); }}>
                 <RecurringFieldIcon kind={category.icon} /><strong>{category.label}</strong>
               </button>)}
             </div>
-            <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={() => setFlow('source-choice')}>Back</button></div>
+            <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={finishModal}>Cancel</button></div>
           </section>
         </div>
       ) : null}

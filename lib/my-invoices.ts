@@ -1042,7 +1042,7 @@ export async function listMyInvoices(userId: string, filters: MyInvoiceListFilte
   const result = await getDb().query<MyInvoiceRow>(
     `
       select
-        i.*, ai.register_id as asset_register_id,
+        i.*, to_jsonb(ai)->>'register_id' as asset_register_id,
         coalesce(
           nullif(to_jsonb(ai)->>'title', ''),
           nullif(to_jsonb(ai)->>'asset_name', ''),

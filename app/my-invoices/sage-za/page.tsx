@@ -1,3 +1,4 @@
+import { categoryForLine } from '../../../lib/accounting-serial';
 import Link from 'next/link';
 import AppHeader from '../../../components/AppHeader';
 import { listAllOwnerAppAssets } from '../../../lib/owner-app-assets';
@@ -47,7 +48,7 @@ export default async function SagePage({searchParams}: {searchParams?: {preview?
               <button name="company" value={company.id}>{company.name} (#{company.id})</button></form>)
             : !failed && <p>No companies available to this Sage account.</p>}</>}
         {preview && <section><h2>Supplier bill lines</h2><p>Preview only. Amounts exclude VAT and use the bill currency.</p>
-          {preview.length ? <ul>{preview.map((line,index) => <li key={index}><strong>{line.asset}</strong><br/>
+          {preview.length ? <ul>{preview.map((line,index) => <li key={index}><strong>{line.asset}</strong> · {categoryForLine(line.description) ?? 'Uncategorised'}<br/>
             {line.supplier} · {line.invoice}<br/>{line.description} · {line.amount} excl. VAT</li>)}</ul> : <p>No supplier bill lines found.</p>}</section>}
         <form action={removeSage}><input type="hidden" name="connection" value={current.connection_id}/><button>Disconnect Sage</button></form>
       </>}
