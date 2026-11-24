@@ -25,3 +25,76 @@
 .dialog .pair {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+
+.dialog.dialog:has(.pair) {
+  width: min(780px, var(--website-dialog-reference-width, calc(100% - 24px)));
+  padding: 28px;
+  container-type: inline-size;
+}
+
+.dialog:has(.pair) > header {
+  margin-bottom: 0;
+  padding: 0;
+  border-bottom: 0;
+}
+
+.dialog:has(.pair) > header :is(h2, p) {
+  padding-inline-end: 48px;
+}
+
+.dialog:has(.pair) > header p {
+  margin-top: 8px;
+}
+
+.dialog:has(.pair) .body {
+  padding: 20px 3px;
+  gap: 14px;
+}
+
+.dialog .body .pair {
+  gap: 16px;
+}
+
+.dialog .pair > [data-tone] {
+  min-height: 164px;
+  padding: 18px;
+  gap: 14px;
+  border-radius: 18px;
+}
+
+.dialog .pair > [data-tone] span {
+  gap: 4px;
+}
+
+.dialog .body .pair + div {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.dialog .pair + div > button[aria-expanded] {
+  justify-content: space-between;
+  padding: 10px 16px;
+}
+
+.dialog .pair + div > button[aria-expanded]::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.dialog .pair + div > button[aria-expanded="true"]::after {
+  transform: rotate(225deg);
+}
+
+@container (max-width: 480px) {
+  .dialog .body .pair { grid-template-columns: 1fr; gap: 10px; }
+  .dialog .pair > [data-tone] {
+    flex-direction: row;
+    justify-content: flex-start;
+    min-height: 84px;
+    text-align: left;
+  }
+}
