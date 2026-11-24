@@ -1492,14 +1492,14 @@
 .deleteModal .deleteFooter .deleteConfirm:hover:not(:disabled) { background: linear-gradient(#a63838, #872b2b); }
 .partEditFields input::placeholder { color:var(--app-text-muted,#64766c); font-weight:400; opacity:.8; }
 
-.entryModal:has(.partsIntent) { width: min(1080px, 100%); padding: clamp(22px, calc(var(--website-design-vw, 1vw) * 4), 38px); }
+.entryModal:has(.partsIntent) { width: min(1080px, var(--entry-available-width, 100%)); padding: clamp(22px, calc(var(--website-design-vw, 1vw) * 4), 38px); }
 /* Match the breathing room around the cards on both sides of the chooser. */
 .entryModal .partsIntent {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 6px;
 }
-.entryModal:has(> .partsIntent) .dialogHeader { margin-bottom: 20px; }
-.entryModal:has(> .partsIntent) > .entryFooter {
+.entryModal:has(.partsIntent) .dialogHeader { margin-bottom: 20px; }
+.entryModal:has(.partsIntent) > .entryFooter {
   margin-top: 20px;
   padding-top: 18px;
 }
@@ -1540,8 +1540,8 @@
 .partPickerResults svg { width: 20px; flex-shrink: 0; }
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal .partsIntent { grid-template-columns: 1fr; }
-  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(> .partsIntent) .dialogHeader { margin-bottom: 14px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(> .partsIntent) > .entryFooter { margin-top: 12px; padding-top: 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.partsIntent) .dialogHeader { margin-bottom: 14px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.partsIntent) > .entryFooter { margin-top: 12px; padding-top: 12px; }
 }
 
 .stockSheet .stageBody {

@@ -246,7 +246,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       <div className={parts.closeWrap}>
         <ShareModalCloseButton aria-label="Close add asset options" disabled={busy || transition.pending} onClick={onClose} />
       </div>
-      <header className={cards ? css.choiceHeader : parts.dialogHeader}>
+      <header className={parts.dialogHeader}>
         <h2 id="add-asset-choice-title">{{ choose: 'Add assets', one: 'Add 1 asset', multiple: 'Add multiple assets', file: 'Import assets', map: 'Match columns', edit: 'Edit asset sheet', review: 'Review assets' }[stage]}</h2>
         <p>{registerName}</p>
         <div className={parts.partsProgress} aria-hidden="true">
@@ -255,7 +255,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       </header>
       <div className={cards ? css.choiceScroll : css.transparentWrapper}>
       <fieldset disabled={busy || transition.pending} className={css.body}>
-        {cards && <div className={`${parts.shareChoices} ${parts.entryMethods} ${css.pair}`}>
+        {cards && <div className={`${parts.shareChoices} ${parts.entryMethods} ${parts.partsIntent} ${css.pair}`}>
           {cards.map(([next, label, hint, tone, path]) => {
             const content = <>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d={path} /></svg>
