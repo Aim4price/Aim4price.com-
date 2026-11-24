@@ -257,7 +257,7 @@ test('budget overview has its own owner page and cost links preserve budget scop
   assert.match(costClient, /setBudgetDeleteError\(error instanceof Error/);
 });
 
-test('budget setup uses a wider four-step wizard and shared searchable asset picker', () => {
+test('budget setup uses a wider five-step wizard and shared searchable asset picker', () => {
   const modalStart = costClient.indexOf('{budgetModalOpen ?');
   const modalEnd = costClient.indexOf('{budgetDeleteCandidate ?', modalStart);
   const budgetModal = costClient.slice(modalStart, modalEnd);
@@ -268,13 +268,14 @@ test('budget setup uses a wider four-step wizard and shared searchable asset pic
   assert.match(budgetModal, /budgetWizardStep === 2/);
   assert.match(budgetModal, /budgetWizardStep === 3/);
   assert.match(budgetModal, /budgetWizardStep === 4/);
-  assert.match(budgetModal, /Choose Saved Assets/);
+  assert.match(budgetModal, /budgetWizardStep === 5/);
+  assert.match(budgetModal, /Choose assets/);
   assert.match(budgetModal, /Search saved assets/);
   assert.match(budgetModal, /Select all shown/);
   assert.match(budgetModal, /toggleAllFilteredBudgetAssets/);
   assert.match(budgetModal, /budgetPickerAssetIds/);
-  assert.match(budgetModal, /budgetAssetPickerOpen/);
-  assert.match(budgetModal, /budgetScopeTriggerRef/);
+  assert.match(budgetModal, /budgetDialogRef/);
+  assert.match(budgetModal, /Which costs should count towards this budget/);
   assert.match(budgetModal, /filteredBudgetAssets/);
   assert.doesNotMatch(budgetModal, /<select\b/);
   assert.doesNotMatch(budgetModal, /Asset scope|Limit &amp; alert|Cost control/);

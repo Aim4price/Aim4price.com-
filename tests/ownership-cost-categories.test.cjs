@@ -36,15 +36,29 @@ test('register and category budgets count incurred costs once and exclude pendin
       await query('insert into asset_invoices values ($1,$2,$3,$4,$5,$6,$7,$8,now(),now())',['owner',asset,date,category,amount,'manual',dealer,dealer?'pending':'owner']);
     }
     const options={period:'annual',amount:60000,warningPercent:80};
-    const overall=await api.createCostBudget('owner',{...options,registerId:register},{});
-    const service=await api.createCostBudget('owner',{...options,registerId:register,categories:['service','repair']},{});
-    assert.equal(overall.spent,6000);
-    assert.equal(service.spent,5000);
-    assert.equal(service.remaining,55000);
-    await assert.rejects(api.createCostBudget('owner',{...options,registerId:register,categories:['repair','service']},{}),/DUPLICATE/);
-    await assert.rejects(api.createCostBudget('another',{...options,registerId:register},{}),/NOT_FOUND/);
-    const updated=await api.updateCostBudget('owner',service.id,{...options,registerId:register,categories:['insurance']},{});
-    assert.equal(updated.spent,1000);
+    const overall = await api.createCostBudget('owner', {...options, assetId: asset}, {});
+    const repairs = {...options, assetId: asset, categories: ['service', 'repair']};
+    const service = await api.createCostBudget('owner', repairs, {});
+    assert.equal(overall.spent, 6000);
+    assert.equal(service.spent, 5000);
+    assert.equal(service.remaining, 55000);
+    await assert.rejects(api.createCostBudget('owner', {...repairs, categories:['repair','service']}, {}), /DUPLICATE/);
+    for (const scope of [{}, {registerId: register}]) {
+      await assert.rejects(api.createCostBudget('owner', {...options, ...scope}, {}), /ASSET_INVALID/);
+      await assert.rejects(api.updateCostBudget('owner', service.id, {...options, ...scope}, {}), /NOT_FOUND/);
+    }
+
+    // A register budget saved before the asset-only flow still counts eligible costs.
+    const legacy = await query(`insert into asset_cost_budgets
+      (user_id, register_id, period, amount, warning_percent, categories)
+      values ('owner', $1, 'annual', 60000, 80, array['repair','service']) returning id`, [register]);
+    const legacyId = legacy.rows[0].id;
+    const existing = (await api.listCostBudgetsWithProgress('owner')).find(budget => budget.id === legacyId);
+    assert.equal(existing.spent, 5000);
+    const input = {...options, registerId: register, categories: ['insurance']};
+    await assert.rejects(api.updateCostBudget('another', legacyId, input, {}), /NOT_FOUND/);
+    const updated = await api.updateCostBudget('owner', legacyId, input, {});
+    assert.equal(updated.spent, 1000);
   } finally {await db.close();}
 });
 

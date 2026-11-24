@@ -588,8 +588,9 @@ async function budgetWrite(sql: string, values: unknown[], guard?: WorkspaceWrit
 }
 
 export async function createCostBudget(userId: string, input: CostBudgetInput, guard?: WorkspaceWriteGuard): Promise<CostBudgetProgress> {
-  await ensureCostBudgetTables();
   const budget = normalizeInput(input);
+  if (!budget.assetId) throw new Error('COST_BUDGET_ASSET_INVALID');
+  await ensureCostBudgetTables();
   await verifyBudgetAsset(userId, budget.assetId, budget.registerId);
 
   try {
@@ -646,6 +647,8 @@ export async function updateCostBudget(
           updated_at = now()
         where id = $1::uuid
           and user_id = $2
+          and ($3::uuid is not null or
+               (asset_register_item_id is null and register_id is not distinct from $9::uuid))
         returning id::text
       `,
       [

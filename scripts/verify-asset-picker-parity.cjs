@@ -12,7 +12,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const scenarios = [
   ['manual', 'costs', ['+Add Cost', 'Enter cost manually', 'Services']],
   ['capture', 'costs', ['+Add Cost', 'Automatic upload', 'Services']],
-  ['budget', 'budgets', ['Add Budget', 'Choose assets']],
+  ['budget', 'budgets', ['Add Budget']],
   ['recurring', 'costs', ['+Add Cost', 'Add recurring commitment', 'Services', 'Choose assets']],
   ['invoice-drop', 'costs', ['Invoice Drop', 'Specific asset', 'Next', 'Choose an asset']],
   ['maintenance', 'maintenance', ['+Add Maintenance']],
