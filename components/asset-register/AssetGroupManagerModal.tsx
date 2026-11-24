@@ -752,10 +752,7 @@ export default function AssetGroupManagerModal({
     })),
   ];
   const maintenanceOptions: ReportSelectOption[] = [
-    { value: 'all', label: 'All maintenance' },
-    { value: 'upcoming', label: 'Upcoming maintenance' },
-    { value: 'done', label: 'Completed maintenance' },
-    { value: 'checked', label: 'Checked only' },
+    { value: 'all', label: 'Services and repairs' },
     { value: 'serviced', label: 'Services only' },
     { value: 'repaired', label: 'Repairs only' },
   ];

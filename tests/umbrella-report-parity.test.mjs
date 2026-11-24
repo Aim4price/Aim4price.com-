@@ -26,10 +26,10 @@ test('umbrella maintenance offers the same completed-work types as an individual
     readFile(new URL('../app/api/maintenance/report/route.ts', import.meta.url), 'utf8'),
   ]);
 
-  assert.match(modal, /Checked only/);
+  assert.doesNotMatch(modal, /Checked only/);
   assert.match(modal, /Services only/);
   assert.match(modal, /Repairs only/);
-  assert.match(client, /maintenanceParams\.set\('procedureKind', maintenanceSelection\)/);
+  assert.match(client, /searchParams\.set\('maintenanceType', filters\.maintenanceType/);
   assert.match(route, /parseProcedureKind/);
   assert.match(route, /maintenanceRecordProcedureKind\(record\) === procedureKind/);
 });

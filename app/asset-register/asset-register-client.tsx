@@ -5852,34 +5852,8 @@ function buildAssetGroupTimelineReportUrl(
   filters: AssetGroupReportFilters,
   format: AssetGroupReportRouteFormat,
 ): string {
-  if (reportKind === 'maintenance') {
-    const maintenanceSelection = filters.maintenanceType ?? 'all';
-    const scope = maintenanceSelection === 'upcoming' || maintenanceSelection === 'done'
-      ? maintenanceSelection
-      : 'total';
-    const maintenanceParams = new URLSearchParams({
-      groupId: group.id,
-      scope,
-      format,
-    });
-
-    if (
-      maintenanceSelection === 'checked'
-      || maintenanceSelection === 'serviced'
-      || maintenanceSelection === 'repaired'
-    ) {
-      maintenanceParams.set('procedureKind', maintenanceSelection);
-    }
-
-    if (filters.year && filters.year !== 'all') {
-      maintenanceParams.set('year', filters.year);
-      if (filters.month && filters.month !== 'all') maintenanceParams.set('month', filters.month);
-    }
-
-    return `/api/maintenance/report?${maintenanceParams.toString()}`;
-  }
-
   const searchParams = new URLSearchParams({ groupId: group.id, report: reportKind, format });
+  if (reportKind === 'maintenance') searchParams.set('maintenanceType', filters.maintenanceType ?? 'all');
 
   if (filters.year && filters.year !== 'all') {
     searchParams.set('year', filters.year);

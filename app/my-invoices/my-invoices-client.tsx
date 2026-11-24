@@ -3752,7 +3752,6 @@ export default function MyInvoicesClient({
             <div className={styles.modalDivider} />
 
             {budgetManagerView === 'choice' ? (
-              <button type="button" className={styles.secondaryButton} onClick={() => setFlow('category')}>{categorySummary([selectedCategory])} · Change category</button>
             <div className={styles.sourceChoiceGrid}>
                 <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption}`} onClick={openCreateBudget} disabled={budgetsLoading || Boolean(budgetLoadError)} data-budget-trigger="add">
                   <span className={styles.choiceGraphic} aria-hidden="true"><span className={styles.plusMark}>+</span></span>
@@ -4633,6 +4632,7 @@ export default function MyInvoicesClient({
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close add asset cost" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
+              <button type="button" className={styles.secondaryButton} onClick={() => setFlow('category')}>{categorySummary([selectedCategory])} · Change category</button>
             <div className={styles.sourceChoiceGrid}>
               <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.manualChoiceOption}`} onClick={() => startFlow('manual')}>
                 <span className={styles.choiceGraphic}>

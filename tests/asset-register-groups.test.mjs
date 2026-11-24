@@ -443,12 +443,10 @@ test('umbrella report downloads use custom selectors, clear spacing, and the sha
     readFile(new URL('../app/api/maintenance/report/route.ts', import.meta.url), 'utf8'),
   ]);
 
-  assert.match(client, /return `\/api\/maintenance\/report\?\$\{maintenanceParams\.toString\(\)\}`/);
-  assert.match(client, /maintenanceSelection === 'upcoming' \|\| maintenanceSelection === 'done'/);
-  assert.match(client, /maintenanceParams\.set\('procedureKind', maintenanceSelection\)/);
+  assert.match(client, /searchParams\.set\('maintenanceType', filters\.maintenanceType/);
   assert.match(modal, /function ReportSelect/);
-  assert.match(modal, /Completed maintenance/);
-  assert.match(modal, /Checked only/);
+  assert.match(modal, /Services and repairs/);
+  assert.doesNotMatch(modal, /Checked only/);
   assert.match(modal, /Services only/);
   assert.match(modal, /Repairs only/);
   assert.match(maintenanceRoute, /parseProcedureKind/);
@@ -794,8 +792,7 @@ test('umbrella and Maintenance page exports preserve completed maintenance histo
   assert.match(maintenance, /completed maintenance scan history could not be loaded/);
   assert.match(maintenanceClient, /Total maintenance report[\s\S]*?All open and completed maintenance/);
   assert.match(maintenanceClient, /Completed maintenance report/);
-  assert.match(modal, /All maintenance/);
-  assert.match(modal, /Completed maintenance/);
+  assert.match(modal, /Services and repairs/);
 });
 
 test('maintenance PDF and Excel builders accept PostgreSQL Date timestamps', async () => {
