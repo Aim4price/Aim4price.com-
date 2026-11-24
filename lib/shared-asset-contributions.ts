@@ -78,15 +78,25 @@ export async function addSharedPhotos(target:ContributionTarget, files:File[], k
 export async function addSharedCost(target:ContributionTarget, input:MyInvoiceDraftInput, file?:File) {
   const scope = await contributionScope(target,'addCosts');
   const captureRequestId = requestKey(input.captureRequestId);
-  const amount = Number(input.subtotalExVat), vat = Number(input.vatAmount);
-  if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(vat) || vat < 0 || !/^\d{4}-\d{2}-\d{2}$/.test(String(input.invoiceDate))) throw new Error('Enter a valid date, amount and VAT.');
+  function readAmount(value: unknown): number | null {
+    const text = String(value ?? '').trim().replace(/\s/g, '');
+    if (!text) return null;
+    if (!/^\d+(?:[.,]\d{1,2})?$/.test(text)) throw new Error('Enter a valid amount.');
+    const amount = Number(text.replace(',', '.'));
+    if (!Number.isFinite(amount)) throw new Error('Enter a valid amount.');
+    return amount;
+  }
+  const amount = readAmount(input.subtotalExVat);
+  const vat = readAmount(input.vatAmount);
+  const total = readAmount(input.totalIncVat) ?? Math.round(((amount ?? 0) + (vat ?? 0)) * 100) / 100;
+  if (total <= 0 || !/^\d{4}-\d{2}-\d{2}$/.test(String(input.invoiceDate))) throw new Error('Enter a valid date and invoice amount.');
   if (file && (!['application/pdf',...ALLOWED_ASSET_REGISTER_IMAGE_TYPES].includes(file.type) || !file.size || file.size > MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES)) throw new Error('Choose a PDF or image up to 12 MB.');
   await ensureSharingFoundation();
   const actor = {dealerUserId:scope.user.id === scope.ownerId ? null : scope.user.id,displayName:scope.user.name || scope.user.email,ownerApproved:true};
   // The canonical invoice ledger owns the cost and the supporting document; no second expense is created.
   let upload: Awaited<ReturnType<typeof createAssetRegisterUpload>> | undefined;
   let documentId: string | undefined;
-  return createMyInvoice(scope.ownerId,{...input,assetId:scope.assetId,captureRequestId,invoiceDocumentId:documentId || null,subtotalExVat:amount,vatAmount:vat,totalIncVat:Math.round((amount+vat)*100)/100,source:'manual'},actor,{
+  return createMyInvoice(scope.ownerId,{...input,assetId:scope.assetId,captureRequestId,invoiceDocumentId:documentId || null,subtotalExVat:amount,vatAmount:vat,totalIncVat:total,source:'manual'},actor,{
     before:async client=>{
       await scope.lock(client);
       const asset=await client.query('SELECT id FROM asset_register_items WHERE id=$1::uuid AND user_id=$2 FOR SHARE',[scope.assetId,scope.ownerId]);

@@ -54,3 +54,24 @@ test('validation and photo capacity reject writes without usage or file storage'
  await assert.rejects(x.service.addSharedPhotos({token:'link',assetId:A},[photo()],randomUUID()),/12 photos/);assert.equal(x.state.uploads,0);
  assert.equal((await x.pg.query('SELECT * FROM sharing_usage_events')).rows.length,0);
 }finally{await x.pg.close();}});
+
+test('shared manual form preserves the category and grouped total through the API and ledger on retry', async () => {
+ const x = await setup();
+ try {
+  const api = load('lib/shared-asset-contributions-api.ts', {
+   './asset-register-db': {}, './my-invoices': {}, './business-network': {limitBusinessAction:async()=>{}},
+   './external-lead-access': {ExternalLeadAccessError:class extends Error {}},
+   './business-network-api': {requireBusinessOrigin(){}, businessJson:value=>value, businessError:error=>{throw error;}},
+   './shared-asset-contributions':x.service,
+  });
+  const form = new FormData();
+  form.set('requestId', randomUUID());
+  form.set('draft', JSON.stringify({ invoiceDate:'2026-11-24', totalIncVat:'1 150.50', costCategory:'insurance' }));
+  const request = {headers:new Headers(), formData:async()=>form};
+  for (let attempt=0; attempt<2; attempt++) {
+   assert.deepEqual(await api.saveSharedContribution(request,{token:'link',assetId:A},'costs'),{ok:true});
+  }
+  const rows = (await x.pg.query('SELECT cost_category, total_inc_vat FROM asset_invoices')).rows;
+  assert.deepEqual(rows,[{cost_category:'insurance',total_inc_vat:'1150.50'}]);
+ } finally { await x.pg.close(); }
+});
