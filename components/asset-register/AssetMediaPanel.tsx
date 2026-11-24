@@ -1,0 +1,114 @@
+'use client';
+
+import { useState } from 'react';
+import AssetActionIcon from './AssetActionIcon';
+import css from './AssetMediaPanel.module.css';
+
+type Upload = { label: string; count: number; limit?: number; disabled?: boolean; open: () => void };
+type DocumentItem = { key: string; name: string; detail?: string; href?: string; open?: () => void; remove?: () => void };
+type Photo = { key: string; src: string; label: string; main: boolean; pending?: boolean; makeMain?: () => void; remove?: () => void };
+type Kind = 'documents' | 'photos';
+type Props = {
+  documents: DocumentItem[];
+  photos: Photo[];
+  documentUpload?: Upload;
+  photoUpload?: Upload;
+};
+
+function UploadButton({ kind, upload, onChoose }: { kind: Kind; upload: Upload; onChoose: () => void }) {
+  return (
+    <button type="button" className={css.upload} disabled={upload.disabled} onClick={onChoose}>
+      <span className={css.icon}><AssetActionIcon action={kind === 'photos' ? 'addPhotos' : 'documents'} /></span>
+      <strong>{upload.label}</strong>
+      <span className={css.count} aria-label={`${upload.count} ${kind}${upload.limit ? ' of ' + upload.limit : ''}`}>
+        {upload.count}{upload.limit ? ` / ${upload.limit}` : ''}
+      </span>
+    </button>
+  );
+}
+
+function RemoveButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" className={css.remove} aria-label={label} title={label} onClick={onClick}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M3 6h18M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7m4-7v7" />
+      </svg>
+    </button>
+  );
+}
+
+export default function AssetMediaPanel({ documents, photos, documentUpload, photoUpload }: Props) {
+  const [selection, setSelection] = useState<Kind>('photos');
+  const [page, setPage] = useState(0);
+  const hasBoth = documents.length > 0 && photos.length > 0;
+  const kind = hasBoth ? selection : documents.length ? 'documents' : 'photos';
+  const count = kind === 'photos' ? photos.length : documents.length;
+  const size = kind === 'photos' ? 6 : 4;
+  const lastPage = Math.max(0, Math.ceil(count / size) - 1);
+  const current = Math.min(page, lastPage);
+  const start = current * size;
+  const sectionTitle = kind === 'photos' ? 'Photos' : 'Documents';
+
+  function show(next: Kind) {
+    setSelection(next);
+    setPage(0);
+  }
+
+  return (
+    <section className={css.panel} aria-label="Documents and photos" data-asset-media>
+      <div className={css.uploads}>
+        {documentUpload && <UploadButton kind="documents" upload={documentUpload} onChoose={() => { show('documents'); documentUpload.open(); }} />}
+        {photoUpload && <UploadButton kind="photos" upload={photoUpload} onChoose={() => { show('photos'); photoUpload.open(); }} />}
+      </div>
+      {count > 0 ? <>
+        <div className={css.collectionHeader}>
+          {hasBoth ? (
+            <div className={css.switcher} role="group" aria-label="Show attachments">
+              <button type="button" aria-pressed={kind === 'documents'} onClick={() => show('documents')}>Documents</button>
+              <button type="button" aria-pressed={kind === 'photos'} onClick={() => show('photos')}>Photos</button>
+            </div>
+          ) : <h4>{sectionTitle}</h4>}
+          {lastPage > 0 && <nav className={css.pager} aria-label={`${sectionTitle} pages`}>
+            <button type="button" disabled={current === 0} onClick={() => setPage(current - 1)} aria-label={`Previous ${kind}`}>‹</button>
+            <span aria-live="polite">{start + 1}–{Math.min(start + size, count)} of {count}</span>
+            <button type="button" disabled={current === lastPage} onClick={() => setPage(current + 1)} aria-label={`Next ${kind}`}>›</button>
+          </nav>}
+        </div>
+        {kind === 'photos' ? (
+          <ul className={css.gallery} aria-label="Asset photos">
+            {photos.slice(start, start + size).map(photo => (
+              <li key={photo.key} className={css.photo} data-main={photo.main}>
+                <div className={css.preview}>
+                  <img src={photo.src} alt={photo.label} />
+                  {photo.pending && <span>Ready to upload</span>}
+                </div>
+                {(photo.makeMain || photo.remove || photo.main) && <div className={css.photoActions}>
+                  {photo.makeMain ? (
+                    <button type="button" className={css.mainAction} aria-pressed={photo.main}
+                      aria-label={photo.main ? `Main photo: ${photo.label}` : `Set ${photo.label} as main photo`}
+                      onClick={() => { if (!photo.main) { photo.makeMain?.(); setPage(0); } }}>
+                      {photo.main ? 'Main photo' : 'Make main'}
+                    </button>
+                  ) : photo.main && <span className={css.mainLabel}>Main photo</span>}
+                  {photo.remove && <RemoveButton label={`Remove ${photo.label}`} onClick={photo.remove} />}
+                </div>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ul className={css.documentList} aria-label="Asset documents">
+            {documents.slice(start, start + size).map(doc => (
+              <li key={doc.key} className={css.document}>
+                <span className={css.icon}><AssetActionIcon action="documents" /></span>
+                <div className={css.documentInfo}><strong>{doc.name}</strong>{doc.detail && <small>{doc.detail}</small>}</div>
+                {doc.href ? <a className={css.open} href={doc.href} target="_blank" rel="noreferrer" aria-label={`Open ${doc.name}`}>Open</a> :
+                  doc.open && <button type="button" className={css.open} onClick={doc.open} aria-label={`Open ${doc.name}`}>Open</button>}
+                {doc.remove && <RemoveButton label={`Remove ${doc.name}`} onClick={doc.remove} />}
+              </li>
+            ))}
+          </ul>
+        )}
+      </> : <p className={css.empty}>No documents or photos yet.</p>}
+    </section>
+  );
+}
