@@ -1,5 +1,7 @@
 'use client';
-import { reportCostCategories } from '../../lib/cost-categories';
+import { appendReportCategories } from '../../lib/cost-categories';
+import OwnershipReportCategories from '../../components/OwnershipReportCategories';
+import categoryStyles from '../my-invoices/cost-categories.module.css';
 import AssetSheetDialog from '../../components/asset-register/AssetSheetDialog';
 import { importPending } from '../../lib/asset-sheet';
 import { useMeteredManage } from '../../components/BusinessCreditControls';
@@ -461,12 +463,13 @@ type AssetReportStep =
   | 'maintenance-filter'
   | 'depreciation-format'
   | 'depreciation-filter'
+  | 'ownership-categories'
   | 'ownership-format'
   | 'ownership-filter';
 type PhotoViewerState = { assetId: string; index: number };
 
 type AssetPdfReportFilters = {
-  costCategory?: string;
+  costCategories?: string[];
   year?: string;
   month?: string;
   maintenanceType?: string;
@@ -5844,7 +5847,7 @@ function buildAssetOwnershipReportUrl(
     }
   }
 
-  if (filters?.costCategory && filters.costCategory !== 'all') searchParams.set('category', filters.costCategory);
+  appendReportCategories(searchParams, filters?.costCategories);
   return `/api/my-invoices/report?${searchParams.toString()}`;
 }
 
@@ -5877,7 +5880,7 @@ function buildAssetGroupOwnershipReportUrl(
     if (filters.month && filters.month !== 'all') searchParams.set('month', filters.month);
   }
 
-  if (filters.costCategory && filters.costCategory !== 'all') searchParams.set('category', filters.costCategory);
+  appendReportCategories(searchParams, filters.costCategories);
   return `/api/my-invoices/report?${searchParams.toString()}`;
 }
 
@@ -6441,7 +6444,7 @@ export default function AssetRegisterClient({
   const [assetDepreciationReportYear, setAssetDepreciationReportYear] = useState('all');
   const [assetDepreciationReportMonth, setAssetDepreciationReportMonth] = useState('all');
   const [assetOwnershipReportYear, setAssetOwnershipReportYear] = useState('all');
-  const [assetOwnershipCategory, setAssetOwnershipCategory] = useState('all');
+  const [assetOwnershipCategories, setAssetOwnershipCategories] = useState<string[]>(['all']);
   const [assetOwnershipReportMonth, setAssetOwnershipReportMonth] = useState('all');
   const [assetReportDownloadFormat, setAssetReportDownloadFormat] = useState<AssetReportFormat>('pdf');
   const [openAssetReportSelect, setOpenAssetReportSelect] = useState<AssetReportSelectKey | null>(null);
@@ -11893,7 +11896,7 @@ export default function AssetRegisterClient({
     setAssetMaintenanceReportMonth('all');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
-    setAssetOwnershipCategory('all');
+    setAssetOwnershipCategories(['all']);
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -11921,7 +11924,7 @@ export default function AssetRegisterClient({
     setAssetMaintenanceReportMonth('all');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
-    setAssetOwnershipCategory('all');
+    setAssetOwnershipCategories(['all']);
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -14303,8 +14306,8 @@ export default function AssetRegisterClient({
 
   function openAssetOwnershipReportFilter() {
     if (desktopAccess && !desktop.allow('exportCosts')) return;
-    setAssetReportStep(desktopAccess ? 'ownership-filter' : 'ownership-format');
-    setAssetOwnershipCategory('all');
+    setAssetReportStep('ownership-categories');
+    setAssetOwnershipCategories(['all']);
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -14332,7 +14335,7 @@ export default function AssetRegisterClient({
       if (currentStep === 'fuel-filter') return 'fuel-format';
       if (currentStep === 'maintenance-filter') return 'maintenance-format';
       if (currentStep === 'depreciation-filter') return 'depreciation-format';
-      if (currentStep === 'ownership-filter') return 'ownership-format';
+      if (currentStep === 'ownership-filter') return desktopAccess ? 'ownership-categories' : 'ownership-format';
       return currentStep;
     });
     setOpenAssetReportSelect(null);
@@ -14529,7 +14532,7 @@ export default function AssetRegisterClient({
 
   async function handleDownloadFilteredOwnershipReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
     const filters: AssetPdfReportFilters = {
-      costCategory: assetOwnershipCategory,
+      costCategories: assetOwnershipCategories,
       year: assetOwnershipReportYear,
       month: assetOwnershipReportYear === 'all' ? 'all' : assetOwnershipReportMonth,
     };
@@ -20794,7 +20797,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetReportDialog} data-download-shade="true" />
 
           <div
-            className={`${styles.modalCard} ${styles.assetReportModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${assetReportStep !== 'options' ? styles.assetFuelReportModal : ''} ${downloadStyles.dialog}`}
+            className={`${styles.modalCard} ${styles.assetReportModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${assetReportStep !== 'options' ? styles.assetFuelReportModal : ''} ${downloadStyles.dialog} ${assetReportStep === 'ownership-categories' ? categoryStyles.dialog : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-report-title" data-download-dialog="true"
@@ -20811,7 +20814,17 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.assetReportModalBody}`} data-download-body="true">
-              {assetReportStep.endsWith('-format') ? (
+              {assetReportStep === 'ownership-categories' ? (
+                <>
+                  <OwnershipReportCategories selected={assetOwnershipCategories} onChange={setAssetOwnershipCategories} />
+                  <div className={styles.assetFuelReportActions} data-download-footer="true">
+                    <button type="button" onClick={backToAssetReportOptions}>Back</button>
+                    <button type="button" onClick={closeAssetReportDialog}>Cancel</button>
+                    <button type="button" data-download-primary="true" disabled={!assetOwnershipCategories.length}
+                      onClick={() => setAssetReportStep(desktopAccess ? 'ownership-filter' : 'ownership-format')}>Next</button>
+                  </div>
+                </>
+              ) : assetReportStep.endsWith('-format') ? (
                 <>
                   <div className={styles.assetTimelineStageHeading}>
                     <strong>Choose export format</strong>
@@ -20821,7 +20834,7 @@ export default function AssetRegisterClient({
                   <AssetReportFormatPicker value={assetReportDownloadFormat} deliveryMode={isAttachingExternalReport ? 'attach' : 'download'} onChange={setAssetReportDownloadFormat} />
 
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`} data-download-footer="true">
-                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
+                    <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={assetReportStep === 'ownership-format' ? () => setAssetReportStep('ownership-categories') : backToAssetReportOptions}>Back</button>
                     <button
                       type="button"
                       className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`}
@@ -20992,9 +21005,6 @@ export default function AssetRegisterClient({
                   </div>
 
                   <div className={styles.assetFuelReportFilterBox}>
-                    <ReportSelect label="Cost category" value={assetOwnershipCategory} options={reportCostCategories}
-                      isOpen={openAssetReportSelect === 'type'} onToggle={() => toggleAssetReportSelect('type')}
-                      onChange={value => { setAssetOwnershipCategory(value); setOpenAssetReportSelect(null); }} />
                     <ReportSelect
                       label="Year"
                       value={assetOwnershipReportYear}

@@ -1,4 +1,4 @@
-import { costCategory } from '../../../../lib/cost-categories';
+import { categorySummary, costCategory } from '../../../../lib/cost-categories';
 import { meteredReport } from '../../../../lib/business-report-response';
 import { requireLiveSharedAsset } from '../../../../lib/live-shared-asset-access';
 import { expandOwnershipBudgetHistory } from '../../../../lib/ownership-budget-tracker';
@@ -67,13 +67,15 @@ function parseIncludeFuelSlipCosts(value: string | null): boolean {
   return normalized !== 'false' && normalized !== '0' && normalized !== 'no';
 }
 
-function parseFilters(request: NextRequest): MyInvoiceListFilters {
+function parseFilters(request: NextRequest): MyInvoiceListFilters | null {
   const searchParams = request.nextUrl.searchParams;
   const assetId = searchParams.get('assetId');
+  const selected = [...new Set(searchParams.getAll('category'))];
+  if (selected.some(value => value !== 'all' && !costCategory(value))) return null;
 
   return {
     assetId: assetId && assetId !== 'all' ? assetId : null,
-    costCategory: costCategory(searchParams.get('category'))?.value,
+    costCategories: selected.includes('all') ? [] : selected,
     year: parseYear(searchParams.get('year')),
     month: parseMonth(searchParams.get('month')),
     includeFuelSlipCosts: parseIncludeFuelSlipCosts(searchParams.get('includeFuelSlipCosts')),
@@ -142,6 +144,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Unsupported report format. Choose PDF or XLSX.' }, { status: 400 });
     }
     const filters = parseFilters(request);
+    if (!filters) return NextResponse.json({ error: 'Choose a valid cost category.' }, { status: 400 });
     const groupId = String(request.nextUrl.searchParams.get('groupId') ?? '').trim();
     const dealerAccessId = String(request.nextUrl.searchParams.get('accessId') ?? '').trim();
     const ownerAppAccess = await getOwnerAppAccess();
@@ -237,7 +240,7 @@ export async function GET(request: NextRequest) {
       ownerEmail: ownerDetails.businessEmail || String(ownerFallbackUser.email ?? ''),
       ownerDetails,
       logoUrl,
-      dateRangeLabel: [dateRangeLabel(filters), costCategory(filters.costCategory)?.label].filter(Boolean).join(' · '),
+      dateRangeLabel: [dateRangeLabel(filters), categorySummary(filters.costCategories)].filter(Boolean).join(' · '),
       assetLabel,
       selectedAsset,
       summary: data.summary,

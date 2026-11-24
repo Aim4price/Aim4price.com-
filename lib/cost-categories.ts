@@ -26,4 +26,9 @@ export function categorySummary(values?: readonly string[]) {
   return values?.length ? values.map(value => costCategory(value)?.label ?? value).join(', ') : 'All costs';
 }
 
+export function appendReportCategories(params: URLSearchParams, selected: readonly string[] = []) {
+  if (selected.includes('all')) return;
+  for (const category of selected) params.append('category', category);
+}
+
 export const reportCostCategories = [{ value: 'all', label: 'All costs' }, ...costCategories];

@@ -28,6 +28,11 @@ test('single and umbrella routes scope budget history to authorized assets and d
   const sharedChecks=[];
   const {NextRequest,NextResponse}=require('next/server');
   const assets=[{id:'a',title:'Tractor'},{id:'private',title:'Private asset'}];
+  const ledgerRows = [
+    ...costs.map((invoice, index) => ({ ...invoice, costCategory: ['repair', 'insurance', 'fuel'][index] })),
+    cost('private','2026-09-01',90000,{assetId:'private',costCategory:'repair'}),
+  ];
+  const summaryFor = invoices => ({...options.summary,totalSpent:invoices.reduce((sum,invoice)=>sum+invoice.totalIncVat,0)});
   const route=load('app/api/my-invoices/report/route.ts',{
     '../../../../lib/cost-categories':load('lib/cost-categories.ts'),
     '../../../../lib/business-report-response':{meteredReport: async response => response},
@@ -43,15 +48,37 @@ test('single and umbrella routes scope budget history to authorized assets and d
     '../../../../lib/cost-budgets':{listCostBudgetHistory:async(id)=>{assert.equal(id,'owner');return [budget,{...budget,id:'private-budget',assetId:'private'}];}},
     '../../../../lib/account-profile':{getAccountProfile:async()=>({})},
     '../../../../lib/asset-registers':{getAssetRegisterReportLogoUrl:async()=>''},
-    '../../../../lib/my-invoices':{listMyInvoicesData:async()=>({assets,invoices:[...costs,cost('private','2026-09-01',90000,{assetId:'private'})],summary:options.summary}),calculateMyInvoiceSummary:()=>options.summary},
-    '../../../../lib/my-invoices-report':{buildMyInvoicesOwnerDetails:()=>({}),buildMyInvoicesWorkbook:o=>{captured=o;return [];},buildMyInvoicesReportHtml:()=>''},
+    '../../../../lib/my-invoices':{listMyInvoicesData:async(owner,filters)=>{
+      const invoices=ledgerRows.filter(invoice=>(!filters.assetId || invoice.assetId===filters.assetId)
+        && (!filters.costCategories?.length || filters.costCategories.includes(invoice.costCategory)));
+      return {assets,invoices,summary:summaryFor(invoices)};
+    },calculateMyInvoiceSummary:summaryFor},
+    '../../../../lib/my-invoices-report':{buildMyInvoicesOwnerDetails:()=>({}),buildMyInvoicesWorkbook:o=>{captured=o;return [];},buildMyInvoicesReportHtml:o=>{captured=o;return report.buildMyInvoicesReportHtml(o);}},
     '../../../../lib/simple-xlsx':{createXlsxWorkbook:()=>Buffer.from('xlsx')},
     '../../../../lib/report-logo':{resolveReportLogoUrlForHtml:async()=>''},
     '../../../../lib/dealer-maintenance-tracker':{},
     '../../../../lib/asset-groups':{getAssetGroupById:async()=>({name:'Umbrella',members:[{assetId:'a'}]})},
-    '../../../../lib/report-pdf':{},
+    '../../../../lib/report-pdf':{renderReportHtmlToPdf:async()=>Buffer.from('pdf')},
   });
   for(const scope of ['assetId=a','groupId=group']){const url=new URL('https://example.com/api/my-invoices/report?format=xlsx&'+scope);const res=await route.GET(new NextRequest(url));assert.equal(res.status,200);assert.deepEqual(captured.budgets.map(b=>b.id),['b:2026-09-01']);assert.ok(captured.budgetInvoices.every(i=>i.assetId==='a'));assert.equal(captured.budgetInvoices.length,3);}
+  for (const scope of ['assetId=a','groupId=group']) {
+    for (const format of ['pdf','xlsx']) {
+      for (const [query,expected,label] of [
+        ['category=repair',300,'Repairs'],
+        ['category=repair&category=fuel&category=repair',650,'Repairs, Fuel and charging'],
+        ['category=all',1150,'All costs'],
+      ]) {
+        const res=await route.GET(new NextRequest('https://example.com/api/my-invoices/report?'+scope+'&format='+format+'&'+query));
+        assert.equal(res.status,200);
+        assert.equal(captured.summary.totalSpent,expected);
+        assert.ok(captured.dateRangeLabel.endsWith(label));
+        assert.equal(captured.budgetInvoices.length,3);
+        assert.ok(captured.invoices.every(invoice=>invoice.assetId==='a'));
+      }
+    }
+  }
+  const invalid=await route.GET(new NextRequest('https://example.com/api/my-invoices/report?assetId=a&category=unknown'));
+  assert.equal(invalid.status,400);
   const sharedRequest=(scope='assetId=a')=>route.GET(new NextRequest('https://example.com/api/my-invoices/report?format=xlsx&shareToken=shared-token&'+scope));
   const workspaceReadsBefore=workspaceReads;
   assert.equal((await sharedRequest()).status,200);

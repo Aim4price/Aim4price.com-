@@ -8,10 +8,11 @@ test('outside sharing offers the canonical PDF and Excel route for every timelin
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
   ]);
 
-  assert.match(client, /setAssetReportStep\('fuel-format'\)/);
-  assert.match(client, /setAssetReportStep\('maintenance-format'\)/);
+  assert.match(client, /setAssetReportStep\(desktopAccess \? 'fuel-filter' : 'fuel-format'\)/);
+  assert.match(client, /setAssetReportStep\(desktopAccess \? 'maintenance-filter' : 'maintenance-format'\)/);
   assert.match(client, /setAssetReportStep\('depreciation-format'\)/);
-  assert.match(client, /setAssetReportStep\('ownership-format'\)/);
+  assert.match(client, /setAssetReportStep\('ownership-categories'\)/);
+  assert.match(client, /setAssetReportStep\(desktopAccess \? 'ownership-filter' : 'ownership-format'\)/);
   assert.match(client, /assetReportDownloadFormat === 'pdf' \? 'Add PDF report' : 'Add Excel report'/);
   assert.match(client, /deliveryMode=\{isAttachingExternalReport \? 'attach' : 'download'\}/);
   assert.match(client, /assetId: asset\.id,[\s\S]*?report: reportKind,[\s\S]*?format,/);

@@ -116,6 +116,7 @@ export type MyInvoiceSummary = {
 
 export type MyInvoiceListFilters = {
   costCategory?: string;
+  costCategories?: string[];
   assetId?: string | null;
   ownerUserId?: string | null;
   year?: number | null;
@@ -945,9 +946,10 @@ function buildInvoiceFilterClause(filters: MyInvoiceListFilters, values: unknown
     clauses.push(`i.asset_register_item_id = $${values.length}::uuid`);
   }
 
-  if (filters.costCategory) {
-    values.push(filters.costCategory);
-    clauses.push(`(case when i.source = 'fuel_slip' then 'fuel' else coalesce(i.cost_category, 'other') end) = $${values.length}`);
+  const categories = filters.costCategories ?? (filters.costCategory ? [filters.costCategory] : []);
+  if (categories.length) {
+    values.push(categories);
+    clauses.push(`(case when i.source = 'fuel_slip' then 'fuel' else coalesce(i.cost_category, 'other') end) = any($${values.length}::text[])`);
   }
 
   if (filters.year) {
