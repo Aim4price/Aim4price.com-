@@ -32,6 +32,7 @@ type AccountNotice = {
 type BusinessDetailsStep = 1 | 2 | 3;
 type PartnerDirectoryStep = 1 | 2 | 3 | 4;
 type AccountActionModal =
+  | "subscription"
   | "invoices"
   | "notifications"
   | "business"
@@ -101,6 +102,7 @@ type AccountClientProps = {
   canManageDesktopUsers?: boolean;
   inviteLink?: string;
   subscription?: BusinessSubscription;
+  ownerBilling?: { interval: string | null; held: boolean };
   sharedAccount?: boolean;
   canEditSignInSettings?: boolean;
   directoryEmailVerified?: boolean;
@@ -486,7 +488,7 @@ function LockedBusinessAction({ icon, label }: { icon: QuickActionIconName; labe
 export default function AccountClient({
   showAccounting = false,
   canManageDesktopUsers = false,
-  subscription, inviteLink,
+  subscription, inviteLink, ownerBilling,
   sharedAccount = false,
   directoryEmailVerified = false,
   canEditSignInSettings = true,
@@ -752,6 +754,11 @@ export default function AccountClient({
 
   useEffect(() => {
     const url = new URL(window.location.href);
+    if (url.searchParams.get('subscription') === 'open' && ownerBilling) {
+      openActionModal('subscription');
+      url.searchParams.delete('subscription');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    }
     if (url.searchParams.get('notifications') === 'open') {
       openActionModal('notifications');
       url.searchParams.delete('notifications');
@@ -1820,8 +1827,9 @@ export default function AccountClient({
 
                   {!shareBelowOverview && shareButton}
                   {isMiddlemanAccount || isMiddlemanAccountSubtype(initialProfile?.accountSubtype) ? <Link href="/contact-us" className={styles.quickActionButton}><QuickActionIcon name="subscription" /><strong>Contact Aim4price</strong></Link>
+                    : ownerBilling || (subscription && (subscription.fullAccess ?? subscription.paidSince)) ? <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("subscription")}><QuickActionIcon name="subscription" /><strong>Manage subscription</strong></button>
                     : subscription ? <BusinessSubscriptionButton plan={subscription} className={styles.quickActionButton} icon={<QuickActionIcon name="subscription" />} />
-                    : isOwnerAccount && <Link href={initialProfile?.trialEndsAt ? '/account/owner-trial' : '/account/subscription'} className={styles.quickActionButton}><QuickActionIcon name="subscription" /><strong>{initialProfile?.trialEndsAt ? 'Subscribe' : 'Manage subscription'}</strong></Link>}
+                    : isOwnerAccount && initialProfile?.trialEndsAt && <Link href="/account/owner-trial" className={styles.quickActionButton}><QuickActionIcon name="subscription" /><strong>Subscribe</strong></Link>}
 
                   <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")} data-tooltip="View and download your Aim4price invoices." data-tooltip-style="description">
                     <QuickActionIcon name="invoices" />
@@ -1913,7 +1921,7 @@ export default function AccountClient({
         </section>
       </section>
 
-      {activeAccountModal === "invoices" ? (
+      {activeAccountModal === "invoices" || activeAccountModal === "subscription" ? (
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.passwordModalCard} ${styles.billingModal}`}
@@ -1922,11 +1930,18 @@ export default function AccountClient({
             onClick={(event) => event.stopPropagation()}>
             
               <div className={styles.modalHeader}>
-                <h2 id="invoices-modal-title">Your invoices</h2>
-                <p id="invoices-modal-description">View your invoices and recorded payments.</p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close invoices" data-modal-close="true">×</button>
+                <h2 id="invoices-modal-title">{activeAccountModal === "invoices" ? "Your invoices" : "Manage subscription"}</h2>
+                <p id="invoices-modal-description">{activeAccountModal === "invoices" ? "View your invoices and recorded payments." : "Review your plan and billing details."}</p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label={activeAccountModal === "invoices" ? "Close invoices" : "Close subscription"} data-modal-close="true">×</button>
               </div>
-              <div className={styles.billingScrollBody}><AccountInvoices /></div>
+              <div className={styles.billingScrollBody}>{activeAccountModal === "invoices" ? <AccountInvoices /> : <>
+                <p><strong>{ownerBilling ? "Owner account" : "Paid Business Account"}</strong></p>
+                {ownerBilling?.interval && <p>Billing interval · {ownerBilling.interval}</p>}
+                {ownerBilling?.held && <p>Billing is on hold. No charge will be taken.</p>}
+                {subscription?.paidSince && <p>Active since {new Date(subscription.paidSince).toLocaleDateString('en-ZA',{timeZone:'Africa/Johannesburg'})}</p>}
+                <p><Link href="/contact-us">Contact Aim4price</Link> to change your plan or billing interval.</p>
+                <button type="button" className={styles.ghostButton} onClick={() => setActiveAccountModal("invoices")}>View invoices</button>
+              </>}</div>
               <div className={styles.modalActions}>
                 <button type="button" className={styles.ghostButton} onClick={closeActionModal}>Close</button>
               </div>
