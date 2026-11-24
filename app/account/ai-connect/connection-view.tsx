@@ -61,7 +61,7 @@ const adminPermissions = [
 ];
 const questionNotes: Record<string, string> = {
   asset: 'Saved values, not a new valuation.',
-  cost: 'Each budget shown separately, including VAT.',
+  cost: 'Each budget uses its saved VAT setting.',
   fuel: 'Recorded issues, not measured consumption.',
   service: 'Based on saved dates and usage readings.',
 };
