@@ -13,18 +13,21 @@
 .dialog:not(:has(.choiceScroll)) {
   width: min(1240px, var(--entry-available-width));
 }
-.body {min-height:0;min-width:0;border:0;padding:4px;margin:0;display:grid;gap:18px;overflow:auto}
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  min-width: 0;
+  padding: 4px;
+  margin: 0;
+  border: 0;
+  gap: 18px;
+  overflow: auto;
+}
+.dialog h2[tabindex="-1"]:focus { outline: none; }
 .dialog table {border-collapse:collapse;width:100%;text-align:left}
 .dialog th,.dialog td {padding:9px;border-bottom:1px solid #bed0c8;white-space:nowrap}
-.scroll {overflow:auto;max-height:calc(var(--website-visible-height, 100dvh) * 0.42)}
-.scroll input {min-width:115px;width:100%}
-.scroll td:nth-child(2) input {min-width:210px}
-.scroll small {display:block;white-space:normal;color:#97302c}
-.scroll input[aria-invalid=true] {border-color:#97302c}
-.mapping {display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px}
-.mapping small {display:block;margin:5px 0}
-.dialog .check {display:flex;align-items:center;gap:10px}
-.dialog .check input {width:auto;min-height:0}
+
 .dialog:has(.choiceScroll) {
   container-type: inline-size;
   overflow: hidden;
@@ -117,3 +120,94 @@
     text-align: left;
   }
 }
+
+.dialog.dialog:has([data-parts-import]) {
+  width: min(1040px, var(--entry-available-width));
+}
+.body[data-parts-import] {
+  padding: 2px 4px 12px;
+}
+.dialog .template {
+  justify-self: start;
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+.dialog .tools { flex-wrap: wrap; }
+.dialog .sheetHint {
+  margin: 0 3px 12px;
+  color: var(--app-text, #34564b);
+  font-size: 14px;
+}
+.gridScroll {
+  min-width: 0;
+  max-height: calc(var(--website-visible-height, 100dvh) * .42);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--app-accent, #648b7a) var(--app-surface-soft, #edf5f1);
+  border: 1px solid var(--app-border, #cbded4);
+  border-radius: 10px;
+}
+.dialog .gridScroll .assetGrid {
+  width: 100%;
+  min-width: 0;
+  border-spacing: 0;
+  border-collapse: separate;
+}
+.rowColumn { width: 132px; }
+.titleColumn { width: 240px; }
+.dataColumn { width: 160px; }
+.dialog .assetGrid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--app-surface-soft, #f4f8f6);
+  color: var(--app-text, #173e32);
+  font-size: 14px;
+}
+.assetGrid th small { display: block; font-weight: 450; }
+.dialog .assetGrid :is(th,td):first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  padding: 0 10px;
+  background: var(--app-surface-soft, #f4f8f6);
+}
+.dialog .assetGrid thead th:first-child { z-index: 2; text-align: left; }
+.dialog .assetGrid td {
+  padding: 0;
+  background: var(--app-surface-soft, #edf5f1);
+}
+.dialog .assetGrid tr[data-selected] td { background: var(--app-surface-selected, #e4f2eb); }
+.dialog .assetGrid td input:not([type='checkbox']) {
+  background: transparent;
+  border-radius: 0;
+  min-height: 48px;
+  width: 100%;
+  color: inherit;
+  font-weight: 650;
+}
+.dialog .assetGrid input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  margin: 0;
+  vertical-align: middle;
+  accent-color: var(--app-primary, #17654c);
+}
+.dialog .assetGrid td > small { white-space: normal; }
+.rowActions { display: flex; margin: 12px 0 4px; }
+
+.reviewTable {
+  overflow: auto;
+  max-height: calc(var(--website-visible-height, 100dvh) * .42);
+  border: 1px solid var(--app-border, #cbded4);
+  border-radius: 10px;
+}
+.reviewTable th {
+  position: sticky;
+  top: 0;
+  background: var(--app-surface-soft, #edf5f1);
+}
+.dialog .reviewTable th, .dialog .reviewTable td { padding: 12px; }
