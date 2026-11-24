@@ -28,7 +28,7 @@ test('register and category budgets count incurred costs once and exclude pendin
     await db.exec(`create table asset_registers(id uuid primary key,user_id text,business_name text);
       create table asset_register_items(id uuid primary key,user_id text,title text,register_id uuid);
       create table asset_invoices(user_id text,asset_register_item_id uuid,invoice_date date,cost_category text,total_inc_vat numeric,
-        source text,created_by_dealer_user_id text,owner_storage_status text,created_at timestamptz,updated_at timestamptz);`);
+        source text,created_by_dealer_user_id text,owner_storage_status text,created_at timestamptz,updated_at timestamptz, subtotal_ex_vat numeric, vat_amount numeric);`);
     await query('insert into asset_registers values ($1,$2,$3)', [register,'owner','Farm']);
     await query('insert into asset_register_items values ($1,$2,$3,$4)',[asset,'owner','JCB',register]);
     const date = api.currentCostBudgetPeriodWindow('annual').start;
@@ -39,6 +39,7 @@ test('register and category budgets count incurred costs once and exclude pendin
     const overall = await api.createCostBudget('owner', {...options, assetId: asset}, {});
     const repairs = {...options, assetId: asset, categories: ['service', 'repair']};
     const service = await api.createCostBudget('owner', repairs, {});
+    assert.equal(overall.includeVat, true);
     assert.equal(overall.spent, 6000);
     assert.equal(service.spent, 5000);
     assert.equal(service.remaining, 55000);
@@ -47,6 +48,22 @@ test('register and category budgets count incurred costs once and exclude pendin
       await assert.rejects(api.createCostBudget('owner', {...options, ...scope}, {}), /ASSET_INVALID/);
       await assert.rejects(api.updateCostBudget('owner', service.id, {...options, ...scope}, {}), /NOT_FOUND/);
     }
+
+    await query("update asset_invoices set vat_amount=150 where cost_category='repair'");
+    await query("update asset_invoices set subtotal_ex_vat=950 where cost_category='insurance'");
+    const net = await api.updateCostBudget('owner', overall.id, {...options, assetId:asset, includeVat:false, amount:5900}, {});
+    assert.equal(net.includeVat, false);
+    assert.equal(net.spent, 5800);
+    assert.equal(net.remaining, 100);
+    assert.equal(net.status, 'warning');
+    const reopened = (await api.listCostBudgetsWithProgress('owner')).find(b => b.id === overall.id);
+    assert.equal(reopened.includeVat, false);
+    const retained = await api.updateCostBudget('owner', overall.id, {...options, assetId:asset}, {});
+    assert.equal(retained.spent, 5800);
+    const gross = await api.updateCostBudget('owner', overall.id, {...options, assetId:asset, includeVat:true}, {});
+    assert.equal(gross.spent, 6000);
+    const netInsurance = await api.createCostBudget('owner', {...options,assetId:asset,categories:['insurance'],includeVat:false}, {});
+    assert.equal(netInsurance.spent, 950);
 
     // A register budget saved before the asset-only flow still counts eligible costs.
     const legacy = await query(`insert into asset_cost_budgets

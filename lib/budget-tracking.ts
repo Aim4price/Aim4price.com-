@@ -1,6 +1,6 @@
 import type { CostBudgetProgress } from './cost-budgets';
 
-export type TrackedBudget = Pick<CostBudgetProgress, 'id' | 'assetId' | 'assetTitle' | 'period' | 'periodLabel' | 'periodKey' | 'amount' | 'spent' | 'remaining' | 'overBy' | 'percentUsed' | 'warningPercent' | 'includeFuelSlipCosts' | 'status' | 'categories' | 'registerId' | 'expected'>;
+export type TrackedBudget = Pick<CostBudgetProgress, 'id' | 'assetId' | 'assetTitle' | 'period' | 'periodLabel' | 'periodKey' | 'amount' | 'spent' | 'remaining' | 'overBy' | 'percentUsed' | 'warningPercent' | 'includeVat' | 'includeFuelSlipCosts' | 'status' | 'categories' | 'registerId' | 'expected'>;
 export type BudgetFilters = { asset: string; period: string; status: string };
 export const EMPTY_BUDGET_FILTERS: BudgetFilters = { asset: 'all', period: 'all', status: 'all' };
 export function budgetStatusLabel(budget: TrackedBudget): string {

@@ -1,6 +1,6 @@
 .field { display: grid; align-content: start; gap: .45rem; min-width: 0; }
-.label { color: var(--app-text, #29453c); font-size: .95rem; font-weight: 750; }
-.control { display: grid; grid-template-columns: 3rem minmax(0,1fr) 3rem; align-items: center; gap: .5rem; padding: .35rem; min-height: 3.65rem; border: 1px solid var(--app-info-line, #b8cfd8); border-radius: 1.05rem; background: var(--app-surface, #fff); }
+.label { color: var(--app-text, #29453c); font-size: .95rem; font-weight: 750; line-height: var(--budget-label-line, 1.25rem); }
+.control { display: grid; grid-template-columns: 3rem minmax(0,1fr) 3rem; align-items: center; gap: .5rem; padding: .35rem; box-sizing: border-box; height: var(--budget-control-height, 3.8rem); grid-template-rows: minmax(0, 1fr); border: 1px solid var(--app-info-line, #b8cfd8); border-radius: 1.05rem; background: var(--app-surface, #fff); }
 .control:focus-within { border-color: var(--app-accent, #197454); box-shadow: 0 0 0 3px var(--app-shadow-colour, #19745418); }
 .control button { display: grid; place-items: center; width: 3rem; min-height: 3rem; padding: 0; border-radius: .75rem; border: 1px solid var(--app-line, #c6ddd1); background: var(--app-surface-soft, #edf7f1); color: var(--app-text, #17654d); cursor: pointer; }
 .control button svg { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }

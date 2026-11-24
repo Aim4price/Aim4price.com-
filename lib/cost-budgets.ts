@@ -22,6 +22,7 @@ export type CostBudgetProgress = {
   warningAmount: number;
   registerId?: string | null;
   categories?: string[];
+  includeVat: boolean;
   includeFuelSlipCosts: boolean;
   revision: number;
   periodKey: string;
@@ -45,6 +46,7 @@ export type CostBudgetInput = {
   warningPercent?: unknown;
   registerId?: unknown;
   categories?: unknown;
+  includeVat?: unknown;
   includeFuelSlipCosts?: unknown;
 };
 
@@ -74,6 +76,7 @@ type CostBudgetRow = {
   register_id: string | null;
   register_name: string | null;
   categories: string[];
+  include_vat: boolean;
   include_fuel_slip_costs: boolean;
   revision: string | number;
   spent: string | number | null;
@@ -196,6 +199,7 @@ function normalizeInput(input: CostBudgetInput) {
     period: normalizePeriod(input.period),
     amount,
     warningPercent,
+    includeVat: asBoolean(input.includeVat, true),
     includeFuelSlipCosts: asBoolean(input.includeFuelSlipCosts, true),
   };
 }
@@ -267,6 +271,7 @@ async function ensureCostBudgetTablesOnce(): Promise<void> {
   `);
   await db.query(`
     alter table public.asset_cost_budgets add column if not exists register_id uuid references public.asset_registers(id) on delete cascade;
+    alter table public.asset_cost_budgets add column if not exists include_vat boolean not null default true;
     alter table public.asset_cost_budgets add column if not exists categories text[] not null default '{}';
     create unique index if not exists asset_cost_budgets_all_categories_uidx on public.asset_cost_budgets
       (user_id, period, categories) where asset_register_item_id is null and register_id is null;
@@ -410,7 +415,7 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
         budget.period,
         budget.amount,
         budget.warning_percent,
-        budget.include_fuel_slip_costs, budget.categories, budget.register_id, register.business_name as register_name,
+        budget.include_vat, budget.include_fuel_slip_costs, budget.categories, budget.register_id, register.business_name as register_name,
         budget.revision,
         coalesce(spend.spent, 0) as spent,
         spend.last_cost_at,
@@ -423,7 +428,9 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
        and asset.user_id = budget.user_id
       left join lateral (
         select
-          coalesce(sum(invoice.total_inc_vat), 0) as spent,
+          coalesce(sum(case when budget.include_vat then invoice.total_inc_vat
+            else coalesce(invoice.subtotal_ex_vat, invoice.total_inc_vat - coalesce(invoice.vat_amount, 0))
+          end), 0) as spent,
           max(coalesce(invoice.updated_at, invoice.created_at)) as last_cost_at
         from public.asset_invoices invoice
         where invoice.user_id = budget.user_id
@@ -484,6 +491,7 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
       warningPercent,
       warningAmount: Math.round(amount * warningPercent) / 100,
       registerId: row.register_id, categories: row.categories,
+      includeVat: row.include_vat,
       includeFuelSlipCosts: Boolean(row.include_fuel_slip_costs),
       revision: Math.max(1, Number(row.revision) || 1),
       periodKey: window.key,
@@ -602,14 +610,14 @@ export async function createCostBudget(userId: string, input: CostBudgetInput, g
           period,
           amount,
           warning_percent,
-          include_fuel_slip_costs, categories, register_id,
+          include_fuel_slip_costs, categories, register_id, include_vat,
           revision,
           created_at,
           updated_at
-        ) values ($1, $2::uuid, $3, $4, $5, $6, $7::text[], $8::uuid, 1, now(), now())
+        ) values ($1, $2::uuid, $3, $4, $5, $6, $7::text[], $8::uuid, $9, 1, now(), now())
         returning id::text
       `,
-      [userId, budget.assetId, budget.period, budget.amount, budget.warningPercent, budget.includeFuelSlipCosts, budget.categories, budget.registerId],
+      [userId, budget.assetId, budget.period, budget.amount, budget.warningPercent, budget.includeFuelSlipCosts, budget.categories, budget.registerId, budget.includeVat],
       guard, userId,
     );
     const id = result.rows[0]?.id;
@@ -643,6 +651,7 @@ export async function updateCostBudget(
           amount = $5,
           warning_percent = $6,
           include_fuel_slip_costs = $7, categories = $8::text[], register_id = $9::uuid,
+          include_vat = coalesce($10::boolean, include_vat),
           revision = revision + 1,
           updated_at = now()
         where id = $1::uuid
@@ -659,6 +668,7 @@ export async function updateCostBudget(
         budget.amount,
         budget.warningPercent,
         budget.includeFuelSlipCosts, budget.categories, budget.registerId,
+        input.includeVat === undefined ? null : budget.includeVat,
       ],
       guard, userId,
     );

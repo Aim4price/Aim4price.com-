@@ -1,13 +1,19 @@
 import type { CostBudgetProgress } from './cost-budgets';
 import type { MyInvoiceRecord } from './my-invoices';
 
-export type OwnershipBudget = Pick<CostBudgetProgress, 'id' | 'assetId' | 'period' | 'periodLabel' | 'periodStart' | 'periodEnd' | 'amount' | 'warningPercent' | 'includeFuelSlipCosts' | 'categories'> & { effectiveFrom?: string; effectiveTo?: string | null };
+export type OwnershipBudget = Pick<CostBudgetProgress, 'id' | 'assetId' | 'period' | 'periodLabel' | 'periodStart' | 'periodEnd' | 'amount' | 'warningPercent' | 'includeVat' | 'includeFuelSlipCosts' | 'categories'> & { effectiveFrom?: string; effectiveTo?: string | null };
 export type OwnershipBudgetVersion = Omit<OwnershipBudget, 'periodLabel' | 'periodStart' | 'periodEnd'>;
 export type OwnershipBudgetStep = {
   budget: OwnershipBudget; spent: number; remaining: number; overBy: number;
   percent: number; status: 'good' | 'warning' | 'reached'; excluded: boolean;
 };
-export const BUDGET_TRACKER_NOTE = 'Budget tracker: monthly / annual asset budgets matched to each cost date, inclusive of VAT. Each bar includes earlier costs in that period, even outside the report filter; fuel follows that budget version’s setting. Changes apply from their South African calendar date. Saved history is used where available; previously overwritten or deleted budgets cannot be reconstructed. Account-wide budgets are not shown.';
+export const BUDGET_TRACKER_NOTE = 'Budget tracker: monthly / annual asset budgets matched to each cost date using the saved VAT setting. Each bar includes earlier costs in that period, even outside the report filter; fuel follows that budget version’s setting. Changes apply from their South African calendar date. Saved history is used where available; previously overwritten or deleted budgets cannot be reconstructed. Account-wide budgets are not shown.';
+
+/** Match the ledger calculation, using recorded VAT when the subtotal is unavailable. */
+export function budgetCostAmount(cost: { totalIncVat: number; subtotalExVat?: number | null; vatAmount?: number | null }, includeVat = true): number {
+  if (includeVat) return cost.totalIncVat;
+  return cost.subtotalExVat ?? Math.round((cost.totalIncVat - (cost.vatAmount ?? 0)) * 100) / 100;
+}
 
 export function chronologicalCosts(invoices: MyInvoiceRecord[]): MyInvoiceRecord[] {
   return [...invoices].sort((a, b) => (a.invoiceDate || '').localeCompare(b.invoiceDate || '')
@@ -28,7 +34,7 @@ export function buildOwnershipBudgetTracker(invoices: MyInvoiceRecord[], budgets
       const category = invoice.source === 'fuel_slip' ? 'fuel' : invoice.costCategory ?? 'other';
       const excluded = (invoice.source === 'fuel_slip' && !budget.includeFuelSlipCosts)
         || Boolean(budget.categories?.length && !budget.categories.includes(category));
-      const cents = (totals.get(budget.id) || 0) + (excluded ? 0 : Math.round(invoice.totalIncVat * 100));
+      const cents = (totals.get(budget.id) || 0) + (excluded ? 0 : Math.round(budgetCostAmount(invoice, budget.includeVat) * 100));
       totals.set(budget.id, cents);
       // Accumulate the full period before choosing the version applicable on this date.
       if ((budget.effectiveFrom && invoice.invoiceDate < budget.effectiveFrom)

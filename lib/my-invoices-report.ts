@@ -323,7 +323,7 @@ function renderBudgetSteps(steps: OwnershipBudgetStep[] = []): string {
   if (!steps.length) return '<div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide"><span>Budget tracker</span><strong>No asset budget available for this cost period.</strong></div>';
   return steps.map(step => {
     const colour = step.status === 'reached' ? '#b44242' : step.status === 'warning' ? '#a76b12' : '#197454';
-    const label = `${step.budget.periodLabel} · ${step.percent}% used · ${formatMoneyWithCents(step.spent)} of ${formatMoneyWithCents(step.budget.amount)}`;
+    const label = `${step.budget.periodLabel} · ${step.percent}% used · ${formatMoneyWithCents(step.spent)} of ${formatMoneyWithCents(step.budget.amount)} ${step.budget.includeVat === false ? 'excl.' : 'incl.'} VAT`;
     return `<div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide assetReportBudgetStep">
       <span>${escapeHtml(step.budget.period === 'monthly' ? 'Monthly budget' : 'Annual budget')} · after this cost</span>
       <strong>${escapeHtml(label)}</strong>
@@ -1341,7 +1341,7 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
     [styled('Budget tracker after each cost', 'title')],
     [styled(BUDGET_TRACKER_NOTE, 'note')],
     [],
-    ['Date', 'Asset', 'Reference', 'Cost incl. VAT', 'Budget period', 'Budget incl. VAT', 'Spent after cost', 'Remaining', 'Over budget', 'Used', 'Status'].map(value => styled(value, 'tableHeader')),
+    ['Date', 'Asset', 'Reference', 'Cost incl. VAT', 'Budget period', 'Budget limit', 'Spent after cost', 'Remaining', 'Over budget', 'Used', 'Status', 'Budget VAT basis'].map(value => styled(value, 'tableHeader')),
   ];
   for (const invoice of chronologicalCosts(options.invoices)) {
     const steps = tracker.get(invoice.id) ?? [];
@@ -1351,6 +1351,7 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
       styled(step.budget.periodLabel, 'text'), styled(step.budget.amount, 'currency'), styled(step.spent, 'currency'),
       styled(step.remaining, 'currency'), styled(step.overBy, 'currency'), styled(step.percent / 100, 'percent'),
       styled(`${step.overBy > 0 ? 'Over budget' : step.status === 'reached' ? 'Budget reached' : step.status === 'warning' ? 'Approaching limit' : 'Within budget'}${step.excluded ? ' · Cost excluded' : ''}`, step.status === 'reached' ? 'statusBad' : step.status === 'warning' ? 'statusWarn' : 'statusGood'),
+      styled(step.budget.includeVat === false ? 'Excl. VAT' : 'Incl. VAT', 'text'),
     ]);
   }
   const fuelInvoices = fuelSlipInvoices(options);
@@ -1509,7 +1510,7 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
       tabColor: '2E7D5B',
     },
     {
-      name: 'Budget Tracker', rows: budgetRows, columns: [16, 32, 22, 18, 24, 18, 18, 18, 18, 16, 30],
+      name: 'Budget Tracker', rows: budgetRows, columns: [16, 32, 22, 18, 24, 18, 18, 18, 18, 16, 30, 20],
       merges: [{ fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 11 }, { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 11 }],
       freezeRow: 4, orientation: 'landscape', tabColor: '197454', rowHeights: { 2: 48 }, fitToWidth: true,
       dataBars: budgetRows.flatMap((row, index) => {
