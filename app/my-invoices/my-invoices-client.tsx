@@ -4589,18 +4589,21 @@ export default function MyInvoicesClient({
       ) : null}
 
       {flow === 'category' ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="cost-category-title">
-          <section className={`${styles.downloadModal} ${categoryStyles.dialog}`}>
-            <div className={styles.modalHeader}>
+        <div className={`${styles.modalBackdrop} ${downloadStyles.backdrop}`} data-website-overlay>
+          <section className={`${downloadStyles.dialog} ${categoryStyles.dialog}`} data-download-dialog="true" role="dialog" aria-modal="true" aria-labelledby="cost-category-title">
+            <header data-download-header="true">
               <h2 id="cost-category-title">Choose a cost category</h2>
-              <button type="button" className={accountStyles.modalCloseButton} onClick={finishModal} aria-label="Close cost categories" data-modal-close="true">×</button>
-            </div>
+              <button type="button" onClick={finishModal} aria-label="Close cost categories" data-modal-close="true">×</button>
+            </header>
             <div className={categoryStyles.cards}>
-              {costCategories.map(category => <button key={category.value} type="button" className={categoryStyles.card} onClick={() => chooseCostCategory(category.value)}>
-                <RecurringFieldIcon kind={category.icon} /><strong>{category.label}</strong>
-              </button>)}
+              {costCategories.map(category => (
+                <button key={category.value} type="button" className={categoryStyles.card} data-category={category.value} onClick={() => chooseCostCategory(category.value)}>
+                  <span className={categoryStyles.icon} aria-hidden="true"><RecurringFieldIcon kind={category.icon} /></span>
+                  <strong>{category.label}</strong>
+                </button>
+              ))}
             </div>
-            <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={closeModal}>Back</button></div>
+            <footer data-download-footer="true"><button type="button" onClick={closeModal}>Back</button></footer>
           </section>
         </div>
       ) : null}
