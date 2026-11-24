@@ -1,6 +1,7 @@
 /** Read locally in the browser. Formulas are never evaluated or fetched. */
 export async function readPartsExcel(
   buffer: ArrayBuffer,
+  purpose: "parts" | "assets" = "parts",
 ): Promise<{ name: string; rows: string[][] }[]> {
   if (buffer.byteLength > 5_000_000)
     throw new Error("Use an Excel file smaller than 5 MB.");
@@ -17,7 +18,7 @@ export async function readPartsExcel(
     .filter((sheet) => sheet.state === "visible")
     .map((sheet) => {
       if (sheet.rowCount > 20001 || sheet.columnCount > 100)
-        throw new Error("Use at most 20,000 parts and 100 columns per sheet.");
+        throw new Error(`Use at most 20,000 ${purpose} and 100 columns per sheet.`);
       const rows: string[][] = [];
       sheet.eachRow((row) => {
         const cells = Array.from({ length: sheet.columnCount }, (_, index) => {
@@ -36,13 +37,17 @@ export async function readPartsExcel(
           }
           if (value === null || value === undefined) return "";
           if (typeof value === "string") return value.trim();
+          if (purpose === "assets" && value instanceof Date) return value.toISOString().slice(0, 10);
           if (typeof value === "number") {
+            if (purpose === "assets" && /^[0#.,]+%$/.test(cell.numFmt || "")) {
+              return String(Number((value * 100).toFixed(6))) + "%";
+            }
             if (
               !Number.isFinite(value) ||
               (Number.isInteger(value) && !Number.isSafeInteger(value))
             )
               throw new Error(
-                `Sheet ${sheet.name}, ${cell.address}: store long part numbers as text.`,
+                `Sheet ${sheet.name}, ${cell.address}: store long identifiers as text.`,
               );
             // Preserve common zero-padded stock codes, rather than coercing them to numbers.
             return /^0+$/.test(cell.numFmt || "") &&

@@ -2597,11 +2597,11 @@ export async function listAssetRegisterItemsForRegisters(userId: string, registe
 export async function createManualAssetRegisterItem(
   userId: string,
   input: CreateManualAssetInput,
+  batch?: {client: import('pg').PoolClient; register: import('./asset-registers').AssetRegisterSummary},
 ): Promise<AssetRegisterItem> {
-
-  const activeRegister = input.registerId
+  const activeRegister = batch?.register ?? (input.registerId
     ? await getAssetRegisterForUser(userId, input.registerId)
-    : await getSelectedAssetRegister(userId);
+    : await getSelectedAssetRegister(userId));
 
   if (!activeRegister) {
     throw new Error('ASSET_REGISTER_NOT_FOUND');
@@ -2617,7 +2617,7 @@ export async function createManualAssetRegisterItem(
   const nextIsInsured = Boolean(input.isInsured);
   const nextInsuredValueExVat = nextIsInsured ? normalizeInsuredValueExVat(input.insuredValueExVat) : null;
 
-  if (nextReplacementPriceExVat === null && !replacementPriceNotApplicable) {
+  if (nextReplacementPriceExVat === null && !replacementPriceNotApplicable && !batch) {
     throw new Error('REPLACEMENT_PRICE_REQUIRED');
   }
 
@@ -2678,8 +2678,8 @@ export async function createManualAssetRegisterItem(
   });
 
   const query = buildInsertQuery(schema, fields);
-  const {saveBusinessResult} = await import('./business-credits');
-  const result = await saveBusinessResult(userId,'Added an asset',
+  const {saveBusinessResult,spendBusinessCredit} = await import('./business-credits');
+  const result = batch ? await batch.client.query<AssetRegisterRow>(query.sql,query.values) : await saveBusinessResult(userId,'Added an asset',
     db => db.query<AssetRegisterRow>(query.sql,query.values),
     saved => saved.rows[0] ? 'asset:'+mapAssetRegisterRow(saved.rows[0]).id : null);
   const row = result.rows[0];
@@ -2689,7 +2689,9 @@ export async function createManualAssetRegisterItem(
   }
 
   const item = mapAssetRegisterRow(row);
-  await captureAssetDepreciationLogEntry({
+  if (batch) await spendBusinessCredit(batch.client,userId,'Added an asset','asset:'+item.id);
+  if (!batch || nextValue > 0) await captureAssetDepreciationLogEntry({
+    transaction:batch?.client,
     asset: item,
     eventType: 'manual_asset_created',
     eventSource: 'asset-register-manual-create',
@@ -2869,7 +2871,7 @@ export async function updateAssetRegisterItemFlag(
 }
 
 
-async function withAssetInputTransaction<T>(write: (client: import('pg').PoolClient) => Promise<T>): Promise<T> {
+export async function withAssetInputTransaction<T>(write: (client: import('pg').PoolClient) => Promise<T>): Promise<T> {
   const client = await getDb().connect();
   let discard = false;
   try {
@@ -2942,7 +2944,7 @@ export async function updateAssetRegisterItemYearModel(
   }
 
   const item = mapAssetRegisterRow(row);
-  await captureAssetDepreciationLogEntry({
+  if (!existing.specsJson?.assetImportKey || item.value > 0) await captureAssetDepreciationLogEntry({
     transaction,
     previousAsset: existing,
     asset: item,
@@ -3229,7 +3231,7 @@ export async function updateAssetRegisterItem(
   const nextIsInsured = Boolean(input.isInsured);
   const nextInsuredValueExVat = nextIsInsured ? normalizeInsuredValueExVat(input.insuredValueExVat) : null;
 
-  if (nextReplacementPriceExVat === null && !replacementPriceNotApplicable) {
+  if (nextReplacementPriceExVat === null && !replacementPriceNotApplicable && !existing.specsJson?.assetImportKey) {
     throw new Error('REPLACEMENT_PRICE_REQUIRED');
   }
 
@@ -3357,7 +3359,7 @@ export async function updateAssetRegisterItem(
   }
 
   const item = mapAssetRegisterRow(row);
-  await captureAssetDepreciationLogEntry({
+  if (!existing.specsJson?.assetImportKey || item.value > 0) await captureAssetDepreciationLogEntry({
     transaction,
     previousAsset: existing,
     asset: item,

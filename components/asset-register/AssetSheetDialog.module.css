@@ -1,0 +1,14 @@
+.dialog { z-index:1; max-width:calc(100% - 24px); }
+.body {min-height:0;min-width:0;border:0;padding:4px;margin:0;display:grid;gap:18px;overflow:auto}
+.dialog table {border-collapse:collapse;width:100%;text-align:left}
+.dialog th,.dialog td {padding:9px;border-bottom:1px solid #bed0c8;white-space:nowrap}
+.scroll {overflow:auto;max-height:42dvh}
+.scroll input {min-width:115px;width:100%}
+.scroll td:nth-child(2) input {min-width:210px}
+.scroll small {display:block;white-space:normal;color:#97302c}
+.scroll input[aria-invalid=true] {border-color:#97302c}
+.mapping {display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px}
+.mapping small {display:block;margin:5px 0}
+.dialog .check {display:flex;align-items:center;gap:10px}
+.dialog .check input {width:auto;min-height:0}
+.link {display:inline-flex;align-items:center;background:#145440;color:white;border-radius:12px;padding:12px 20px;font-weight:bold;text-decoration:none}

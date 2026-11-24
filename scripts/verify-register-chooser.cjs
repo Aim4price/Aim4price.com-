@@ -110,6 +110,7 @@ async function click(page, text) {
         await click(page,'Continue');
         await page.waitForSelector('#add-asset-choice-title');
         assert.ok(await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>e.textContent.includes('Transport')));
+        await page.$eval('[aria-labelledby="add-asset-choice-title"] button[data-tone="blue"]',button=>button.click());
         const valuation=await page.$eval('[aria-labelledby="add-asset-choice-title"] a',e=>e.href);
         assert.equal(new URL(valuation).searchParams.get('registerId'),'transport');
         await click(page,'Manual Entry');

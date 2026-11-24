@@ -806,21 +806,14 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
   }
 
-  if (!title || value <= 0) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'title and value are required.',
-      },
-      { status: 400 },
-    );
-  }
-
   const existing = await getAssetRegisterItemById(session.user.id, assetId);
 
   if (!existing) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
+
+  const pendingImport = Boolean(existing.specsJson?.assetImportKey && !existing.value && value === 0);
+  if (!title || (value <= 0 && !pendingImport)) return NextResponse.json({ok:false,error:'Enter an asset title and a positive current value.'},{status:400});
 
   const kind = existing.valuationRunId ? existing.kind : normalizeKind(body.kind);
   const canOmitReplacementPrice = replacementPriceNotApplicable(kind, normalizedSpecsJson);
@@ -828,7 +821,7 @@ export async function PUT(request: NextRequest) {
     ? replacementPriceExVat
     : replacementPriceExVat ?? normalizeReplacementPrice(existing.replacementPriceExVat);
 
-  if (effectiveReplacementPriceExVat === null && !canOmitReplacementPrice) {
+  if (effectiveReplacementPriceExVat === null && !canOmitReplacementPrice && !existing.specsJson?.assetImportKey) {
     return NextResponse.json(
       {
         ok: false,
