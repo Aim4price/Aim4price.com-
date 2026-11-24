@@ -25,10 +25,10 @@ export async function saveSharedContribution(request:NextRequest,target:Contribu
       const notes = String(form.get('description') || '').trim().slice(0,4000);
       await addSharedCost(target,draft ? {
         captureRequestId:form.get('requestId'),invoiceDate:draft.invoiceDate,supplierName:draft.supplierName,invoiceNumber:draft.invoiceNumber,
-        subtotalExVat:draft.subtotalExVat,vatAmount:draft.vatAmount,notes:draft.notes,maintenanceWorkDone:draft.maintenanceWorkDone,partsSupplied:draft.partsSupplied,repairWorkDone:draft.repairWorkDone,usageReading:draft.usageReading,usageMetric:draft.usageMetric,
+        costCategory:draft.costCategory,totalIncVat:draft.totalIncVat,subtotalExVat:draft.subtotalExVat,vatAmount:draft.vatAmount,notes:draft.notes,maintenanceWorkDone:draft.maintenanceWorkDone,partsSupplied:draft.partsSupplied,repairWorkDone:draft.repairWorkDone,usageReading:draft.usageReading,usageMetric:draft.usageMetric,
       } : {
         captureRequestId:form.get('requestId'),invoiceDate:form.get('date'),supplierName:String(form.get('supplier') || '').slice(0,200),invoiceNumber:String(form.get('invoiceNumber') || '').slice(0,100),
-        subtotalExVat:form.get('amount'),vatAmount:form.get('vat'),notes,
+        costCategory:category === 'maintenance' ? 'service' : category,subtotalExVat:form.get('amount'),vatAmount:form.get('vat'),notes,
         maintenanceWorkDone:category === 'maintenance' ? notes : '',partsSupplied:category === 'parts' ? notes : '',repairWorkDone:category === 'repair' ? notes : '',
       },file && typeof file !== 'string' && file.size ? file : undefined);
     }
