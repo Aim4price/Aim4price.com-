@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AssetActionIcon from './AssetActionIcon';
 import css from './AssetMediaPanel.module.css';
 
@@ -8,7 +8,10 @@ type Upload = { label: string; count: number; limit?: number; disabled?: boolean
 type DocumentItem = { key: string; name: string; detail?: string; href?: string; open?: () => void; remove?: () => void };
 type Photo = { key: string; src: string; label: string; main: boolean; pending?: boolean; makeMain?: () => void; remove?: () => void };
 type Kind = 'documents' | 'photos';
+const PHOTOS_PER_PAGE = 6;
+
 type Props = {
+  initialPhotoUrl?: string | null;
   documents: DocumentItem[];
   photos: Photo[];
   documentUpload?: Upload;
@@ -37,16 +40,24 @@ function RemoveButton({ label, onClick }: { label: string; onClick: () => void }
   );
 }
 
-export default function AssetMediaPanel({ documents, photos, documentUpload, photoUpload }: Props) {
+export default function AssetMediaPanel({ documents, photos, documentUpload, photoUpload, initialPhotoUrl }: Props) {
   const [selection, setSelection] = useState<Kind>('photos');
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(() => {
+    const index = photos.findIndex(photo => photo.src === initialPhotoUrl);
+    return Math.floor(Math.max(0, index) / PHOTOS_PER_PAGE);
+  });
+  const entryPhoto = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    entryPhoto.current?.focus();
+  }, [initialPhotoUrl]);
   const hasBoth = documents.length > 0 && photos.length > 0;
   const kind = hasBoth ? selection : documents.length ? 'documents' : 'photos';
   const count = kind === 'photos' ? photos.length : documents.length;
-  const size = kind === 'photos' ? 6 : 4;
+  const size = kind === 'photos' ? PHOTOS_PER_PAGE : 4;
   const lastPage = Math.max(0, Math.ceil(count / size) - 1);
   const current = Math.min(page, lastPage);
-  const start = current * size;
+  // Keep neighbouring photos visible when the last page is only partly filled.
+  const start = kind === 'photos' ? Math.min(current * size, Math.max(0, count - size)) : current * size;
   const sectionTitle = kind === 'photos' ? 'Photos' : 'Documents';
 
   function show(next: Kind) {
@@ -69,27 +80,30 @@ export default function AssetMediaPanel({ documents, photos, documentUpload, pho
             </div>
           ) : <h4>{sectionTitle}</h4>}
           {lastPage > 0 && <nav className={css.pager} aria-label={`${sectionTitle} pages`}>
-            <button type="button" disabled={current === 0} onClick={() => setPage(current - 1)} aria-label={`Previous ${kind}`}>‹</button>
+            <button type="button" disabled={current === 0} onClick={() => setPage(current - 1)} aria-label={`Previous ${kind}`}><span className={css.previous} aria-hidden="true" /></button>
             <span aria-live="polite">{start + 1}–{Math.min(start + size, count)} of {count}</span>
-            <button type="button" disabled={current === lastPage} onClick={() => setPage(current + 1)} aria-label={`Next ${kind}`}>›</button>
+            <button type="button" disabled={current === lastPage} onClick={() => setPage(current + 1)} aria-label={`Next ${kind}`}><span className={css.next} aria-hidden="true" /></button>
           </nav>}
         </div>
         {kind === 'photos' ? (
           <ul className={css.gallery} aria-label="Asset photos">
             {photos.slice(start, start + size).map(photo => (
-              <li key={photo.key} className={css.photo} data-main={photo.main}>
+              <li key={photo.key} className={css.photo} data-main={photo.main}
+                ref={photo.src === initialPhotoUrl ? entryPhoto : undefined}
+                tabIndex={-1} aria-label={photo.label}>
                 <div className={css.preview}>
                   <img src={photo.src} alt={photo.label} />
                   {photo.pending && <span>Ready to upload</span>}
                 </div>
                 {(photo.makeMain || photo.remove || photo.main) && <div className={css.photoActions}>
                   {photo.makeMain ? (
-                    <button type="button" className={css.mainAction} aria-pressed={photo.main}
+                    <button type="button" className={css.mainAction} aria-disabled={photo.main} tabIndex={photo.main ? -1 : 0}
                       aria-label={photo.main ? `Main photo: ${photo.label}` : `Set ${photo.label} as main photo`}
                       onClick={() => { if (!photo.main) { photo.makeMain?.(); setPage(0); } }}>
+                      {photo.main && <span aria-hidden="true" className={css.check} />}
                       {photo.main ? 'Main photo' : 'Make main'}
                     </button>
-                  ) : photo.main && <span className={css.mainLabel}>Main photo</span>}
+                  ) : photo.main && <span className={css.mainLabel}><span aria-hidden="true" className={css.check} />Main photo</span>}
                   {photo.remove && <RemoveButton label={`Remove ${photo.label}`} onClick={photo.remove} />}
                 </div>}
               </li>
