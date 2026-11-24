@@ -10,10 +10,10 @@ const fixture = path.join(root, 'app/picker-validation');
 const output = process.env.PICKER_OUTPUT_DIR || path.join(root, '.next/picker-validation');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 const scenarios = [
-  ['manual', 'costs', ['+Add Cost', 'Services', 'Enter cost manually']],
-  ['capture', 'costs', ['+Add Cost', 'Services', 'Automatic upload']],
+  ['manual', 'costs', ['+Add Cost', 'Enter cost manually', 'Services']],
+  ['capture', 'costs', ['+Add Cost', 'Automatic upload', 'Services']],
   ['budget', 'budgets', ['Add Budget', 'Choose assets']],
-  ['recurring', 'costs', ['+Add Cost', 'Services', 'Add recurring commitment', 'Choose assets']],
+  ['recurring', 'costs', ['+Add Cost', 'Add recurring commitment', 'Services', 'Choose assets']],
   ['invoice-drop', 'costs', ['Invoice Drop', 'Specific asset', 'Next', 'Choose an asset']],
   ['maintenance', 'maintenance', ['+Add Maintenance']],
   ['checklist', 'maintenance', ['Checklists']],

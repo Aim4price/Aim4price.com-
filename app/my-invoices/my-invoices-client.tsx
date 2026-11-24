@@ -338,7 +338,7 @@ type Notice = {
 
 type CommitmentFrequency = 'monthly' | 'quarterly' | 'six_monthly' | 'annual';
 type ManualCostWizardStep = 1 | 2 | 3 | 4;
-type RecurringWizardStep = 1 | 2 | 3 | 4 | 5 | 6;
+type RecurringWizardStep = 1 | 3 | 4 | 5 | 6;
 
 type RecurringCommitmentDraft = {
   description: string;
@@ -1091,6 +1091,7 @@ export default function MyInvoicesClient({
   const [managedInvoice, setManagedInvoice] = useState<InvoiceRecord | null>(null);
   const manageCostRef = useRef<HTMLDivElement>(null);
   const manageCostTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const [captureMethod, setCaptureMethod] = useState<'manual' | 'recurring' | 'automatic'>('manual');
   const [selectedCategory, setSelectedCategory] = useState('other');
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
@@ -1119,7 +1120,6 @@ export default function MyInvoicesClient({
   const [recurringAssetPickerOpen, setRecurringAssetPickerOpen] = useState(false);
   const [recurringAssetSearch, setRecurringAssetSearch] = useState('');
   const [recurringWizardStep, setRecurringWizardStep] = useState<RecurringWizardStep>(1);
-  const [recurringCategoryDropdownOpen, setRecurringCategoryDropdownOpen] = useState(false);
   const [recurringError, setRecurringError] = useState('');
   const [assetLockedForFlow, setAssetLockedForFlow] = useState(false);
   const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
@@ -1172,7 +1172,6 @@ export default function MyInvoicesClient({
   const budgetManagerReturnFocusRef = useRef('');
   const budgetScopeTriggerRef = useRef<HTMLButtonElement>(null);
   const recurringScopeTriggerRef = useRef<HTMLButtonElement>(null);
-  const recurringCategoryTriggerRef = useRef<HTMLButtonElement>(null);
   const recurringWizardStepHeadingRef = useRef<HTMLHeadingElement>(null);
   const recurringWizardBodyRef = useRef<HTMLDivElement>(null);
   const manualCostWizardStepHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -2003,33 +2002,6 @@ export default function MyInvoicesClient({
   }, [isSaving, manualCostWizardOpen, manualCostWizardStep, usageMetricDropdownOpen]);
 
   useEffect(() => {
-    if (!recurringCategoryDropdownOpen) return undefined;
-
-    function handlePointerDown(event: MouseEvent) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (!target.closest('[data-recurring-category-dropdown="true"]')) {
-        setRecurringCategoryDropdownOpen(false);
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      setRecurringCategoryDropdownOpen(false);
-      window.requestAnimationFrame(() => recurringCategoryTriggerRef.current?.focus());
-    }
-
-    document.addEventListener('mousedown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown, true);
-    return () => {
-      document.removeEventListener('mousedown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown, true);
-    };
-  }, [recurringCategoryDropdownOpen]);
-
-  useEffect(() => {
     if (!recurringOpen || !recurringAssetPickerOpen) return undefined;
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -2510,15 +2482,14 @@ export default function MyInvoicesClient({
       return;
     }
     if (flow === 'recurring') {
-      if (recurringWizardStep > 1) goBackRecurringWizard();
-      else setFlow('source-choice');
+      goBackRecurringWizard();
       return;
     }
-    if (flow === 'category') { finishModal(); return; }
+    if (flow === 'category') { setFlow('source-choice'); return; }
     if (flow === 'review') { setFlow('upload'); return; }
-    if (flow === 'upload') { setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic'); return; }
+    if (flow === 'upload') { setFlow(assetLockedForFlow ? 'category' : 'asset-automatic'); return; }
     if (flow === 'asset-first') { finishModal(); return; }
-    if (flow === 'asset-manual' || flow === 'asset-automatic') { setFlow('source-choice'); return; }
+    if (flow === 'asset-manual' || flow === 'asset-automatic') { setFlow('category'); return; }
     finishModal();
   }
 
@@ -2552,7 +2523,6 @@ export default function MyInvoicesClient({
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
     setRecurringWizardStep(1);
-    setRecurringCategoryDropdownOpen(false);
     setRecurringError('');
     setQuickLaunchActive(false);
 
@@ -2818,7 +2788,19 @@ export default function MyInvoicesClient({
     setManualCostWizardError('');
     setAssetLockedForFlow(Boolean(normalizedAssetId));
     setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
-    setFlow(dealerMode && !normalizedAssetId ? 'asset-first' : 'category');
+    setFlow(dealerMode && !normalizedAssetId ? 'asset-first' : 'source-choice');
+  }
+
+  function chooseCaptureMethod(method: typeof captureMethod) {
+    if (desktop.workspace && method !== 'manual') { desktop.unavailable(); return; }
+    setCaptureMethod(method);
+    setFlow('category');
+  }
+
+  function chooseCostCategory(category: string) {
+    setSelectedCategory(category);
+    if (captureMethod === 'recurring') startRecurringCommitment(category);
+    else startFlow(captureMethod);
   }
 
   function startFlow(source: InvoiceSource) {
@@ -2852,21 +2834,24 @@ export default function MyInvoicesClient({
       : source === 'manual' ? 'asset-manual' : 'asset-automatic');
   }
 
-  function startRecurringCommitment() {
+  function startRecurringCommitment(category: string) {
     if (desktop.workspace) { desktop.unavailable(); return; }
-    if (recurringDraftStartedRef.current) { setFlow('recurring'); return; }
+    if (recurringDraftStartedRef.current) {
+      setRecurringDraft(current => ({ ...current, category }));
+      setFlow('recurring');
+      return;
+    }
     recurringDraftStartedRef.current = true;
     const presetAssetIds = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
       ? [selectedAssetId]
       : [];
     setNotice(null);
-    setRecurringDraft({ ...buildRecurringCommitmentDraft(), category: selectedCategory });
+    setRecurringDraft({ ...buildRecurringCommitmentDraft(), category });
     setRecurringAssetIds(presetAssetIds);
     setRecurringPickerAssetIds(presetAssetIds);
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
-    setRecurringWizardStep(presetAssetIds.length ? 2 : 1);
-    setRecurringCategoryDropdownOpen(false);
+    setRecurringWizardStep(presetAssetIds.length ? 3 : 1);
     setRecurringError('');
     setFlow('recurring');
   }
@@ -2890,7 +2875,7 @@ export default function MyInvoicesClient({
     setRecurringError('');
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
-    setRecurringWizardStep(2);
+    setRecurringWizardStep(3);
   }
 
   function toggleRecurringAsset(assetId: string) {
@@ -2933,7 +2918,7 @@ export default function MyInvoicesClient({
         setRecurringError(assets.length ? 'Choose at least one saved asset.' : 'Add an asset before creating a recurring cost.');
         return;
       }
-      setRecurringWizardStep(2);
+      setRecurringWizardStep(3);
       return;
     }
     if (recurringWizardStep === 3) {
@@ -2950,14 +2935,16 @@ export default function MyInvoicesClient({
         return;
       }
     }
-    setRecurringCategoryDropdownOpen(false);
     setRecurringWizardStep((current) => Math.min(6, current + 1) as RecurringWizardStep);
   }
 
   function goBackRecurringWizard() {
     setRecurringError('');
-    setRecurringCategoryDropdownOpen(false);
-    setRecurringWizardStep((current) => Math.max(1, current - 1) as RecurringWizardStep);
+    if (recurringWizardStep === 1 || (recurringWizardStep === 3 && assetLockedForFlow)) {
+      setFlow('category');
+      return;
+    }
+    setRecurringWizardStep(current => current === 3 ? 1 : (current - 1) as RecurringWizardStep);
   }
 
   async function submitRecurringCommitment(event: FormEvent<HTMLFormElement>) {
@@ -3046,7 +3033,7 @@ export default function MyInvoicesClient({
       finishModal();
       return;
     }
-    setFlow(assetLockedForFlow ? 'source-choice' : 'asset-manual');
+    setFlow(assetLockedForFlow ? 'category' : 'asset-manual');
   }
 
   function selectAssetAndContinue(assetId: string) {
@@ -3072,7 +3059,7 @@ export default function MyInvoicesClient({
         setExtractionWarnings([]);
         setDraft(buildDraftForAsset('manual', assetId));
       }
-      setFlow('category');
+      setFlow('source-choice');
       return;
     }
 
@@ -4609,11 +4596,11 @@ export default function MyInvoicesClient({
               <button type="button" className={accountStyles.modalCloseButton} onClick={finishModal} aria-label="Close cost categories" data-modal-close="true">×</button>
             </div>
             <div className={categoryStyles.cards}>
-              {costCategories.map(category => <button key={category.value} type="button" className={categoryStyles.card} onClick={() => { setSelectedCategory(category.value); setFlow('source-choice'); }}>
+              {costCategories.map(category => <button key={category.value} type="button" className={categoryStyles.card} onClick={() => chooseCostCategory(category.value)}>
                 <RecurringFieldIcon kind={category.icon} /><strong>{category.label}</strong>
               </button>)}
             </div>
-            <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={finishModal}>Cancel</button></div>
+            <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={closeModal}>Back</button></div>
           </section>
         </div>
       ) : null}
@@ -4632,9 +4619,8 @@ export default function MyInvoicesClient({
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close add asset cost" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
-              <button type="button" className={styles.secondaryButton} onClick={() => setFlow('category')}>{categorySummary([selectedCategory])} · Change category</button>
             <div className={styles.sourceChoiceGrid}>
-              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.manualChoiceOption}`} onClick={() => startFlow('manual')}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.manualChoiceOption}`} onClick={() => chooseCaptureMethod('manual')}>
                 <span className={styles.choiceGraphic}>
                   <ManualInvoiceIcon />
                 </span>
@@ -4647,7 +4633,7 @@ export default function MyInvoicesClient({
                 </span>
               </button>
               {!dealerMode && !sharedFlow ? (
-                <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.recurringChoiceOption}`} onClick={startRecurringCommitment}>
+                <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.recurringChoiceOption}`} onClick={() => chooseCaptureMethod('recurring')}>
                   <span className={styles.choiceGraphic}>
                     <RecurringCommitmentIcon />
                   </span>
@@ -4660,7 +4646,7 @@ export default function MyInvoicesClient({
                   </span>
                 </button>
               ) : null}
-              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.aim4priceCaptureChoiceOption}`} onClick={() => startFlow('automatic')}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.aim4priceCaptureChoiceOption}`} onClick={() => chooseCaptureMethod('automatic')}>
                 <span className={styles.choiceGraphic}>
                   <AutomaticInvoiceIcon />
                 </span>
@@ -4777,9 +4763,8 @@ export default function MyInvoicesClient({
             >
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
                 <div className={wizardStyles.headerText}>
-                  <h2 className={recurringStyles.title} ref={recurringWizardStep > 1 ? recurringWizardStepHeadingRef : undefined} tabIndex={recurringWizardStep > 1 ? -1 : undefined} id="recurring-modal-title">{recurringWizardStep === 1 ? 'Add recurring commitment' : recurringWizardStep === 2 ? 'Commitment category' : recurringWizardStep === 3 ? 'Commitment details' : recurringWizardStep === 4 ? 'How often?' : recurringWizardStep === 5 ? 'Commitment dates' : 'Review commitment'}</h2>
+                  <h2 className={recurringStyles.title} ref={recurringWizardStep > 1 ? recurringWizardStepHeadingRef : undefined} tabIndex={recurringWizardStep > 1 ? -1 : undefined} id="recurring-modal-title">{recurringWizardStep === 1 ? 'Add recurring commitment' : recurringWizardStep === 3 ? 'Commitment details' : recurringWizardStep === 4 ? 'How often?' : recurringWizardStep === 5 ? 'Commitment dates' : 'Review commitment'}</h2>
                   <p>{recurringWizardStep === 1 ? 'Choose which assets this cost covers.'
-                    : recurringWizardStep === 2 ? 'Choose the type of recurring cost.'
                     : recurringWizardStep === 3 ? 'Describe the cost and add the amount per payment.'
                     : recurringWizardStep === 4 ? 'Choose how often you pay this cost.'
                     : recurringWizardStep === 5 ? 'Set the start date and any end or renewal dates.'
@@ -4821,72 +4806,6 @@ export default function MyInvoicesClient({
                       </span>
                       {assetLockedForFlow ? <span className={styles.budgetScopeAction}>Locked</span> : <AssetChooseIcon />}
                     </button>
-                  </section>
-                ) : null}
-
-                {recurringWizardStep === 2 ? (
-                  <section className={recurringStyles.panel} aria-labelledby="recurring-modal-title">
-                    <div className={`${styles.budgetField} ${styles.recurringCategoryField}`}>
-                      <span id="recurring-category-label">Category</span>
-                      <div
-                        className={`${styles.customFilterSelect} ${styles.recurringCategorySelect} ${recurringCategoryDropdownOpen ? styles.customFilterSelectOpen : ''}`}
-                        data-recurring-category-dropdown="true"
-                      >
-                        <button
-                          ref={recurringCategoryTriggerRef}
-                          type="button"
-                          className={`${styles.customFilterSelectButton} ${styles.recurringCategoryButton} ${recurringCategoryDropdownOpen ? styles.customFilterSelectButtonOpen : ''}`}
-                          onClick={() => setRecurringCategoryDropdownOpen((current) => !current)}
-                          disabled={isSaving}
-                          aria-haspopup="listbox"
-                          aria-expanded={recurringCategoryDropdownOpen}
-                          aria-labelledby="recurring-category-label recurring-category-value"
-                          aria-controls="recurring-category-options"
-                        >
-                          <span id="recurring-category-value" className={`${styles.customFilterSelectButtonText} ${styles.recurringCategoryButtonText} ${recurringStyles.categoryLabel}`}>
-                            <RecurringFieldIcon kind={recurringDraft.category} className={recurringStyles.fieldIcon} />{recurringCategoryLabel}
-                          </span>
-                          <span className={styles.recurringCategoryChevron} aria-hidden="true">
-                            <ChevronDownIcon className={styles.customFilterSelectChevron} />
-                          </span>
-                        </button>
-
-                        {recurringCategoryDropdownOpen ? (
-                          <DropdownOverlay
-                            id="recurring-category-options"
-                            className={`${styles.customFilterSelectMenu} ${styles.recurringCategoryMenu}`}
-                            role="listbox"
-                            aria-label="Category"
-                            gap={8}
-                            maxHeight={260}
-                          >
-                            {RECURRING_CATEGORY_OPTIONS.map((option) => {
-                              const isSelected = recurringDraft.category === option.value;
-
-                              return (
-                                <button
-                                  type="button"
-                                  key={`recurring-category-${option.value}`}
-                                  className={`${styles.customFilterSelectOption} ${styles.recurringCategoryOption} ${isSelected ? styles.customFilterSelectOptionActive : ''}`}
-                                  onClick={() => {
-                                    setRecurringField('category', option.value);
-                                    setRecurringCategoryDropdownOpen(false);
-                                    setRecurringWizardStep(3);
-                                  }}
-                                  role="option"
-                                  aria-selected={isSelected}
-                                >
-                                  <span className={`${styles.customFilterSelectOptionLabel} ${styles.recurringCategoryOptionLabel} ${recurringStyles.categoryLabel}`}><RecurringFieldIcon kind={option.value} className={recurringStyles.fieldIcon} />{option.label}</span>
-                                  <span className={`${styles.recurringCategoryOptionMark} ${isSelected ? styles.recurringCategoryOptionMarkSelected : ''}`} aria-hidden="true">
-                                    {isSelected ? '✓' : ''}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </DropdownOverlay>
-                        ) : null}
-                      </div>
-                    </div>
                   </section>
                 ) : null}
 
@@ -5044,7 +4963,7 @@ export default function MyInvoicesClient({
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`}
-                  onClick={recurringWizardStep === 1 ? () => setFlow('source-choice') : goBackRecurringWizard}
+                  onClick={goBackRecurringWizard}
                   disabled={isSaving}
                 >
                   Back
@@ -5251,7 +5170,7 @@ export default function MyInvoicesClient({
               </section>
             </div>
             <div className={`${styles.modalFooter} ${wizardStyles.footer} ${captureAttachmentStyles.footer}`}>
-              <button type="button" className={styles.secondaryButton} disabled={isExtracting} onClick={() => captureUploadPage === 'notes' ? setCaptureUploadPage('files') : setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic')}>Back</button>
+              <button type="button" className={styles.secondaryButton} disabled={isExtracting} onClick={() => captureUploadPage === 'notes' ? setCaptureUploadPage('files') : setFlow(assetLockedForFlow ? 'category' : 'asset-automatic')}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={() => { if (captureUploadPage === 'files') setCaptureUploadPage('notes'); else void handleAutomaticExtract(); }} disabled={!captureAllowance.ready || !automaticUploadFile || isExtracting}>
                 {isExtracting ? 'Sending invoice/photo...' : captureUploadPage === 'files' ? 'Continue' : 'Upload automatically'}
               </button>
@@ -5272,7 +5191,7 @@ export default function MyInvoicesClient({
                 <p>
                   {manualCostReviewOpen ? '' : `${selectedAsset?.title ?? 'Selected asset'} · `}{manualCostWizardOpen
                     ? manualCostWizardStep === 1
-                      ? 'Invoice details'
+                      ? `Invoice details · ${categorySummary([selectedCategory])}`
                       : manualCostWizardStep === 2
                         ? 'Work details'
                         : manualCostWizardStep === 3 ? 'Supporting document' : 'Check the details before saving'

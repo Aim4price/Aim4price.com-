@@ -10,9 +10,9 @@ const modalStart = client.indexOf('{recurringOpen ?');
 const modalEnd = client.indexOf('{filterOpen ?', modalStart);
 const recurringModal = client.slice(modalStart, modalEnd);
 
-test('recurring costs use the coverage, category, details, frequency, dates and review flow', () => {
+test('recurring costs use the category, coverage, details, frequency, dates and review flow', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'recurring cost modal should be present');
-  assert.match(client, /type RecurringWizardStep = 1 \| 2 \| 3 \| 4 \| 5 \| 6/);
+  assert.match(client, /type RecurringWizardStep = 1 \| 3 \| 4 \| 5 \| 6/);
   assert.match(client, /const \[recurringWizardStep, setRecurringWizardStep\]/);
   assert.doesNotMatch(recurringModal, /\[\['Coverage', 1\], \['Details', 2\], \['Review', 3\]\]/);
   assert.match(recurringModal, /styles\.invoiceDropCodeModal/);
@@ -49,14 +49,11 @@ test('each step validates before advancing and save only runs from review', () =
   assert.match(client, /setRecurringWizardStep\(3\)/);
 });
 
-test('category uses the branded overlay dropdown instead of the browser select', () => {
-  assert.match(client, /const \[recurringCategoryDropdownOpen, setRecurringCategoryDropdownOpen\]/);
-  assert.match(recurringModal, /data-recurring-category-dropdown="true"/);
-  assert.match(recurringModal, /aria-controls="recurring-category-options"/);
-  assert.match(recurringModal, /<DropdownOverlay[\s\S]*?id="recurring-category-options"/);
-  assert.match(recurringModal, /styles\.recurringCategoryButton/);
-  assert.match(recurringModal, /styles\.recurringCategoryOptionMarkSelected/);
-  assert.doesNotMatch(recurringModal, /<select/);
+test('all capture methods use the same category cards before continuing', () => {
+  for (const method of ['manual', 'recurring', 'automatic']) assert.ok(client.includes(`chooseCaptureMethod('${method}')`));
+  assert.match(client, /onClick=\{\(\) => chooseCostCategory\(category.value\)\}/);
+  assert.match(client, /if \(captureMethod === 'recurring'\) startRecurringCommitment\(category\)/);
+  assert.doesNotMatch(recurringModal, /Commitment category/);
 });
 
 test('review preserves the full recurring-cost payload before save', () => {
@@ -84,16 +81,13 @@ test('recurring wizard has responsive, purpose-built field and review styling', 
 
 
 test('category and frequency choices advance without submitting the commitment', () => {
-  const category = recurringModal.slice(recurringModal.indexOf('{recurringWizardStep === 2 ? ('), recurringModal.indexOf('{recurringWizardStep === 3 ? ('));
   const frequency = recurringModal.slice(recurringModal.indexOf('{recurringWizardStep === 4 ? ('), recurringModal.indexOf('{recurringWizardStep === 5 ? ('));
-  assert.match(category, /setRecurringField\('category', option.value\)/);
-  assert.match(category, /setRecurringWizardStep\(3\)/);
   assert.match(frequency, /setRecurringWizardStep\(5\)/);
   assert.match(frequency, /type="button"/);
   assert.match(frequency, /aria-pressed=/);
   assert.doesNotMatch(frequency, /<DateInput/);
   for (const value of ['finance', 'rental', 'tracking', 'storage', 'extended_warranty']) {
-    assert.ok(client.includes(`value: '${value}'`));
+    assert.ok(read('lib/cost-categories.ts').includes(`value: '${value}'`));
   }
 });
 
