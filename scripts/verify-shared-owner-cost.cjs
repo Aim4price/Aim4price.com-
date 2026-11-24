@@ -15,7 +15,17 @@ export default function Page(){const [open,setOpen]=useState(true);return <><but
  async function click(text){await page.$$eval('button',(nodes,text)=>{const button=nodes.find(n=>n.textContent.trim()===text||n.querySelector('strong')?.textContent===text);if(!button)throw Error('Missing '+text);button.click();},text);}
  async function open(width,height){await page.setViewport({width,height});await page.goto('http://127.0.0.1:3038/business/shared-cost-validation',{waitUntil:'networkidle0',timeout:120000});await page.waitForSelector('[data-cost-choice-modal]');}
  await open(1440,900);await page.screenshot({path:'/tmp/shared-owner-cost-choice.png'});assert(await page.$eval('[data-cost-choice-modal]',e=>e.scrollHeight<=e.clientHeight+1));
- await click('Enter cost manually');await page.waitForSelector('#cost-category-title');await click('Services');await page.waitForFunction(()=>document.body.textContent.includes('Add the invoice details'));
+ await click('Enter cost manually');await page.waitForSelector('#cost-category-title');
+ const layout = await page.$eval('[aria-labelledby="cost-category-title"]', dialog => {
+  const tiles = [...dialog.querySelectorAll('[data-category]')].map(el=>el.getBoundingClientRect());
+  const bounds = dialog.getBoundingClientRect();
+  const close = dialog.querySelector('[data-modal-close]').getBoundingClientRect();
+  return {count:tiles.length, columns:new Set(tiles.map(tile=>tile.left)).size, rows:new Set(tiles.map(tile=>tile.top)).size,
+   closeInside:close.left>=bounds.left && close.right<=bounds.right && close.top>=bounds.top && close.bottom<=bounds.bottom,
+   fits:dialog.scrollWidth<=dialog.clientWidth+1 && dialog.scrollHeight<=dialog.clientHeight+1};
+ });
+ assert.deepEqual(layout,{count:16,columns:4,rows:4,closeInside:true,fits:true});
+ await click('Services');await page.waitForFunction(()=>document.body.textContent.includes('Add the invoice details'));
  await page.$$eval('label',nodes=>{const label=nodes.find(n=>n.querySelector('span')?.textContent==='Total incl. VAT');const input=label.querySelector('input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'1150');input.dispatchEvent(new Event('input',{bubbles:true}));});
  await page.screenshot({path:'/tmp/shared-owner-manual-cost.png'});
  await click('Next');await page.waitForFunction(()=>document.body.textContent.includes('Describe the work'));await click('Next');
