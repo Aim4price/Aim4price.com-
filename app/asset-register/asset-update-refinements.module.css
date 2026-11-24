@@ -294,17 +294,13 @@
 
 /* Short, persistent Details pages replace the long scrolling editor. */
 .pagedDialog.pagedDialog { width:min(var(--website-dialog-reference-width, 100%), 68rem) !important; }
-.pagedBody.pagedBody { scrollbar-width:none !important; padding-block:1rem !important; }
-.pagedBody::-webkit-scrollbar,.trackingDialog::-webkit-scrollbar { display:none !important; }
+.pagedDialog .pagedBody.pagedBody { scrollbar-gutter:auto !important; padding:.75rem 0 !important; margin:0 !important; }
+.trackingDialog::-webkit-scrollbar { display:none !important; }
 .pagedDialog :global([data-details-page="identity"]) > :not(:global([data-details-section="identity"])),
 .pagedDialog :global([data-details-page="classification"]) > :not(:global([data-details-section="classification"])),
 .pagedDialog :global([data-details-page="condition"]) > :not(:global([data-details-section="condition"])),
 .pagedDialog :global([data-details-page="values"]) > :not(:global([data-details-section="values"])),
 .pagedDialog :global([data-details-page="notes"]) > :not(:global([data-details-section="notes"])) { display:none !important; }
-.pageHeading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin:1.1rem 0 .9rem; }
-.pageHeading h4 { margin:0; color:var(--app-text,#153d30); font-size:1.15rem; font-weight:800; letter-spacing:-.025em; }
-.pageHeading h4:focus { outline:none; }
-.pageHeading > span { flex-shrink:0; padding:.35rem .65rem; border-radius:999px; color:var(--app-accent,#176b52); background:var(--app-success-soft,#e8f3ee); font-size:.9rem; font-weight:750; }
 .pagedDialog .classificationBar { padding:.7rem 1rem; }
 .pagedDialog .classificationSummary dt { font-size:.85rem; font-weight:650; }
 .pagedDialog .detailsStack :global([data-details-section="classification"]) { padding:1rem; }
@@ -318,3 +314,19 @@
 .trackingDialog > div:nth-child(2)::-webkit-scrollbar { display:none !important; }
 .pagedDialog.pagedDialog { height:auto !important; min-height:0 !important; }
 .pagedDialog > div:last-child > span[role="status"] { color:var(--app-text,#34564b); font-size:.9rem; font-weight:650; }
+
+.pagedDialog.pagedDialog {
+  scrollbar-gutter: auto !important;
+  max-height: calc(var(--website-visible-height, 100dvh) - 1rem) !important;
+}
+.pagedDialog .pagedBody > form {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+}
+.pagedDialog .detailsStack[data-details-page] {
+  margin-top: .65rem;
+  gap: .65rem !important;
+}
+.pagedDialog [data-details-page]:focus { outline: none; }
+.pagedDialog .compactGrid.compactGrid > label,
+.pagedDialog .compactGrid.compactGrid > div { padding: .7rem !important; }
