@@ -72,3 +72,49 @@
 .planChoices label { display: flex; align-items: center; gap: .55rem; padding: .4rem 0; }
 .planChoices legend { font-weight: 700; }
 .options > section:has(.planChoices) > button { grid-row: auto; grid-column: 1 / -1; justify-self: start; width: auto; }
+
+dialog.shareDialog {
+  width: min(31rem, calc(100% - 2rem));
+  padding: clamp(1.15rem, 4vw, 1.65rem);
+  container: invite-dialog / inline-size;
+}
+.shareDialog > header { border: 0; padding-bottom: 0; }
+.shareDescription {
+  margin: .65rem 0 1.25rem;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.shareChoices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .6rem;
+}
+.shareChoices > :is(button, a) {
+  width: 100%;
+  height: auto;
+  min-height: 5.25rem;
+  align-content: center;
+  gap: .55rem;
+  padding: .75rem .25rem;
+  border-radius: .85rem;
+  text-decoration: none;
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.shareChoices > button, .shareChoices > button:hover {
+  background: #18553f;
+  border-color: #18553f;
+  color: white;
+}
+.shareChoices > button:hover { background: #104532; }
+@container invite-dialog (max-width: 17rem) {
+  .shareChoices { grid-template-columns: 1fr; }
+  .shareChoices > :is(button, a) {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 2.85rem;
+    padding-inline: 1rem;
+  }
+}
