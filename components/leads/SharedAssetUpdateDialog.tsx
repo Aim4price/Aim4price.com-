@@ -1,4 +1,5 @@
 'use client';
+import AssetMediaPanel from '../asset-register/AssetMediaPanel';
 import SharedAssetExport from './SharedAssetExport';
 import {useEffect,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
@@ -74,28 +75,40 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
  if(valueField)return <SharedAssetValueDialog endpoint={endpoint} assetTitle={assetTitle} field={valueField} onClose={()=>{if(initialField===valueField)onClose();else {setValueField(null);setValueRefresh(v=>v+1);}}} onSaved={saved}/>;
  const title=draft?.title.trim()||assetTitle;
  const isPaperworkEditor = section === 'paperwork' && paperFocus !== 'hub';
- const shell=`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${account.modalTheme} ${styles.assetUpdateModal} ${section==='menu'?styles.assetUpdateMenuModal:''} ${local.shell} ${isPaperworkEditor ? refinements.pagedDialog : ''}`;
+ const useCompactDialog = isPaperworkEditor || section === 'documents';
+ const shell=`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${account.modalTheme} ${styles.assetUpdateModal} ${section==='menu'?styles.assetUpdateMenuModal:''} ${local.shell} ${useCompactDialog ? refinements.pagedDialog : ''}`;
  const canDetails=Object.values(permissions).some(Boolean);
  const cards=[{key:'details',label:'Details',copy:'Edit asset details and usage.',icon:'details',allowed:canDetails},{key:'paperwork',label:'Paperwork',copy:'Manage asset paperwork.',icon:'documents',allowed:permissions.updateDetails},{key:'documents',label:'Documents',copy:'Manage documents and photos.',icon:'addPhotos',allowed:permissions.addDocuments||permissions.addPhotos}] as const;
  return <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
   <div className={styles.modalBackdrop} data-website-overlay onClick={()=>{if(!changed)close();}}/>
   <section ref={dialog} tabIndex={-1} className={shell} role="dialog" aria-modal="true" aria-label={section==='menu'?'Update asset':title}>
    <div className={`${styles.modalHeader} ${styles.assetFormModalHeader} ${styles.manualWizardHeader} ${styles.assetFormModalChromeHeader}`}>
-    <div className={styles.modalHeaderText}><h3>{section==='menu'?'Update asset':title}</h3><p>{section==='menu'?title:section==='details'?'Details':section==='paperwork'?'Paperwork':'Documents'}</p></div>
+    <div className={styles.modalHeaderText}><h3>{section==='menu'?'Update asset':title}</h3><p>{section==='menu'?title:section==='details'?'Details':section==='paperwork'?'Paperwork':'Documents & photos'}</p></div>
     <button type="button" className={`${account.modalCloseButton} ${account.passwordModalCloseButton}`} aria-label="Close action form" onClick={close} disabled={busy||changed||paperDirty} data-modal-close="true">×</button>
    </div>
-   <div className={`${styles.modalScrollBody} ${section==='menu'?styles.assetUpdateMenuBody:styles.manualStepScrollBody} ${local.body} ${isPaperworkEditor ? refinements.pagedBody : ''}`}>
+   <div className={`${styles.modalScrollBody} ${section==='menu'?styles.assetUpdateMenuBody:styles.manualStepScrollBody} ${local.body} ${useCompactDialog ? refinements.pagedBody : ''}`}>
     {error&&<p role="alert" className={local.error}>{error}</p>}
     {section==='details' && asset?.usageEstimated && <p role="note">Estimated usage: {asset.usageReading} {asset.usageMetric}. Last confirmed: {asset.lastConfirmedUsage ?? 'Not recorded'} {asset.usageMetric}. Enter the actual meter reading to replace the estimate; it may be lower than the estimate.</p>}
     {!asset||!draft?<p>Loading asset…</p>:section==='menu'?<div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${colours.grid} ${local.menu}`} data-manage-actions>{cards.filter(c=>c.allowed).map(c=><button key={c.key} type="button" data-manage-action={c.icon} className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setSection(c.key)}>{c.key==='paperwork'?<svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z"/><path d="m8 12 3 3 5-6"/></svg>:<AssetActionIcon action={c.key==='documents'?'documents':'details'} className={styles.buttonIcon}/>}<span><strong>{c.label}</strong><small>{c.copy}</small></span></button>)}</div>:section==='paperwork'?<SharedAssetPaperwork endpoint={endpoint} view={paperFocus} setView={setPaperFocus} footerHost={paperworkFooter} onDirtyChange={setPaperDirty} onUpload={permissions.addDocuments?()=>setUpload(true):undefined} onSaved={saved}/>:section==='documents'?<>
      <p className={local.notice}><strong>Asset documents only — no invoices.</strong> Use Add cost for invoices and expenses.</p>
-     <div className={`${styles.manualStageGrid} ${styles.manualUploadGrid}`}>
-      {permissions.addDocuments&&<div className={styles.field}><span>Other documents</span><div className={`${styles.documentUploadPanel} ${local.uploadPanel}`}><div className={styles.uploadRow}><button className={`${styles.secondaryButton} ${styles.filePickerButton}`} onClick={()=>setUpload(true)}>Add documents</button><span className={styles.uploadCount}>{documents.length}</span></div></div></div>}
-      {permissions.addPhotos&&<div className={styles.field}><span>Photos</span><div className={`${styles.uploadPanel} ${local.uploadPanel}`}><div className={styles.uploadRow}><button className={`${styles.secondaryButton} ${styles.filePickerButton}`} disabled={busy} onClick={()=>photoInput.current?.click()}>Add photos</button><span className={styles.uploadCount}>{asset.photos?.length||0} / 12</span><input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={e=>void addPhotos(e.target.files)}/></div></div></div>}
-     </div>
+     {permissions.addPhotos && <input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden disabled={busy} onChange={e=>void addPhotos(e.target.files)}/>}
+     <AssetMediaPanel
+       documentUpload={permissions.addDocuments ? {
+         label: 'Add documents', count: documents.length, disabled: busy, open: () => setUpload(true),
+       } : undefined}
+       photoUpload={permissions.addPhotos ? {
+         label: 'Add photos', count: asset.photos?.length ?? 0, limit: 12, disabled: busy, open: () => photoInput.current?.click(),
+       } : undefined}
+       documents={documents.map(document => ({
+         key: document.id,
+         name: document.title || document.fileName,
+         href: endpoint + '/documents?id=' + encodeURIComponent(document.id),
+       }))}
+       photos={(asset.photos || []).map((src, index) => ({
+         key: src + index, src, label: `${title} — photo ${index + 1}`, main: index === 0,
+       }))}
+     />
      {(documents.length > 0 || !!asset.photos?.length) && <SharedAssetExport title={title} photos={asset.photos || []} asset={{serialNumber:asset.serialNumber,yearModel:asset.yearModel,usage:asset.usageReading == null ? "" : `${asset.usageReading} ${asset.usageMetric}${asset.usageEstimated ? ' · Estimated' : ''}`,condition:asset.condition,replacementPriceExVat:asset.replacementPriceExVat,valueExVat:asset.currentValue}} attachments={documents.map(d => ({name:d.title || d.fileName, url:endpoint+'/documents?id='+encodeURIComponent(d.id)}))}/>}
-     {!!documents.length&&<div className={local.documents}>{documents.map(d=><a key={d.id} href={endpoint+'/documents?id='+encodeURIComponent(d.id)} target="_blank" rel="noreferrer">{d.title||d.fileName}</a>)}</div>}
-     {!!asset.photos?.length&&<div className={local.photos}>{asset.photos.map((src,i)=><img key={src+i} src={src} alt={`${title} — photo ${i+1}`}/>)}</div>}
     </>:<form className={`${styles.modalForm} ${styles.manualAssetForm} ${styles.manualStepForm}`} onSubmit={e=>e.preventDefault()}>
      <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
       <div className={styles.manualUtilityRow}><dl className={styles.assetClassificationSummary}><div><dt>Asset type</dt><dd>{asset.kind==='vehicle'?'Vehicle':asset.kind==='tractor'?'Equipment':asset.kind}</dd></div>{asset.categoryLabel&&<div><dt>Family</dt><dd>{asset.categoryLabel}</dd></div>}</dl></div>
