@@ -1,4 +1,10 @@
+.overlay.overlay {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
 .dialog.dialog {
+  margin: auto;
+  flex-shrink: 0;
   box-sizing: border-box;
   z-index: 1;
   width: min(1240px, var(--website-dialog-reference-width, calc(100% - 24px)));

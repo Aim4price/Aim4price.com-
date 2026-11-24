@@ -208,12 +208,12 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       setBusy(false);
     }
   }
-  return <div className={`${registerStyles.modalOverlay} ${registerStyles.assetEntryOverlay}`} data-website-overlay>
+  return <div className={`${registerStyles.modalOverlay} ${registerStyles.assetEntryOverlay} ${css.overlay}`} data-website-overlay>
     <div className={registerStyles.modalBackdrop} data-website-overlay onClick={() => {
       if (!busy)
         onClose();
     }} />
-    <section ref={dialog} className={`${parts.modal} ${parts.entryModal} ${css.dialog}`} aria-labelledby="add-asset-choice-title" role="dialog" aria-modal="true">
+    <section ref={dialog} tabIndex={-1} data-dialog-initial-focus className={`${parts.modal} ${parts.entryModal} ${css.dialog}`} aria-labelledby="add-asset-choice-title" role="dialog" aria-modal="true">
       <div className={parts.closeWrap}>
         <ShareModalCloseButton aria-label="Close add asset options" disabled={busy} onClick={onClose} />
       </div>
