@@ -10,16 +10,25 @@ import { readPartsExcel } from '../../lib/parts-network-excel';
 import { assetColumns, assetTitle, blankAsset, columns, mapAssetRow, mapHeading, maxAssets, rowErrors, usageUnit, targetColumn, type AssetRow, type Basis, type Column, type Mapping } from '../../lib/asset-sheet';
 import parts from '../../app/dealer/parts/parts.module.css';
 import css from './AssetSheetDialog.module.css';
-type Stage = 'choose' | 'one' | 'file' | 'map' | 'edit' | 'review';
+type Stage = 'choose' | 'one' | 'multiple' | 'file' | 'map' | 'edit' | 'review';
 type Sheet = {
   name: string;
   rows: string[][];
 };
-const choices = [
-  ['one', 'Add one asset', 'Get an estimate or enter your own value', 'blue', 'M12 5v14M5 12h14'],
-  ['edit', 'Add in a sheet', 'Type or paste multiple assets', 'green', 'M3 3h18v18H3z M3 9h18M3 15h18M9 3v18'],
-  ['file', 'Import file', 'Upload CSV or Excel', 'amber', 'M12 16V3m-5 5 5-5 5 5M4 14v7h16v-7'],
-] as const;
+const choices = {
+  choose: [
+    ['one', 'Add 1 asset', 'Value a single asset', 'blue', 'M12 5v14M5 12h14'],
+    ['multiple', 'Add multiple assets', 'Enter or upload a list', 'green', 'M3 5h18v14H3z M3 10h18M3 14h18M8 5v14'],
+  ],
+  one: [
+    ['valuation', 'Aim4price Value', 'Get an Aim4price estimate', 'blue', 'M3 4v16h18 M6 15l5-5 4 3 6-7'],
+    ['manual', 'Manual Value', 'Enter your own value', 'green', 'M4 16l-1 5 5-1L20 8l-4-4z M13 7l4 4'],
+  ],
+  multiple: [
+    ['edit', 'Add in a sheet', 'Type or paste multiple assets', 'green', 'M3 3h18v18H3z M3 9h18M3 15h18M9 3v18'],
+    ['file', 'Import file', 'Upload CSV or Excel', 'amber', 'M12 16V3m-5 5 5-5 5 5M4 14v7h16v-7'],
+  ],
+} as const;
 const startColumns: Column[] = ['title', 'year', 'serial'];
 const mappingChoices = [
   { value: '', label: 'Skip column' }, ...columns.map(value => ({ value, label: assetColumns[value] })),
@@ -63,7 +72,22 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   const pages = Math.max(1, Math.ceil((stage === 'review' ? filled : rows).length / size));
   const currentPage = Math.min(page, pages - 1);
   const dialog = useLeadDialog(onClose, busy);
-  function change(stage: Stage) { setStage(stage); setError(''); setPage(0); }
+  const [history, setHistory] = useState<Stage[]>([]);
+  function change(next: Stage) {
+    if (stage !== next) setHistory(previous => [...previous, stage]);
+    setStage(next);
+    setError('');
+    setPage(0);
+  }
+  function back() {
+    const previous = history.at(-1);
+    if (!previous) return onBack();
+    setHistory(history.slice(0, -1));
+    setStage(previous);
+    setPage(0);
+    setError('');
+  }
+  const cards = stage === 'choose' || stage === 'one' || stage === 'multiple' ? choices[stage] : null;
   function selectSheet(list: Sheet[], index: number, hasHeader: boolean) {
     const table = list[index].rows;
     if (!table.length)
@@ -218,23 +242,26 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
         <ShareModalCloseButton aria-label="Close add asset options" disabled={busy} onClick={onClose} />
       </div>
       <header className={parts.dialogHeader}>
-        <h2 id="add-asset-choice-title">{{ choose: 'Add assets', one: 'Choose how to add an asset', file: 'Import assets', map: 'Match columns', edit: 'Edit asset sheet', review: 'Review assets' }[stage]}</h2>
+        <h2 id="add-asset-choice-title">{{ choose: 'Add assets', one: 'Add 1 asset', multiple: 'Add multiple assets', file: 'Import assets', map: 'Match columns', edit: 'Edit asset sheet', review: 'Review assets' }[stage]}</h2>
         <p>{registerName}</p>
         <div className={parts.partsProgress} aria-hidden="true">
-          <span style={{ width: ({ choose: 40, one: 70, file: 50, map: 65, edit: 80, review: 100 }[stage]) + '%' }} />
+          <span style={{ width: ({ choose: 25, one: 50, multiple: 50, file: 60, map: 65, edit: 80, review: 100 }[stage]) + '%' }} />
         </div>
       </header>
       <fieldset disabled={busy} className={css.body}>
-        {stage === 'choose' && <>
-          <div className={`${parts.shareChoices} ${parts.entryMethods}`}>{choices.map(([next, label, hint, tone, path]) => <button key={next} data-tone={tone} onClick={() => change(next)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
-              <path d={path} />
-            </svg>
-            <span>
-              <strong>{label}</strong>
-              <small>{hint}</small>
-            </span>
-          </button>)}</div>
+        {cards && <div className={`${parts.shareChoices} ${parts.entryMethods} ${css.pair}`}>
+          {cards.map(([next, label, hint, tone, path]) => {
+            const content = <>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d={path} /></svg>
+              <span><strong>{label}</strong><small>{hint}</small></span>
+            </>;
+            if (next === 'valuation') {
+              return <Link key={next} className={parts.choiceLink} data-tone={tone} href={valuationHref}>{content}</Link>;
+            }
+            return <button key={next} type="button" data-tone={tone} onClick={() => next === 'manual' ? onManual() : change(next)}>{content}</button>;
+          })}
+        </div>}
+        {stage === 'multiple' && <>
           <div className={parts.entryExample}>
             <button aria-expanded={example} onClick={() => setExample(!example)}>See an example</button>
           </div>
@@ -262,10 +289,6 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
               </tbody>
             </table>
           </div>}</>}
-        {stage === 'one' && <div className={parts.actions}>
-          <Link className={css.link} href={valuationHref}>Aim4price Value</Link>
-          <button onClick={onManual}>Manual Entry</button>
-        </div>}
         {stage === 'file' && <>
           <label>Choose a CSV or Excel file<input aria-label="Upload asset file" type="file" accept=".xlsx,.csv" onChange={e => {
             const f = e.target.files?.[0]; if (f)
@@ -367,7 +390,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       </fieldset>
       {error && <p role="alert" className={parts.error}>{error}</p>}
       <footer className={parts.entryFooter}>
-        <button disabled={busy} onClick={() => stage === 'choose' ? onBack() : change(stage === 'review' ? 'edit' : stage === 'map' ? 'file' : 'choose')}>Back</button>
+        <button disabled={busy} onClick={back}>Back</button>
         {stage === 'map' && <button className={parts.primary} disabled={busy} onClick={mapTable}>Edit sheet</button>}
         {stage === 'edit' && <button className={parts.primary} disabled={busy} onClick={() => void submit()}>Review assets</button>}
         {stage === 'review' && <button className={parts.primary} disabled={busy || !ready} onClick={() => void submit(true)}>{busy ? 'Adding assets…' : 'Add ' + ready + ' asset' + (ready === 1 ? '' : 's')}</button>}</footer>

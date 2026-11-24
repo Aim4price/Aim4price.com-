@@ -8,7 +8,7 @@
   min-width: 0;
 }
 .page button,
-.modal button,
+.modal :is(button, a:where(.choiceLink)),
 .button {
   display: inline-flex;
   align-items: center;
@@ -29,19 +29,19 @@
     border-color 0.18s;
 }
 .page button:hover,
-.modal button:hover,
+.modal :is(button, a:where(.choiceLink)):hover,
 .button:hover {
   border-color: #46a579;
   box-shadow: 0 0 0 3px #4cbd8320;
 }
 .page button:focus-visible,
-.modal button:focus-visible,
+.modal :is(button, a:where(.choiceLink)):focus-visible,
 .button:focus-visible {
   outline: 3px solid #46a579;
   outline-offset: 3px;
 }
 .page button:disabled,
-.modal button:disabled {
+.modal :is(button, a:where(.choiceLink)):disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
@@ -756,7 +756,7 @@
   gap: 20px;
 }
 .manageGrid button,
-.shareChoices button {
+.shareChoices :is(button, a:where(.choiceLink)) {
   --action-tint: var(--app-surface-soft, #eff9f4);
   --action-line: var(--app-success-line, #b2dfcd);
   --action-ink: var(--app-text, #14634d);
@@ -774,31 +774,31 @@
   box-shadow: 0 12px 26px var(--app-shadow-colour, #153c3109);
 }
 .manageGrid button[data-tone="blue"],
-.shareChoices button[data-tone="blue"] {
+.shareChoices :is(button, a:where(.choiceLink))[data-tone="blue"] {
   --action-tint: var(--app-info-soft, color-mix(in srgb, var(--app-surface, #fff) 94%, #4979b6));
   --action-line: var(--app-info-line, #cbdcf3);
   --action-ink: var(--app-info, #265b87);
 }
 .manageGrid button span,
-.shareChoices button span {
+.shareChoices :is(button, a:where(.choiceLink)) span {
   display: grid;
   gap: 7px;
 }
 .manageGrid button strong,
-.shareChoices button strong {
+.shareChoices :is(button, a:where(.choiceLink)) strong {
   font:
     800 18px/1.3 var(--font-heading, "Montserrat"),
     sans-serif;
 }
 .manageGrid button small,
-.shareChoices button small {
+.shareChoices :is(button, a:where(.choiceLink)) small {
   font:
     650 16px/1.45 var(--font-body, "Montserrat"),
     sans-serif;
   color: var(--app-text-muted, #64766c);
 }
 .manageGrid button svg,
-.shareChoices button svg {
+.shareChoices :is(button, a:where(.choiceLink)) svg {
   flex-shrink: 0;
   width: 25px;
   height: 25px;
@@ -820,13 +820,13 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
 }
-.shareChoices button {
+.shareChoices :is(button, a:where(.choiceLink)) {
   flex-direction: column;
   text-align: center;
   min-height: 176px;
 }
 .manageGrid button[data-tone="amber"],
-.shareChoices button[data-tone="amber"] {
+.shareChoices :is(button, a:where(.choiceLink))[data-tone="amber"] {
   --action-tint: var(--app-warning-soft, color-mix(in srgb, var(--app-surface, #fff) 94%, #d6a44c));
   --action-line: var(--app-warning-line, #efd0a5);
   --action-ink: var(--app-warning, #926016);
@@ -870,14 +870,14 @@
     gap: 14px;
   }
   .manageGrid button strong,
-  .shareChoices button strong {
+  .shareChoices :is(button, a:where(.choiceLink)) strong {
     font-size: 16px;
   }
   .manageGrid button small,
-  .shareChoices button small {
+  .shareChoices :is(button, a:where(.choiceLink)) small {
     font-size: 14px;
   }
-  .shareChoices button {
+  .shareChoices :is(button, a:where(.choiceLink)) {
     min-height: 135px;
     padding: 18px;
     gap: 12px;
@@ -1409,7 +1409,7 @@
 .entryModal:has(.entryMethods) .dialogHeader h2 { font-size:34px; }
 .entryModal:has(.entryMethods) .stageBody { gap:28px; padding:0 0 2px; }
 .entryModal .entryMethods { flex-shrink: 0; margin:0; gap:20px; }
-.entryMethods button { align-items:center; justify-content:center; }
+.entryMethods :is(button, a:where(.choiceLink)) { align-items:center; justify-content:center; }
 .entryExample { border-top:1px solid var(--app-border,#dce5df); padding-top:22px; }
 .entryModal .entryExample > button {
   width: 100%;
@@ -1428,22 +1428,22 @@
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) .dialogHeader { padding-bottom:18px; margin-bottom:20px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) .dialogHeader h2 { font-size:25px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal .entryMethods { grid-template-columns:1fr; gap:12px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .entryModal .entryMethods button { flex-direction:row; justify-content:flex-start; text-align:left; min-height:96px; padding:16px; gap:16px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods button svg { width:22px; height:22px; padding:10px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods button strong { font-size:16px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods button small { font-size:14px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryModal .entryMethods :is(button, a:where(.choiceLink)) { flex-direction:row; justify-content:flex-start; text-align:left; min-height:96px; padding:16px; gap:16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods :is(button, a:where(.choiceLink)) svg { width:22px; height:22px; padding:10px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods :is(button, a:where(.choiceLink)) strong { font-size:16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .entryMethods :is(button, a:where(.choiceLink)) small { font-size:14px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryModal:has(.entryMethods) .stageBody { gap:20px; }
   :global(:where(html:not(:has([data-website-canvas])))) .entryExample { padding-top:16px; }
 }
 
 /* Keep the choice highlight within its rounded edge and clear of the scroller. */
 .entryModal:has(.entryMethods) .stageBody { padding:6px; }
-.entryModal .entryMethods button:hover,
-.entryModal .entryMethods button:focus-visible {
+.entryModal .entryMethods :is(button, a:where(.choiceLink)):hover,
+.entryModal .entryMethods :is(button, a:where(.choiceLink)):focus-visible {
   border-color:#27805f;
   box-shadow:inset 0 0 0 1px #27805f, 0 0 0 4px #27805f14;
 }
-.entryModal .entryMethods button:focus-visible {
+.entryModal .entryMethods :is(button, a:where(.choiceLink)):focus-visible {
   outline:2px solid #27805f;
   outline-offset:-2px;
 }
@@ -1604,34 +1604,34 @@
 }
 
 /* Match the parts entry reference across the related action and sharing cards. */
-.entryModal .entryMethods button[data-tone],
+.entryModal .entryMethods :is(button, a:where(.choiceLink))[data-tone],
 .manageGrid button,
 .manageGrid button[data-tone],
 .manageGrid .deleteAction,
-.shareChoices button,
-.shareChoices button[data-tone] {
+.shareChoices :is(button, a:where(.choiceLink)),
+.shareChoices :is(button, a:where(.choiceLink))[data-tone] {
   --choice-colour: #178361;
   --action-tint: color-mix(in srgb, var(--app-surface, #fff) 87%, var(--choice-colour));
   --action-line: color-mix(in srgb, var(--app-surface, #fff) 40%, var(--choice-colour));
   border-width: 2px;
 }
-.entryModal .entryMethods button[data-tone="blue"],
+.entryModal .entryMethods :is(button, a:where(.choiceLink))[data-tone="blue"],
 .manageGrid button[data-tone="blue"],
-.shareChoices button[data-tone="blue"] { --choice-colour: #347bc4; }
-.entryModal .entryMethods button[data-tone="amber"],
+.shareChoices :is(button, a:where(.choiceLink))[data-tone="blue"] { --choice-colour: #347bc4; }
+.entryModal .entryMethods :is(button, a:where(.choiceLink))[data-tone="amber"],
 .manageGrid button[data-tone="amber"],
-.shareChoices button[data-tone="amber"] { --choice-colour: #c47b23; }
+.shareChoices :is(button, a:where(.choiceLink))[data-tone="amber"] { --choice-colour: #c47b23; }
 .manageGrid .deleteAction { --choice-colour: #b34242; }
-.entryModal .entryMethods button small,
+.entryModal .entryMethods :is(button, a:where(.choiceLink)) small,
 .manageGrid button small,
-.shareChoices button small { color: var(--app-text, #34564b); }
-.entryModal .entryMethods button svg,
+.shareChoices :is(button, a:where(.choiceLink)) small { color: var(--app-text, #34564b); }
+.entryModal .entryMethods :is(button, a:where(.choiceLink)) svg,
 .manageGrid button svg,
-.shareChoices button svg { background: var(--action-tint); border-width: 2px; }
-.entryModal .entryMethods button:hover:not(:disabled),
+.shareChoices :is(button, a:where(.choiceLink)) svg { background: var(--action-tint); border-width: 2px; }
+.entryModal .entryMethods :is(button, a:where(.choiceLink)):hover:not(:disabled),
 .manageGrid button:hover:not(:disabled),
-.shareChoices button:hover:not(:disabled) { background: var(--action-tint); }
-.shareChoices button:focus-visible,
+.shareChoices :is(button, a:where(.choiceLink)):hover:not(:disabled) { background: var(--action-tint); }
+.shareChoices :is(button, a:where(.choiceLink)):focus-visible,
 .manageGrid button:focus-visible { outline: 3px solid var(--choice-colour); outline-offset: -4px; }
 .partsProgress {
   height: 5px;
@@ -1941,14 +1941,14 @@
 .shareSearch input { margin-top:10px; }
 .shareRecipientResults { display:grid; gap:12px; max-height:280px; overflow-y:auto; padding:4px 16px 8px 4px; scrollbar-gutter:stable; }
 .shareRecipientResults > p { margin:0; font-size:14px; font-weight:650; }
-.modal button.shareRecipientCard { display:grid; grid-template-columns:44px minmax(0,1fr) minmax(0,0.7fr) auto; align-items:center; gap:18px; padding:20px; text-align:left; border-radius:18px; background:var(--app-surface, #fff); border:1px solid var(--app-line, #c7dcd1); }
+.modal :is(button, a:where(.choiceLink)).shareRecipientCard { display:grid; grid-template-columns:44px minmax(0,1fr) minmax(0,0.7fr) auto; align-items:center; gap:18px; padding:20px; text-align:left; border-radius:18px; background:var(--app-surface, #fff); border:1px solid var(--app-line, #c7dcd1); }
 .shareRecipientCard > span { min-width:0; }
 .shareRecipientCard strong, .shareRecipientCard small { display:block; overflow-wrap:anywhere; }
 .shareRecipientCard strong { font-size:16px; font-weight:800; line-height:1.35; }
 .shareRecipientCard small { margin-top:5px; font-size:13px; font-weight:650; color:var(--app-muted, #64746a); line-height:1.4; }
 .shareAccountIcon { display:grid; place-items:center; width:44px; height:44px; border:1px solid var(--app-info-line, #bdd5f0); border-radius:12px; background:var(--app-info-soft, #edf5ff); }
 .shareSelectBadge { border:1px solid var(--app-line, #b4d1c1); border-radius:12px; padding:12px 18px; font-weight:750; }
-.modal button.shareRecipientCard[aria-pressed="true"] { border-color:var(--app-primary, #17654c); background:var(--app-success-soft, #e3f2ec); }
+.modal :is(button, a:where(.choiceLink)).shareRecipientCard[aria-pressed="true"] { border-color:var(--app-primary, #17654c); background:var(--app-success-soft, #e3f2ec); }
 .shareRecipientCard[aria-pressed="true"] .shareSelectBadge { background:var(--app-primary, #17654c); color:#fff; }
 .partsShareModal .partsChoiceOptions { grid-template-columns:1fr; }
 .partsShareModal .partsChoiceOptions label { padding:18px; }
@@ -1956,7 +1956,7 @@
 .partsShareModal > p { margin:24px 0; line-height:1.6; }
 .partsShareModal .modalFooter { margin-top:24px; padding-top:20px; }
 @media (max-width:600px) {
-  .modal button.shareRecipientCard { grid-template-columns:36px minmax(0,1fr); padding:14px; gap:12px; }
+  .modal :is(button, a:where(.choiceLink)).shareRecipientCard { grid-template-columns:36px minmax(0,1fr); padding:14px; gap:12px; }
   .shareRecipientCard > span:nth-child(3), .shareSelectBadge { grid-column:2; }
   .shareAccountIcon { width:36px; height:36px; }
 }
@@ -2002,7 +2002,7 @@
 }
 
 .detailInputHeading { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:36px; }
-.modal button.detailTrash { display:inline-flex; align-items:center; justify-content:center; width:36px; min-height:36px; flex:0 0 36px; padding:7px; border:1px solid var(--app-danger-line,#ebcccc); border-radius:10px; color:var(--app-danger,#b4232f); background:var(--app-danger-soft,#fff6f6); }
+.modal :is(button, a:where(.choiceLink)).detailTrash { display:inline-flex; align-items:center; justify-content:center; width:36px; min-height:36px; flex:0 0 36px; padding:7px; border:1px solid var(--app-danger-line,#ebcccc); border-radius:10px; color:var(--app-danger,#b4232f); background:var(--app-danger-soft,#fff6f6); }
 .detailTrash .detailIcon { width:20px; height:20px; flex:0 0 20px; border:0; background:transparent; color:inherit; box-shadow:none; }
 .detailTrash .detailIcon svg { width:20px; height:20px; }
 .manageColumns { display:grid; gap:12px; }
@@ -2266,3 +2266,5 @@
  :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable .partAction { display:flex; align-items:end; justify-content:end; }
  :global(body:not(:has([data-website-canvas]))) .detailPage .stockTable .partAction button { margin:0; }
 }
+
+.choiceLink { text-decoration: none; }
