@@ -5,7 +5,7 @@ export const costCategories = [
   { value: 'tyres', label: 'Tyres and tracks', code: 'TYRE', icon: 'renewal' },
   { value: 'fuel', label: 'Fuel and charging', code: 'FUEL', icon: 'amount' },
   { value: 'insurance', label: 'Insurance', code: 'INS', icon: 'insurance' },
-  { value: 'licence', label: 'Licensing and compliance', code: 'LIC', icon: 'licence' },
+  { value: 'licence', label: 'Licensing', code: 'LIC', icon: 'licence' },
   { value: 'finance', label: 'Finance charges', code: 'FIN', icon: 'finance' },
   { value: 'lease', label: 'Lease', code: 'LEASE', icon: 'lease' },
   { value: 'rental', label: 'Rental', code: 'RENT', icon: 'rental' },

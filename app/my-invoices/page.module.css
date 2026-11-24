@@ -7398,6 +7398,22 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
   min-height: 0 !important;
   border: 0 !important;
   background: transparent !important;
+  min-width: 0;
+  box-sizing: border-box;
+  padding-inline: .3rem .5rem !important;
+}
+.costFormModal .textAreaGrid > .costNotesField {
+  grid-column: 1 / -1;
+}
+.costFormModal.accountCostModal .formGrid input:is([inputmode="numeric"], [inputmode="decimal"]) {
+  font-family: Arial, sans-serif !important;
+  font-weight: 500 !important;
+  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: normal;
+  text-indent: 0;
+}
+.costFormModal .formGrid input[inputmode="numeric"] {
+  padding-inline-start: 1rem;
 }
 .accountCostModal.manualCostWizardModal.polishedCostEntry :is(input, textarea)::placeholder {
   color: var(--app-muted, #637d71) !important;

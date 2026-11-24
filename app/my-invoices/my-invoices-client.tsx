@@ -5359,7 +5359,7 @@ export default function MyInvoicesClient({
                     <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="repairs" /> : null}<textarea value={draft.repairWorkDone} onChange={(event) => setDraftField('repairWorkDone', event.target.value)} rows={3} placeholder="Describe repairs completed" /></span>
                   </label>
                   </>}
-                  <label>
+                  <label className={styles.costNotesField}>
                     <span>Description and notes</span>
                     <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="notes" /> : null}<textarea value={draft.notes} onChange={(event) => setDraftField('notes', event.target.value)} rows={3} placeholder="Additional notes" /></span>
                   </label>
