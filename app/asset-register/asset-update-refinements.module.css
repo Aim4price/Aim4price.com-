@@ -294,7 +294,7 @@
 
 /* Short, persistent Details pages replace the long scrolling editor. */
 .pagedDialog.pagedDialog { width:min(var(--website-dialog-reference-width, 100%), 68rem) !important; }
-.pagedDialog .pagedBody.pagedBody { scrollbar-gutter:auto !important; padding:.75rem 0 !important; margin:0 !important; }
+.pagedDialog .pagedBody.pagedBody { scrollbar-gutter:auto !important; padding: .65rem clamp(1rem, calc(var(--website-design-vw) * 2.75), 2rem) .8rem !important; box-sizing:border-box; margin:0 !important; }
 .trackingDialog::-webkit-scrollbar { display:none !important; }
 .pagedDialog :global([data-details-page="identity"]) > :not(:global([data-details-section="identity"])),
 .pagedDialog :global([data-details-page="classification"]) > :not(:global([data-details-section="classification"])),
@@ -324,8 +324,8 @@
   min-height: 0 !important;
 }
 .pagedDialog .detailsStack[data-details-page] {
-  margin-top: .65rem;
-  gap: .65rem !important;
+  margin-top: 0;
+  gap: .75rem !important;
 }
 .pagedDialog [data-details-page]:focus { outline: none; }
 .pagedDialog .compactGrid.compactGrid > label,
