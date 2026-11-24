@@ -128,17 +128,12 @@
   padding: 2px 4px 12px;
 }
 .dialog .template {
-  justify-self: start;
+  margin-inline-start: auto;
   min-height: 36px;
   padding: 6px 12px;
   font-size: 14px;
 }
 .dialog .tools { flex-wrap: wrap; }
-.dialog .sheetHint {
-  margin: 0 3px 12px;
-  color: var(--app-text, #34564b);
-  font-size: 14px;
-}
 .gridScroll {
   min-width: 0;
   max-height: calc(var(--website-visible-height, 100dvh) * .42);
@@ -155,8 +150,7 @@
   border-collapse: separate;
 }
 .rowColumn { width: 132px; }
-.titleColumn { width: 240px; }
-.dataColumn { width: 160px; }
+.titleColumn { width: min(34%, 360px); }
 .dialog .assetGrid thead th {
   position: sticky;
   top: 0;
@@ -197,7 +191,14 @@
   accent-color: var(--app-primary, #17654c);
 }
 .dialog .assetGrid td > small { white-space: normal; }
-.rowActions { display: flex; margin: 12px 0 4px; }
+.dialog .rowActions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin: 12px 0 4px;
+  font-size: 14px;
+}
+.dialog .rowActions button { min-height: 38px; padding: 8px 12px; }
+
 
 .reviewTable {
   overflow: auto;

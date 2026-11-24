@@ -4,11 +4,24 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { assetColumns, assetTitle, columns, type AssetRow, type Column } from '../../lib/asset-sheet';
 import styles from '../../app/dealer/parts/parts.module.css';
+import { DetailIcon } from '../PartsDetailFields';
 import PartsChoice from '../PartsChoice';
 import Select from '../AssetModalSelect';
 import ShareModalCloseButton from './ShareModalCloseButton';
 
 export type AssetTool = { kind: 'add' | 'columns' | 'bulk' } | { kind: 'row'; index: number };
+
+const fieldPresentation: Record<Column, { icon: string; hint: string }> = {
+  title: { icon: 'description', hint: 'Name used in the register' },
+  make: { icon: 'brand', hint: 'Brand or manufacturer' },
+  model: { icon: 'partNumber', hint: 'Model name or number' },
+  category: { icon: 'type', hint: 'Type of asset' },
+  year: { icon: 'calendar', hint: 'Year of manufacture' },
+  serial: { icon: 'partNumber', hint: 'Serial or chassis number' },
+  usage: { icon: 'gauge', hint: 'Current usage reading' },
+  unit: { icon: 'ruler', hint: 'Hours, km or percent' },
+  value: { icon: 'price', hint: 'Current value in rand' },
+};
 
 type Props = {
   tool: AssetTool;
@@ -26,6 +39,7 @@ export default function AssetSheetTools({ tool, register, rows, visible, selecte
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const [fields, setFields] = useState(visible);
+  const [columnPage, setColumnPage] = useState(0);
   const [scope, setScope] = useState(selected.length ? 'selected' : 'all');
   const [field, setField] = useState<Column>('make');
   const [operation, setOperation] = useState('replace');
@@ -61,18 +75,31 @@ export default function AssetSheetTools({ tool, register, rows, visible, selecte
     onRows(rows.map((r, i) => indexes.has(i) ? { ...r, [field]: nextValue } : r), field);
     onClose();
   }
-  return createPortal(<dialog ref={dialog} className={`${styles.modal} ${styles.sheetToolDialog}`} aria-labelledby="asset-sheet-tool-title"
+  const toolStyle = tool.kind === 'add' ? [styles.detailPicker, styles.marketplaceChoiceModal, styles.columnPicker].join(' ')
+    : tool.kind === 'columns' ? styles.columnsDialog : '';
+  return createPortal(<dialog ref={dialog} className={`${styles.modal} ${styles.sheetToolDialog} ${toolStyle}`} aria-labelledby="asset-sheet-tool-title"
     onCancel={e => { e.preventDefault(); onClose(); }}>
     <header className={styles.sheetToolHeader}><div><h2 ref={heading} tabIndex={-1} id="asset-sheet-tool-title">{title}</h2><p>{register}</p></div>
       <ShareModalCloseButton aria-label={'Close ' + title} onClick={onClose} /></header>
     <div className={styles.sheetToolBody}>
-      {tool.kind === 'add' && <div className={styles.detailFieldChoices}>{columns.filter(k => !visible.includes(k)).map(k =>
-        <button key={k} type="button" onClick={() => addColumn(k)}>{assetColumns[k]}</button>)}</div>}
+      {tool.kind === 'add' && <div className={styles.detailPickerChoices}>{columns.filter(k => !visible.includes(k)).map(k =>
+        <button key={k} type="button" data-detail={k} aria-label={assetColumns[k]} onClick={() => addColumn(k)}>
+          <DetailIcon kind={fieldPresentation[k].icon} /><span><strong>{assetColumns[k]}</strong><small>{fieldPresentation[k].hint}</small></span>
+        </button>)}</div>}
       {tool.kind === 'columns' && <>
-        <p>Choose the columns to show. Hidden columns keep their values.</p>
-        <div className={styles.sheetColumnChoices}>{columns.map(k => <label key={k}>
-          <input type="checkbox" checked={fields.includes(k)} disabled={k === 'title'} onChange={e => setFields(e.target.checked ? [...fields, k] : fields.filter(f => f !== k))} />{assetColumns[k]}
-        </label>)}</div>
+        <div className={styles.columnIntro}><p>Choose which columns to show.</p><span>Hidden values are kept.</span></div>
+        <div className={styles.manageColumns}>{columns.slice(columnPage * 6, (columnPage + 1) * 6).map(k => {
+          const count = rows.filter(r => r[k].trim()).length;
+          return <div key={k} className={styles.manageColumnRow}><label>
+            <input type="checkbox" aria-label={assetColumns[k]} checked={fields.includes(k)} disabled={k === 'title'} onChange={e => setFields(e.target.checked ? [...fields, k] : fields.filter(f => f !== k))} />
+            <span><strong>{assetColumns[k]}</strong><small>{k === 'title' ? 'Always visible' : count + (count === 1 ? ' asset with a value' : ' assets with values')}</small></span>
+          </label></div>;
+        })}</div>
+        <nav className={styles.bulkPager} aria-label="Column pages">
+          <button disabled={columnPage === 0} onClick={() => setColumnPage(columnPage - 1)}>Previous columns</button>
+          <span>{columnPage + 1} / {Math.ceil(columns.length / 6)}</span>
+          <button disabled={(columnPage + 1) * 6 >= columns.length} onClick={() => setColumnPage(columnPage + 1)}>Next columns</button>
+        </nav>
       </>}
       {tool.kind === 'row' && row && (remove ? <p>Remove {assetTitle(row) || 'row ' + (tool.index + 1)} from this draft sheet?</p> :
         <div className={styles.sheetToolFields}>{visible.map(k => <label key={k}>{assetColumns[k]}
