@@ -9304,7 +9304,7 @@ export default function AssetRegisterClient({
   const isPagedAssetDetails = Boolean(editingAsset) && manualAssetStep === 2 && !showAssetUpdateMenu;
   useEffect(() => {
     if (!isPagedAssetDetails || assetDetailFocusTarget) return;
-    const frame = requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-details-page-heading]')?.focus({ preventScroll: true }));
+    const frame = requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-details-page]')?.focus({ preventScroll: true }));
     return () => cancelAnimationFrame(frame);
   }, [isPagedAssetDetails, assetDetailsPage]);
 
@@ -18259,7 +18259,7 @@ export default function AssetRegisterClient({
                       {assetDraft.title.trim() ||
                         (editingAsset ? editingAsset.title : `Add ${selectedManualAssetType.label.toLowerCase()}`)}
                     </h3>
-                    {!editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : assetUpdateMenuEnabled ? <p>{ASSET_FORM_SECTION_TABS.find((section) => section.step === manualAssetStep)?.label}</p> : null}
+                    {!editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : isPagedAssetDetails ? <p>Year Model: {editingAsset.yearModel || 'Not recorded'} • Usage: {buildAssetUsageValue(editingAsset)} • Condition: {conditionLabel(editingAsset.condition)}</p> : assetUpdateMenuEnabled ? <p>{ASSET_FORM_SECTION_TABS.find((section) => section.step === manualAssetStep)?.label}</p> : null}
                   </div>
                 </div>
               )}
@@ -18410,11 +18410,11 @@ export default function AssetRegisterClient({
                       </section>
                     ) : null}
 
-                    {isPagedAssetDetails && <div className={updateStyles.pageHeading}>
-                      <h4 tabIndex={-1} data-details-page-heading>{assetDetailsPages[assetDetailsPageIndex].label}</h4>
-                      <span>{assetDetailsPageIndex + 1} of {assetDetailsPages.length}</span>
-                    </div>}
-                    <div className={`${styles.assetFormDetailsStack} ${updateStyles.detailsStack}`} data-details-page={isPagedAssetDetails ? assetDetailsPages[assetDetailsPageIndex].id : undefined}>
+                    <div className={`${styles.assetFormDetailsStack} ${updateStyles.detailsStack}`}
+                      data-details-page={isPagedAssetDetails ? assetDetailsPages[assetDetailsPageIndex].id : undefined}
+                      role={isPagedAssetDetails ? 'group' : undefined}
+                      aria-label={isPagedAssetDetails ? assetDetailsPages[assetDetailsPageIndex].label : undefined}
+                      tabIndex={isPagedAssetDetails ? -1 : undefined}>
                       <div className={styles.assetTitleRow} data-details-section="identity">
                         <label className={`${styles.field} ${styles.manualTitleField}`} ref={node => {if(node) node.inert = Boolean(desktopAccess && !(desktopAccess.data.permissions.editDetails));}} data-access-restricted={desktopAccess && !(desktopAccess.data.permissions.editDetails) ? "true" : undefined}>
                           <span>Asset title</span>
