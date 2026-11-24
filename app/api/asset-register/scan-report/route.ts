@@ -1,4 +1,5 @@
 import { listMyInvoices, type MyInvoiceRecord } from '../../../../lib/my-invoices';
+import { teamCanAccessAsset } from '../../../../lib/team-access-policy';
 import { getDesktopScope } from '../../../../lib/desktop-workspace';
 import { meteredReport } from '../../../../lib/business-report-response';
 import { requireLiveSharedAsset } from '../../../../lib/live-shared-asset-access';
@@ -4175,9 +4176,9 @@ export async function GET(request: NextRequest) {
   let maintenanceCosts: MyInvoiceRecord[] = [];
   if (reportKind === 'maintenance' && mayReadCosts && (!ownerAppAccess || ownerAppCan(ownerAppAccess, 'manage_finance'))) {
     const desktop = await getDesktopScope(request.nextUrl.searchParams.get('desktopMembershipId') || undefined);
-    if (!desktop || (desktop.grant.ownerId === ownerUserId && desktop.grant.permissions.viewCosts && desktop.grant.scope === 'all')) {
+    if (!desktop || (desktop.grant.ownerId === ownerUserId && desktop.grant.permissions.viewCosts)) {
       const rows = await listMyInvoices(ownerUserId, { assetId: groupId ? null : assetId, year: reportYear, month: reportMonth });
-      const ids = new Set(reportAssets.map(item => item.id));
+      const ids = new Set(reportAssets.filter(item => !desktop || teamCanAccessAsset(desktop.grant, item)).map(item => item.id));
       maintenanceCosts = rows.filter(row => ids.has(row.assetId) && (
         (row.costCategory === 'repair' && maintenanceReportType !== 'serviced') ||
         (row.costCategory === 'service' && maintenanceReportType !== 'repaired')
