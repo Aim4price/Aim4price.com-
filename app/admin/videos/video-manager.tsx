@@ -7,7 +7,7 @@ import { tutorialCatalogue, tutorialPageHref, type TutorialAudience } from '../.
 import type { VideoSlot } from '../../../lib/tutorial-videos';
 import { youtubeEmbed } from '../../../lib/tutorial-video-policy';
 import styles from './videos.module.css';
-export default function VideoManager({initialSlots, initialHover = {dealer:{},business:{}}}:{initialSlots:VideoSlot[]; initialHover?:HoverRecordings}){
+export default function VideoManager({initialSlots, initialHover = {owner:{},business:{}}}:{initialSlots:VideoSlot[]; initialHover?:HoverRecordings}){
  const [hoverMode,setHoverMode]=useState(false);
  const [hover,setHover]=useState(initialHover);
  const [slots,setSlots]=useState(initialSlots),[audience,setAudience]=useState<TutorialAudience>('owners'),[feature,setFeature]=useState('welcome'),[query,setQuery]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[confirm,setConfirm]=useState<'publish'|'unpublish'|'discard'|null>(null);
