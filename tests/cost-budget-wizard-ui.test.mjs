@@ -35,7 +35,11 @@ test('spending budget uses a guided four-step flow with a dedicated period step'
 
 test('coverage uses the Fuel Ledger saved-asset picker design with multi-select', () => {
   assert.match(budgetModal, /<strong>Choose assets<\/strong>/);
-  assert.match(fuelClient, /<h2>[\s\S]*?: 'Choose Saved Assets'/);
+  for (const picker of [fuelClient, budgetModal]) {
+    assert.match(picker, /data-asset-choice-modal="true"/);
+    assert.match(picker, /data-asset-choice-toolbar="true"/);
+    assert.match(picker, /data-asset-choice-row="true"/);
+  }
   assert.match(budgetModal, /<h2 id="budget-scope-picker-title">Choose Saved Assets<\/h2>/);
   assert.match(budgetModal, /styles\.pickerToolbar/);
   assert.match(budgetModal, /styles\.budgetAssetPickerToolbar/);
@@ -124,13 +128,23 @@ test('limit validation happens before review and the review preserves every choi
   assert.match(client, /budgetWarningValue <= 99/);
   assert.match(client, /if \(!budgetLimitIsValid\)[\s\S]*?setBudgetFormError/);
   assert.match(budgetModal, /selectedBudgetAssets.length === 1 \? 'Asset' : 'Assets'/);
-  for (const label of ['Period', 'Alert at', 'Fuel costs']) {
+  for (const label of ['Period', 'Alert at', 'Fuel slip costs']) {
     assert.ok(budgetModal.includes(`<dt>${label}</dt>`));
   }
   assert.match(budgetModal, /'Monthly budget' : 'Annual budget'/);
   assert.match(budgetModal, /budgetAmountValue \* budgetWarningValue \/ 100/);
   assert.match(budgetModal, /'Included' : 'Excluded'/);
 
+});
+
+test('budget scope and amount distinguish per-asset limits from one shared register limit', () => {
+  assert.match(budgetModal, /A separate limit per asset/);
+  assert.match(budgetModal, /Whole register[\s\S]*?One shared spending limit/);
+  assert.match(budgetModal, /registerId: register\.value, assetId: 'all'/);
+  assert.match(client, /assetId: selectedIds\[0\],\s*registerId: ''/);
+  assert.match(budgetModal, /selectedBudgetAssets\.length > 1 \? 'Amount per asset'/);
+  assert.match(budgetModal, /budgetDraft\.registerId \? 'Register'/);
+  assert.match(client, /assetIdsToSave: Array<string \| null> = budgetDraft\.registerId \? \[null\]/);
 });
 
 test('multi-asset creation saves one independently editable budget per selected asset', () => {
@@ -147,7 +161,7 @@ test('warning-level asset budget cards and notifications are red priority alerts
   assert.match(styles, /\.budgetCardWarning\s*\{[^}]*--budget-accent:\s*#b42318;[^}]*--budget-accent-soft:\s*#fff0ef;/);
   assert.match(styles, /\.budgetCardWarning\.budgetCardFocused/);
 
-  assert.match(assetRegisterClient, /fetch\('\/api\/my-invoices\/budgets'/);
+  assert.match(assetRegisterClient, /ownerFetch\('\/api\/my-invoices\/budgets'/);
   assert.match(assetRegisterClient, /costBudgetStatusByAssetId\[asset\.id\]/);
   assert.match(assetRegisterClient, /styles\.assetCardBudgetWarning/);
   assert.match(assetRegisterClient, /data-cost-budget-status=\{costBudgetStatus \|\| undefined\}/);

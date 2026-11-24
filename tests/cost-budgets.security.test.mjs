@@ -317,6 +317,7 @@ test('cost entry chooser preserves record, review and asset deep links behind ow
     '../../lib/desktop-workspace': {getDesktopScope: async () => null},
     'next/navigation': {redirect: path => {throw new Error(`redirect:${path}`);}},
     '../../lib/account-access': {requireActivePageAccess: async () => ({session:{user:{id:'owner'}}})},
+    '../../lib/accounting-pilot': {isAccountingPilotSession: () => false},
     '../../lib/account-profile': {getAccountProfile: async () => ({accountType})},
     '../../lib/internal-return-path': {
       readSingleSearchParam: value => String(Array.isArray(value) ? value[0] ?? '' : value ?? '').trim(),
