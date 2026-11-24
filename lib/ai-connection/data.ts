@@ -48,7 +48,7 @@ function tool(
   };
 }
 export const READ_TOOLS = [
-  tool('read_budgets', 'Read current saved monthly/annual budgets, limits, warning thresholds and full current-period accepted spending including VAT. Account-wide and asset budgets overlap. No historical versions or forecasts.', { ...pageProperties, assetId: periodProperties.assetId }),
+  tool('read_budgets', 'Read current saved monthly/annual budgets, limits, warning thresholds and full current-period accepted spending on each budget’s saved VAT basis. Account-wide and asset budgets overlap. No historical versions or forecasts.', { ...pageProperties, assetId: periodProperties.assetId }),
   tool('read_maintenance', 'Read saved maintenance schedules and completed/cancelled records, due dates/usage, recurring settings and completion notes. Due status uses saved readings; unknown is not evidence of no maintenance due. Also read maintenance activity for scan/field history.', { ...pageProperties, assetId: periodProperties.assetId }),
   tool('read_maintenance_activity', 'Read recorded scan/field maintenance activity for a date range. This can overlap with completed schedules; do not double count work. No photos or documents.', { ...pageProperties, ...periodProperties }, ['from', 'to']),
   tool('read_problems', 'Read logged problem notes and saved acknowledgement/resolution timestamps for a date range. Acknowledgement alone is not proof of repair.', { ...pageProperties, ...periodProperties }, ['from', 'to']),

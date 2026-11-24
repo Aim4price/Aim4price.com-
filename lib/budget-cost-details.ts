@@ -1,5 +1,6 @@
 import type { TrackedBudget } from './budget-tracking';
 export type BudgetCost = {
+  subtotalExVat?: number | null; vatAmount?: number | null;
   costCategory?: string; registerId?: string;
   id: string; assetId: string; assetTitle: string; supplierName: string;
   invoiceNumber: string; invoiceDate: string | null; totalIncVat: number; source: string;

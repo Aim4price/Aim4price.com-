@@ -47,9 +47,9 @@ test('budget asset choices include every accessible saved asset regardless of fu
   assert.doesNotMatch(collectionRoute, /workUseExcluded|work_use_excluded|fuel_asset_exclusions/);
 });
 
-test('progress uses the same incurred, owner-visible VAT-inclusive totals as Cost Ledger', () => {
+test('progress uses owner-visible incurred costs on the saved VAT basis', () => {
   assert.match(budgets, /timeZone: 'Africa\/Johannesburg'/);
-  assert.match(budgets, /sum\(invoice\.total_inc_vat\)/);
+  assert.match(budgets, /when budget\.include_vat then invoice\.total_inc_vat/);
   assert.match(budgets, /invoice\.invoice_date is not null/);
   assert.match(budgets, /invoice\.invoice_date >=/);
   assert.match(budgets, /invoice\.invoice_date </);

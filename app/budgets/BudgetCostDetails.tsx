@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import type { TrackedBudget } from '../../lib/budget-tracking';
 import { allocatedBudgetCosts, budgetCostsUrl, type BudgetCost } from '../../lib/budget-cost-details';
+import { budgetCostAmount } from '../../lib/ownership-budget-tracker';
 import BudgetDetailIcon from '../../components/BudgetDetailIcon';
 import styles from './page.module.css';
 const money = (value: number) => `R ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/,/g, ' ').replace('.', ',')}`;
@@ -37,16 +38,16 @@ export default function BudgetCostDetails({ budget }: { budget: TrackedBudget })
     <div className={styles.detailsMeta}>
       <span><BudgetDetailIcon kind="calendar" />{budget.periodLabel}</span>
       <span><BudgetDetailIcon kind="fuel" />Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span>
-      <span><BudgetDetailIcon kind="receipt" />Amounts incl. VAT</span>
+      <span><BudgetDetailIcon kind="receipt" />Costs {budget.includeVat === false ? 'excl.' : 'incl.'} VAT</span>
     </div>
     {loading ? <p role="status">Loading allocated costs…</p> : error ? <div role="alert"><p>{error}</p><button className={styles.retryButton} onClick={() => setAttempt(value => value + 1)}>Try again</button></div> : costs.length ? <>
       <ul className={styles.costList} aria-label="Allocated costs">
         {costs.map(cost => <li key={cost.id} className={styles.costLine}>
           <div><strong>{cost.supplierName || 'Unknown supplier'}</strong><p>{[date(cost.invoiceDate), cost.invoiceNumber && `Ref ${cost.invoiceNumber}`, !budget.assetId && cost.assetTitle].filter(Boolean).join(' · ')}</p></div>
-          <strong>{money(cost.totalIncVat)}</strong>
+          <strong>{money(budgetCostAmount(cost, budget.includeVat))}</strong>
         </li>)}
       </ul>
-      <div className={styles.costTotal}><span>{costs.length} {costs.length === 1 ? 'cost' : 'costs'}</span><strong>Total {money(costs.reduce((sum,cost) => sum + cost.totalIncVat, 0))}</strong></div>
+      <div className={styles.costTotal}><span>{costs.length} {costs.length === 1 ? 'cost' : 'costs'}</span><strong>Total {money(costs.reduce((sum,cost) => sum + budgetCostAmount(cost, budget.includeVat), 0))}</strong></div>
     </> : <p className={styles.detailsNote}>No costs allocated to this budget for this period.</p>}
   </>;
 }

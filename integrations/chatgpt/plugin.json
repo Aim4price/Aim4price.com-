@@ -50,7 +50,7 @@
               "description": "Budget progress",
               "prompt": "For each monthly budget, how much have I spent and how much remains?",
               "tools_triggered": "read_budgets",
-              "expected_behavior": "Report each current monthly budget separately, including VAT. Do not sum overlapping budgets."
+              "expected_behavior": "Report each current monthly budget separately using its saved VAT setting. Do not sum overlapping budgets."
             },
             {
               "description": "Fuel issues",

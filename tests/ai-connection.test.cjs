@@ -133,7 +133,7 @@ before(async () => {
  CREATE TABLE account_profiles(user_id text PRIMARY KEY,account_type text,account_status text,business_name text);
  CREATE TABLE sharing_account_access(user_id text PRIMARY KEY,plan text);
  CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text,title text,brand_name text,model_name text,selected_value_ex_vat numeric,serial_number text,updated_at timestamptz);
- CREATE TABLE asset_invoices(id uuid PRIMARY KEY,user_id text,asset_register_item_id uuid,invoice_date date,supplier_name text,invoice_number text,total_inc_vat numeric,vat_amount numeric,source text,created_by_dealer_user_id text,owner_storage_status text);
+ CREATE TABLE asset_invoices(id uuid PRIMARY KEY,user_id text,asset_register_item_id uuid,invoice_date date,supplier_name text,invoice_number text,total_inc_vat numeric,vat_amount numeric,source text,created_by_dealer_user_id text,owner_storage_status text,subtotal_ex_vat numeric);
  CREATE TABLE asset_invoice_blocks(id uuid PRIMARY KEY,invoice_id uuid,block_type text,total_inc_vat numeric);
  CREATE TABLE fuel_slips(id uuid PRIMARY KEY,user_id text,record_status text,asset_register_item_id uuid,target_type text,document_date date,supplier_name text,fuel_type text,litres numeric,price_per_litre numeric,total_amount numeric,vat_included boolean,hour_meter_reading numeric,odometer_reading numeric,review_required boolean);
  CREATE TABLE fuel_storage_events(id uuid PRIMARY KEY,user_id text,event_type text,source_type text,fuel_slip_id uuid,asset_register_item_id text,storage_id uuid,litres numeric,issue_at timestamptz,created_at timestamptz);`);
@@ -492,7 +492,14 @@ test('budget progress covers full current period, respects fuel settings and nev
     assert.equal(second.records[0].remaining,'85');
     assert.equal(second.records[0].status,'warning');
     assert.equal(second.records[0].include_fuel_slip_costs,false);
-  } finally { for(const row of dates) await db.query('UPDATE asset_invoices SET invoice_date=$1::date WHERE id=$2',[row.date,row.id]); }
+    assert.equal(second.records[0].include_vat,true);
+    await db.exec('ALTER TABLE asset_cost_budgets ADD COLUMN include_vat boolean NOT NULL DEFAULT true');
+    await db.query('UPDATE asset_cost_budgets SET include_vat=false WHERE asset_register_item_id=$1',[assetA]);
+    const net = (await call('read_budgets',{assetId:assetA})).structuredContent.records[0];
+    assert.equal(net.include_vat,false);
+    assert.equal(net.spent,'100');
+    assert.equal(net.remaining,'100');
+  } finally { await db.exec('ALTER TABLE asset_cost_budgets DROP COLUMN IF EXISTS include_vat'); for(const row of dates) await db.query('UPDATE asset_invoices SET invoice_date=$1::date WHERE id=$2',[row.date,row.id]); }
 });
 test('maintenance exposes schedules/completion and calculates due dates/usage only for owned assets',async()=>{
   const result=(await call('read_maintenance')).structuredContent;

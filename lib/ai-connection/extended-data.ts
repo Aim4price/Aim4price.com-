@@ -43,24 +43,27 @@ export async function runExtendedRead(db: Reader, userId: string, name: string, 
     const total = Number((await db.query(`SELECT count(*) FROM public.asset_cost_budgets b WHERE ${where}`, scope)).rows[0].count);
     const records = (await db.query(`WITH budgets AS (
       SELECT b.id,b.asset_register_item_id AS asset_id,b.period,b.amount,b.warning_percent,b.include_fuel_slip_costs,b.revision,b.updated_at,
+      coalesce((to_jsonb(b)->>'include_vat')::boolean,true) AS include_vat,
       date_trunc(CASE WHEN b.period='monthly' THEN 'month' ELSE 'year' END,$3::date)::date AS start_date,
       (date_trunc(CASE WHEN b.period='monthly' THEN 'month' ELSE 'year' END,$3::date) + CASE WHEN b.period='monthly' THEN interval '1 month' ELSE interval '1 year' END)::date AS end_date
       FROM public.asset_cost_budgets b WHERE ${where} ORDER BY b.id LIMIT $4 OFFSET $5
-    ) SELECT b.id,b.asset_id,b.period,b.amount::text,b.warning_percent,b.include_fuel_slip_costs,b.revision,b.updated_at,
+    ) SELECT b.id,b.asset_id,b.period,b.amount::text,b.warning_percent,b.include_vat,b.include_fuel_slip_costs,b.revision,b.updated_at,
       b.start_date::text AS period_start,b.end_date::text AS period_end_exclusive,
       s.missing_amount_count,s.spent::text, greatest(b.amount-s.spent,0)::text AS remaining,greatest(s.spent-b.amount,0)::text AS over_by,
       round(s.spent/nullif(b.amount,0)*100,1)::text AS percent_used,
       CASE WHEN s.missing_amount_count>0 THEN 'incomplete' WHEN s.spent>=b.amount THEN 'over_budget' WHEN round(s.spent/nullif(b.amount,0)*100,1)>=b.warning_percent THEN 'warning' ELSE 'on_track' END AS status
       FROM budgets b CROSS JOIN LATERAL (
-        SELECT count(*) FILTER (WHERE i.total_inc_vat IS NULL) AS missing_amount_count,
-          greatest(coalesce(sum(i.total_inc_vat),0),0) AS spent FROM public.asset_invoices i
+        SELECT count(*) FILTER (WHERE cost.amount IS NULL) AS missing_amount_count,
+          greatest(coalesce(sum(cost.amount),0),0) AS spent FROM public.asset_invoices i
+        CROSS JOIN LATERAL (VALUES (CASE WHEN b.include_vat THEN i.total_inc_vat
+          ELSE coalesce(i.subtotal_ex_vat,i.total_inc_vat-coalesce(i.vat_amount,0)) END)) cost(amount)
         WHERE i.user_id=$1 AND (b.asset_id IS NULL OR i.asset_register_item_id=b.asset_id)
         AND i.invoice_date>=b.start_date AND i.invoice_date<b.end_date
         AND (b.include_fuel_slip_costs OR coalesce(i.source,'manual')<>'fuel_slip')
         AND (i.created_by_dealer_user_id IS NULL OR i.owner_storage_status IN ('owner','approved'))
       ) s ORDER BY b.id`, [...scope, today, args.limit, args.offset])).rows;
     return { available: true, asOf: today, currency: 'ZAR', records, pagination: page(args,total),
-      note: 'Current saved monthly/annual budgets and full current-period accepted costs including VAT. Spending and remaining amounts use recorded values only; missing amounts are unknown and mark the status incomplete. Undated costs cannot be assigned to a budget period. Fuel follows each budget setting. Account-wide and asset budgets overlap; never add their allowances or spending together. An asset filter excludes account-wide budgets. Historical budget versions and forecasts are not returned.' };
+      note: 'Current saved monthly/annual budgets and full current-period accepted costs on each budget’s saved VAT basis. Spending and remaining amounts use recorded values only; missing amounts are unknown and mark the status incomplete. Undated costs cannot be assigned to a budget period. Fuel follows each budget setting. Account-wide and asset budgets overlap; never add their allowances or spending together. An asset filter excludes account-wide budgets. Historical budget versions and forecasts are not returned.' };
   }
   if (name === 'read_maintenance') {
     const from = `public.asset_maintenance_records m JOIN public.asset_register_items a ON a.id=m.asset_register_item_id AND a.user_id=m.user_id`;

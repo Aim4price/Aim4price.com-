@@ -168,6 +168,7 @@ type CostBudgetProgress = {
   warningPercent: number;
   warningAmount: number;
   categories: string[];
+  includeVat: boolean;
   includeFuelSlipCosts: boolean;
   revision: number;
   periodKey: string;
@@ -190,6 +191,7 @@ type CostBudgetDraft = {
   amount: string;
   warningPercent: string;
   categories: string[];
+  includeVat: boolean;
   includeFuelSlipCosts: boolean;
 };
 
@@ -384,6 +386,7 @@ function buildEmptyCostBudgetDraft(assetId = ''): CostBudgetDraft {
     amount: '',
     warningPercent: '80',
     registerId: '', categories: [],
+    includeVat: true,
     includeFuelSlipCosts: true,
   };
 }
@@ -2149,6 +2152,7 @@ export default function MyInvoicesClient({
       amount: formatInvoiceMoneyInput(formatMoneyWithCents(budget.amount)),
       warningPercent: String(budget.warningPercent),
       registerId: budget.registerId || '', categories: budget.categories ?? [],
+      includeVat: budget.includeVat !== false,
       includeFuelSlipCosts: budget.includeFuelSlipCosts,
     });
     setBudgetSelectedAssetIds(budget.assetId ? [budget.assetId] : []);
@@ -2274,6 +2278,7 @@ export default function MyInvoicesClient({
               amount: budgetDraft.amount,
               warningPercent: Number(budgetDraft.warningPercent),
               registerId: budgetDraft.registerId || null, categories: budgetDraft.categories,
+              includeVat: budgetDraft.includeVat,
               includeFuelSlipCosts: budgetDraft.includeFuelSlipCosts,
             }),
           });
@@ -3859,6 +3864,7 @@ export default function MyInvoicesClient({
                           <div className={styles.budgetMeta}>
                             <span>Alert at {budget.warningPercent}%</span>
                             <span>{categorySummary(budget.categories)}</span>
+                            <span>{budget.includeVat === false ? 'Excl. VAT' : 'Incl. VAT'}</span>
                             <span>Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span>
                           </div>
                         </article>
@@ -4091,9 +4097,20 @@ export default function MyInvoicesClient({
 
                 {budgetWizardStep === 4 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-limit-title">
-                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <h3 ref={budgetWizardStepHeadingRef} id="budget-limit-title" tabIndex={-1}>Set the spending limit</h3>
-                      <p>Amounts include VAT.</p>
+                    <div className={styles.budgetLimitHeading}>
+                      <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                        <h3 ref={budgetWizardStepHeadingRef} id="budget-limit-title" tabIndex={-1}>Set the spending limit</h3>
+                        <p>{budgetDraft.includeVat ? 'Count costs including VAT.' : 'Count costs excluding VAT.'}</p>
+                      </div>
+                      <label className={`${styles.budgetFuelToggle} ${styles.budgetVatToggle}`}>
+                        <input type="checkbox" role="switch" checked={budgetDraft.includeVat} disabled={budgetSaving}
+                          onChange={(event) => {
+                            const includeVat = event.currentTarget.checked;
+                            setBudgetDraft(current => ({ ...current, includeVat }));
+                          }} />
+                        <span aria-hidden="true" />
+                        <strong>Include VAT</strong>
+                      </label>
                     </div>
 
                     <div className={styles.budgetLimitGrid}>
@@ -4154,7 +4171,7 @@ export default function MyInvoicesClient({
                       </div>
                       <div className={reviewStyles.amount}>
                         <dt>{budgetDraft.period === 'monthly' ? 'Monthly budget' : 'Annual budget'}</dt>
-                        <dd>{formatMoney(budgetAmountValue)}{selectedBudgetAssets.length > 1 ? ' per asset' : ''}</dd>
+                        <dd>{formatMoney(budgetAmountValue)}{selectedBudgetAssets.length > 1 ? ' per asset' : ''} <small>{budgetDraft.includeVat ? 'Incl. VAT' : 'Excl. VAT'}</small></dd>
                       </div>
                       <div className={reviewStyles.alert}>
                         <dt>Alert at</dt>
