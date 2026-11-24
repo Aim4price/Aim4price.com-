@@ -99,7 +99,7 @@ function InviteActions({inviteLink,showLabels=false}:{inviteLink:string;showLabe
 
 export function ShareAim4priceButton({inviteLink,className,icon}:{inviteLink:string;className:string;icon:ReactNode}) {
  const [open,setOpen]=useState(false), titleId=useId();
- return <><button type="button" className={className} aria-haspopup="dialog" onClick={()=>setOpen(true)}>{icon}<strong>Share Aim4price</strong></button>
+ return <><button type="button" className={className} aria-haspopup="dialog" data-tooltip="Invite someone to Aim4price with your personal link." data-tooltip-style="description" onClick={()=>setOpen(true)}>{icon}<strong>Share Aim4price</strong></button>
  {open && <ShareDisclosureDialog title="Share Aim4price" className={creditStyles.shareDialog} titleId={titleId} descriptionId={`${titleId}-description`} closeLabel="Close" onClose={()=>setOpen(false)}>
  <p id={`${titleId}-description`} className={creditStyles.shareDescription}>People who join through your link will see your name at signup.</p>
  <InviteActions inviteLink={inviteLink} showLabels />

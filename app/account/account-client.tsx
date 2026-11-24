@@ -1686,7 +1686,7 @@ export default function AccountClient({
                       <button
                         type="button"
                         className={styles.quickActionButton}
-                        onClick={openAssetTransfersPage} data-tooltip="Claim an asset or send it to another account." data-tooltip-style="description"
+                        onClick={openAssetTransfersPage} data-tooltip="Claim an asset or send it to a different Aim4price account." data-tooltip-style="description"
                       >
                         <QuickActionIcon name="claim" />
                         <strong>Claim or send an asset</strong>
