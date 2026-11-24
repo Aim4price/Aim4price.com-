@@ -18,17 +18,30 @@ export default function Page(){const [open,setOpen]=useState(true);return <><but
  await click('Enter cost manually');await page.waitForSelector('#cost-category-title');
  const layout = await page.$eval('[aria-labelledby="cost-category-title"]', dialog => {
   const tiles = [...dialog.querySelectorAll('[data-category]')].map(el=>el.getBoundingClientRect());
+  const labels = [...dialog.querySelectorAll('[data-category] strong')];
+  const singleLine = labels.every(label => { const range=document.createRange();range.selectNodeContents(label);return range.getClientRects().length===1 && label.scrollWidth<=label.clientWidth+1; });
   const bounds = dialog.getBoundingClientRect();
   const close = dialog.querySelector('[data-modal-close]').getBoundingClientRect();
-  return {count:tiles.length, columns:new Set(tiles.map(tile=>tile.left)).size, rows:new Set(tiles.map(tile=>tile.top)).size,
+  return {count:tiles.length, singleLine, columns:new Set(tiles.map(tile=>tile.left)).size, rows:new Set(tiles.map(tile=>tile.top)).size,
    closeInside:close.left>=bounds.left && close.right<=bounds.right && close.top>=bounds.top && close.bottom<=bounds.bottom,
    fits:dialog.scrollWidth<=dialog.clientWidth+1 && dialog.scrollHeight<=dialog.clientHeight+1};
  });
- assert.deepEqual(layout,{count:16,columns:4,rows:4,closeInside:true,fits:true});
+ assert.deepEqual(layout,{count:16,singleLine:true,columns:4,rows:4,closeInside:true,fits:true});
  await click('Services');await page.waitForFunction(()=>document.body.textContent.includes('Add the invoice details'));
- await page.$$eval('label',nodes=>{const label=nodes.find(n=>n.querySelector('span')?.textContent==='Total incl. VAT');const input=label.querySelector('input');const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,'1150');input.dispatchEvent(new Event('input',{bubbles:true}));});
+ const numberFields = await page.$$('form input:is([inputmode="decimal"],[inputmode="numeric"]):enabled');
+ assert.equal(numberFields.length,4);
+ for (const field of numberFields) {
+  await field.click({clickCount:3});
+  await field.type('1123');
+  const metrics = await field.evaluate(el=>({value:el.value,scroll:el.scrollLeft,padding:parseFloat(getComputedStyle(el).paddingInlineStart)}));
+  assert.equal(metrics.value,'1 123');
+  assert.equal(metrics.scroll,0);
+  assert(metrics.padding>=3);
+ }
  await page.screenshot({path:'/tmp/shared-owner-manual-cost.png'});
- await click('Next');await page.waitForFunction(()=>document.body.textContent.includes('Describe the work'));await click('Next');
+ await click('Next');await page.waitForFunction(()=>document.body.textContent.includes('Describe the work'));
+ const notesFillRow=await page.$eval('textarea[placeholder="Additional notes"]',el=>Math.abs(el.getBoundingClientRect().width-el.closest('label').parentElement.getBoundingClientRect().width)<2);
+ assert(notesFillRow);await click('Next');
  // Manual costs now offer an optional supporting document before review.
  await page.waitForFunction(()=>document.body.textContent.includes('Supporting document'));
  await click('Skip for now');await page.waitForSelector('[role="dialog"][aria-label="Review cost"]');await click('Save cost');await page.waitForFunction(()=>document.body.textContent.includes('Cost record saved to the asset.'));
