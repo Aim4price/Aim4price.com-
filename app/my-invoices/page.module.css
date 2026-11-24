@@ -7286,6 +7286,9 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
 .accountCostModal.manualCostWizardModal.polishedCostEntry .textAreaGrid {
   gap: 1.25rem 1.65rem !important;
 }
+.accountCostModal.manualCostWizardModal.polishedCostEntry .textAreaGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
 .accountCostModal.manualCostWizardModal.polishedCostEntry .textAreaGrid > label {
   padding: 0;
   border: 0;
