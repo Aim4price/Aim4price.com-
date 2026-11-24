@@ -1,9 +1,9 @@
 .overlay.overlay {
-  align-items: flex-start;
-  justify-content: flex-start;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
 }
 .dialog.dialog {
-  margin: auto;
+  margin: auto !important;
   flex-shrink: 0;
   box-sizing: border-box;
   z-index: 1;
