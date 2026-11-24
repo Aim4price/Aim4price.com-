@@ -79,7 +79,11 @@
 }
 
 .categoryOptions, .checks { display: grid; gap: .65rem; }
-.checks { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr)); }
+.categoryOptions { container-type: inline-size; }
+.checks { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+@container (min-width: 48rem) {
+  .checks { grid-template-columns: repeat(4, minmax(max-content, 1fr)); }
+}
 .categoryOptions button {
   display: flex;
   align-items: center;
