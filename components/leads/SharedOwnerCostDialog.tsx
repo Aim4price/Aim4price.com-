@@ -23,6 +23,6 @@ export default function SharedOwnerCostDialog({endpoint,assetTitle,onClose,onSav
   if(!asset||message)return <LeadActionDialog title="Add asset cost" assetTitle={assetTitle} onClose={onClose}><div className={styles.success}>{error?<p role="alert">{error}</p>:message?<><p role="status">{message}</p><button type="button" onClick={onClose}>Done</button></>:<p role="status">Loading cost options…</p>}</div></LeadActionDialog>;
   return <Suspense fallback={null}><OwnerCostWizard initialAssetId={asset.id} initialOpenAdd sharedFlow={{asset,allowanceEndpoint:`${endpoint}/allowance`,onClose,onSaved:saved,
     save:async(draft,file)=>{const form=new FormData();form.set('draft',JSON.stringify(draft));if(file)form.set('file',file);await send(endpoint,form);},
-    capture:async(file,note)=>{const form=new FormData();form.set('file',file);form.set('note',note);return (await send(`${endpoint}/capture`,form)).request;},
+    capture:async(file,note,category)=>{const form=new FormData();form.set('file',file);form.set('note',note);form.set('costCategory',category);return (await send(`${endpoint}/capture`,form)).request;},
   }}/></Suspense>;
 }

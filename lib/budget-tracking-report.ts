@@ -1,3 +1,4 @@
+import { categorySummary } from './cost-categories';
 import { budgetStatusLabel, type TrackedBudget } from './budget-tracking';
 import { REPORT_THEME_CSS } from './report-theme';
 import type { XlsxSheet } from './simple-xlsx';
@@ -11,7 +12,7 @@ export function buildBudgetReportHtml(budgets: TrackedBudget[], generated: strin
   .track { height: 9px; background: #e6eeea; border-radius: 8px; overflow: hidden; } .fill { height: 100%; background: #197454; } .warning { background: #a76b12; } .over_budget { background: #b44242; }
   footer { font-size: 11px; color: #60756d; } ${REPORT_THEME_CSS}
   </style></head><body><main class="reportPage"><header><strong>Aim4price</strong><h1>Budget Tracking Report</h1><p>${budgets.length} ${budgets.length === 1 ? 'budget' : 'budgets'} · Generated ${escape(generated)} · Amounts incl. VAT</p></header>
-  ${budgets.map(b => `<article><h2>${escape(b.assetTitle)}</h2><p>${b.period === 'monthly' ? 'Monthly' : 'Annual'} · ${escape(b.periodLabel)} · ${escape(budgetStatusLabel(b))}</p><dl><div><dt>Spent</dt><dd>${money(b.spent)}</dd></div><div><dt>Budget</dt><dd>${money(b.amount)}</dd></div><div><dt>${b.overBy > 0 ? 'Over budget' : 'Remaining'}</dt><dd>${money(b.overBy > 0 ? b.overBy : b.remaining)}</dd></div></dl><div class="track"><div class="fill ${escape(b.status)}" style="width:${Math.max(0,Math.min(100,b.percentUsed))}%"></div></div><p>${b.percentUsed}% used · Alert at ${b.warningPercent}% · Fuel ${b.includeFuelSlipCosts ? 'included' : 'excluded'}</p></article>`).join('')}
+  ${budgets.map(b => `<article><h2>${escape(b.assetTitle)}</h2><p>${b.period === 'monthly' ? 'Monthly' : 'Annual'} · ${escape(b.periodLabel)} · ${escape(categorySummary(b.categories))} · ${escape(budgetStatusLabel(b))}</p><dl><div><dt>Spent</dt><dd>${money(b.spent)}</dd></div><div><dt>Budget</dt><dd>${money(b.amount)}</dd></div><div><dt>${b.overBy > 0 ? 'Over budget' : 'Remaining'}</dt><dd>${money(b.overBy > 0 ? b.overBy : b.remaining)}</dd></div></dl><div class="track"><div class="fill ${escape(b.status)}" style="width:${Math.max(0,Math.min(100,b.percentUsed))}%"></div></div><p>${b.percentUsed}% used · Alert at ${b.warningPercent}% · Fuel ${b.includeFuelSlipCosts ? 'included' : 'excluded'}</p></article>`).join('')}
   <footer>Current budget periods. Actual spending comes from Cost Ledger records dated within each period. Budgets may overlap; their totals should not be added together.</footer></main></body></html>`;
 }
 export function buildBudgetWorkbook(budgets: TrackedBudget[], generated: string): XlsxSheet[] {
@@ -19,7 +20,7 @@ export function buildBudgetWorkbook(budgets: TrackedBudget[], generated: string)
     [{ value: 'Budget Tracking Report', style: 'title' }],
     [{ value: `Generated ${generated} · Amounts incl. VAT · Current budget periods`, style: 'subtitle' }],
     [{ value: 'Budgets may overlap. Do not add their totals together.', style: 'note' }],
-    ['Asset scope','Period','Current period','Budget','Spent','Remaining','Over budget','Used','Alert at','Fuel included','Status'].map(value => ({ value, style: 'tableHeader' })),
-    ...budgets.map(b => [b.assetTitle,b.period,b.periodLabel,...[b.amount,b.spent,b.remaining,b.overBy].map(value => ({ value, style: 'currency' as const })),{ value: b.percentUsed / 100, style: 'percent' as const },{ value: b.warningPercent / 100, style: 'percent' as const },b.includeFuelSlipCosts,budgetStatusLabel(b)]),
+    ['Asset scope','Period','Current period','Budget','Spent','Remaining','Over budget','Used','Alert at','Fuel included','Status','Categories'].map(value => ({ value, style: 'tableHeader' })),
+    ...budgets.map(b => [b.assetTitle,b.period,b.periodLabel,...[b.amount,b.spent,b.remaining,b.overBy].map(value => ({ value, style: 'currency' as const })),{ value: b.percentUsed / 100, style: 'percent' as const },{ value: b.warningPercent / 100, style: 'percent' as const },b.includeFuelSlipCosts,budgetStatusLabel(b),categorySummary(b.categories)]),
   ] }];
 }

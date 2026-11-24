@@ -1,3 +1,5 @@
+import { addBudgetForecasts } from './budget-expected';
+import { listAssetRegisters } from './asset-registers';
 import { NextResponse } from 'next/server';
 import { getDesktopScope } from './desktop-workspace';
 import { resolveOwnerWorkspaceContext, getWorkspaceAssetIds, assertWorkspaceAssetAccess } from './owner-workspace-access';
@@ -17,7 +19,8 @@ export async function teamBudgetResponse(request: Request, budgetId?: string): P
     const budgets = (await listCostBudgetsWithProgress(workspace.ownerUserId, {recordAlerts:false})).filter(budget => budget.assetId ? ids.has(budget.assetId) : scope.grant.scope === 'all');
     if (request.method === 'GET') {
       const assets = (await listMyInvoiceAssets(workspace.ownerUserId)).filter(asset => ids.has(asset.id)).map(asset => ({...asset,value:scope.grant.permissions.viewValues ? asset.value : 0}));
-      return NextResponse.json({ok:true,budgets,assets},{headers:{'Cache-Control':'private, no-store'}});
+      const registers = scope.grant.scope === 'all' ? (await listAssetRegisters(workspace.ownerUserId)).map(register => ({value:register.id,label:register.businessName})) : [];
+      return NextResponse.json({ok:true,budgets:await addBudgetForecasts(workspace.ownerUserId,budgets,assets),assets,registers},{headers:{'Cache-Control':'private, no-store'}});
     }
     if (budgetId && !budgets.some(budget => budget.id === budgetId)) return NextResponse.json({ok:false,error:'Budget unavailable.'},{status:404});
     if (request.method === 'DELETE') {

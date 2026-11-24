@@ -328,7 +328,7 @@ function renderBudgetSteps(steps: OwnershipBudgetStep[] = []): string {
       <span>${escapeHtml(step.budget.period === 'monthly' ? 'Monthly budget' : 'Annual budget')} · after this cost</span>
       <strong>${escapeHtml(label)}</strong>
       <svg viewBox="0 0 600 12" preserveAspectRatio="none" width="100%" height="12" role="img" aria-label="${escapeHtml(label)}"><rect width="600" height="12" rx="6" fill="#e5ecee"/><rect width="${Math.max(0, Math.min(100, step.percent)) * 6}" height="12" rx="6" fill="${colour}"/></svg>
-      <span>${escapeHtml(step.overBy > 0 ? `${formatMoneyWithCents(step.overBy)} over budget` : `${formatMoneyWithCents(step.remaining)} remaining`)}${step.excluded ? ' · Fuel excluded from this budget' : ''}</span>
+      <span>${escapeHtml(step.overBy > 0 ? `${formatMoneyWithCents(step.overBy)} over budget` : `${formatMoneyWithCents(step.remaining)} remaining`)}${step.excluded ? ' · Cost excluded from this budget' : ''}</span>
     </div>`;
   }).join('');
 }
@@ -1350,7 +1350,7 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
     for (const step of steps) budgetRows.push([...prefix,
       styled(step.budget.periodLabel, 'text'), styled(step.budget.amount, 'currency'), styled(step.spent, 'currency'),
       styled(step.remaining, 'currency'), styled(step.overBy, 'currency'), styled(step.percent / 100, 'percent'),
-      styled(`${step.overBy > 0 ? 'Over budget' : step.status === 'reached' ? 'Budget reached' : step.status === 'warning' ? 'Approaching limit' : 'Within budget'}${step.excluded ? ' · Fuel excluded' : ''}`, step.status === 'reached' ? 'statusBad' : step.status === 'warning' ? 'statusWarn' : 'statusGood'),
+      styled(`${step.overBy > 0 ? 'Over budget' : step.status === 'reached' ? 'Budget reached' : step.status === 'warning' ? 'Approaching limit' : 'Within budget'}${step.excluded ? ' · Cost excluded' : ''}`, step.status === 'reached' ? 'statusBad' : step.status === 'warning' ? 'statusWarn' : 'statusGood'),
     ]);
   }
   const fuelInvoices = fuelSlipInvoices(options);

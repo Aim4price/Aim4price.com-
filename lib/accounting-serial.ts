@@ -1,8 +1,14 @@
+import { costCategories } from './cost-categories.ts';
+
 // Preserve punctuation and leading zeroes. A labelled serial also supports purely numeric serials.
 export function assetForLine(description: string, assets: {title: string; serialNumber?: string | null}[]) {
   const label = /(?:^|\s)(?:S\/N|SERIAL(?:\s+(?:NO\.?|NUMBER))?|VIN)(?:\s*[:#]\s*|\s+)([^\s,;]+)/gi;
   const serials = Array.from(description.matchAll(label), match => match[1].toUpperCase());
   const tokens = description.toUpperCase().split(/[\s,;]+/);
+  for (const token of tokens) {
+    const code = costCategories.find(category => token.startsWith(category.code + '-'));
+    if (code) serials.push(token.slice(code.code.length + 1));
+  }
   const hits = assets.filter(asset => {
     const serial = asset.serialNumber?.trim().toUpperCase();
     if (!serial) return false;

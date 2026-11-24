@@ -1,4 +1,6 @@
 'use client';
+import { costCategories, categorySummary, reportCostCategories } from '../../lib/cost-categories';
+import categoryStyles from './cost-categories.module.css';
 import Link from 'next/link';
 import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
@@ -58,7 +60,7 @@ import costDetailStyles from '../../components/CostDetailIcon.module.css';
 import accountStyles from '../account/page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
 
-type FlowMode = 'asset-first' | 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'recurring' | null;
+type FlowMode = 'category' | 'asset-first' | 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'recurring' | null;
 const CostLedgerFuelEditor = dynamic(() => import('../fuel/fuel-client'), { ssr: false });
 
 type InvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
@@ -106,6 +108,8 @@ type InvoiceBlock = {
 };
 
 type InvoiceRecord = {
+  registerId?: string;
+  costCategory?: string;
   id: string;
   assetId: string;
   assetTitle: string;
@@ -155,6 +159,7 @@ type BudgetWizardStep = 1 | 2 | 3 | 4;
 type CostBudgetStatusName = 'on_track' | 'warning' | 'over_budget';
 
 type CostBudgetProgress = {
+  registerId?: string | null;
   id: string;
   assetId: string | null;
   assetTitle: string;
@@ -162,6 +167,7 @@ type CostBudgetProgress = {
   amount: number;
   warningPercent: number;
   warningAmount: number;
+  categories: string[];
   includeFuelSlipCosts: boolean;
   revision: number;
   periodKey: string;
@@ -178,14 +184,17 @@ type CostBudgetProgress = {
 };
 
 type CostBudgetDraft = {
+  registerId: string;
   assetId: string;
   period: BudgetPeriod;
   amount: string;
   warningPercent: string;
+  categories: string[];
   includeFuelSlipCosts: boolean;
 };
 
 type CostBudgetsResponse = {
+  registers?: Array<{value:string;label:string}>;
   ok: boolean;
   budgets?: CostBudgetProgress[];
   assets?: AssetOption[];
@@ -215,7 +224,7 @@ export type SharedCostFlow = {
   asset: AssetOption;
   allowanceEndpoint: string;
   save: (draft: Record<string, unknown>, file: File | null) => Promise<void>;
-  capture: (file: File, note: string) => Promise<{referenceCode:string}>;
+  capture: (file: File, note: string, category: string) => Promise<{referenceCode:string}>;
   onClose: () => void;
   onSaved: (message: string) => void;
 };
@@ -348,19 +357,7 @@ type RecurringCommitmentResponse = {
   error?: string;
 };
 
-const RECURRING_CATEGORY_OPTIONS = [
-  { value: 'insurance', label: 'Insurance' },
-  { value: 'finance', label: 'Finance' },
-  { value: 'rental', label: 'Rental' },
-  { value: 'tracking', label: 'Tracking' },
-  { value: 'storage', label: 'Storage' },
-  { value: 'extended_warranty', label: 'Extended warranty' },
-  { value: 'service_plan', label: 'Service plan' },
-  { value: 'licence', label: 'Licence' },
-  { value: 'subscription', label: 'Subscription' },
-  { value: 'lease', label: 'Lease' },
-  { value: 'other', label: 'Other' },
-] as const;
+const RECURRING_CATEGORY_OPTIONS = costCategories;
 
 const RECURRING_FREQUENCY_OPTIONS: Array<{ value: CommitmentFrequency; label: string }> = [
   { value: 'monthly', label: 'Monthly' },
@@ -386,6 +383,7 @@ function buildEmptyCostBudgetDraft(assetId = ''): CostBudgetDraft {
     period: 'monthly',
     amount: '',
     warningPercent: '80',
+    registerId: '', categories: [],
     includeFuelSlipCosts: true,
   };
 }
@@ -1093,6 +1091,8 @@ export default function MyInvoicesClient({
   const [managedInvoice, setManagedInvoice] = useState<InvoiceRecord | null>(null);
   const manageCostRef = useRef<HTMLDivElement>(null);
   const manageCostTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('other');
+  const [pendingSource, setPendingSource] = useState<InvoiceSource>('manual');
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -1140,6 +1140,7 @@ export default function MyInvoicesClient({
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
   const [deleteCandidateInvoice, setDeleteCandidateInvoice] = useState<InvoiceRecord | null>(null);
   const [costBudgets, setCostBudgets] = useState<CostBudgetProgress[]>([]);
+  const [budgetRegisters, setBudgetRegisters] = useState<Array<{value:string;label:string}>>([]);
   const [budgetAssets, setBudgetAssets] = useState<AssetOption[]>([]);
   const [budgetsLoading, setBudgetsLoading] = useState(canManageBudgets);
   const [budgetLoadError, setBudgetLoadError] = useState('');
@@ -1230,7 +1231,7 @@ export default function MyInvoicesClient({
       .then((data) => {
         if (!cancelled) {
           setCostBudgets(data.budgets);
-          setBudgetAssets(data.assets);
+          setBudgetAssets(data.assets); setBudgetRegisters(data.registers);
         }
       })
       .catch((error) => {
@@ -1519,32 +1520,33 @@ export default function MyInvoicesClient({
     return budgetAssets.filter((asset) => assetSearchText(asset).includes(query));
   }, [budgetAssetSearch, budgetAssets]);
 
+  const selectedBudgetCategories = budgetDraft.categories.join(',');
   const budgetUnavailableAssetIdsByPeriod = useMemo<Record<BudgetPeriod, Set<string>>>(() => {
     const unavailable: Record<BudgetPeriod, Set<string>> = {
       monthly: new Set<string>(),
       annual: new Set<string>(),
     };
     costBudgets.forEach((budget) => {
-      if (budget.id !== editingBudgetId && budget.assetId) {
+      if ((budget.categories ?? []).join(',') === selectedBudgetCategories && budget.id !== editingBudgetId && budget.assetId) {
         unavailable[budget.period].add(budget.assetId);
       }
     });
     return unavailable;
-  }, [costBudgets, editingBudgetId]);
+  }, [costBudgets, editingBudgetId, selectedBudgetCategories, budgetDraft.registerId]);
 
   const budgetUnavailableAllPeriods = useMemo(() => new Set(
     costBudgets
-      .filter((budget) => budget.id !== editingBudgetId && !budget.assetId)
+      .filter((budget) => (budget.categories ?? []).join(',') === selectedBudgetCategories && budget.id !== editingBudgetId && !budget.assetId && (budget.registerId || '') === budgetDraft.registerId)
       .map((budget) => budget.period),
-  ), [costBudgets, editingBudgetId]);
+  ), [costBudgets, editingBudgetId, selectedBudgetCategories, budgetDraft.registerId]);
 
   const budgetPeriodUnavailableAssetIds = budgetUnavailableAssetIdsByPeriod[budgetDraft.period];
   const budgetPickerUnavailableAssetIds = useMemo(() => new Set(
     budgetAssets
       .filter((asset) => budgetUnavailableAssetIdsByPeriod.monthly.has(asset.id)
-        && budgetUnavailableAssetIdsByPeriod.annual.has(asset.id))
+        && budgetUnavailableAssetIdsByPeriod.annual.has(asset.id) && editingBudgetId !== null)
       .map((asset) => asset.id),
-  ), [budgetAssets, budgetUnavailableAssetIdsByPeriod]);
+  ), [budgetAssets, budgetUnavailableAssetIdsByPeriod, editingBudgetId]);
 
   const selectableFilteredBudgetAssets = useMemo(
     () => filteredBudgetAssets.filter((asset) => !budgetPickerUnavailableAssetIds.has(asset.id)),
@@ -1582,6 +1584,8 @@ export default function MyInvoicesClient({
     const query = invoiceSearch.trim().toLowerCase();
 
     return invoices.filter((invoice) => {
+      if (focusedBudget?.registerId && focusedBudget.registerId !== invoice.registerId) return false;
+      if (focusedBudget?.categories?.length && !focusedBudget.categories.includes(invoice.source === 'fuel_slip' ? 'fuel' : invoice.costCategory ?? 'other')) return false;
       if (focusedBudget && !focusedBudget.includeFuelSlipCosts && invoice.source === 'fuel_slip') return false;
       if (activeFilters.source !== 'all' && invoice.source !== activeFilters.source) return false;
       if (query && !invoiceSearchText(invoice).includes(query)) return false;
@@ -1692,7 +1696,7 @@ export default function MyInvoicesClient({
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
 
-  const modalOpen = Boolean(fuelCostInvoiceId) || sourceChoiceOpen
+  const modalOpen = Boolean(fuelCostInvoiceId) || flow === 'category' || sourceChoiceOpen
     || assetPickerOpen
     || flow === 'upload'
     || formOpen
@@ -2132,7 +2136,7 @@ export default function MyInvoicesClient({
     applyInvoiceData(data);
   }
 
-  async function fetchCostBudgetData(): Promise<{ budgets: CostBudgetProgress[]; assets: AssetOption[] }> {
+  async function fetchCostBudgetData(): Promise<{ budgets: CostBudgetProgress[]; assets: AssetOption[]; registers: Array<{value:string;label:string}> }> {
     const response = await desktop.request('/api/my-invoices/budgets', {
       credentials: 'include',
       cache: 'no-store',
@@ -2143,7 +2147,7 @@ export default function MyInvoicesClient({
     }
     return {
       budgets: data.budgets ?? [],
-      assets: data.assets ?? [],
+      assets: data.assets ?? [], registers: data.registers ?? [],
     };
   }
 
@@ -2151,7 +2155,7 @@ export default function MyInvoicesClient({
     if (!canManageBudgets) return;
     const data = await fetchCostBudgetData();
     setCostBudgets(data.budgets);
-    setBudgetAssets(data.assets);
+    setBudgetAssets(data.assets); setBudgetRegisters(data.registers);
     setBudgetLoadError('');
   }
 
@@ -2204,6 +2208,7 @@ export default function MyInvoicesClient({
       period: budget.period,
       amount: formatInvoiceMoneyInput(formatMoneyWithCents(budget.amount)),
       warningPercent: String(budget.warningPercent),
+      registerId: budget.registerId || '', categories: budget.categories ?? [],
       includeFuelSlipCosts: budget.includeFuelSlipCosts,
     });
     setBudgetSelectedAssetIds(budget.assetId ? [budget.assetId] : []);
@@ -2322,7 +2327,7 @@ export default function MyInvoicesClient({
       return;
     }
     const wasEditing = Boolean(editingBudgetId);
-    const assetIdsToSave: Array<string | null> = editingBudgetId
+    const assetIdsToSave: Array<string | null> = budgetDraft.registerId ? [null] : editingBudgetId
       ? [budgetSelectedAssetIds[0] ?? (budgetDraft.assetId === 'all' ? null : budgetDraft.assetId || null)]
       : budgetSelectedAssetIds;
     if (!assetIdsToSave.length) {
@@ -2348,6 +2353,7 @@ export default function MyInvoicesClient({
               period: budgetDraft.period,
               amount: budgetDraft.amount,
               warningPercent: Number(budgetDraft.warningPercent),
+              registerId: budgetDraft.registerId || null, categories: budgetDraft.categories,
               includeFuelSlipCosts: budgetDraft.includeFuelSlipCosts,
             }),
           });
@@ -2509,6 +2515,7 @@ export default function MyInvoicesClient({
       else setFlow('source-choice');
       return;
     }
+    if (flow === 'category') { setFlow('source-choice'); return; }
     if (flow === 'review') { setFlow('upload'); return; }
     if (flow === 'upload') { setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic'); return; }
     if (flow === 'asset-first') { finishModal(); return; }
@@ -2817,6 +2824,13 @@ export default function MyInvoicesClient({
 
   function startFlow(source: InvoiceSource) {
     if (desktop.workspace && source === 'automatic') { desktop.unavailable(); return; }
+    setPendingSource(source);
+    setFlow('category');
+  }
+
+  function chooseCostCategory(category: string) {
+    const source = pendingSource;
+    setSelectedCategory(category);
     if (sourceDraftsRef.current[draft.source]) {
       sourceDraftsRef.current[draft.source] = { assetId: selectedAssetId, draft };
     }
@@ -3169,7 +3183,7 @@ export default function MyInvoicesClient({
 
     try {
       if (sharedFlow) {
-        const request = await sharedFlow.capture(await prepareInvoiceUpload(automaticUploadPages),captureNote.trim());
+        const request = await sharedFlow.capture(await prepareInvoiceUpload(automaticUploadPages),captureNote.trim(),selectedCategory);
         sharedFlow.onSaved(`${request.referenceCode} received. Aim4price will capture, verify and allocate it within 24 hours.`);
         return;
       }
@@ -3177,6 +3191,7 @@ export default function MyInvoicesClient({
       formData.append('assetId', selectedAssetId);
       formData.append('file', await prepareInvoiceUpload(automaticUploadPages));
       formData.append('note', captureNote.trim());
+      formData.append('costCategory', selectedCategory);
 
       const response = await desktop.request(accountScopedUrl(`${captureApiRoot}/invoice`), {
         method: 'POST',
@@ -3263,6 +3278,7 @@ export default function MyInvoicesClient({
         usageReading: draft.usageReading,
         usageMetric: draft.usageMetric,
         source: draft.source,
+        costCategory: selectedCategory,
         maintenanceWorkDone: draft.maintenanceWorkDone,
         partsSupplied: draft.partsSupplied,
         repairWorkDone: draft.repairWorkDone,
@@ -3338,6 +3354,7 @@ export default function MyInvoicesClient({
     setExtractionWarnings(invoice.document?.extractionWarnings ?? []);
     setManualCostWizardStep(1);
     setManualCostWizardError('');
+    setSelectedCategory(invoice.costCategory ?? 'other');
     setDraft(draftFromInvoice(invoice));
     setFlow(invoice.source === 'automatic' ? 'review' : 'manual-form');
   }
@@ -3915,6 +3932,7 @@ export default function MyInvoicesClient({
                           </div>
                           <div className={styles.budgetMeta}>
                             <span>Alert at {budget.warningPercent}%</span>
+                            <span>{categorySummary(budget.categories)}</span>
                             <span>Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span>
                           </div>
                         </article>
@@ -4073,7 +4091,11 @@ export default function MyInvoicesClient({
                       <p>Choose one or more saved assets.</p>
                     </div>
 
-                    <button
+
+                    {budgetRegisters.length > 0 && <FilterQuestion label="Budget scope" value={budgetDraft.registerId || 'assets'}
+                      options={[{value:'assets',label:'Selected assets'},...budgetRegisters.map(register => ({...register,label:`Register · ${register.label}`}))]}
+                      onChange={value => { setBudgetSelectedAssetIds([]); setBudgetPickerAssetIds([]); setBudgetDraft(current => ({...current, registerId: value === 'assets' ? '' : value, assetId: value === 'assets' ? '' : 'all'})); }} />}
+                    {!budgetDraft.registerId && <button
                       ref={budgetScopeTriggerRef}
                       type="button"
                       className={styles.budgetScopeTrigger}
@@ -4094,7 +4116,7 @@ export default function MyInvoicesClient({
                               : 'Add an asset first.'}</small>
                       </span>
                       <AssetChooseIcon />
-                    </button>
+                    </button>}
 
                   </section>
                 ) : null}
@@ -4105,6 +4127,14 @@ export default function MyInvoicesClient({
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-period-title" tabIndex={-1}>Choose the budget period</h3>
                       <p>Decide when the spending limit starts again.</p>
                     </div>
+                    <details className={categoryStyles.budgetCategories}>
+                      <summary>Cost categories · {categorySummary(budgetDraft.categories)}</summary>
+                      <div className={categoryStyles.checks}>
+                        <label><input type="checkbox" checked={!budgetDraft.categories.length} onChange={() => setBudgetDraft(current => ({...current, categories: []}))} />All costs</label>
+                        {costCategories.map(({value, label}) => <label key={value}><input type="checkbox" checked={budgetDraft.categories.includes(value)} onChange={({target}) => setBudgetDraft(current => ({...current, categories: target.checked ? [...current.categories, value].sort() : current.categories.filter(item => item !== value)}))} />{label}</label>)}
+                      </div>
+                    </details>
+
 
                     <div className={styles.budgetWizardPeriodChoices} role="group" aria-label="Budget reset period">
                       {(['monthly', 'annual'] as const).map((period) => {
@@ -4211,6 +4241,7 @@ export default function MyInvoicesClient({
                         <dd>
                           {selectedBudgetAssets.length
                             ? selectedBudgetAssets.map((asset) => asset.title).join(', ')
+                            : budgetDraft.registerId ? budgetRegisters.find(register => register.value === budgetDraft.registerId)?.label
                             : budgetDraft.assetId === 'all'
                               ? 'All saved assets'
                               : 'No assets selected'}
@@ -4231,6 +4262,7 @@ export default function MyInvoicesClient({
                         </dd>
                       </div>
                       <div className={reviewStyles.fuel}>
+                        <dt>Cost categories</dt><dd>{categorySummary(budgetDraft.categories)}</dd>
                         <dt>Fuel costs</dt>
                         <dd className={budgetDraft.includeFuelSlipCosts ? reviewStyles.included : reviewStyles.excluded}>
                           {budgetDraft.includeFuelSlipCosts ? 'Included' : 'Excluded'}
@@ -4573,6 +4605,23 @@ export default function MyInvoicesClient({
               <button type="button" className={styles.secondaryButton} onClick={closeInvoiceDropAssetPicker}>Cancel</button>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {flow === 'category' ? (
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="cost-category-title">
+          <section className={`${styles.downloadModal} ${categoryStyles.dialog}`}>
+            <div className={styles.modalHeader}>
+              <h2 id="cost-category-title">Choose a cost category</h2>
+              <button type="button" className={accountStyles.modalCloseButton} onClick={finishModal} aria-label="Close">×</button>
+            </div>
+            <div className={categoryStyles.cards}>
+              {costCategories.map(category => <button key={category.value} type="button" className={categoryStyles.card} onClick={() => chooseCostCategory(category.value)}>
+                <RecurringFieldIcon kind={category.icon} /><strong>{category.label}</strong>
+              </button>)}
+            </div>
+            <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={() => setFlow('source-choice')}>Back</button></div>
+          </section>
         </div>
       ) : null}
 
@@ -5072,9 +5121,9 @@ export default function MyInvoicesClient({
       ) : null}
 
       {!dealerMode && downloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Cost reports" allLabel="All costs" assets={assets}
-        fields={[{key:'fuel',label:'External fuel costs',initial:'true',options:[{value:'true',label:'Include fuel costs'},{value:'false',label:'Exclude fuel costs'}]}]}
+        fields={[{key:'category',label:'Cost category',initial:'all',options:reportCostCategories},{key:'fuel',label:'External fuel costs',initial:'true',options:[{value:'true',label:'Include fuel costs'},{value:'false',label:'Exclude fuel costs'}]}]}
         onClose={closeDownloadModal} onDownload={async selection => {
-          const url = accountScopedUrl(buildReportUrl({...DEFAULT_FILTERS,assetId:selection.assetId,year:selection.year,month:selection.month}, selection.format === 'pdf' ? 'html' : 'xlsx', selection.fields.fuel === 'true'));
+          const url = accountScopedUrl(buildReportUrl({...DEFAULT_FILTERS,assetId:selection.assetId,year:selection.year,month:selection.month}, selection.format === 'pdf' ? 'html' : 'xlsx', selection.fields.fuel === 'true') + '&category=' + encodeURIComponent(selection.fields.category));
           if(selection.format === 'xlsx') await downloadCanonicalReportFile(url);
           else if(!openCanonicalReportUrl(url)) throw new Error('Allow pop-ups to open your report.');
         }} /> : null}
@@ -5378,7 +5427,9 @@ export default function MyInvoicesClient({
 
                 {!manualCostWizardOpen || manualCostWizardStep === 2 ? (
                   <>
+                    <FilterQuestion label="Cost category" value={selectedCategory} options={[...costCategories]} onChange={setSelectedCategory} />
                     <div className={styles.textAreaGrid}>
+                  {(selectedCategory === 'service' || selectedCategory === 'repair' || Boolean(draft.maintenanceWorkDone || draft.repairWorkDone || draft.partsSupplied)) && <>
                   <label>
                     <span>Maintenance work done</span>
                     <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="maintenance" /> : null}<textarea value={draft.maintenanceWorkDone} onChange={(event) => setDraftField('maintenanceWorkDone', event.target.value)} rows={3} placeholder="Describe maintenance completed" /></span>
@@ -5391,8 +5442,9 @@ export default function MyInvoicesClient({
                     <span>Repair work done</span>
                     <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="repairs" /> : null}<textarea value={draft.repairWorkDone} onChange={(event) => setDraftField('repairWorkDone', event.target.value)} rows={3} placeholder="Describe repairs completed" /></span>
                   </label>
+                  </>}
                   <label>
-                    <span>Notes</span>
+                    <span>Description and notes</span>
                     <span className={styles.costEntryInput}>{manualCostWizardOpen ? <CostEntryIcon kind="notes" /> : null}<textarea value={draft.notes} onChange={(event) => setDraftField('notes', event.target.value)} rows={3} placeholder="Additional notes" /></span>
                   </label>
                 </div>

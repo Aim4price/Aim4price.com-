@@ -1,7 +1,7 @@
 import type { CostBudgetProgress } from './cost-budgets';
 import type { MyInvoiceRecord } from './my-invoices';
 
-export type OwnershipBudget = Pick<CostBudgetProgress, 'id' | 'assetId' | 'period' | 'periodLabel' | 'periodStart' | 'periodEnd' | 'amount' | 'warningPercent' | 'includeFuelSlipCosts'> & { effectiveFrom?: string; effectiveTo?: string | null };
+export type OwnershipBudget = Pick<CostBudgetProgress, 'id' | 'assetId' | 'period' | 'periodLabel' | 'periodStart' | 'periodEnd' | 'amount' | 'warningPercent' | 'includeFuelSlipCosts' | 'categories'> & { effectiveFrom?: string; effectiveTo?: string | null };
 export type OwnershipBudgetVersion = Omit<OwnershipBudget, 'periodLabel' | 'periodStart' | 'periodEnd'>;
 export type OwnershipBudgetStep = {
   budget: OwnershipBudget; spent: number; remaining: number; overBy: number;
@@ -25,7 +25,9 @@ export function buildOwnershipBudgetTracker(invoices: MyInvoiceRecord[], budgets
       if (!budget.assetId || budget.assetId !== invoice.assetId || !invoice.invoiceDate
         || invoice.invoiceDate < budget.periodStart || invoice.invoiceDate >= budget.periodEnd
         || !Number.isFinite(budget.amount) || budget.amount <= 0) continue;
-      const excluded = invoice.source === 'fuel_slip' && !budget.includeFuelSlipCosts;
+      const category = invoice.source === 'fuel_slip' ? 'fuel' : invoice.costCategory ?? 'other';
+      const excluded = (invoice.source === 'fuel_slip' && !budget.includeFuelSlipCosts)
+        || Boolean(budget.categories?.length && !budget.categories.includes(category));
       const cents = (totals.get(budget.id) || 0) + (excluded ? 0 : Math.round(invoice.totalIncVat * 100));
       totals.set(budget.id, cents);
       // Accumulate the full period before choosing the version applicable on this date.

@@ -43,7 +43,7 @@ test('budget asset choices include every accessible saved asset regardless of fu
   assert.match(collectionRoute, /listMyInvoiceAssets/);
   assert.match(collectionRoute, /Promise\.all\(\[[\s\S]*?listCostBudgetsWithProgress\(access\.ownerUserId\)[\s\S]*?listMyInvoiceAssets\(access\.ownerUserId\)/);
   assert.match(collectionRoute, /allAssets\.filter\(\(asset\) => ownerAppCanAccessAsset\(access, asset\.id\)\)/);
-  assert.match(collectionRoute, /NextResponse\.json\(\{ ok: true, budgets, assets \}/);
+  assert.match(collectionRoute, /NextResponse\.json\(\{ ok: true, budgets, assets, registers \}/);
   assert.doesNotMatch(collectionRoute, /workUseExcluded|work_use_excluded|fuel_asset_exclusions/);
 });
 

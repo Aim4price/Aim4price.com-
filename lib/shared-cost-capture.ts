@@ -47,7 +47,7 @@ export async function submitSharedCostCapture(request:NextRequest,target:Contrib
     const actor:CaptureEventActor={actorType:scope.user.id===scope.ownerId?'owner':'dealer',userId:scope.user.id,displayName:scope.user.name||scope.user.email};
     try {
       const capture=await createCaptureRequest({requestType:'invoice',submissionChannel:actor.actorType==='owner'?'owner_upload':'dealer_upload',ownerUserId:scope.ownerId,assetId:scope.assetId,
-        sender:{type:actor.actorType==='owner'?'owner':'dealer',name:scope.user.name||scope.user.email,email:scope.user.email},assetReference:asset.serialNumber,requesterNote:String(form.get('note')||'').slice(0,1000),candidatePayload:{targetLabel:asset.title,sharedSaveId:requestId}},actor,{
+        sender:{type:actor.actorType==='owner'?'owner':'dealer',name:scope.user.name||scope.user.email,email:scope.user.email},assetReference:asset.serialNumber,requesterNote:String(form.get('note')||'').slice(0,1000),candidatePayload:{costCategory:String(form.get('costCategory') ?? '').slice(0,40),targetLabel:asset.title,sharedSaveId:requestId}},actor,{
         before:async client=>{
           await scope.lock(client);
           await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[`${scope.user.id}:${requestId}`]);

@@ -1,3 +1,4 @@
+import { costCategory } from './cost-categories';
 import type { WorkspaceWriteGuard } from './team-write-guard';
 import {installAssetHistoryTriggers} from './asset-history-schema';
 import type { PoolClient } from 'pg';
@@ -14,6 +15,7 @@ export type MyInvoiceOwnerStorageStatus = 'owner' | 'pending' | 'approved' | 'de
 export type MyInvoiceDealerDeletionStatus = 'active' | 'pending' | 'kept';
 
 export type MyInvoiceAssetOption = {
+  registerId?: string | null;
   id: string;
   title: string;
   kind: string;
@@ -60,6 +62,8 @@ export type MyInvoiceBlock = {
 };
 
 export type MyInvoiceRecord = {
+  registerId?: string;
+  costCategory?: string;
   id: string;
   userId: string;
   assetId: string;
@@ -111,6 +115,7 @@ export type MyInvoiceSummary = {
 };
 
 export type MyInvoiceListFilters = {
+  costCategory?: string;
   assetId?: string | null;
   ownerUserId?: string | null;
   year?: number | null;
@@ -129,6 +134,7 @@ export type MyInvoiceListResult = {
 };
 
 export type MyInvoiceDraftInput = {
+  costCategory?: unknown;
   captureRequestId?: unknown;
   assetId?: unknown;
   invoiceDocumentId?: unknown;
@@ -174,6 +180,8 @@ type MyInvoiceDocumentRow = {
 };
 
 type MyInvoiceRow = {
+  asset_register_id: string | null;
+  cost_category: string | null;
   id: string;
   user_id: string;
   asset_register_item_id: string;
@@ -540,7 +548,7 @@ export function mapMyInvoiceAssetOption(asset: AssetRegisterItem): MyInvoiceAsse
   const categoryLabel = assetCategoryLabel(asset);
 
   return {
-    id: asset.id,
+    id: asset.id, registerId: asset.registerId,
     title: asset.title || asset.modelName || asset.typedModelName || 'Saved asset',
     kind: asset.kind,
     categoryLabel,
@@ -657,6 +665,7 @@ function mapInvoiceRow(row: MyInvoiceRow, document: MyInvoiceDocument | null, bl
     id: String(row.id),
     userId: asText(row.user_id),
     assetId: asText(row.asset_register_item_id),
+    registerId: row.asset_register_id ?? undefined,
     assetTitle: asText(row.asset_title) || 'Saved asset',
     assetKind: asText(row.asset_kind) || 'asset',
     assetCategoryLabel: assetCategoryLabelFromRow(row),
@@ -688,6 +697,7 @@ function mapInvoiceRow(row: MyInvoiceRow, document: MyInvoiceDocument | null, bl
     usageReading: asNumber(row.usage_reading),
     usageMetric: normalizeUsageMetric(row.usage_metric),
     source: normalizeSource(row.source),
+    costCategory: row.source === 'fuel_slip' ? 'fuel' : row.cost_category || 'other',
     notes: asLongText(row.notes, 5000),
     maintenanceWorkDone: blockDescription('maintenance'),
     partsSupplied: blockDescription('parts'),
@@ -778,6 +788,7 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
   `);
   await db.query(`
     alter table public.asset_invoices
+      add column if not exists cost_category text,
       add column if not exists created_by_dealer_user_id text,
       add column if not exists created_by_dealer_staff_id text,
       add column if not exists created_by_display_name text,
@@ -876,6 +887,14 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
   await db.query(`create index if not exists asset_invoices_invoice_number_idx on public.asset_invoices (invoice_number)`);
   await db.query(`create index if not exists asset_invoices_supplier_name_idx on public.asset_invoices (supplier_name)`);
   await db.query(`create index if not exists asset_invoice_blocks_invoice_id_idx on public.asset_invoice_blocks (invoice_id)`);
+  await db.query(`
+    update public.asset_invoices i set cost_category = case
+      when i.source = 'fuel_slip' then 'fuel'
+      when exists (select 1 from public.asset_invoice_blocks b where b.invoice_id = i.id and b.block_type = 'repair') then 'repair'
+      when exists (select 1 from public.asset_invoice_blocks b where b.invoice_id = i.id and b.block_type = 'maintenance') then 'service'
+      else 'other' end
+    where i.cost_category is null
+  `);
 }
 
 export async function ensureMyInvoiceTables(): Promise<void> {
@@ -924,6 +943,11 @@ function buildInvoiceFilterClause(filters: MyInvoiceListFilters, values: unknown
   if (filters.assetId) {
     values.push(filters.assetId);
     clauses.push(`i.asset_register_item_id = $${values.length}::uuid`);
+  }
+
+  if (filters.costCategory) {
+    values.push(filters.costCategory);
+    clauses.push(`(case when i.source = 'fuel_slip' then 'fuel' else coalesce(i.cost_category, 'other') end) = $${values.length}`);
   }
 
   if (filters.year) {
@@ -1018,7 +1042,7 @@ export async function listMyInvoices(userId: string, filters: MyInvoiceListFilte
   const result = await getDb().query<MyInvoiceRow>(
     `
       select
-        i.*,
+        i.*, ai.register_id as asset_register_id,
         coalesce(
           nullif(to_jsonb(ai)->>'title', ''),
           nullif(to_jsonb(ai)->>'asset_name', ''),
@@ -1214,6 +1238,7 @@ function normalizeInvoiceDraft(input: MyInvoiceDraftInput, requireAsset = true) 
     usageReading,
     usageMetric: usageMetric === 'none' ? null : usageMetric,
     source,
+    costCategory: costCategory(input.costCategory)?.value ?? (asLongText(input.repairWorkDone) ? 'repair' : asLongText(input.maintenanceWorkDone) ? 'service' : 'other'),
     notes: asLongText(input.notes),
     maintenanceWorkDone: asLongText(input.maintenanceWorkDone),
     partsSupplied: asLongText(input.partsSupplied),
@@ -1621,8 +1646,8 @@ export async function createMyInvoice(
           usage_reading,
           usage_metric,
           source,
-          notes
-        ) values ($1, $2::uuid, $3, $4, $5, $6, case when $6 = 'approved' then now() else null end, $7::uuid, $8::uuid, $9, $10, $11::date, $12, $13, $14, $15, $16, $17, $18)
+          notes, cost_category
+        ) values ($1, $2::uuid, $3, $4, $5, $6, case when $6 = 'approved' then now() else null end, $7::uuid, $8::uuid, $9, $10, $11::date, $12, $13, $14, $15, $16, $17, $18, $19)
         on conflict (capture_request_id) where capture_request_id is not null do nothing
         returning id
       `,
@@ -1645,6 +1670,7 @@ export async function createMyInvoice(
         draft.usageMetric,
         draft.source,
         draft.notes || null,
+        draft.costCategory,
       ],
     );
 
@@ -1703,7 +1729,7 @@ export async function updateMyInvoice(
     throw new Error('INVOICE_NOT_FOUND');
   }
 
-  const draft = normalizeInvoiceDraft({ ...input, assetId: input.assetId ?? existing.assetId });
+  const draft = normalizeInvoiceDraft({ ...input, costCategory: input.costCategory ?? existing.costCategory, assetId: input.assetId ?? existing.assetId });
   await verifyAssetBelongsToUser(userId, draft.assetId);
   await verifyInvoiceDocument({ userId, assetId: draft.assetId, invoiceDocumentId: draft.invoiceDocumentId, actor });
   const duplicateWarnings = await findDuplicateInvoiceWarnings(userId, { ...input, assetId: draft.assetId }, invoiceId);
@@ -1729,6 +1755,7 @@ export async function updateMyInvoice(
           usage_metric = $12,
           source = $13,
           notes = $14,
+          cost_category = $16,
           owner_storage_status = case
             when $15 = '' then owner_storage_status
             else 'pending'
@@ -1759,6 +1786,7 @@ export async function updateMyInvoice(
         draft.source,
         draft.notes || null,
         asText(actor.dealerUserId),
+        draft.costCategory,
       ],
     );
 

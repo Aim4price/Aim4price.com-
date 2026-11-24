@@ -1,3 +1,5 @@
+import { addBudgetForecasts } from '../../../../lib/budget-expected';
+import { listAssetRegisters } from '../../../../lib/asset-registers';
 import { teamBudgetResponse } from '../../../../lib/team-budget-access';
 import { NextResponse } from 'next/server';
 import {
@@ -104,9 +106,11 @@ export async function GET(request: Request) {
       listCostBudgetsWithProgress(access.ownerUserId),
       listMyInvoiceAssets(access.ownerUserId),
     ]);
-    const budgets = allBudgets.filter((budget) => visibleBudget(access, budget));
+    const visible = allBudgets.filter((budget) => visibleBudget(access, budget));
     const assets = allAssets.filter((asset) => ownerAppCanAccessAsset(access, asset.id));
-    return NextResponse.json({ ok: true, budgets, assets }, { headers: responseHeaders() });
+    const registers = access.assetScope === 'all' ? (await listAssetRegisters(access.ownerUserId)).map(register => ({ value: register.id, label: register.businessName })) : [];
+    const budgets = await addBudgetForecasts(access.ownerUserId, visible, assets);
+    return NextResponse.json({ ok: true, budgets, assets, registers }, { headers: responseHeaders() });
   } catch (error) {
     return budgetError(error);
   }

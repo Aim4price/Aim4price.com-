@@ -548,6 +548,7 @@ async function createInvoiceOutput(
       usageReading: captured.usageReading,
       usageMetric: captured.usageMetric,
       source: 'automatic',
+      costCategory: request.candidatePayload.costCategory,
       maintenanceWorkDone: captured.maintenanceWorkDone,
       partsSupplied: captured.partsSupplied,
       repairWorkDone: captured.repairWorkDone,
