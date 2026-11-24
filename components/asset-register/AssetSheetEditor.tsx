@@ -42,25 +42,24 @@ export default function AssetSheetEditor({ draft: { rows, visible, basis }, regi
       <button disabled={!populated && !selected.length} onClick={() => setTool({ kind: 'bulk' })}><DetailIcon kind="edit" />Bulk edit</button>
       <button disabled={!canUndo} onClick={() => { setSelected([]); onUndo(); }}><DetailIcon kind="undo" />Undo</button>
     </div>
-    <p className={css.sheetHint}>Enter an asset name, or use both make and model.</p>
     {(visible.includes('value') || rows.some(r => r.value.trim())) &&
       <Select label="Current values in rand" placeholder="Choose VAT basis" value={basis}
         options={[{ value: 'excluded', label: 'Current values exclude VAT' }, { value: 'included', label: 'Current values include VAT' }]}
         onChange={v => onChange({ basis: v as Basis })} />}
     <div className={css.gridScroll} role="region" aria-label="Assets spreadsheet" tabIndex={0}>
-      <table className={`${parts.editorTable} ${css.assetGrid}`}>
-        <colgroup><col className={css.rowColumn} />{visible.map(k => <col key={k} className={k === 'title' ? css.titleColumn : css.dataColumn} />)}</colgroup>
+      <table className={`${parts.editorTable} ${css.assetGrid}`} style={{ minWidth: 132 + 240 + (visible.length - 1) * 160 }}>
+        <colgroup><col className={css.rowColumn} />{visible.map(k => <col key={k} className={k === 'title' && visible.length > 1 ? css.titleColumn : undefined} />)}</colgroup>
         <thead><tr><th scope="col"><input type="checkbox" aria-label="Select all rows" checked={selected.length === rows.length}
           ref={el => { if (el) el.indeterminate = selected.length > 0 && selected.length < rows.length; }}
           onChange={e => setSelected(e.target.checked ? rows.map((_, i) => i) : [])} /></th>
-          {visible.map(k => <th key={k} scope="col">{assetColumns[k]}{k !== 'title' && <small>Optional</small>}</th>)}</tr></thead>
+          {visible.map(k => <th key={k} scope="col">{assetColumns[k]}<small>{k === 'title' ? 'Or use make and model' : 'Optional'}</small></th>)}</tr></thead>
         <tbody>{rows.slice(page * size, (page + 1) * size).map((r, j) => {
           const index = page * size + j;
           const errors = validate && columns.some(k => r[k].trim()) ? rowErrors(r, basis) : {};
           return <tr key={index} data-selected={selected.includes(index) || undefined}>
             <td><div className={parts.sheetRowControls}>
               <input type="checkbox" aria-label={'Select row ' + (index + 1)} checked={selected.includes(index)} onChange={e => setSelected(e.target.checked ? [...selected, index] : selected.filter(i => i !== index))} />
-              <span>{index + 1}</span>
+              <span className={parts.sheetRowNumber}>{index + 1}</span>
               <button type="button" className={parts.sheetRowAction} aria-haspopup="dialog" aria-label={'Actions for row ' + (index + 1)} onClick={() => setTool({ kind: 'row', index })}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m9 3 1-1h4l1 3 2 1 3-.5 2 3-2 2v3l2 2-2 3-3-.5-2 1-1 3h-4l-1-3-2-1-3 .5-2-3 2-2v-3l-2-2 2-3 3 .5 2-1Z" /><circle cx="12" cy="12" r="3" /></svg>
               </button>
@@ -80,7 +79,7 @@ export default function AssetSheetEditor({ draft: { rows, visible, basis }, regi
         })}</tbody>
       </table>
     </div>
-    <div className={css.rowActions}><button disabled={rows.length >= maxAssets} onClick={() => { onChange({ rows: [...rows, blankAsset()] }); onPage(Math.floor(rows.length / size)); }}>+ Add row</button></div>
+    <div className={`${parts.actions} ${css.rowActions}`}><button disabled={rows.length >= maxAssets} onClick={() => { onChange({ rows: [...rows, blankAsset()] }); onPage(Math.floor(rows.length / size)); }}>+ Add row</button><span>{rows.length} {rows.length === 1 ? 'row' : 'rows'}</span></div>
     {tool && <AssetSheetTools tool={tool} rows={rows} selected={selected} visible={visible} register={register}
       onColumns={changeColumns} onRows={(next, field) => onChange({ rows: next, visible: field && !visible.includes(field) ? [...visible, field] : visible })}
       onRemove={removeRow} onClose={() => setTool(null)} />}

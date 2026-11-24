@@ -340,11 +340,8 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
             </table>
           </div>
         </div>}
-        {stage === 'file' && <>
-          <SpreadsheetUpload title="Upload your asset list" fileLabel="Upload asset file" busy={busy || transition.pending}
-            pasteMode={pasteMode} onModeChange={mode => { setPasteMode(mode); setError(''); }} pasted={pasteText} onPasteChange={setPasteText} onFile={load} />
-          <button className={css.template} onClick={() => void template()}>Download blank Excel template</button>
-        </>}
+        {stage === 'file' && <SpreadsheetUpload title="Upload your asset list" fileLabel="Upload asset file" busy={busy || transition.pending}
+            pasteMode={pasteMode} onModeChange={mode => { setPasteMode(mode); setError(''); }} pasted={pasteText} onPasteChange={setPasteText} onFile={load} />}
         {stage === 'map' && sheet && <section className={uploadStyles.mapping}>
           <div className={uploadStyles.heading}><h3>Match columns</h3><p>Choose which asset field to use for each column.</p></div>
           <div className={uploadStyles.fileSummary}><div><strong>{sheet.name}</strong><span>{sheet.rows.length - Number(header)} rows</span></div>
@@ -403,6 +400,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       {error && <p role="alert" className={parts.error}>{error}</p>}
       <footer className={parts.entryFooter}>
         <button disabled={busy || transition.pending} onClick={event => transition.start(event.currentTarget, 'Going back…', back)}>Back</button>
+        {stage === 'file' && <button type="button" className={css.template} disabled={busy || transition.pending} onClick={() => void template()}>Download Excel template</button>}
         {stage === 'file' && pasteMode && <button className={parts.primary} disabled={busy || transition.pending || !pasteText.trim()} onClick={() => {
           try { selectSheet([{ name: 'Pasted cells', rows: readPartsCsv(pasteText) }], 0); }
           catch (e) { setError((e as Error).message); }
