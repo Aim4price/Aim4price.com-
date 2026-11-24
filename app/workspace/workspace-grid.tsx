@@ -11,9 +11,17 @@ import styles from './workspace.module.css';
 
 type Cards = ReturnType<typeof workspaceCards>;
 
-function WorkspaceTile({card, role, free}: {card: Cards[number]; role: WorkspaceRole; free: boolean}) {
+function WorkspaceTile({card, role, free, recording}: {recording?:string; card: Cards[number]; role: WorkspaceRole; free: boolean}) {
   const {key, label, href, locked} = card;
-  return <article className={styles.card}>
+  const [hovered,setHovered] = useState(false);
+  const [watching,setWatching] = useState(false);
+  return <article className={styles.card} onPointerEnter={event => setHovered(!!recording && event.pointerType === 'mouse' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)}
+    onPointerLeave={() => setHovered(false)}>
+    {recording && hovered && !watching && <video className={styles.hoverClip} src={'/api/hover-videos/'+recording} muted loop autoPlay playsInline aria-hidden="true"/>}
+    {recording && <button type="button" className={styles.watch} aria-label={'Watch '+label+' recording'} onClick={()=>setWatching(true)}>▶ Watch</button>}
+    {recording && watching && <ShareDisclosureDialog title={label} titleId={'watch-'+key} closeLabel="Close recording" onClose={()=>setWatching(false)}>
+      <video controls autoPlay playsInline className={styles.fullClip} src={'/api/hover-videos/'+recording}/>
+    </ShareDisclosureDialog>}
     <Link className={styles.cardLink} href={locked ? '/account' : href} prefetch={false}
       aria-label={locked ? label + ' — view account options' : label}>
       <strong>{label}</strong>
@@ -23,8 +31,8 @@ function WorkspaceTile({card, role, free}: {card: Cards[number]; role: Workspace
   </article>;
 }
 
-export default function WorkspaceGrid({cards, role, userId, freeBusiness}: {
-  cards: Cards; role: WorkspaceRole; userId: string; freeBusiness: boolean;
+export default function WorkspaceGrid({cards, role, userId, freeBusiness, recordings = {}}: {
+  recordings?:Record<string,string>; cards: Cards; role: WorkspaceRole; userId: string; freeBusiness: boolean;
 }) {
   const { hidden, save } = useWorkspaceVisibility(userId, role);
   const [editing, setEditing] = useState(false);
@@ -56,7 +64,7 @@ export default function WorkspaceGrid({cards, role, userId, freeBusiness}: {
       </footer>
     </ShareDisclosureDialog>}
     {visible.length > 0 && <nav className={styles.grid} aria-label="Workspace pages">
-      {[...available, ...paid].map(card => <WorkspaceTile key={card.key} card={card} role={role} free={freeBusiness}/>)}
+      {[...available, ...paid].map(card => <WorkspaceTile key={card.key} card={card} recording={recordings[card.key]} role={role} free={freeBusiness}/>)}
     </nav>}
     {visible.length === 0 && <p>Choose cards in Customise workspace to show them here.</p>}
   </>;
