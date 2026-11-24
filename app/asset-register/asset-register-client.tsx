@@ -21042,7 +21042,7 @@ export default function AssetRegisterClient({
                         <AssetReportTypeIcon kind="maintenance" className={styles.buttonIcon} />
                         <span>
                           <strong>Maintenance report</strong>
-                          <small>Service and repair costs.</small>
+                          <small>Recorded services, repairs &amp; checks.</small>
                         </span>
                       </button>
 
