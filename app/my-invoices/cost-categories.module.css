@@ -78,6 +78,34 @@
   .cards { grid-template-columns: minmax(0, 1fr); }
 }
 
+.budgetCategoryPanel {
+  display: grid;
+  align-content: start;
+  gap: .75rem;
+  min-width: 0;
+}
+.choiceToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1rem;
+}
+.choiceToolbar .fuelSwitch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.8rem;
+  gap: .55rem;
+  margin: 0;
+  padding: .45rem .8rem;
+  border-radius: .65rem;
+  box-shadow: none;
+}
+.choiceToolbar .fuelSwitch:focus-within {
+  outline: 2px solid var(--app-accent, #278264);
+  outline-offset: 2px;
+}
 .categoryOptions, .checks { display: grid; gap: .65rem; }
 .categoryOptions { container-type: inline-size; }
 .checks { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
@@ -110,7 +138,6 @@
   border: 1px solid var(--app-line, #a5bcb2); border-radius: .35rem;
 }
 .categoryOptions button[aria-pressed="true"]::before { content: '✓'; background: #17674f; border-color: #17674f; color: white; }
-.categoryOptions .allCosts { justify-self: start; }
 .categoryOptions button:focus-visible { outline: 2px solid var(--app-accent, #278264); outline-offset: 2px; }
 
 .reference { background: #eff6f2; border: 1px solid #c4dcd0; border-radius: 1rem; padding: 1rem 1.3rem; color: #173c31; }
