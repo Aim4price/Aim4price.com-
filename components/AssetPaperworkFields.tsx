@@ -182,8 +182,8 @@ function PaperworkEditor({
         fields: <>
           <ModalSelect className={ui.field} label="Finance type" buttonLabel="Finance type" value={draft.financeType}
             options={FINANCE_TYPE_OPTIONS} onChange={setAssetFinanceType} placeholder="Select finance type" showDescriptions={false} usePortal />
-          {field('financierName', 'Financier', { placeholder: 'Example: Bank or finance house' })}
-          {draft.financeStatus === 'yes' && field('financeCurrentOutstandingExVat', 'Current outstanding amount excl. VAT', { kind: 'amount' })}
+          {field('financierName', 'Financier', { placeholder: 'Bank or finance house' })}
+          {draft.financeStatus === 'yes' && field('financeCurrentOutstandingExVat', 'Outstanding balance excl. VAT', { kind: 'amount' })}
           {bulkFinanceControl}
           <label className={ui.advanced}>
             <input type="checkbox" checked={includeTerms} onChange={event => setIncludeTerms(event.target.checked)} />
