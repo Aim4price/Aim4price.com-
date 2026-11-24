@@ -7,8 +7,11 @@
   flex-shrink: 0;
   box-sizing: border-box;
   z-index: 1;
-  width: min(1240px, var(--website-dialog-reference-width, calc(100% - 24px)));
-  max-width: var(--website-dialog-reference-width, calc(100% - 24px));
+  --entry-available-width: var(--website-dialog-reference-width, calc(100% - 24px));
+  max-width: var(--entry-available-width);
+}
+.dialog:not(:has(.choiceScroll)) {
+  width: min(1240px, var(--entry-available-width));
 }
 .body {min-height:0;min-width:0;border:0;padding:4px;margin:0;display:grid;gap:18px;overflow:auto}
 .dialog table {border-collapse:collapse;width:100%;text-align:left}
@@ -22,38 +25,10 @@
 .mapping small {display:block;margin:5px 0}
 .dialog .check {display:flex;align-items:center;gap:10px}
 .dialog .check input {width:auto;min-height:0}
-.dialog .pair {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.dialog.dialog:has(.pair) {
-  width: min(780px, var(--website-dialog-reference-width, calc(100% - 24px)));
-  padding: 28px;
+.dialog:has(.choiceScroll) {
   container-type: inline-size;
   overflow: hidden;
 }
-
-.choiceHeader {
-  flex: none;
-  margin: 0;
-  padding: 0;
-}
-
-.dialog .choiceHeader h2 {
-  margin: 0;
-  padding-inline-end: 52px;
-  font: 800 32px/1.15 var(--font-heading, "Montserrat"), sans-serif;
-}
-
-.choiceHeader p {
-  margin: 8px 0 0;
-  padding-inline-end: 48px;
-  font-size: 16px;
-  font-weight: 650;
-  color: var(--app-text-muted, #536c60);
-}
-
-.choiceHeader > div { margin-top: 16px; }
 
 .transparentWrapper { display: contents; }
 
@@ -66,26 +41,12 @@
 
 .choiceScroll .body {
   overflow: visible;
-  padding: 16px 2px;
-  gap: 12px;
-}
-
-.dialog .body .pair {
-  gap: 16px;
-}
-
-.dialog .pair > [data-tone] {
-  min-height: 164px;
-  padding: 18px;
-  gap: 14px;
-  border-radius: 18px;
-}
-
-.dialog .pair > [data-tone] span {
-  gap: 4px;
+  padding: 0;
+  gap: 10px;
 }
 
 .example {
+  margin: 0 6px 6px;
   min-width: 0;
   border: 1px solid var(--app-border, #c8d9cf);
   border-radius: 14px;
@@ -144,11 +105,15 @@
 .dialog .exampleContent tr:last-child td { border-bottom: 0; }
 
 @container (max-width: 480px) {
-  .dialog .body .pair { grid-template-columns: 1fr; gap: 10px; }
+  .dialog .choiceScroll .pair {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
   .dialog .pair > [data-tone] {
     flex-direction: row;
     justify-content: flex-start;
     min-height: 84px;
+    padding: 16px;
     text-align: left;
   }
 }
