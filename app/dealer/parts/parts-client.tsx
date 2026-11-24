@@ -1278,6 +1278,7 @@ export default function PartsClient({
               <div className={`${styles.actions} ${styles.partEditFooter}`}><button onClick={() => setEditStep("edit")}>Back</button><button onClick={close}>Cancel</button></div>
             </>}
             {(editStep === "add" || (editStep === "sheet" && stock)) && <PartsImportForm
+              listId={network}
               listName={current?.name}
               onStageChange={setImportStage}
               initialDetails={details}

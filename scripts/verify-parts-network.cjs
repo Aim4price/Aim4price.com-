@@ -1119,6 +1119,20 @@ const appCode =
     await page.$$eval('summary',summaries=>summaries.find(s=>s.textContent==='Editing tools').click());
     await click('Add column');await page.click('dialog [data-detail="custom"]');await page.type('[aria-label="Custom field name"]','Pack size');await click('Next');
     await paste('[aria-label="Pack size 1"]','6');
+    // Move a custom field past an imported field and paste in the order shown.
+    const headerOrder = () => page.$$eval('[aria-label="Parts spreadsheet"] thead th[data-column]:not([hidden]) strong', cells => cells.map(c => c.textContent));
+    const fieldOrder = await headerOrder();
+    const neighbor = fieldOrder[fieldOrder.indexOf('Pack size') - 1];
+    await click('Move Pack size left');
+    assert.equal((await headerOrder()).indexOf('Pack size'), fieldOrder.indexOf('Pack size') - 1);
+    const neighborValue = await page.$eval(`[aria-label="${neighbor} 1"]`, input => input.value);
+    await paste('[aria-label="Pack size 1"]', '6\t' + neighborValue);
+    assert.equal(await page.$eval(`[aria-label="${neighbor} 1"]`, input => input.value), neighborValue);
+    const grip = '[aria-label="Resize Pack size column"]';
+    const widthBefore = await page.$eval(grip, el => el.closest('th').offsetWidth);
+    await page.focus(grip);
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await page.$eval(grip, el => el.closest('th').offsetWidth), widthBefore + 12);
     await click('Back');await click('Review parts');
     assert.equal(await page.$eval('[aria-label="Pack size 1"]',e=>e.value),'6','Review-only fields and edits survive checking an unchanged mapping');
     await click('Check import');await page.waitForFunction(()=>document.body.innerText.includes('Ready to import'));

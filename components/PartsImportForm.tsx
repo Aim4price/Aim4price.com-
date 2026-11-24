@@ -20,6 +20,7 @@ import { AddPartField, PartDetailInputs, PartInput, DetailIcon } from "./PartsDe
 import VatPriceInput from "./VatPriceInput";
 import PartsChoice from "./PartsChoice";
 import ModalSelect from "./AssetModalSelect";
+import SheetColumnHeader, { useSheetColumns } from "./SheetColumnHeader";
 import SpreadsheetUpload from "./SpreadsheetUpload";
 import importStyles from "./PartsImportForm.module.css";
 import PartsSheetTools, { type SheetTool } from "./PartsSheetTools";
@@ -38,6 +39,7 @@ type Preview = {
 };
 export default function PartsImportForm({
   initialFields = [],
+  listId,
   listName,
   initialDetails,
   editSnapshot,
@@ -49,6 +51,7 @@ export default function PartsImportForm({
 }: {
   onStageChange?: (stage: string) => void;
   initialFields?: PartDetailField[];
+  listId?: string;
   listName?: string;
   initialDetails: Details;
   editSnapshot?: {rows: string[][]; revision: number};
@@ -111,6 +114,21 @@ export default function PartsImportForm({
   const revealColumn = useRef(false);
   const horizontalPosition = useRef(0);
   const [horizontalSize, setHorizontalSize] = useState({width: 0, content: 0});
+  const layout = useSheetColumns('aim4price:parts-sheet:' + (listId ?? 'draft'));
+  const columnIds = [...PART_FIELDS, ...extraFields.map(field => 'detail:' + field.id)];
+  const orderedColumns = layout.ordered(columnIds).map(id => columnIds.indexOf(id));
+  const visibleColumns = orderedColumns.filter(index => !hiddenColumns.includes(index));
+  const visibleIds = visibleColumns.map(i => columnIds[i]);
+  const availableWidth = Math.max(0, horizontalSize.width - 132);
+  const defaultWidths = [
+    Math.max(160, Math.min(245, availableWidth * .22)),
+    Math.max(210, Math.min(340, availableWidth * .30)),
+    Math.max(128, Math.min(145, availableWidth * .12)),
+    Math.max(145, Math.min(200, availableWidth * .18)),
+    Math.max(135, Math.min(200, availableWidth * .18)),
+  ];
+  const widthOf = (i: number) => layout.widths[columnIds[i]] ?? Math.round(defaultWidths[i] ?? 180);
+  const sheetGeometry = visibleColumns.map(i => columnIds[i] + ':' + widthOf(i)).join('|');
   function panSheet(left: number) {
     horizontalPosition.current = left;
     sheetRef.current?.querySelectorAll("tr").forEach(row => {
@@ -133,7 +151,7 @@ export default function PartsImportForm({
     const observer = new ResizeObserver(measure);
     observer.observe(sheet);
     return () => observer.disconnect();
-  }, [stage, source, extraFields, hiddenColumns, rows.length, page]);
+  }, [stage, source, sheetGeometry, rows.length, page]);
   useLayoutEffect(() => {
     if (horizontalRef.current) horizontalRef.current.scrollLeft = horizontalPosition.current;
   }, [horizontalSize]);
@@ -327,8 +345,14 @@ export default function PartsImportForm({
   const visible = visibleIndexes.slice(page * 50, page * 50 + 50);
   useEffect(() => { setPage(current => Math.min(current, Math.max(0, Math.ceil(visibleIndexes.length / 50) - 1))); }, [visibleIndexes.length]);
   const fileFlow = source === "file" && stage !== "choose";
+  const addRowButton = <button disabled={busy || rows.length >= 20000} onClick={() => {
+    addRowFocus.current = rows.length;
+    change([...rows, emptyRow()]);
+    setPage(Math.floor(rows.length / 50));
+  }}>+ Add row</button>;
   const sheetTools = <div className={styles.sheetToolbar} role="group" aria-label="Sheet tools">
         <span>{selected.length ? `${selected.length} selected` : `${rows.length} ${rows.length === 1 ? "part" : "parts"}`}</span>
+        {source !== "file" && addRowButton}
         <AddPartField column fields={extraFields} onAdd={addField}/>
         <button disabled={busy} onClick={() => setTool({kind: "columns"})}><DetailIcon kind="columns"/>Manage columns</button>
         <button disabled={busy || !rows.length} onClick={() => setTool({kind: "bulk"})}><DetailIcon kind="edit"/>Bulk edit</button>
@@ -495,7 +519,7 @@ export default function PartsImportForm({
               <div ref={sheetRef} className={styles.editorWrap} role="region" aria-label="Parts spreadsheet" tabIndex={0}>
                 <table className={`${styles.editorTable} ${styles.independentRows}`}>
                   <thead>
-                    <tr>
+                    <tr onScroll={e => panSheet(e.currentTarget.scrollLeft)}>
                       <th scope="col">
                         {<input
                           type="checkbox"
@@ -506,10 +530,12 @@ export default function PartsImportForm({
                             : selected.filter(i => !visibleIndexes.includes(i)))}
                         />}
                       </th>
-                      {labels.map((label, i) => (
-                        <th key={label} data-column={i} hidden={hiddenColumns.includes(i)}>
-                          {label}
-                          {i !== 0 && i !== 2 && <small>Optional</small>}
+                      {orderedColumns.map(i => (
+                        <th scope="col" key={columnIds[i]} data-column={i} hidden={hiddenColumns.includes(i)} style={{ flex: '0 0 ' + widthOf(i) + 'px' }}>
+                          <SheetColumnHeader label={labels[i]} hint={i === 0 || i === 2 ? undefined : 'Optional'}
+                            index={visibleColumns.indexOf(i)} count={visibleColumns.length} width={widthOf(i)}
+                            onMove={direction => layout.move(columnIds, visibleIds, columnIds[i], direction)}
+                            onResize={(width, persist) => layout.resize(columnIds[i], width, persist)} />
                         </th>
                       ))}
                     </tr>
@@ -537,8 +563,8 @@ export default function PartsImportForm({
                             {<button type="button" className={styles.sheetRowAction} title={`Row ${i + 1} options`} aria-haspopup="dialog" aria-label={`Actions for row ${i + 1}`} onClick={() => setTool({kind: "row", index: i})}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 3h6l.5 3 2 1.2 2.8-1 3 5.2-2.3 2v2.3l2.3 2-3 5.2-2.8-1-2 1.2L15 26H9l-.5-3-2-1.2-2.8 1-3-5.2 2.3-2v-2.3l-2.3-2 3-5.2 2.8 1 2-1.2Z" transform="translate(2 0) scale(.8)"/><circle cx="11.6" cy="11.6" r="3.2"/></svg></button>}
                             </div>
                           </td>
-                          {row.map((cell, j) => (
-                            <td key={j} data-column={j} hidden={hiddenColumns.includes(j)}>
+                          {orderedColumns.map(j => (
+                            <td key={columnIds[j]} data-column={j} hidden={hiddenColumns.includes(j)} style={{ flex: '0 0 ' + widthOf(j) + 'px' }}>
                               <input
                                 aria-label={`${labels[j]} ${i + 1}`}
                                 aria-invalid={Boolean(showError(i, j))}
@@ -547,7 +573,7 @@ export default function PartsImportForm({
                                     ? `part-error-${i}-${j}`
                                     : undefined
                                 }
-                                value={cell}
+                                value={row[j] ?? ""}
                                 inputMode={
                                   j === 2
                                     ? "numeric"
@@ -565,9 +591,7 @@ export default function PartsImportForm({
                                   change(
                                     rows.map((r, n) =>
                                       n === i
-                                        ? r.map((v, k) =>
-                                            k === j ? e.target.value : v,
-                                          )
+                                        ? columnIds.map((_, k) => k === j ? e.target.value : r[k] ?? "")
                                         : r,
                                     ),
                                   )
@@ -576,13 +600,12 @@ export default function PartsImportForm({
                                   e.preventDefault();
                                   try {
                                     setError("");
-                                    if (hiddenColumns.length && e.clipboardData.getData("text/plain").includes("\t")) throw new Error("Show all columns before pasting multiple columns so values stay aligned.");
                                     change(
                                       pastePartsCells(
                                         rows,
                                         e.clipboardData.getData("text/plain"),
                                         i,
-                                        j, labels.length,
+                                        j, labels.length, visibleColumns,
                                       ),
                                     );
                                   } catch (err) {
@@ -607,7 +630,7 @@ export default function PartsImportForm({
                 </table>
               </div>
               <div className={styles.actions}>
-                {<button disabled={rows.length >= 20000} onClick={() => {addRowFocus.current = rows.length;change([...rows, emptyRow()]);setPage(Math.floor(rows.length / 50));}}>+ Add row</button>}
+                {source === "file" && addRowButton}
                 <span>
                   {rows.length.toLocaleString()} {rows.length === 1 ? "row" : "rows"}
                   {attempted && invalid ? ` · ${invalid} need attention` : ""}

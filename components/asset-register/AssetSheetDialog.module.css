@@ -135,6 +135,8 @@
 }
 .dialog .tools { flex-wrap: wrap; }
 .gridScroll {
+  width: fit-content;
+  max-width: 100%;
   min-width: 0;
   max-height: calc(var(--website-visible-height, 100dvh) * .42);
   overflow: auto;
@@ -144,13 +146,13 @@
   border-radius: 10px;
 }
 .dialog .gridScroll .assetGrid {
-  width: 100%;
+  table-layout: fixed;
   min-width: 0;
   border-spacing: 0;
   border-collapse: separate;
 }
-.rowColumn { width: 132px; }
-.titleColumn { width: min(34%, 360px); }
+/* Explicit column widths take precedence over positional widths in the Parts editor. */
+.dialog .gridScroll .assetGrid thead th { width: auto; }
 .dialog .assetGrid thead th {
   position: sticky;
   top: 0;
@@ -191,15 +193,6 @@
   accent-color: var(--app-primary, #17654c);
 }
 .dialog .assetGrid td > small { white-space: normal; }
-.dialog .rowActions {
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  margin: 12px 0 4px;
-  font-size: 14px;
-}
-.dialog .rowActions button { min-height: 38px; padding: 8px 12px; }
-
-
 .reviewTable {
   overflow: auto;
   max-height: calc(var(--website-visible-height, 100dvh) * .42);
