@@ -12,7 +12,7 @@ export default function HoverManager({recordings, onChange, busy, setBusy}: {
   busy: boolean;
   setBusy: (busy:boolean) => void;
 }) {
-  const [audience, setAudience] = useState<HoverAudience>('dealer');
+  const [audience, setAudience] = useState<HoverAudience>('owner');
   const [selected, setSelected] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
   const editor = useRef<HTMLElement>(null);
@@ -25,7 +25,7 @@ export default function HoverManager({recordings, onChange, busy, setBusy}: {
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
-  const card = hoverCards.find(item => item.key === selected);
+  const card = hoverCards[audience].find(item => item.key === selected);
   const id = recordings[audience][selected];
   function select(key:string) {
     setSelected(key); setFile(null); setMessage('');
@@ -58,15 +58,15 @@ export default function HoverManager({recordings, onChange, busy, setBusy}: {
   }
   return <section>
     <div className={styles.switcher} aria-label="Workspace audience">
-      {(['dealer','business'] as const).map(role => <button key={role} disabled={busy} aria-pressed={audience === role}
-        onClick={() => { setAudience(role); select(''); }}>{role === 'dealer' ? 'Dealer' : 'Business'}</button>)}
+      {(['owner','business'] as const).map(role => <button key={role} disabled={busy} aria-pressed={audience === role}
+        onClick={() => { setAudience(role); select(''); }}>{role === 'owner' ? 'Owner' : 'Business'}</button>)}
     </div>
-    <div className={styles.hoverGrid}>{hoverCards.map(item => <button key={item.key} disabled={busy}
+    <div className={styles.hoverGrid}>{hoverCards[audience].map(item => <button key={item.key} disabled={busy}
       aria-pressed={selected === item.key} onClick={() => select(item.key)}>
       <strong>{item.label}</strong><span>{recordings[audience][item.key] ? 'Published' : 'Add recording'}</span>
     </button>)}</div>
     {card && <section ref={editor} className={styles.editor} key={audience + selected}>
-      <div className={styles.title}><h2>{card.label}</h2><span className={styles.badge}>{audience === 'dealer' ? 'Dealer' : 'Business'}</span></div>
+      <div className={styles.title}><h2>{card.label}</h2><span className={styles.badge}>{audience === 'owner' ? 'Owner' : 'Business'}</span></div>
       <label className={styles.drop} onDragOver={event => event.preventDefault()} onDrop={event => {
         event.preventDefault(); choose(event.dataTransfer.files[0]);
       }}>
