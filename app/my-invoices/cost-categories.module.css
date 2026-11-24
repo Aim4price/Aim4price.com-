@@ -122,8 +122,8 @@
 .budgetCategories { border: 1px solid var(--app-line, #cbdad3); border-radius: 1rem; background: var(--app-surface, white); }
 .budgetCategories summary { border: 0; }
 .budgetCategories summary span { font-size: .9rem; color: var(--app-muted, #486458); }
-.checks { grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: .5rem; }
-.categoryOptions button { display: flex; align-items: center; gap: .55rem; }
+.checks { grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr)); align-items: stretch; gap: .5rem; }
+.categoryOptions button { display: flex; align-items: center; gap: .5rem; }
 .categoryOptions button::before {
   content: ''; display: grid; place-items: center; box-sizing: border-box; width: 1.2rem; height: 1.2rem; flex: none;
   border: 1px solid var(--app-line, #a5bcb2); border-radius: .35rem;

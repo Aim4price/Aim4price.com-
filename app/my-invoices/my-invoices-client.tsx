@@ -4150,7 +4150,7 @@ export default function MyInvoicesClient({
                       })}
                     </div>
                     <details className={categoryStyles.budgetCategories}>
-                      <summary><strong>Cost categories</strong><span>{budgetDraft.categories.length ? `${budgetDraft.categories.length} selected` : 'All costs'}</span></summary>
+                      <summary><strong>Cost categories</strong><span>{budgetDraft.categories.length > 1 ? `${budgetDraft.categories.length} selected` : categorySummary(budgetDraft.categories)}</span></summary>
                       <div className={categoryStyles.categoryOptions} role="group" aria-label="Costs included in this budget">
                         <button type="button" className={categoryStyles.allCosts} aria-pressed={!budgetDraft.categories.length}
                           onClick={() => { setBudgetFormError(''); setBudgetDraft(current => ({ ...current, categories: [] })); }}>All costs</button>
@@ -4257,7 +4257,7 @@ export default function MyInvoicesClient({
                       </div>
                       <div className={reviewStyles.fuel}>
                         <dt>Cost categories</dt><dd>{categorySummary(budgetDraft.categories)}</dd>
-                        {budgetCountsFuel && <><dt>Fuel costs</dt>
+                        {budgetCountsFuel && <><dt>Fuel slip costs</dt>
                         <dd className={budgetDraft.includeFuelSlipCosts ? reviewStyles.included : reviewStyles.excluded}>
                           {budgetDraft.includeFuelSlipCosts ? 'Included' : 'Excluded'}
                         </dd></>}
