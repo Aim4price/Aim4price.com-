@@ -100,8 +100,8 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   }
   function mapTable() {
     const used = mapping.filter(Boolean).map(targetColumn);
-    if (!used.some(k => k === 'title' || k === 'make' || k === 'model'))
-      return setError('Match an asset name, make or model column.');
+    if (!used.includes('title') && !(used.includes('make') && used.includes('model')))
+      return setError('Match Asset name, or match both Make and Model.');
     const explicit = mapping.filter(Boolean);
     if (new Set(explicit).size !== explicit.length)
       return setError('Match each asset field only once.');
@@ -239,7 +239,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
             <button aria-expanded={example} onClick={() => setExample(!example)}>See an example</button>
           </div>
           {example && <div>
-            <p>Only the asset name is required.</p>
+            <p>Enter an asset name, or use both make and model.</p>
             <table>
               <thead>
                 <tr>
@@ -312,7 +312,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
           </div>)}</div>
         </>}
         {stage === 'edit' && <>
-          <p>Add one asset per row. Only the asset name is required.</p>
+          <p>Add one asset per row. Enter an asset name, or use both make and model.</p>
           <div className={parts.actions}>
             <button onClick={() => setDetails(!details)} aria-expanded={details}>Add columns</button>
           </div>

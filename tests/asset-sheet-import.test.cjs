@@ -10,6 +10,8 @@ test('a name is sufficient, and compatible make and model columns can supply it'
   const row = mapAssetRow(['Case IH', 'JXM 90'], ['make','model']);
   assert.equal(assetTitle(row), 'Case IH JXM 90');
   assert.ok(rowErrors(blankAsset(), '').title);
+  assert.ok(rowErrors({...blankAsset(), make: 'Case IH'}, '').title);
+  assert.ok(rowErrors({...blankAsset(), model: 'JXM 90'}, '').title);
 });
 
 test('values require a stated VAT basis and unrelated monetary headings stay unmapped', () => {

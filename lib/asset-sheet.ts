@@ -46,7 +46,9 @@ export function mapAssetRow(cells: string[], mapping: Mapping[]) {
   return row;
 }
 export function assetTitle(row: AssetRow) {
-  return row.title.trim() || [row.make.trim(), row.model.trim()].filter(Boolean).join(' ');
+  const make = row.make.trim();
+  const model = row.model.trim();
+  return row.title.trim() || (make && model ? [make, model].join(' ') : '');
 }
 export function usageUnit(raw: string) {
   const value = raw.trim().toLowerCase();
