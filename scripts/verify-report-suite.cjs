@@ -15,7 +15,7 @@ fs.mkdirSync(out, { recursive: true });
 
 const pure = new Set([
   'fuel-report', 'report-theme', 'maintenance-report-style', 'report-print', 'simple-xlsx', 'usage-readings',
-  'asset-groups-shared', 'admin-work-tracker-shared', 'report-chronology',
+  'asset-sheet', 'asset-groups-shared', 'admin-work-tracker-shared', 'report-chronology',
   'asset-depreciation-timeline', 'depreciation-umbrella-summary',
   'ownership-budget-tracker',
 ]);
