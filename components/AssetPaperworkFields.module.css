@@ -54,6 +54,10 @@
   margin: 0;
   font: inherit;
 }
+.fields > .field > :is(input, button), .fields > .field > span > input {
+  min-height: 3.75rem !important;
+  height: 3.75rem !important;
+}
 .field > textarea { min-height: 5rem; resize: vertical; }
 
 .fields > .wide, .advanced { grid-column: 1 / -1; }
