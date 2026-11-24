@@ -10,7 +10,10 @@ export function useLeadDialog(onClose: () => void, busy = false) {
     const element = ref.current;
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const controls = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') || []).filter(node => node.getClientRects().length);
-    if (element && !element.contains(document.activeElement)) (controls()[0] || element).focus();
+    if (element && !element.contains(document.activeElement)) {
+      if (element.hasAttribute('data-dialog-initial-focus')) element.focus({ preventScroll: true });
+      else (controls()[0] || element).focus();
+    }
     function keydown(event: KeyboardEvent) {
       const element = ref.current;
       if (!element || !element.getClientRects().length || event.defaultPrevented) return;

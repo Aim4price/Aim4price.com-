@@ -1,3 +1,4 @@
+import { importPending } from '../../../../lib/asset-sheet';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { loadTeamScope, listTeamOwnerAssets, teamDocuments, auditTeam } from '../../../../lib/team-access';
 import { teamCanAccessAsset, TeamAccessError } from '../../../../lib/team-access-policy';
@@ -1077,8 +1078,8 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     usage.value === null ? naCell() : numberCell(usage.value),
     textOrNaCell(usage.unit),
     textOrNaCell(conditionLabel(item.condition)),
-    moneyCell(item.value),
-    vatIncludedFormulaCell(REGISTER_VALUE_EX_VAT_COLUMN, rowNumber, item.value),
+    importPending(item) ? textCell('Awaiting valuation') : moneyCell(item.value),
+    vatIncludedFormulaCell(REGISTER_VALUE_EX_VAT_COLUMN, rowNumber, importPending(item) ? null : item.value),
     statusCellForChoice(financeStatus, 'Financed', 'Not financed'),
     textOrNaCell(item.financeNote, 'note'),
     statusCellForChoice(insuranceStatus, 'Insured', 'Not insured'),
@@ -1251,7 +1252,7 @@ function buildAssetGroupsWorkbookSheet(items: AssetRegisterItem[], generatedAt: 
         index === 0 ? moneyCell(countedGroupValue) : textCell(''),
         textOrNaCell(item.title),
         textCell(exportAssetGroupRoleLabel(item)),
-        moneyCell(item.value),
+        importPending(item) ? textCell('Awaiting valuation') : moneyCell(item.value),
         textCell(exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'),
       ];
     });
@@ -1575,6 +1576,9 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   const replacementPrice = replacementPriceExVat(item);
   const insuredValue = insuredValueExVat(item);
   const isProperty = item.kind === 'property';
+  const pending = !reportVisibility.getStore()?.hideValues && importPending(item);
+  const currentValue = pending ? 'Awaiting valuation' : `${formatPdfMoney(item.value)} excl. VAT`;
+  const registerValue = pending ? currentValue : `${currentValue} | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT`;
   const insuredValueSummary = insuredValue === null
     ? (reportVisibility.getStore()?.hideValues ? 'Insured value: Restricted' : 'Insured value: N/A')
     : `Insured value: ${formatPdfMoney(insuredValue)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(insuredValue))} incl. VAT`;
@@ -1594,22 +1598,22 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
     return [
       { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
       { text: `${kindLabel(item)} | ${PROPERTY_YEAR_LABEL}: ${year} | Size: ${propertySizeDisplay(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
-      {text: `${item.selectedMethod === 'manual' ? 'Manual value' : 'Ideal value'}: ${formatPdfMoney(item.value)} excl. VAT`,font:'F2',size:10.2},
+      {text: `${item.selectedMethod === 'manual' ? 'Manual value' : 'Ideal value'}: ${currentValue}`,font:'F2',size:10.2},
       {text: `Realistic selling price: ${reportVisibility.getStore()?.hideValues ? 'Restricted' : item.realisticSellingAssessment ? formatPdfMoney(item.realisticSellingAssessment.priceExVat) : 'N/A'} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
       ...groupLines,
       { text: `Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary}`, font: 'F1', size: 9.2 },
-      { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
+      { text: `Register value: ${registerValue} | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
     ];
   }
 
   return [
     { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
     { text: `${kindLabel(item)} | ${assetModelPdfLabel(item)} | Year: ${year} | Usage: ${usagePdfLabel(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
-    {text: `${item.selectedMethod === 'manual' ? 'Manual value' : 'Ideal value'}: ${formatPdfMoney(item.value)} excl. VAT`,font:'F2',size:10.2},
+    {text: `${item.selectedMethod === 'manual' ? 'Manual value' : 'Ideal value'}: ${currentValue}`,font:'F2',size:10.2},
       {text: `Realistic selling price: ${reportVisibility.getStore()?.hideValues ? 'Restricted' : item.realisticSellingAssessment ? formatPdfMoney(item.realisticSellingAssessment.priceExVat) : 'N/A'} excl. VAT${item.realisticSellingAssessment?.needsReview ? ' | Update needed' : ''}${item.realisticSellingAssessment ? ` | Assessed: ${item.realisticSellingAssessment.assessedAt.slice(0,10)}` : ''}`,font:'F2',size:10.2},
     ...groupLines,
     { text: `Serial/VIN: ${serial} | Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary} | License: ${licenseStatus}${registration ? ` (${registration})` : ''}`, font: 'F1', size: 9.2 },
-    { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
+    { text: `Register value: ${registerValue} | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
   ];
 }
 
@@ -2744,7 +2748,7 @@ function buildSourceAssetRow(row: SourceAssetRow, index: number): XlsxCellValue[
     usage.value === null ? naCell() : numberCell(usage.value),
     textOrNaCell(usage.unit),
     textOrNaCell(conditionLabel(item.condition)),
-    moneyCell(item.value),
+    importPending(item) ? textCell('Awaiting valuation') : moneyCell(item.value),
     registerValue === null ? naCell() : moneyCell(moneyInclVatTotal(registerValue)),
     statusCellForChoice(financeStatus, 'Financed', 'Not financed'),
     textOrNaCell(item.financeNote, 'note'),

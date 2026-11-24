@@ -75,7 +75,7 @@
 
 dialog.shareDialog {
   width: min(50rem, calc(100% - 2rem));
-  padding: clamp(1.15rem, 3.5vw, 2rem);
+  padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 3.5), 2rem);
   container: invite-dialog / inline-size;
 }
 .shareDialog > header { border: 0; padding-bottom: 0; }

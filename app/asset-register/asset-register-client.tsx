@@ -1,4 +1,6 @@
 'use client';
+import AssetSheetDialog from '../../components/asset-register/AssetSheetDialog';
+import { importPending } from '../../lib/asset-sheet';
 import { useMeteredManage } from '../../components/BusinessCreditControls';
 import AssetAverageUsage from '../../components/asset-register/AssetAverageUsage';
 import { PageHelpHeading } from '../../components/PageHelp';
@@ -4094,6 +4096,8 @@ const HIDDEN_BASIC_SPEC_KEYS = new Set([
   'asset flag',
   'asset flagged at',
   'asset flag updated at',
+  'asset import key',
+  'assetimportkey',
   'flagged',
   'valuation needs update',
   'valuation stale since',
@@ -8812,7 +8816,7 @@ export default function AssetRegisterClient({
       }
 
       if (isAddChoiceModalOpen) {
-        closeAddAssetChoiceModal();
+        // The sheet dialog handles Escape and keeps the save in progress.
         return;
       }
 
@@ -11103,7 +11107,7 @@ export default function AssetRegisterClient({
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
 
     if (
-      assetFormKind === 'manual' &&
+      assetFormKind === 'manual' && !editingAsset?.specsJson?.assetImportKey &&
       (!assetDraft.generalAssetCategory || !assetDraft.insuranceUseContext || !assetDraft.insuranceMobility)
     ) {
       if (showFeedback) {
@@ -11149,12 +11153,12 @@ export default function AssetRegisterClient({
       return false;
     }
 
-    if (!assetDraft.title.trim() || value <= 0) {
+    if (!assetDraft.title.trim() || (value <= 0 && !(importPending(editingAsset) && !assetDraft.value.trim()))) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Asset title and current value are required before moving to the next step.' });
       return false;
     }
 
-    if (replacementPriceRequired && (!replacementPrice || replacementPrice <= 0)) {
+    if (replacementPriceRequired && (!replacementPrice || replacementPrice <= 0) && !(editingAsset?.specsJson?.assetImportKey && !assetDraft.replacementPrice.trim())) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
       return false;
     }
@@ -12470,12 +12474,12 @@ export default function AssetRegisterClient({
       return false;
     }
 
-    if (!title || value <= 0) {
+    if (!title || (value <= 0 && !(importPending(editingAsset) && !assetDraft.value.trim()))) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Asset title and current value are required.' });
       return false;
     }
 
-    if (replacementPriceRequired && (!replacementPrice || replacementPrice <= 0)) {
+    if (replacementPriceRequired && (!replacementPrice || replacementPrice <= 0) && !(editingAsset?.specsJson?.assetImportKey && !assetDraft.replacementPrice.trim())) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
       return false;
     }
@@ -12556,7 +12560,7 @@ export default function AssetRegisterClient({
       : '';
     const specsJson: Record<string, unknown> = {
       ...buildStatusSpecsFragment(assetStatusDraft, licenseApplicable),
-      ...(replacementPrice !== null
+      ...(editingAsset?.specsJson?.assetImportKey && !replacementPrice ? {} : replacementPrice !== null
         ? {
             replacementPriceExVat: replacementPrice,
             replacement_price_ex_vat: replacementPrice,
@@ -16979,7 +16983,7 @@ export default function AssetRegisterClient({
                               <span className={styles.marketplaceLiveStatus}><span aria-hidden="true" />Live on Marketplace</span>
                             ) : null}
 
-                            {isManualValueAsset ? (
+                            {isManualValueAsset && !importPending(asset) ? (
                               <div className={styles.manualValueNotice} role="note">
                                 <span className={styles.manualValueNoticeIcon} aria-hidden="true">i</span>
                                 <span>Manual value is fixed — it will not automatically update by itself.</span>
@@ -16993,10 +16997,10 @@ export default function AssetRegisterClient({
                               <div className={styles.assetValueVatDisplay}>
                                 <div className={styles.assetValueVatText}>
                                   <div className={styles.assetValueVatAmountRow}>
-                                    <strong>{valuesRestricted ? hiddenValue : money(displayedAssetValue)}</strong>
-                                    <CardVatToggle included={assetValueVatMode === 'included'} onToggle={() => handleAssetValueVatToggle(asset.id)} label={assetValueVatToggleLabel} />
+                                    <strong>{valuesRestricted ? hiddenValue : importPending(asset) ? 'Awaiting valuation' : money(displayedAssetValue)}</strong>
+                                    {!importPending(asset) && <CardVatToggle included={assetValueVatMode === 'included'} onToggle={() => handleAssetValueVatToggle(asset.id)} label={assetValueVatToggleLabel} />}
                                   </div>
-                                  <span>{assetValueVatLabel}{estimateNeedsUpdate ? ' · Previous value' : ''}</span>
+                                  <span>{!importPending(asset) && assetValueVatLabel}{estimateNeedsUpdate ? ' · Previous value' : ''}</span>
                                 </div>
                               </div>
                             </div>
@@ -18146,51 +18150,12 @@ export default function AssetRegisterClient({
         />
       ) : null}
 
-      {isAddChoiceModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAddAssetChoiceModal} />
-
-          <div
-            className={`${styles.modalCard} ${styles.addAssetChoiceModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-asset-choice-title"
-          >
-            <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`}>
-              <div className={styles.modalHeaderText}>
-                <h3 id="add-asset-choice-title">Choose how to add an asset</h3>
-                <p>Adding to <strong>{addAssetTargetRegisterName}</strong>. Start with an Aim4price valuation, or add a manually priced asset.</p>
-              </div>
-
-              <button
-                type="button"
-                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
-                onClick={closeAddAssetChoiceModal}
-                aria-label="Close add asset options"
-                data-modal-close="true"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className={styles.addAssetChoiceGrid}>
-              <Link href={addAssetValuationHref} className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`}>
-                <TrendIcon className={styles.buttonIcon} />
-                <span>
-                  <strong>Aim4price Value</strong>
-                </span>
-              </Link>
-
-              <button type="button" className={styles.addAssetChoiceButton} onClick={openManualEntryFromChoice}>
-                <DocumentIcon className={styles.buttonIcon} />
-                <span>
-                  <strong>Manual Entry</strong>
-                </span>
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {isAddChoiceModalOpen && <AssetSheetDialog registerId={addAssetTargetRegisterId} registerName={addAssetTargetRegisterName}
+        valuationHref={addAssetValuationHref} request={ownerFetch} onManual={openManualEntryFromChoice} onClose={closeAddAssetChoiceModal}
+        onBack={()=>{closeAddAssetChoiceModal();setIsAddAssetDestinationModalOpen(true);}}
+        onSaved={(added,skipped)=>{closeAddAssetChoiceModal();setSearchTerm('');setAssetFilters([]);setCurrentPage(1);
+          setNotice({tone:'success',message:`${added} asset${added===1?'':'s'} added to ${addAssetTargetRegisterName}.${skipped?' '+skipped+' skipped.':''}`});
+          void handleRefreshAssetRegister(true);}} />}
 
       {isAcquisitionChoiceOpen ? (
         <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
