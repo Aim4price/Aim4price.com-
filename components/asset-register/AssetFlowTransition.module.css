@@ -1,0 +1,51 @@
+.cover {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--app-surface, white) 64%, transparent);
+  cursor: progress;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .85rem 1.2rem;
+  border-radius: 1rem;
+  border: 1px solid var(--app-line, #c4d6cc);
+  background: var(--app-surface, white);
+  color: var(--app-text, #163e32);
+  box-shadow: 0 5px 22px #173c311c;
+  font-weight: 750;
+}
+.badge i {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  border: 2px solid var(--app-line, #cadbd2);
+  border-top-color: currentColor;
+  animation: turn .75s linear infinite;
+}
+@keyframes turn { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .badge i { animation: none; } }
+
+.typeGrid button[data-asset-kind] {
+  background: var(--app-surface, white) !important;
+  border-color: var(--app-line, #cbd9d2) !important;
+}
+.typeGrid button[data-asset-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) {
+  border-color: var(--icon-colour, #197657) !important;
+}
+.typeGrid [data-asset-kind="equipment"] { --icon-colour: #197657; }
+.typeGrid [data-asset-kind="vehicle"] { --icon-colour: #2868a2; }
+.typeGrid [data-asset-kind="property"] { --icon-colour: #916126; }
+.typeGrid [data-asset-kind="tools"] { --icon-colour: #765299; }
+.typeGrid [data-asset-kind="stock"] { --icon-colour: #9a552e; }
+.typeGrid [data-asset-kind="manual"] { --icon-colour: #267583; }
+.typeGrid [data-asset-kind] > span:first-child {
+  color: var(--icon-colour) !important;
+  background: color-mix(in srgb, white 88%, var(--icon-colour)) !important;
+  border-color: color-mix(in srgb, white 65%, var(--icon-colour)) !important;
+}

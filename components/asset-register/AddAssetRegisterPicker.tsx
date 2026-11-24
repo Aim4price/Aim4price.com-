@@ -1,5 +1,6 @@
 'use client';
 import {useEffect,useId,useRef,useState} from 'react';
+import {useAssetFlowTransition} from './useAssetFlowTransition';
 import RegisterPickerRow, { type RegisterPickerOption } from './RegisterPickerRow';
 import CreateAssetRegisterModal, { type RegisterDetailsDraft } from './CreateAssetRegisterModal';
 import styles from './MoveAssetDestinationPicker.module.css';
@@ -7,10 +8,12 @@ import registerStyles from '../../app/asset-register/page.module.css';
 import accountStyles from '../../app/account/page.module.css';
 
 type Option = RegisterPickerOption;
-export default function AddAssetRegisterPicker({options,onSelect,onClose,onCreate,busy,initialSelectedId='',startCreating=false}:{initialSelectedId?:string;startCreating?:boolean;options:Option[];onSelect:(id:string)=>void;onClose:()=>void;onCreate:(details:RegisterDetailsDraft)=>Promise<void>;busy:boolean}){
+export default function AddAssetRegisterPicker({options,onSelect,onClose,onCreate,busy:creatingRegister,initialSelectedId='',startCreating=false}:{initialSelectedId?:string;startCreating?:boolean;options:Option[];onSelect:(id:string)=>void;onClose:()=>void;onCreate:(details:RegisterDetailsDraft)=>Promise<void>;busy:boolean}){
  const id=useId(),dialog=useRef<HTMLDivElement>(null),input=useRef<HTMLInputElement>(null);
  const [search,setSearch]=useState(''),[creating,setCreating]=useState(startCreating),[draft,setDraft]=useState<RegisterDetailsDraft>({businessName:'',email:'',phone:'',addressLine1:''}),[error,setError]=useState('');
  const [selectedId,setSelectedId]=useState(initialSelectedId);
+ const transition=useAssetFlowTransition();
+ const busy=creatingRegister||transition.pending;
  const selected=options.find(option=>option.value===selectedId);
  const visible=options.filter(option=>`${option.label} ${option.description||''}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
  useEffect(()=>{const previous=document.activeElement as HTMLElement|null;return()=>{if(previous?.isConnected)previous.focus();};},[]);
@@ -23,6 +26,7 @@ export default function AddAssetRegisterPicker({options,onSelect,onClose,onCreat
    if(event.key==='Escape'){event.stopPropagation();if(!busy){if(creating){setCreating(false);setError('');}else onClose();}return;}
    if(event.key!=='Tab')return;const nodes=Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled)')||[]);const first=nodes[0],last=nodes[nodes.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
   }}>
+   {transition.feedback}
    <header className={`${registerStyles.modalHeader} ${registerStyles.changeRegisterModalHeader}`}>
     <div className={registerStyles.modalHeaderText}><h3 id={id}>Choose asset register</h3><p>Where should this asset be saved?</p></div>
     <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={busy} aria-label="Close register selection" data-modal-close="true">×</button>
@@ -43,7 +47,7 @@ export default function AddAssetRegisterPicker({options,onSelect,onClose,onCreat
    </div>
    <footer className={styles.footer}>
     <div className={styles.confirmation} aria-live="polite">{selected ? <strong>{selected.label}</strong> : <span>Choose a register to continue.</span>}</div>
-    <div className={styles.actions}><button type="button" className={styles.primary} disabled={busy||!selected} onClick={()=>{if(selected)onSelect(selected.value);}}>Continue</button></div>
+    <div className={styles.actions}><button type="button" className={styles.primary} disabled={busy||!selected} onClick={()=>{if(selected)transition.start(dialog.current,selected.label,()=>onSelect(selected.value));}}>Continue</button></div>
    </footer>
   </div>
  </div>;
