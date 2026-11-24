@@ -4004,13 +4004,28 @@ export default function MyInvoicesClient({
               <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body, budgetWizardStep === 5 ? reviewStyles.body : ''].join(' ')}>
 
                 {budgetWizardStep === 2 ? (
-                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-categories-title">
+                  <section className={categoryStyles.budgetCategoryPanel} aria-labelledby="budget-categories-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-categories-title" tabIndex={-1}>Which costs should count towards this budget?</h3>
                     </div>
                     <div className={categoryStyles.categoryOptions} role="group" aria-label="Costs included in this budget">
-                      <button type="button" className={categoryStyles.allCosts} aria-pressed={!budgetDraft.categories.length}
-                        onClick={() => { setBudgetFormError(''); setBudgetDraft(current => ({ ...current, categories: [] })); }}>All costs</button>
+                      <div className={categoryStyles.choiceToolbar}>
+                        <button type="button" aria-pressed={!budgetDraft.categories.length}
+                          onClick={() => { setBudgetFormError(''); setBudgetDraft(current => ({ ...current, categories: [] })); }}>All costs</button>
+                        {budgetCountsFuel && <label className={`${styles.budgetFuelToggle} ${categoryStyles.fuelSwitch}`}>
+                          <input
+                            type="checkbox"
+                            checked={budgetDraft.includeFuelSlipCosts}
+                            onChange={(event) => setBudgetDraft((current) => ({
+                              ...current,
+                              includeFuelSlipCosts: event.target.checked,
+                            }))}
+                            disabled={budgetSaving}
+                          />
+                          <span aria-hidden="true" />
+                          <strong>Count fuel slip costs</strong>
+                        </label>}
+                      </div>
                       <div className={categoryStyles.checks}>
                         {costCategories.map(category => (
                           <button type="button" key={category.value} aria-pressed={budgetDraft.categories.includes(category.value)}
@@ -4023,19 +4038,6 @@ export default function MyInvoicesClient({
                         ))}
                       </div>
                     </div>
-                    {budgetCountsFuel && <label className={[styles.budgetFuelToggle, styles.budgetFuelToggleCompact].join(' ')}>
-                      <input
-                        type="checkbox"
-                        checked={budgetDraft.includeFuelSlipCosts}
-                        onChange={(event) => setBudgetDraft((current) => ({
-                          ...current,
-                          includeFuelSlipCosts: event.target.checked,
-                        }))}
-                        disabled={budgetSaving}
-                      />
-                      <span aria-hidden="true" />
-                      <div><strong>Count fuel slip costs</strong></div>
-                    </label>}
                   </section>
                 ) : null}
 
