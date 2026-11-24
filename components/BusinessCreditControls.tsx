@@ -67,7 +67,7 @@ function CreditBalance({plan}:{plan:BusinessSubscription}) {
  </span>;
 }
 
-function InviteActions({inviteLink}:{inviteLink:string}) {
+function InviteActions({inviteLink,showLabels=false}:{inviteLink:string;showLabels?:boolean}) {
  const [copied,setCopied]=useState(false);
  const inviteUrl = new URL(inviteLink, window.location.origin).href;
  const inviteMessage = inviteUrl ? encodeURIComponent(`Join me on Aim4price to value and manage your assets: ${inviteUrl}`) : undefined;
@@ -80,15 +80,18 @@ function InviteActions({inviteLink}:{inviteLink:string}) {
      window.prompt('Copy your invite link', inviteUrl);
    }
  }
- return <div className={creditStyles.inviteActions} role="group" aria-label="Share Aim4price">
+ return <div className={[creditStyles.inviteActions, showLabels && creditStyles.shareChoices].filter(Boolean).join(" ")} role="group" aria-label="Share Aim4price">
    <button type="button" onClick={()=>void copyInvite()} aria-label="Copy invite link" title={copied ? 'Invite link copied' : 'Copy invite link'}>
      <svg aria-hidden="true" viewBox="0 0 24 24">{copied ? <path d="m4 12 5 5L20 6"/> : <><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></>}</svg>
+     {showLabels && <span>{copied ? 'Link copied' : 'Copy link'}</span>}
    </button>
    <a href={'https://wa.me/?text=' + inviteMessage} target="_blank" rel="noopener noreferrer" aria-label="Share invite on WhatsApp" title="Share on WhatsApp">
      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 11.8a8.8 8.8 0 0 1-13 7.7L3 21l1.4-4.7a8.8 8.8 0 1 1 16.4-4.5Z"/><path d="M8 7.7c-.8 1.1.3 3.4 2.2 5.4 2 2 4.2 3.1 5.5 2.2l.8-1.5-2.5-1.2-.9 1c-1.6-.8-2.5-1.8-3.2-3.2l.9-.9-1.1-2.4Z" fill="currentColor" stroke="none"/></svg>
+     {showLabels && <span>WhatsApp</span>}
    </a>
    <a href={'mailto:?subject=Your%20Aim4price%20invite&body=' + inviteMessage} aria-label="Share invite by email" title="Share by email">
      <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4 7 8 6 8-6"/></svg>
+     {showLabels && <span>Email</span>}
    </a>
    <span className={creditStyles.inviteStatus} role="status">{copied ? 'Invite link copied' : ''}</span>
  </div>;
@@ -97,9 +100,9 @@ function InviteActions({inviteLink}:{inviteLink:string}) {
 export function ShareAim4priceButton({inviteLink,className,icon}:{inviteLink:string;className:string;icon:ReactNode}) {
  const [open,setOpen]=useState(false), titleId=useId();
  return <><button type="button" className={className} aria-haspopup="dialog" onClick={()=>setOpen(true)}>{icon}<strong>Share Aim4price</strong></button>
- {open && <ShareDisclosureDialog title="Share Aim4price" titleId={titleId} closeLabel="Close" onClose={()=>setOpen(false)}>
- <p>Invite someone to Aim4price. Your account will appear under “Who introduced you?” at signup.</p>
- <InviteActions inviteLink={inviteLink} />
+ {open && <ShareDisclosureDialog title="Share Aim4price" className={creditStyles.shareDialog} titleId={titleId} descriptionId={`${titleId}-description`} closeLabel="Close" onClose={()=>setOpen(false)}>
+ <p id={`${titleId}-description`} className={creditStyles.shareDescription}>People who join through your link will see your name at signup.</p>
+ <InviteActions inviteLink={inviteLink} showLabels />
  </ShareDisclosureDialog>}</>;
 }
 
