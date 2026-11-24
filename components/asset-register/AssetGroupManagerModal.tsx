@@ -1,5 +1,6 @@
 'use client';
-import { reportCostCategories } from '../../lib/cost-categories';
+import OwnershipReportCategories from '../OwnershipReportCategories';
+import categoryStyles from '../../app/my-invoices/cost-categories.module.css';
 import AssetPickerDetail from '../AssetPickerDetail';
 
 import downloadStyles from "../ReportDownload.module.css";
@@ -24,13 +25,13 @@ import accountStyles from '../../app/account/page.module.css';
 
 type IconProps = { className?: string };
 type AssetGroupModalView = 'menu' | 'members' | 'reports' | 'delete' | 'create';
-type AssetGroupReportStep = 'options' | 'format' | 'filters';
+type AssetGroupReportStep = 'options' | 'categories' | 'format' | 'filters';
 type AssetGroupEditorStep = 1 | 2 | 3;
 
 export type AssetGroupReportKind = 'valuation' | 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
 export type AssetGroupReportFormat = 'pdf' | 'xlsx';
 export type AssetGroupReportFilters = {
-  costCategory?: string;
+  costCategories?: string[];
   year?: string;
   month?: string;
   maintenanceType?: string;
@@ -469,7 +470,7 @@ export default function AssetGroupManagerModal({
   const [reportFormat, setReportFormat] = useState<AssetGroupReportFormat>('pdf');
   const [reportStep, setReportStep] = useState<AssetGroupReportStep>('options');
   const [reportKind, setReportKind] = useState<AssetGroupReportKind>('valuation');
-  const [costCategory, setCostCategory] = useState('all');
+  const [costCategories, setCostCategories] = useState<string[]>(['all']);
   const [reportYear, setReportYear] = useState('all');
   const [reportMonth, setReportMonth] = useState('all');
   const [maintenanceType, setMaintenanceType] = useState('all');
@@ -701,7 +702,7 @@ export default function AssetGroupManagerModal({
 
     if (onDownloadReport) {
       void onDownloadReport(group, reportKind, reportFormat, {
-        costCategory,
+        costCategories: reportKind === 'ownership' ? costCategories : undefined,
         year: reportYear,
         month: reportYear === 'all' ? 'all' : reportMonth,
         maintenanceType: reportKind === 'maintenance' ? maintenanceType : undefined,
@@ -735,7 +736,8 @@ export default function AssetGroupManagerModal({
       return;
     }
 
-    setReportStep('format');
+    setCostCategories(['all']);
+    setReportStep(nextReportKind === 'ownership' ? 'categories' : 'format');
   }
 
   const currentYear = new Date().getFullYear();
@@ -798,7 +800,7 @@ export default function AssetGroupManagerModal({
           ? `${registerStyles.optionsModal} ${styles.manageModal}`
           : useReportModalDesign
             ? `${registerStyles.modalCard} ${registerStyles.assetReportModal}`
-            : styles.dialog} ${view === 'reports' ? downloadStyles.dialog : ''} ${isAssetPickerStep ? `${pickerStyles.modal} ${styles.assetPickerModal}` : ''}`}
+            : styles.dialog} ${view === 'reports' ? downloadStyles.dialog : ''} ${view === 'reports' && reportStep === 'categories' ? categoryStyles.dialog : ''} ${isAssetPickerStep ? `${pickerStyles.modal} ${styles.assetPickerModal}` : ''}`}
         data-asset-choice-modal={isAssetPickerStep ? 'true' : undefined}
         role="dialog"
         aria-modal="true"
@@ -899,6 +901,8 @@ export default function AssetGroupManagerModal({
                   </button>
                 ) : null}
               </div>
+            ) : reportStep === 'categories' ? (
+              <OwnershipReportCategories selected={costCategories} onChange={setCostCategories} />
             ) : reportStep === 'format' ? (
               <>
                 <div className={registerStyles.assetTimelineStageHeading}>
@@ -931,7 +935,6 @@ export default function AssetGroupManagerModal({
                   {reportKind === 'maintenance' ? (
                     <ReportSelect label="Maintenance" value={maintenanceType} options={maintenanceOptions} onChange={setMaintenanceType} />
                   ) : null}
-                  {reportKind === 'ownership' && <ReportSelect label="Cost category" value={costCategory} options={reportCostCategories} onChange={setCostCategory} />}
                   <ReportSelect label="Year" value={reportYear} options={reportYearOptions} onChange={(value) => { setReportYear(value); setReportMonth('all'); }} />
                   <ReportSelect label="Month" value={reportMonth} options={reportMonthOptions} disabled={reportYear === 'all'} onChange={setReportMonth} />
                 </div>
@@ -945,14 +948,14 @@ export default function AssetGroupManagerModal({
                 <button
                   type="button"
                   className={accountStyles.ghostButton}
-                  onClick={() => setReportStep(reportStep === 'filters' ? 'format' : 'options')}
+                  onClick={() => setReportStep(reportStep === 'filters' ? 'format' : reportStep === 'format' && reportKind === 'ownership' ? 'categories' : 'options')}
                   disabled={busy || reportBusy}
                 >
                   Back
                 </button>
                 <button type="button" className={accountStyles.ghostButton} onClick={onClose} disabled={busy || reportBusy}>Cancel</button>
-                <button type="button" className={accountStyles.primaryButton} onClick={() => reportStep === 'format' ? setReportStep('filters') : handleDownloadSelectedReport()} disabled={busy || reportBusy} data-download-primary="true">
-                  <span>{reportStep === 'format' ? 'Next' : reportBusy ? 'Preparing…' : isAttachingReport ? reportFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                <button type="button" className={accountStyles.primaryButton} onClick={() => reportStep === 'categories' ? setReportStep('format') : reportStep === 'format' ? setReportStep('filters') : handleDownloadSelectedReport()} disabled={busy || reportBusy || (reportStep === 'categories' && !costCategories.length)} data-download-primary="true">
+                  <span>{reportStep !== 'filters' ? 'Next' : reportBusy ? 'Preparing…' : isAttachingReport ? reportFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                 </button>
               </div>
             )}

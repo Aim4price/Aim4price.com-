@@ -145,3 +145,22 @@
 .reference dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: .5rem 1rem; }
 .reference dl div { display: flex; gap: .65rem; align-items: baseline; }
 .reference dd { margin: 0; }
+
+.reportCategories { display: grid; gap: .7rem; }
+.reportToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.reportToolbar strong { color: var(--app-text, #10352b); font-size: 1.05rem; }
+.reportToolbar button {
+  padding: .4rem .8rem;
+  min-height: 2.25rem;
+  border: 1px solid var(--app-line, #91b6a6);
+  border-radius: .75rem;
+  background: var(--app-surface, white);
+  color: var(--app-text, #10352b);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.reportToolbar button[aria-pressed="true"] { background: var(--brand-mid, #165340); color: white; }
+.reportCategories .card { position: relative; min-height: 4rem; padding-block: .45rem; }
+.reportCategories .card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.selectionCheck { position: absolute; top: .15rem; right: .35rem; color: var(--app-text, #10352b); font-size: .8rem; font-weight: 800; }
