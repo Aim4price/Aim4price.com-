@@ -44,8 +44,16 @@ export default function Page(){const [open,setOpen]=useState(true);return <><but
  }
  await page.screenshot({path:'/tmp/shared-owner-manual-cost.png'});
  await click('Next');await page.waitForFunction(()=>document.body.textContent.includes('Describe the work'));
- const notesFillRow=await page.$eval('textarea[placeholder="Additional notes"]',el=>Math.abs(el.getBoundingClientRect().width-el.closest('label').parentElement.getBoundingClientRect().width)<2);
- assert(notesFillRow);await click('Next');
+ const workFields = await page.$eval('textarea[placeholder="Additional notes"]', notes => {
+  const grid = notes.closest('label').parentElement;
+  const bounds = grid.getBoundingClientRect();
+  return [...grid.querySelectorAll('textarea')].map(field => {
+   const box = field.getBoundingClientRect();
+   return Math.abs(box.left - bounds.left) < 2 && Math.abs(box.width - bounds.width) < 2;
+  });
+ });
+ assert.deepEqual(workFields, [true, true, true, true]);
+ await click('Next');
  // Manual costs now offer an optional supporting document before review.
  await page.waitForFunction(()=>document.body.textContent.includes('Supporting document'));
  await click('Skip for now');await page.waitForSelector('[role="dialog"][aria-label="Review cost"]');await click('Save cost');await page.waitForFunction(()=>document.body.textContent.includes('Cost record saved to the asset.'));
