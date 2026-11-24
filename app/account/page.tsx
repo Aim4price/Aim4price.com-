@@ -1,3 +1,4 @@
+import { getBillingAgreement, isAccountBillingHeld } from '../../lib/billing';
 import { isAccountingPilotSession } from '../../lib/accounting-pilot';
 import { canManageTeamAccess } from '../../lib/team-access';
 import {getBusinessCredits} from '../../components/BusinessCredits';
@@ -45,11 +46,17 @@ export default async function AccountPage() {
     if (profile.accountStatus !== 'active') redirect('/pending-payment');
     return sharedAccountPage(session.user, profile, false, false);
   }
-  const scanPinStatus = await getAccountScanPinStatus(session.user.id);
+  const [scanPinStatus, ownerBilling] = await Promise.all([
+    getAccountScanPinStatus(session.user.id),
+    profile.accountType === 'owner' && !profile.trialEndsAt
+      ? Promise.all([getBillingAgreement(session.user.id), isAccountBillingHeld(session.user.id)])
+          .then(([agreement, held]) => ({ interval: agreement?.interval ?? null, held }))
+      : undefined,
+  ]);
 
   const fullBusiness = profile.accountType === 'dealer' && !isMiddlemanAccountSubtype(profile.accountSubtype);
   const subscription = fullBusiness ? { fullAccess:true, paidSince:null, pending:false, owner:true, remaining:0, limit:0 } : undefined;
   const workspaceInvite = fullBusiness ? (await getBusinessCredits(session.user.id))?.workspace.owner_invite_id : null;
   const invite = workspaceInvite || (profile.inviteId ? 'account-' + profile.inviteId : undefined);
-  return <AccountClient inviteLink={invite ? '/auth?accountType=owner&invite='+invite+'#signup' : undefined} subscription={subscription} showAccounting={profile.accountType === "owner" && isAccountingPilotSession(session)} canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
+  return <AccountClient ownerBilling={ownerBilling} inviteLink={invite ? '/auth?accountType=owner&invite='+invite+'#signup' : undefined} subscription={subscription} showAccounting={profile.accountType === "owner" && isAccountingPilotSession(session)} canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
 }
