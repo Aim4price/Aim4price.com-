@@ -6335,6 +6335,7 @@ export default function AssetRegisterClient({
   const [assetStatusDraft, setAssetStatusDraft] = useState<AssetStatusDraft>(initialAssetStatusDraft);
   const [assetDetailFocusTarget, setAssetDetailFocusTarget] = useState<AssetDetailEditTarget | null>(null);
   const [assetStatusEditView, setAssetStatusEditView] = useState<AssetStatusEditView>('hub');
+  const [paperworkFooter, setPaperworkFooter] = useState<HTMLDivElement | null>(null);
   const [assetStatusQuickOrigin, setAssetStatusQuickOrigin] = useState<AssetStatusQuickOrigin>(null);
   const [assetStatusAdvancedOpen, setAssetStatusAdvancedOpen] = useState(false);
   const [assetStatusError, setAssetStatusError] = useState('');
@@ -15896,6 +15897,7 @@ export default function AssetRegisterClient({
           : 'Saved automatically';
   const isAssetAutosaveBusy = Boolean(editingAsset) && (assetAutosaveState === 'pending' || assetAutosaveState === 'saving');
   const isAssetStatusFocusedView = manualAssetStep === 3 && assetStatusEditView !== 'hub';
+  const isPagedAssetForm = isPagedAssetDetails || (!showAssetUpdateMenu && isAssetStatusFocusedView);
   const settingsUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
   const settingsUsageCurrentValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, settingsUsageMode) : null;
   const assetSettingsMapsUrl = editingAsset ? buildAssetSettingsGoogleMapsUrl(editingAsset) : null;
@@ -18242,7 +18244,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetFormModal} ${isPagedAssetDetails ? updateStyles.pagedDialog : ''} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''} ${manualAssetStep === 3 && assetStatusEditView === 'hub' && !showAssetUpdateMenu ? styles.paperworkOverviewModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetFormModal} ${isPagedAssetForm ? updateStyles.pagedDialog : ''} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''} ${manualAssetStep === 3 && assetStatusEditView === 'hub' && !showAssetUpdateMenu ? styles.paperworkOverviewModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
@@ -18267,7 +18269,7 @@ export default function AssetRegisterClient({
                       {assetDraft.title.trim() ||
                         (editingAsset ? editingAsset.title : `Add ${selectedManualAssetType.label.toLowerCase()}`)}
                     </h3>
-                    {isPagedAssetDetails ? <p>Year Model: {(editingAsset ? editingAsset.yearModel : assetDraft.yearModel) || 'Not recorded'} • Usage: {editingAsset ? buildAssetUsageValue(editingAsset) : draftUsage} • Condition: {conditionLabel(editingAsset ? editingAsset.condition : assetDraft.condition)}</p> : !editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : assetUpdateMenuEnabled ? <p>{ASSET_FORM_SECTION_TABS.find((section) => section.step === manualAssetStep)?.label}</p> : null}
+                    {isPagedAssetForm ? <p>Year Model: {(editingAsset ? editingAsset.yearModel : assetDraft.yearModel) || 'Not recorded'} • Usage: {editingAsset ? buildAssetUsageValue(editingAsset) : draftUsage} • Condition: {conditionLabel(editingAsset ? editingAsset.condition : assetDraft.condition)}</p> : !editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : assetUpdateMenuEnabled ? <p>{ASSET_FORM_SECTION_TABS.find((section) => section.step === manualAssetStep)?.label}</p> : null}
                   </div>
                 </div>
               )}
@@ -18300,7 +18302,7 @@ export default function AssetRegisterClient({
                 </div>
               </div>
             ) : (
-            <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${isPagedAssetDetails ? updateStyles.pagedBody : ''} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
+            <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${isPagedAssetForm ? updateStyles.pagedBody : ''} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
               {manualAssetStep > 1 && !assetUpdateMenuEnabled && !isPagedAssetDetails ? (
                 <nav className={styles.assetFormSectionTabs} aria-label="Asset form sections">
                   {ASSET_FORM_SECTION_TABS.map((section, index) => {
@@ -18884,6 +18886,7 @@ export default function AssetRegisterClient({
 
                 {manualAssetStep === 3 ? (
                   <AssetPaperworkFields
+                    footerHost={paperworkFooter}
                     showReturnAction={Boolean(editingAsset) && assetStatusQuickOrigin !== 'detail-card'}
                     assetStatusDraft={assetStatusDraft}
                     assetStatusEditView={assetStatusEditView}
@@ -19142,7 +19145,12 @@ export default function AssetRegisterClient({
                 <span className={styles.assetUpdateSaveText} role="status">{assetAutosaveLabel}</span>
                 <button type="button" className={styles.secondaryButton} onClick={navigateBackFromAssetForm} disabled={isAssetAutosaveBusy}>Exit</button>
               </div>
-            ) : manualAssetStep > 1 && !isAssetStatusFocusedView ? (
+            ) : isAssetStatusFocusedView ? (
+              <div className={styles.assetUpdateFooter}>
+                <span className={styles.assetUpdateSaveText} role="status">{isSavingAssetStatus ? 'Saving…' : editingAsset ? assetAutosaveLabel : 'Saved when you finish'}</span>
+                <div ref={setPaperworkFooter} />
+              </div>
+            ) : manualAssetStep > 1 ? (
               <div className={styles.assetUpdateFooter}>
                 <span
                   className={`${styles.assetUpdateSaveText} ${editingAsset && assetAutosaveState === 'error' ? styles.assetUpdateSaveTextError : ''}`}

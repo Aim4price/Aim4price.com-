@@ -34,10 +34,50 @@ export default function Page(){const [action,setAction]=useState('');return <><b
  async function fill(label,value){const handle=await page.evaluateHandle(label=>[...document.querySelectorAll('label')].find(n=>n.querySelector('span')?.textContent.startsWith(label))?.querySelector('input,textarea'),label);const input=handle.asElement();assert(input,'Missing input '+label);await input.click({clickCount:3});await input.type(value);}
  async function choose(label,option){await page.$$eval('div',(nodes,label)=>{const field=nodes.find(n=>n.firstElementChild?.tagName==='SPAN'&&n.firstElementChild.textContent===label&&n.querySelector('button[aria-haspopup=listbox]'));if(!field)throw Error('Missing dropdown '+label);field.querySelector('button').click()},label);await page.waitForSelector('[role=option]');await click(option);}
  await page.setViewport({width:1440,height:900});await page.goto('http://127.0.0.1:3043/business/shared-settings-validation',{waitUntil:'networkidle0',timeout:120000});
- await click('Details');await click('Paperwork');await click('Insurance');await choose('Insurance status','Insured');await fill('Insured amount','350000');await fill('Insurer name','Example insurer');await click('Done');await page.waitForFunction(()=>document.body.textContent.includes('Saved to the owner'));
- assert.equal(writes[0].body.section,'insurance');assert.equal(writes[0].body.insuranceStatus,'yes');assert.equal(writes[0].body.insuredValueExVat,'350000');
- await click('Finance');await choose('Finance status','Financed');await fill('Financier','Example bank');await click('Done');await page.waitForFunction(()=>document.body.textContent.includes('Saved to the owner'));assert.equal(writes[1].body.section,'finance');
- await click('Licence');await choose('Licence status','Licensed');await fill('Registration number','TEST123');await page.screenshot({path:'/tmp/shared-settings-license.png'});await click('Done');await page.waitForFunction(()=>document.body.textContent.includes('Saved to the owner'));assert.equal(writes[2].body.section,'license');
+ await click('Details');
+ await click('Paperwork');
+ await click('Insurance');
+ await choose('Insurance status','Insured');
+ await fill('Insured amount','350000');
+ await fill('Insurer name','Example insurer');
+ await click('Next');
+ await fill('Policy number','P-123');
+ await click('Back');
+ await click('Next');
+ await click('Next');
+ await click('Done');
+ await page.waitForFunction(()=>document.body.textContent.includes('Saved to the owner'));
+ assert.equal(writes[0].body.section,'insurance');
+ assert.equal(writes[0].body.insuranceStatus,'yes');
+ assert.equal(writes[0].body.insuredValueExVat,'350000');
+ assert.equal(writes[0].body.insurancePolicyNumber,'P-123');
+
+ await click('Finance');
+ await choose('Finance status','Financed');
+ await click('Next');
+ await choose('Finance type','Asset-specific finance');
+ await fill('Financier','Example bank');
+ await page.click('[data-asset-paperwork] input[type="checkbox"]');
+ await click('Next');
+ await fill('Interest rate','8.5');
+ await click('Next');
+ await fill('Finance term','48');
+ await click('Next');
+ await click('Done');
+ await page.waitForFunction(()=>document.body.textContent.includes('Saved to the owner'));
+ assert.equal(writes[1].body.section,'finance');
+ assert.equal(writes[1].body.financeInterestRatePercent,'8.5');
+ assert.equal(writes[1].body.financeTermMonths,'48');
+
+ await click('Licence');
+ await choose('Licence status','Licensed');
+ await fill('Registration number','test123');
+ await page.screenshot({path:'/tmp/shared-settings-license.png'});
+ await click('Next');
+ await click('Done');
+ await page.waitForFunction(()=>document.body.textContent.includes('Saved to the owner'));
+ assert.equal(writes[2].body.section,'license');
+ assert.equal(writes[2].body.licenseRegistrationNumber,'TEST123');
  await page.click('[aria-label="Close action form"]');await click('Exit');await click('Location');await click('Enter coordinates');await fill('Latitude','-33.9');await fill('Longitude','18.4');await fill('Optional location note','Workshop');await page.screenshot({path:'/tmp/shared-settings-location.png'});await click('Save location');await page.waitForFunction(()=>document.body.textContent.includes('Location saved to the asset'));assert.equal(writes[3].body.latitude,-33.9);assert.equal(writes[3].body.locationText,'Workshop');
  await click('Use device location');await page.waitForFunction(()=>document.body.textContent.includes('-34, 19'));assert.equal(writes[4].body.source,'device');
  await click('Choose on map');await page.waitForFunction(()=>typeof window.mapClick==='function');assert.equal(await page.evaluate(()=>window.mapMarkerOptions.draggable),true);
