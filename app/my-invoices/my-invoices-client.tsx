@@ -4599,7 +4599,10 @@ export default function MyInvoicesClient({
               {costCategories.map(category => (
                 <button key={category.value} type="button" className={categoryStyles.card} data-category={category.value} onClick={() => chooseCostCategory(category.value)}>
                   <span className={categoryStyles.icon} aria-hidden="true"><RecurringFieldIcon kind={category.icon} /></span>
-                  <strong>{category.label}</strong>
+                  <span className={categoryStyles.copy}>
+                    <strong>{'shortLabel' in category ? category.shortLabel : category.label}</strong>
+                    <small>{category.subtitle}</small>
+                  </span>
                 </button>
               ))}
             </div>
