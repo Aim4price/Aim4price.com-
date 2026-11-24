@@ -9282,7 +9282,12 @@ export default function AssetRegisterClient({
     { id: 'notes', label: 'Asset notes' },
   ];
   const assetDetailsPageIndex = Math.max(0, assetDetailsPages.findIndex(page => page.id === assetDetailsPage));
-  const isPagedAssetDetails = Boolean(editingAsset) && manualAssetStep === 2 && !showAssetUpdateMenu;
+  const isPagedAssetDetails = manualAssetStep === 2 && !showAssetUpdateMenu;
+  const draftUsage = showPercentUsageField && assetDraft.lifeWorkedPercent.trim()
+    ? `${assetDraft.lifeWorkedPercent}%`
+    : showUsageHoursField && assetDraft.hours.trim()
+      ? `${assetDraft.hours} ${assetDraft.usageMetric === 'km' ? 'km' : 'hours'}`
+      : '—';
   useEffect(() => {
     if (!isPagedAssetDetails || assetDetailFocusTarget) return;
     const frame = requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-details-page]')?.focus({ preventScroll: true }));
@@ -10451,6 +10456,7 @@ export default function AssetRegisterClient({
     }
 
     if (shouldAdvance) {
+      setAssetDetailsPage('identity');
       setManualAssetStep(2);
     }
   }
@@ -11070,7 +11076,8 @@ export default function AssetRegisterClient({
     await saveAssetStatusSection(section);
   }
 
-  function validateAssetDetailsDraft(showFeedback = true): boolean {
+  function validateAssetDetailsDraft(showFeedback = true, page?: string): boolean {
+    const checks = (section: string) => !page || page === section;
     const value = parseRegisterValueInput(assetDraft.value);
     const isLandProperty = assetFormKind === 'property' && assetDraft.propertyAssetSubtype === 'land';
     const replacementPriceRequired = assetFormKind !== 'stock' && !isLandProperty;
@@ -11088,7 +11095,7 @@ export default function AssetRegisterClient({
     const usageErrorLabel = assetDraft.usageMetric === 'km' ? 'Kilometres' : 'Machine hours';
 
     if (
-      assetFormKind === 'manual' && !editingAsset?.specsJson?.assetImportKey &&
+      checks('classification') && assetFormKind === 'manual' && !editingAsset?.specsJson?.assetImportKey &&
       (!assetDraft.generalAssetCategory || !assetDraft.insuranceUseContext || !assetDraft.insuranceMobility)
     ) {
       if (showFeedback) {
@@ -11104,7 +11111,7 @@ export default function AssetRegisterClient({
       assetDraft.propertyAssetSubtype || assetDraft.propertyInterest || assetDraft.insuranceUseContext,
     );
     if (
-      assetFormKind === 'property' &&
+      checks('classification') && assetFormKind === 'property' &&
       (!editingAsset || hasStartedPropertyClassification) &&
       (!assetDraft.propertyAssetSubtype || !assetDraft.insuranceUseContext || !assetDraft.propertyInterest)
     ) {
@@ -11121,7 +11128,7 @@ export default function AssetRegisterClient({
       assetDraft.stockAssetSubtype || assetDraft.stockValuationBasis || assetDraft.stockMovement,
     );
     if (
-      assetFormKind === 'stock' &&
+      checks('classification') && assetFormKind === 'stock' &&
       (!editingAsset || hasStartedStockClassification) &&
       (!assetDraft.stockAssetSubtype || !assetDraft.stockValuationBasis || !assetDraft.stockMovement)
     ) {
@@ -11134,42 +11141,42 @@ export default function AssetRegisterClient({
       return false;
     }
 
-    if (!assetDraft.title.trim() || (value <= 0 && !(importPending(editingAsset) && !assetDraft.value.trim()))) {
-      if (showFeedback) setNotice({ tone: 'error', message: 'Asset title and current value are required before moving to the next step.' });
+    if ((checks('identity') && !assetDraft.title.trim()) || (checks('values') && value <= 0 && !(importPending(editingAsset) && !assetDraft.value.trim()))) {
+      if (showFeedback) setNotice({ tone: 'error', message: !assetDraft.title.trim() ? 'Enter an asset title to continue.' : 'Enter a current value greater than zero to continue.' });
       return false;
     }
 
-    if (replacementPriceRequired && (!replacementPrice || replacementPrice <= 0) && !(editingAsset?.specsJson?.assetImportKey && !assetDraft.replacementPrice.trim())) {
+    if (checks('values') && replacementPriceRequired && (!replacementPrice || replacementPrice <= 0) && !(editingAsset?.specsJson?.assetImportKey && !assetDraft.replacementPrice.trim())) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Replacement price is required and must be greater than zero.' });
       return false;
     }
 
-    if (hasStockPeakValue && (!stockPeakValue || stockPeakValue <= 0)) {
+    if (checks('values') && hasStockPeakValue && (!stockPeakValue || stockPeakValue <= 0)) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Peak stock value must be greater than zero when entered.' });
       return false;
     }
 
-    if (stockPeakValue !== null && stockPeakValue < value) {
+    if (checks('values') && stockPeakValue !== null && stockPeakValue < value) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Peak stock value cannot be lower than the current stock value.' });
       return false;
     }
 
-    if (hasInsuredValue && (!insuredValueExVat || insuredValueExVat <= 0)) {
+    if (checks('values') && hasInsuredValue && (!insuredValueExVat || insuredValueExVat <= 0)) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Insured value must be greater than zero when entered.' });
       return false;
     }
 
-    if (hasYearModel && (!Number.isFinite(yearModel) || Number(yearModel) < 1800 || Number(yearModel) > new Date().getFullYear() + 1)) {
+    if (checks('condition') && hasYearModel && (!Number.isFinite(yearModel) || Number(yearModel) < 1800 || Number(yearModel) > new Date().getFullYear() + 1)) {
       if (showFeedback) setNotice({ tone: 'error', message: `${yearFieldLabel} must be a valid year.` });
       return false;
     }
 
-    if (hasHours && (!Number.isFinite(hours) || Number(hours) < 0)) {
+    if (checks('condition') && hasHours && (!Number.isFinite(hours) || Number(hours) < 0)) {
       if (showFeedback) setNotice({ tone: 'error', message: `${usageErrorLabel} must be zero or greater.` });
       return false;
     }
 
-    if (hasLifeWorkedPercent && (!Number.isFinite(lifeWorkedPercent) || Number(lifeWorkedPercent) < 0 || Number(lifeWorkedPercent) > 100)) {
+    if (checks('condition') && hasLifeWorkedPercent && (!Number.isFinite(lifeWorkedPercent) || Number(lifeWorkedPercent) < 0 || Number(lifeWorkedPercent) > 100)) {
       if (showFeedback) setNotice({ tone: 'error', message: 'Usage must be between 0% and 100%.' });
       return false;
     }
@@ -11203,6 +11210,21 @@ export default function AssetRegisterClient({
     }
 
     return true;
+  }
+
+  function navigateDetailsPage(button: HTMLButtonElement, direction: -1 | 1) {
+    const current = assetDetailsPages[assetDetailsPageIndex];
+    if (!editingAsset && direction === 1 && !validateAssetDetailsDraft(true, current.id)) return;
+    const target = assetDetailsPages[assetDetailsPageIndex + direction];
+    if (editingAsset) {
+      if (target) setAssetDetailsPage(target.id);
+      return;
+    }
+    assetFlow.start(button, target?.label ?? (direction === 1 ? 'Paperwork' : 'Choose asset type'), () => {
+      if (target) setAssetDetailsPage(target.id);
+      else if (direction === 1) goToNextManualAssetStep();
+      else goToPreviousManualAssetStep();
+    });
   }
 
   function goToPreviousManualAssetStep() {
@@ -18245,7 +18267,7 @@ export default function AssetRegisterClient({
                       {assetDraft.title.trim() ||
                         (editingAsset ? editingAsset.title : `Add ${selectedManualAssetType.label.toLowerCase()}`)}
                     </h3>
-                    {!editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : isPagedAssetDetails ? <p>Year Model: {editingAsset.yearModel || 'Not recorded'} • Usage: {buildAssetUsageValue(editingAsset)} • Condition: {conditionLabel(editingAsset.condition)}</p> : assetUpdateMenuEnabled ? <p>{ASSET_FORM_SECTION_TABS.find((section) => section.step === manualAssetStep)?.label}</p> : null}
+                    {isPagedAssetDetails ? <p>Year Model: {(editingAsset ? editingAsset.yearModel : assetDraft.yearModel) || 'Not recorded'} • Usage: {editingAsset ? buildAssetUsageValue(editingAsset) : draftUsage} • Condition: {conditionLabel(editingAsset ? editingAsset.condition : assetDraft.condition)}</p> : !editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : assetUpdateMenuEnabled ? <p>{ASSET_FORM_SECTION_TABS.find((section) => section.step === manualAssetStep)?.label}</p> : null}
                   </div>
                 </div>
               )}
@@ -18279,7 +18301,7 @@ export default function AssetRegisterClient({
               </div>
             ) : (
             <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${isPagedAssetDetails ? updateStyles.pagedBody : ''} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
-              {manualAssetStep > 1 && !assetUpdateMenuEnabled ? (
+              {manualAssetStep > 1 && !assetUpdateMenuEnabled && !isPagedAssetDetails ? (
                 <nav className={styles.assetFormSectionTabs} aria-label="Asset form sections">
                   {ASSET_FORM_SECTION_TABS.map((section, index) => {
                     const isActive = manualAssetStep === section.step;
@@ -18348,24 +18370,16 @@ export default function AssetRegisterClient({
 
                 {manualAssetStep === 2 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
-                    <div className={editingAsset ? updateStyles.classificationBar : styles.manualUtilityRow}>
-                      {editingAsset ? (
+                    <div className={updateStyles.classificationBar}>
                         <dl className={updateStyles.classificationSummary}>
                           <div><dt>Asset type</dt><dd>{selectedManualAssetType.label}</dd></div>
-                          {editingAsset.equipmentFamilyLabel?.trim() ? (
+                          {editingAsset?.equipmentFamilyLabel?.trim() ? (
                             <div><dt>Family</dt><dd>{editingAsset.equipmentFamilyLabel}</dd></div>
                           ) : null}
                         </dl>
-                      ) : (
-                        <div className={styles.manualSelectedTypeStrip}>
-                          <span>Type of Asset:</span>
-                          <strong>{selectedManualAssetType.label}</strong>
-                        </div>
-                      )}
-
                       <button
                         type="button"
-                        className={editingAsset ? updateStyles.advancedSettingsButton : styles.manualSettingsButton}
+                        className={updateStyles.advancedSettingsButton}
                         onClick={editingAsset ? openAssetSettingsModal : () => setManualAssetStep(1)}
                         data-access-restricted={desktopAccess ? 'true' : undefined} aria-label={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
                         title={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
@@ -19142,7 +19156,7 @@ export default function AssetRegisterClient({
                   {hasLowerUsageDraft && isSavedAim4priceAsset(editingAsset) ? (
                     <button type="button" className={styles.secondaryButton} disabled={isSavingAsset} onClick={() => reviewLowerUsage('usage')}>Review lower reading</button>
                   ) : null}
-                  {!assetUpdateMenuEnabled && ((editingAsset && manualAssetStep > 2) || (!editingAsset && manualAssetStep > 1)) ? (
+                  {!isPagedAssetDetails && !assetUpdateMenuEnabled && ((editingAsset && manualAssetStep > 2) || (!editingAsset && manualAssetStep > 1)) ? (
                     <button
                       type="button"
                       className={styles.secondaryButton}
@@ -19154,9 +19168,10 @@ export default function AssetRegisterClient({
                   ) : null}
 
                   {isPagedAssetDetails ? <>
-                    {assetDetailsPageIndex > 0 && <button type="button" className={styles.secondaryButton} onClick={() => setAssetDetailsPage(assetDetailsPages[assetDetailsPageIndex - 1].id)}>Back</button>}
-                    {assetDetailsPageIndex < assetDetailsPages.length - 1 ? <button type="button" className={styles.primaryButton} onClick={() => setAssetDetailsPage(assetDetailsPages[assetDetailsPageIndex + 1].id)}>Next</button>
-                      : <button type="button" className={styles.primaryButton} onClick={assetUpdateMenuEnabled ? returnToAssetUpdateMenu : closeAssetModal} disabled={isAssetAutosaveBusy || assetAutosaveState === 'error'}>Done</button>}
+                    {(assetDetailsPageIndex > 0 || !editingAsset) && <button type="button" className={styles.secondaryButton} onClick={event => navigateDetailsPage(event.currentTarget, -1)}>Back</button>}
+                    {editingAsset && assetDetailsPageIndex === assetDetailsPages.length - 1
+                      ? <button type="button" className={styles.primaryButton} onClick={assetUpdateMenuEnabled ? returnToAssetUpdateMenu : closeAssetModal} disabled={isAssetAutosaveBusy || assetAutosaveState === 'error'}>Done</button>
+                      : <button type="button" className={styles.primaryButton} onClick={event => navigateDetailsPage(event.currentTarget, 1)}>Next</button>}
                   </> : assetUpdateMenuEnabled ? (
                     <button type="button" className={styles.primaryButton} onClick={returnToAssetUpdateMenu} disabled={isAssetAutosaveBusy || assetAutosaveState === 'error'}>Done</button>
                   ) : manualAssetStep < 4 ? (
