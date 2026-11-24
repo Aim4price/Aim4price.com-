@@ -57,7 +57,6 @@
 .actions button:disabled { opacity: .55; cursor: default; }
 .confirmation { display: grid; gap: .7rem; }
 .history { margin: 0; padding: .65rem 0 0 1.2rem; border-top: 1px solid #dae6df; }
-.actions { container-type: inline-size; }
-@container (max-width: 540px) {
-  .actions button { flex: 1 1 100%; }
+@media (max-width: 540px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .actions button { flex: 1 1 100%; }
 }
