@@ -160,6 +160,7 @@ function routes(f, options = {}) {
  // Exercise the actual canonical report renderer with the same scoped service used by production.
  class NextRequest extends Request {}
  const reportModules={
+  '../../../../lib/asset-sheet':require('./helpers/load-ts.cjs')('lib/asset-sheet.ts'),
   'node:async_hooks':require('node:async_hooks'), 'next/server':{NextRequest,NextResponse},
   '../../../../lib/team-access':f.service,
   '../../../../lib/team-access-policy':policy,
