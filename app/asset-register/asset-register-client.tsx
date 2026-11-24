@@ -6473,6 +6473,7 @@ export default function AssetRegisterClient({
   const [vaultDocumentsErrorByAssetId, setVaultDocumentsErrorByAssetId] = useState<Record<string, string>>({});
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [detailPhotoIndexByAsset, setDetailPhotoIndexByAsset] = useState<Record<string, number>>({});
+  const [editorPhotoUrl, setEditorPhotoUrl] = useState<string | null>(null);
   const [photoViewer, setPhotoViewer] = useState<PhotoViewerState | null>(null);
   const detailTouchStartXRef = useRef<number | null>(null);
   const detailTouchDidSwipeRef = useRef(false);
@@ -9671,6 +9672,7 @@ export default function AssetRegisterClient({
   }, [assetGroupMemberships, assets, isShowingAllAssets, numericPageSize, standalonePaginationEntries]);
 
   function resetEditor() {
+    setEditorPhotoUrl(null);
     setAssetDetailsPage('identity');
     if (assetAutosaveTimerRef.current) {
       clearTimeout(assetAutosaveTimerRef.current);
@@ -9891,12 +9893,15 @@ export default function AssetRegisterClient({
     closeAssetModal();
   }
 
-  function openUpdater(asset: RegisterAsset, focusTarget: AssetDetailEditTarget | null = null) {
+  function openUpdater(asset: RegisterAsset, target: AssetDetailEditTarget | { photoUrl: string } | null = null) {
+    const focusTarget = typeof target === 'string' ? target : null;
+    const photoUrl = typeof target === 'object' ? target?.photoUrl ?? null : null;
+    setEditorPhotoUrl(photoUrl);
     setAssetDetailsPage(focusTarget === 'notes' ? 'notes' : focusTarget === 'replacement' ? 'values' : ['year', 'usage', 'condition'].includes(focusTarget ?? '') ? 'condition' : 'identity');
     setUsageTypeDialogOpen(false);
     setUsageTypeChangeConfirmed(false);
-    setAssetUpdateMenuEnabled(!focusTarget);
-    setShowAssetUpdateMenu(!focusTarget);
+    setAssetUpdateMenuEnabled(!target);
+    setShowAssetUpdateMenu(!target);
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
     pendingPhotoFilesRef.current = [];
 
@@ -9922,7 +9927,7 @@ export default function AssetRegisterClient({
     setBulkFinanceAssetIds([asset.id]);
     setBulkFinanceAssetPickerOpen(false);
     setBulkFinanceAssetSearch('');
-    setManualAssetStep(2);
+    setManualAssetStep(photoUrl ? 4 : 2);
     setHasManualAssetKindSelection(true);
     setIsAssetSettingsModalOpen(false);
     setIsManualConversionConfirmOpen(false);
@@ -17184,6 +17189,7 @@ export default function AssetRegisterClient({
                                       }}
                                       onTouchStart={(event) => handleDetailPhotoTouchStart(event.changedTouches[0]?.clientX ?? 0)}
                                       onTouchEnd={(event) => handleDetailPhotoTouchEnd(asset, event.changedTouches[0]?.clientX ?? 0)}
+                                      data-asset-return-action="photo-viewer"
                                       aria-label={canOpenPhotoViewer ? 'Open photo viewer' : canUseOwnerOnlyAssetActions ? 'Upload asset photos' : undefined}
                                     >
                                       {hasRealPhotos && detailPhoto ? (
@@ -17825,7 +17831,11 @@ export default function AssetRegisterClient({
             </button>
 
             <PhotoViewerActions key={photoViewerPhoto} url={photoViewerPhoto} title={`${photoViewerAsset.title}-photo-${photoViewerIndex + 1}`}
-              onEdit={canUseOwnerOnlyAssetActions ? () => { closePhotoViewer(); openUpdater(photoViewerAsset); setShowAssetUpdateMenu(false); } : undefined}
+              onEdit={canUseOwnerOnlyAssetActions ? () => {
+                rememberAssetModalReturn(photoViewerAsset, 'card', 'photo-viewer', null);
+                closePhotoViewer();
+                openUpdater(photoViewerAsset, { photoUrl: photoViewerPhoto });
+              } : undefined}
               onDelete={canUseOwnerOnlyAssetActions && normalizePhotos(photoViewerAsset.photos).includes(photoViewerPhoto) ? async () => {
                 const updated = await patchAssetMedia(photoViewerAsset, normalizePhotos(photoViewerAsset.photos).filter(photo => photo !== photoViewerPhoto), assetDocuments(photoViewerAsset));
                 syncMediaUpdatedAsset(updated); closePhotoViewer();
@@ -18311,7 +18321,7 @@ export default function AssetRegisterClient({
               </div>
             ) : (
             <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${useCompactAssetDialog ? updateStyles.pagedBody : ''} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
-              {manualAssetStep > 1 && !assetUpdateMenuEnabled && !isPagedAssetDetails ? (
+              {manualAssetStep > 1 && !assetUpdateMenuEnabled && !isPagedAssetDetails && !editorPhotoUrl ? (
                 <nav className={styles.assetFormSectionTabs} aria-label="Asset form sections">
                   {ASSET_FORM_SECTION_TABS.map((section, index) => {
                     const isActive = manualAssetStep === section.step;
@@ -18995,6 +19005,7 @@ export default function AssetRegisterClient({
                     <input ref={photoInputRef} type="file" hidden multiple accept="image/jpeg,image/png,image/webp"
                       disabled={photoUploadDisabled} onChange={handlePhotoFilesSelected} />
                     <AssetMediaPanel
+                      initialPhotoUrl={editorPhotoUrl}
                       documentUpload={{
                         label: isUploadingDocuments ? 'Uploading documents…' : 'Add documents',
                         count: manualDraftDocumentCount,
@@ -19068,7 +19079,7 @@ export default function AssetRegisterClient({
                   {hasLowerUsageDraft && isSavedAim4priceAsset(editingAsset) ? (
                     <button type="button" className={styles.secondaryButton} disabled={isSavingAsset} onClick={() => reviewLowerUsage('usage')}>Review lower reading</button>
                   ) : null}
-                  {!isPagedAssetDetails && !assetUpdateMenuEnabled && ((editingAsset && manualAssetStep > 2) || (!editingAsset && manualAssetStep > 1)) ? (
+                  {!isPagedAssetDetails && !assetUpdateMenuEnabled && !editorPhotoUrl && ((editingAsset && manualAssetStep > 2) || (!editingAsset && manualAssetStep > 1)) ? (
                     <button
                       type="button"
                       className={styles.secondaryButton}

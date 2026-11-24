@@ -90,6 +90,10 @@ async function click(page, text) {
     });
     for(const {width,kind} of [{width:1920,kind:'vehicle'},{width:1536,kind:'vehicle'},{width:1366,kind:'vehicle'},{width:430,kind:'vehicle'},{width:1366,kind:'manual'},{width:1366,kind:'property'},{width:1366,kind:'stock'}]) {
       assets[0].kind=kind;
+      if (width === 1920) {
+        assets[0].photos = Array.from({length: 7}, (_, index) => '/brand/home-asset-hilux.webp?photo=' + (index + 1));
+        assets[0].documents = [{id: 'manual', url: '/manual.pdf', fileName: 'Manual.pdf'}];
+      }
       const sections=['identity',...(['manual','property','stock'].includes(kind)?['classification']:[]),...(kind==='stock'?[]:['condition']),'values','notes'];
       await page.setViewport({width,height:width===1536?696:width===1366?768:width===1920?870:900,deviceScaleFactor:width===1536?1.25:1});
       await page.goto('http://localhost:3036/compact-details-validation?registerId=farm',{waitUntil:'networkidle2',timeout:120000});
@@ -100,6 +104,23 @@ async function click(page, text) {
         await page.$eval('#website-zoom-slider',e=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'106');e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));});
         await page.click('[aria-label="Close page size"]');
         await page.waitForFunction(()=>Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===1.06);
+      }
+      if (width === 1920) {
+        const card = '#asset-card-1';
+        const photoStage = card + ' [aria-label="Open photo viewer"]';
+        await page.click(card + ' [aria-label="Open Asset"]');
+        await page.click(photoStage);
+        await page.click('[role="dialog"] [aria-label="Show previous photo"]');
+        await click(page, 'Edit photos');
+        await page.waitForSelector('[data-asset-media]');
+        assert.equal(await page.$eval('[data-asset-media] li:focus img', img => img.getAttribute('src')), assets[0].photos[6]);
+        assert.equal(await page.$$eval('[aria-label="Asset photos"] li', items => items.length), 6);
+        assert.match(await page.$eval('[aria-label="Photos pages"]', el => el.textContent), /2–7 of 7/);
+        assert.equal(await page.$('[data-asset-update-section], [data-details-page]'), null);
+        await page.screenshot({path: path.join(output, 'edit-seventh-photo.png')});
+        await click(page, 'Done');
+        await page.waitForFunction(selector => document.activeElement === document.querySelector(selector), {}, photoStage);
+        assert.equal(await page.$('[role="dialog"]'), null);
       }
       await page.$eval('#asset-card-1 [data-tooltip="Manage asset"]',e=>e.click());
       await page.waitForSelector('[data-manage-action="details"]');
