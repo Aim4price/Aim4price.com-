@@ -52,7 +52,7 @@ function FieldPicker({fields,onAdd,onClose,column,restorableFields,restoreInputs
   const candidates = [...PART_DETAIL_PRESETS.map(p=>restorableFields.find(f=>f.id===p.id) || p),...restorableFields.filter(f=>!PART_DETAIL_PRESETS.some(p=>p.id===f.id))];
   const alreadyAdded = (f:PartDetailField) => fields.some(old=>old.id===f.id || old.label.toLowerCase()===f.label.toLowerCase());
   const restoreCustomFields = restorableFields.filter(f=>!PART_DETAIL_PRESETS.some(p=>p.id===f.id));
-  useEffect(()=>{const opener=document.activeElement as HTMLElement;dialog.current?.showModal();return()=>{dialog.current?.close();opener?.focus();};},[]);
+  useEffect(()=>{const opener=document.activeElement as HTMLElement;dialog.current?.showModal();return()=>{dialog.current?.close();opener?.focus({preventScroll:true});};},[]);
   return createPortal(<dialog ref={dialog} className={`${styles.modal} ${styles.sheetToolDialog} ${styles.detailPicker} ${styles.marketplaceChoiceModal} ${styles.columnPicker}`} aria-label={column ? "Add column" : "Add detail"} onCancel={e=>{e.preventDefault();onClose();}}>
     <header className={styles.sheetToolHeader}><div><h2>{column ? "Add column" : "Add detail"}</h2><p>Optional information for this stocklist</p></div><ShareModalCloseButton aria-label="Close add detail" onClick={onClose}/></header>
     <div className={styles.sheetToolBody}>

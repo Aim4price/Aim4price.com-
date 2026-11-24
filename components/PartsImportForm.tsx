@@ -26,6 +26,8 @@ import importStyles from "./PartsImportForm.module.css";
 import PartsSheetTools, { type SheetTool } from "./PartsSheetTools";
 import priceStyles from "./asset-register/AssetDisposal.module.css";
 import styles from "../app/dealer/parts/parts.module.css";
+const defaultColumnWidths = [198, 260, 128, 160, 164];
+
 type Details = {
   businessName: string;
   town: string;
@@ -70,7 +72,7 @@ export default function PartsImportForm({
   const [importedDetailIds,setImportedDetailIds] = useState<string[]>([]);
   const labels = [...PART_LABELS,...extraFields.map(f=>f.label)];
   const emptyRow = () => Array(5 + extraFields.length).fill("") as string[];
-  function addField(field:PartDetailField) {if(extraFields.some(f=>f.id===field.id)){setHiddenDetails(hiddenDetails.filter(id=>id!==field.id));return;}setUndo({rows,fields:extraFields,hidden:hiddenColumns});revealColumn.current = true;setExtraFields([...extraFields,field]);setRows(rows.map(r=>[...r,""]));setPreview(null);}
+  function addField(field:PartDetailField) {if(extraFields.some(f=>f.id===field.id)){setHiddenDetails(hiddenDetails.filter(id=>id!==field.id));return;}setUndo({rows,fields:extraFields,hidden:hiddenColumns});revealColumn.current = "detail:" + field.id;setExtraFields([...extraFields,field]);setRows(rows.map(r=>[...r,""]));setPreview(null);}
   const [details, setDetails] = useState(initialDetails);
   const [fileName, setFileName] = useState("");
   const [pasteMode, setPasteMode] = useState(false);
@@ -111,7 +113,7 @@ export default function PartsImportForm({
   const [page, setPage] = useState(0);
   const sheetRef = useRef<HTMLDivElement>(null);
   const horizontalRef = useRef<HTMLDivElement>(null);
-  const revealColumn = useRef(false);
+  const revealColumn = useRef<string | null>(null);
   const horizontalPosition = useRef(0);
   const [horizontalSize, setHorizontalSize] = useState({width: 0, content: 0});
   const layout = useSheetColumns('aim4price:parts-sheet:' + (listId ?? 'draft'));
@@ -119,15 +121,7 @@ export default function PartsImportForm({
   const orderedColumns = layout.ordered(columnIds).map(id => columnIds.indexOf(id));
   const visibleColumns = orderedColumns.filter(index => !hiddenColumns.includes(index));
   const visibleIds = visibleColumns.map(i => columnIds[i]);
-  const availableWidth = Math.max(0, horizontalSize.width - 132);
-  const defaultWidths = [
-    Math.max(160, Math.min(245, availableWidth * .22)),
-    Math.max(210, Math.min(340, availableWidth * .30)),
-    Math.max(128, Math.min(145, availableWidth * .12)),
-    Math.max(145, Math.min(200, availableWidth * .18)),
-    Math.max(135, Math.min(200, availableWidth * .18)),
-  ];
-  const widthOf = (i: number) => layout.widths[columnIds[i]] ?? Math.round(defaultWidths[i] ?? 180);
+  const widthOf = (i: number) => layout.widths[columnIds[i]] ?? defaultColumnWidths[i] ?? 180;
   const sheetGeometry = visibleColumns.map(i => columnIds[i] + ':' + widthOf(i)).join('|');
   function panSheet(left: number) {
     horizontalPosition.current = left;
@@ -143,9 +137,20 @@ export default function PartsImportForm({
       const header = sheet.querySelector("thead tr");
       if (!header) return;
       setHorizontalSize({width: header.clientWidth, content: header.scrollWidth});
-      const left = revealColumn.current ? header.scrollWidth - header.clientWidth : Math.min(horizontalPosition.current, header.scrollWidth - header.clientWidth);
-      revealColumn.current = false;
-      panSheet(left);
+      const maxLeft = header.scrollWidth - header.clientWidth;
+      const added = Array.from(header.querySelectorAll<HTMLElement>("th[data-field]")).find(cell => cell.dataset.field === revealColumn.current);
+      if (added) {
+        // Measure the new field in the committed layout, including a saved width or custom order.
+        const cell = added.getBoundingClientRect(), view = header.getBoundingClientRect();
+        const scale = view.width / header.clientWidth || 1;
+        const left = header.scrollLeft + (cell.left - view.left) / scale;
+        const stickyWidth = header.firstElementChild?.getBoundingClientRect().width ?? 0;
+        const target = Math.min(left - stickyWidth / scale, Math.max(header.scrollLeft, left + added.offsetWidth - header.clientWidth));
+        panSheet(Math.max(0, Math.min(target, maxLeft)));
+        revealColumn.current = null;
+      } else {
+        panSheet(Math.min(horizontalPosition.current, maxLeft));
+      }
     };
     measure();
     const observer = new ResizeObserver(measure);
@@ -531,7 +536,7 @@ export default function PartsImportForm({
                         />}
                       </th>
                       {orderedColumns.map(i => (
-                        <th scope="col" key={columnIds[i]} data-column={i} hidden={hiddenColumns.includes(i)} style={{ flex: '0 0 ' + widthOf(i) + 'px' }}>
+                        <th scope="col" key={columnIds[i]} data-field={columnIds[i]} data-column={i} hidden={hiddenColumns.includes(i)} style={{ flex: '0 0 ' + widthOf(i) + 'px' }}>
                           <SheetColumnHeader label={labels[i]} hint={i === 0 || i === 2 ? undefined : 'Optional'}
                             index={visibleColumns.indexOf(i)} count={visibleColumns.length} width={widthOf(i)}
                             onMove={direction => layout.move(columnIds, visibleIds, columnIds[i], direction)}
