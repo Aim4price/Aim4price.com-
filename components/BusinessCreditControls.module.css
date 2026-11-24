@@ -74,28 +74,28 @@
 .options > section:has(.planChoices) > button { grid-row: auto; grid-column: 1 / -1; justify-self: start; width: auto; }
 
 dialog.shareDialog {
-  width: min(31rem, calc(100% - 2rem));
-  padding: clamp(1.15rem, 4vw, 1.65rem);
+  width: min(50rem, calc(100% - 2rem));
+  padding: clamp(1.15rem, 3.5vw, 2rem);
   container: invite-dialog / inline-size;
 }
 .shareDialog > header { border: 0; padding-bottom: 0; }
 .shareDescription {
-  margin: .65rem 0 1.25rem;
+  margin: .75rem 0 1.65rem;
   line-height: 1.5;
   text-wrap: pretty;
 }
 .shareChoices {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .6rem;
+  gap: clamp(.65rem, 2cqi, 1rem);
 }
 .shareChoices > :is(button, a) {
   width: 100%;
   height: auto;
   min-height: 5.25rem;
   align-content: center;
-  gap: .55rem;
-  padding: .75rem .25rem;
+  gap: .65rem;
+  padding: 1rem .5rem;
   border-radius: .85rem;
   text-decoration: none;
   font: inherit;
@@ -108,7 +108,7 @@ dialog.shareDialog {
   color: white;
 }
 .shareChoices > button:hover { background: #104532; }
-@container invite-dialog (max-width: 17rem) {
+@container invite-dialog (max-width: 20rem) {
   .shareChoices { grid-template-columns: 1fr; }
   .shareChoices > :is(button, a) {
     display: flex;
