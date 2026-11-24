@@ -2,7 +2,7 @@
 .body {min-height:0;min-width:0;border:0;padding:4px;margin:0;display:grid;gap:18px;overflow:auto}
 .dialog table {border-collapse:collapse;width:100%;text-align:left}
 .dialog th,.dialog td {padding:9px;border-bottom:1px solid #bed0c8;white-space:nowrap}
-.scroll {overflow:auto;max-height:42dvh}
+.scroll {overflow:auto;max-height:calc(var(--website-visible-height, 100dvh) * 0.42)}
 .scroll input {min-width:115px;width:100%}
 .scroll td:nth-child(2) input {min-width:210px}
 .scroll small {display:block;white-space:normal;color:#97302c}
