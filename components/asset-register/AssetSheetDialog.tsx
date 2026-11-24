@@ -194,7 +194,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
     setValidate(false);
     transition.start(dialog.current, 'Edit asset sheet', () => change('edit'));
   }
-  function paste(e: ClipboardEvent<HTMLInputElement>, index: number, key: Column) {
+  function paste(e: ClipboardEvent<HTMLInputElement>, index: number, key: Column, ordered: Column[]) {
     const text = e.clipboardData.getData('text/plain');
     if (!/[\n\t]/.test(text))
       return;
@@ -207,13 +207,13 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
         selectSheet([{ name: 'Pasted cells', rows: table }], 0, true);
         return;
       }
-      const offset = visible.indexOf(key);
-      if (table.some(r => r.length + offset > visible.length))
+      const offset = ordered.indexOf(key);
+      if (table.some(r => r.length + offset > ordered.length))
         throw Error('Add the missing columns first, or use Import file to paste a table with headings.');
       if (index + table.length > maxAssets)
         throw Error('Import up to ' + maxAssets + ' assets at a time.');
       const next = rows.map(r => ({ ...r }));
-      table.forEach((cells, i) => { const r = next[index + i] ||= blankAsset(); cells.forEach((v, j) => r[visible[offset + j]] = v); });
+      table.forEach((cells, i) => { const r = next[index + i] ||= blankAsset(); cells.forEach((v, j) => r[ordered[offset + j]] = v); });
       updateDraft({ rows: next });
     }
     catch (e) {
@@ -364,7 +364,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
             </div>)}
           </div>
         </section>}
-        {stage === 'edit' && <AssetSheetEditor draft={draft} register={registerName} validate={validate} page={currentPage} size={size}
+        {stage === 'edit' && <AssetSheetEditor draft={draft} registerId={registerId} register={registerName} validate={validate} page={currentPage} size={size}
           onPage={setPage} onChange={updateDraft} onPaste={paste} canUndo={!!undo} onUndo={() => {
             if (undo) { setDraft(undo); setUndo(null); setError(''); }
           }} />}

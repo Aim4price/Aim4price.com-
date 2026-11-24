@@ -47,6 +47,7 @@ export function pastePartsCells(
   row: number,
   column: number,
   width: number = PART_FIELDS.length,
+  visibleColumns = Array.from({ length: width }, (_, i) => i),
 ) {
   // Spreadsheet clipboard data is TSV. Never interpret a comma in a part code as a separator.
   const cells = readPartsCsv(text, {
@@ -54,15 +55,16 @@ export function pastePartsCells(
     preserveEmptyRows: true,
   });
   if (row + cells.length > 20000) throw new Error("Use at most 20,000 parts.");
-  if (cells.some((c) => column + c.length > width))
+  const start = visibleColumns.indexOf(column);
+  if (start < 0 || cells.some(c => start + c.length > visibleColumns.length))
     throw new Error(
-      "These cells extend beyond Brand. Paste into the first column or import a file to match columns.",
+      "These cells extend beyond the last visible column. Add columns or import a file to match the headings.",
     );
   const next = rows.map((r) => [...r]);
   while (next.length < row + cells.length) next.push(Array(width).fill(""));
   cells.forEach((r, i) =>
     r.forEach((value, j) => {
-      next[row + i][column + j] = value;
+      next[row + i][visibleColumns[start + j]] = value;
     }),
   );
   return next;

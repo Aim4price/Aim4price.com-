@@ -1,0 +1,41 @@
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 38px;
+  padding-inline-end: 2px;
+}
+.caption { flex: 1; min-width: 0; }
+.caption strong, .caption small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.moves { display: inline-flex; align-items: center; }
+.header .moves button {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  min-width: 0;
+  min-height: 28px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: var(--app-text, #234d3e);
+  background: transparent;
+  box-shadow: none;
+}
+.moves svg { width: 15px; height: 15px; }
+.header .moves button:disabled { opacity: .25; }
+.header .moves button:enabled:hover, .header .moves button:focus-visible { background: var(--app-surface-selected, #d8e9df); }
+.grip {
+  position: absolute;
+  inset-block: -6px;
+  inset-inline-end: -8px;
+  display: grid;
+  place-items: center;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+.grip::before { content: ""; width: 2px; height: 24px; border-radius: 2px; background: var(--app-border-strong, #9cb7a9); }
+.grip:is(:hover,:focus-visible,:active)::before { width: 3px; background: var(--app-primary, #17654c); }

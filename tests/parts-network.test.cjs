@@ -648,8 +648,12 @@ test('clipboard pastes preserve row alignment, punctuation, blanks and existing 
  assert.deepEqual(rows.map(r=>r[2]),['2','3','4']); assert.equal(rows[2][0],'0007');
  rows=editor.pastePartsCells(rows,'0\tLandini',0,3);
  assert.equal(rows[0][3],'0');assert.equal(rows[0][4],'Landini');
+ const reordered=editor.pastePartsCells(rows,'04\t0007',1,2,5,[2,0,4]);
+ assert.equal(reordered[1][2],'04');assert.equal(reordered[1][0],'0007');
+ assert.equal(reordered[1][1],rows[1][1]);
+ assert.throws(()=>editor.pastePartsCells(rows,'a\tb',0,4,5,[2,0,4]),/last visible column/);
  assert.ok(editor.partRowErrors(rows)[1]);
- assert.throws(()=>editor.pastePartsCells(rows,'a\tb',0,4),/beyond Brand/);
+ assert.throws(()=>editor.pastePartsCells(rows,'a\tb',0,4),/last visible column/);
  assert.throws(()=>editor.pastePartsCells(rows,'a\nb',19999,0),/20,000/);
  const duplicates=editor.partRowErrors([['ABC','','1','',''],['abc','','2','','']]);
  assert.match(duplicates[0],/Duplicate/);assert.match(duplicates[1],/Duplicate/);
