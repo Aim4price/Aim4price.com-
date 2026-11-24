@@ -1,3 +1,4 @@
+import { costCategory } from '../../../../lib/cost-categories';
 import { meteredReport } from '../../../../lib/business-report-response';
 import { requireLiveSharedAsset } from '../../../../lib/live-shared-asset-access';
 import { expandOwnershipBudgetHistory } from '../../../../lib/ownership-budget-tracker';
@@ -72,6 +73,7 @@ function parseFilters(request: NextRequest): MyInvoiceListFilters {
 
   return {
     assetId: assetId && assetId !== 'all' ? assetId : null,
+    costCategory: costCategory(searchParams.get('category'))?.value,
     year: parseYear(searchParams.get('year')),
     month: parseMonth(searchParams.get('month')),
     includeFuelSlipCosts: parseIncludeFuelSlipCosts(searchParams.get('includeFuelSlipCosts')),
@@ -235,7 +237,7 @@ export async function GET(request: NextRequest) {
       ownerEmail: ownerDetails.businessEmail || String(ownerFallbackUser.email ?? ''),
       ownerDetails,
       logoUrl,
-      dateRangeLabel: dateRangeLabel(filters),
+      dateRangeLabel: [dateRangeLabel(filters), costCategory(filters.costCategory)?.label].filter(Boolean).join(' · '),
       assetLabel,
       selectedAsset,
       summary: data.summary,

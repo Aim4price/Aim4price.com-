@@ -1,3 +1,4 @@
+import { costCategory } from './cost-categories';
 import type { WorkspaceWriteGuard } from './team-write-guard';
 import {installAssetHistoryTriggers} from './asset-history-schema';
 import { ensureCostBudgetHistory, readCostBudgetHistory } from './cost-budget-history';
@@ -10,6 +11,7 @@ export type CostBudgetStatusName = 'on_track' | 'warning' | 'over_budget';
 export type CostBudgetAlertKind = 'warning' | 'over_budget';
 
 export type CostBudgetProgress = {
+  expected?: number;
   id: string;
   userId: string;
   assetId: string | null;
@@ -18,6 +20,8 @@ export type CostBudgetProgress = {
   amount: number;
   warningPercent: number;
   warningAmount: number;
+  registerId?: string | null;
+  categories?: string[];
   includeFuelSlipCosts: boolean;
   revision: number;
   periodKey: string;
@@ -39,6 +43,8 @@ export type CostBudgetInput = {
   period?: unknown;
   amount?: unknown;
   warningPercent?: unknown;
+  registerId?: unknown;
+  categories?: unknown;
   includeFuelSlipCosts?: unknown;
 };
 
@@ -65,6 +71,9 @@ type CostBudgetRow = {
   period: string;
   amount: string | number;
   warning_percent: string | number;
+  register_id: string | null;
+  register_name: string | null;
+  categories: string[];
   include_fuel_slip_costs: boolean;
   revision: string | number;
   spent: string | number | null;
@@ -162,10 +171,15 @@ function normalizeBudgetId(value: unknown): string {
 }
 
 function normalizeInput(input: CostBudgetInput) {
+  const raw = input.categories ?? [];
+  if (!Array.isArray(raw) || raw.some(value => !costCategory(value))) throw new Error('COST_BUDGET_CATEGORY_INVALID');
+  const categories = Array.from(new Set<string>(raw)).sort();
   const assetIdText = asText(input.assetId);
   const assetId = !assetIdText || assetIdText === 'all' ? null : assetIdText;
   if (assetId && !UUID_PATTERN.test(assetId)) throw new Error('COST_BUDGET_ASSET_INVALID');
 
+  const registerId = asText(input.registerId) || null;
+  if (registerId && (assetId || !UUID_PATTERN.test(registerId))) throw new Error('COST_BUDGET_ASSET_INVALID');
   const amount = asMoney(input.amount);
   if (amount === null || amount < 1 || amount > MAX_BUDGET_AMOUNT) {
     throw new Error('COST_BUDGET_AMOUNT_INVALID');
@@ -178,6 +192,7 @@ function normalizeInput(input: CostBudgetInput) {
 
   return {
     assetId,
+    categories, registerId,
     period: normalizePeriod(input.period),
     amount,
     warningPercent,
@@ -251,14 +266,16 @@ async function ensureCostBudgetTablesOnce(): Promise<void> {
     )
   `);
   await db.query(`
-    create unique index if not exists asset_cost_budgets_all_assets_period_uidx
-      on public.asset_cost_budgets (user_id, period)
-      where asset_register_item_id is null
-  `);
-  await db.query(`
-    create unique index if not exists asset_cost_budgets_asset_period_uidx
-      on public.asset_cost_budgets (user_id, asset_register_item_id, period)
-      where asset_register_item_id is not null
+    alter table public.asset_cost_budgets add column if not exists register_id uuid references public.asset_registers(id) on delete cascade;
+    alter table public.asset_cost_budgets add column if not exists categories text[] not null default '{}';
+    create unique index if not exists asset_cost_budgets_all_categories_uidx on public.asset_cost_budgets
+      (user_id, period, categories) where asset_register_item_id is null and register_id is null;
+    create unique index if not exists asset_cost_budgets_register_categories_uidx on public.asset_cost_budgets
+      (user_id, register_id, period, categories) where register_id is not null;
+    create unique index if not exists asset_cost_budgets_asset_categories_uidx on public.asset_cost_budgets
+      (user_id, asset_register_item_id, period, categories) where asset_register_item_id is not null;
+    drop index if exists public.asset_cost_budgets_all_assets_period_uidx;
+    drop index if exists public.asset_cost_budgets_asset_period_uidx;
   `);
   await db.query(`
     create index if not exists asset_cost_budgets_user_idx
@@ -311,7 +328,11 @@ export async function ensureCostBudgetTables(): Promise<void> {
   await ensureCostBudgetTablesPromise;
 }
 
-async function verifyBudgetAsset(userId: string, assetId: string | null): Promise<void> {
+async function verifyBudgetAsset(userId: string, assetId: string | null, registerId: string | null): Promise<void> {
+  if (registerId) {
+    const register = await getDb().query('select 1 from public.asset_registers where id = $1 and user_id = $2', [registerId, userId]);
+    if (!register.rowCount) throw new Error('COST_BUDGET_ASSET_NOT_FOUND');
+  }
   if (!assetId) return;
   const asset = await getAssetRegisterItemById(userId, assetId);
   if (!asset) throw new Error('COST_BUDGET_ASSET_NOT_FOUND');
@@ -389,13 +410,14 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
         budget.period,
         budget.amount,
         budget.warning_percent,
-        budget.include_fuel_slip_costs,
+        budget.include_fuel_slip_costs, budget.categories, budget.register_id, register.business_name as register_name,
         budget.revision,
         coalesce(spend.spent, 0) as spent,
         spend.last_cost_at,
         budget.created_at,
         budget.updated_at
       from public.asset_cost_budgets budget
+      left join public.asset_registers register on register.id = budget.register_id and register.user_id = budget.user_id
       left join public.asset_register_items asset
         on asset.id = budget.asset_register_item_id
        and asset.user_id = budget.user_id
@@ -405,6 +427,12 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
           max(coalesce(invoice.updated_at, invoice.created_at)) as last_cost_at
         from public.asset_invoices invoice
         where invoice.user_id = budget.user_id
+          and (budget.register_id is null or exists (
+            select 1 from public.asset_register_items member where member.id = invoice.asset_register_item_id
+              and member.user_id = budget.user_id and member.register_id = budget.register_id
+          ))
+          and (cardinality(budget.categories) = 0 or
+            (case when invoice.source = 'fuel_slip' then 'fuel' else coalesce(invoice.cost_category,'other') end) = any(budget.categories))
           and invoice.invoice_date is not null
           and (
             budget.asset_register_item_id is null
@@ -450,11 +478,12 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
       id: row.id,
       userId: row.user_id,
       assetId: row.asset_register_item_id,
-      assetTitle: row.asset_register_item_id ? asText(row.asset_title) || 'Saved asset' : 'All saved assets',
+      assetTitle: row.asset_register_item_id ? asText(row.asset_title) || 'Saved asset' : row.register_name || 'All saved assets',
       period,
       amount,
       warningPercent,
       warningAmount: Math.round(amount * warningPercent) / 100,
+      registerId: row.register_id, categories: row.categories,
       includeFuelSlipCosts: Boolean(row.include_fuel_slip_costs),
       revision: Math.max(1, Number(row.revision) || 1),
       periodKey: window.key,
@@ -561,7 +590,7 @@ async function budgetWrite(sql: string, values: unknown[], guard?: WorkspaceWrit
 export async function createCostBudget(userId: string, input: CostBudgetInput, guard?: WorkspaceWriteGuard): Promise<CostBudgetProgress> {
   await ensureCostBudgetTables();
   const budget = normalizeInput(input);
-  await verifyBudgetAsset(userId, budget.assetId);
+  await verifyBudgetAsset(userId, budget.assetId, budget.registerId);
 
   try {
     const result = await budgetWrite(
@@ -572,14 +601,14 @@ export async function createCostBudget(userId: string, input: CostBudgetInput, g
           period,
           amount,
           warning_percent,
-          include_fuel_slip_costs,
+          include_fuel_slip_costs, categories, register_id,
           revision,
           created_at,
           updated_at
-        ) values ($1, $2::uuid, $3, $4, $5, $6, 1, now(), now())
+        ) values ($1, $2::uuid, $3, $4, $5, $6, $7::text[], $8::uuid, 1, now(), now())
         returning id::text
       `,
-      [userId, budget.assetId, budget.period, budget.amount, budget.warningPercent, budget.includeFuelSlipCosts],
+      [userId, budget.assetId, budget.period, budget.amount, budget.warningPercent, budget.includeFuelSlipCosts, budget.categories, budget.registerId],
       guard, userId,
     );
     const id = result.rows[0]?.id;
@@ -601,7 +630,7 @@ export async function updateCostBudget(
   await ensureCostBudgetTables();
   const budgetId = normalizeBudgetId(budgetIdInput);
   const budget = normalizeInput(input);
-  await verifyBudgetAsset(userId, budget.assetId);
+  await verifyBudgetAsset(userId, budget.assetId, budget.registerId);
 
   try {
     const result = await budgetWrite(
@@ -612,7 +641,7 @@ export async function updateCostBudget(
           period = $4,
           amount = $5,
           warning_percent = $6,
-          include_fuel_slip_costs = $7,
+          include_fuel_slip_costs = $7, categories = $8::text[], register_id = $9::uuid,
           revision = revision + 1,
           updated_at = now()
         where id = $1::uuid
@@ -626,7 +655,7 @@ export async function updateCostBudget(
         budget.period,
         budget.amount,
         budget.warningPercent,
-        budget.includeFuelSlipCosts,
+        budget.includeFuelSlipCosts, budget.categories, budget.registerId,
       ],
       guard, userId,
     );

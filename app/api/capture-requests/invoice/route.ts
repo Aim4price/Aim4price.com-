@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       },
       assetReference: asset.serialNumber,
       requesterNote: String(formData.get('note') ?? '').trim().slice(0, 1000),
-      candidatePayload: { targetLabel: asset.title },
+      candidatePayload: { costCategory: String(formData.get('costCategory') ?? '').slice(0, 40), targetLabel: asset.title },
     }, actor);
     createdCaptureId = capture.id;
     await addCaptureRequestFile(capture.id, {

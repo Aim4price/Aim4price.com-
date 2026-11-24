@@ -46,8 +46,7 @@ const MONTH_LABELS = [
 ];
 
 const TYPE_OPTIONS: ReportOption[] = [
-  { value: 'all', label: 'All' },
-  { value: 'checked', label: 'Checked' },
+  { value: 'all', label: 'Services and repairs' },
   { value: 'serviced', label: 'Service' },
   { value: 'repaired', label: 'Repair' },
 ];

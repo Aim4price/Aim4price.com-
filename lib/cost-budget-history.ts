@@ -22,6 +22,8 @@ export async function ensureCostBudgetHistory(): Promise<void> {
         valid_to timestamptz,
         primary key (budget_id, revision)
       );
+      alter table public.asset_cost_budget_history add column if not exists register_id uuid;
+      alter table public.asset_cost_budget_history add column if not exists categories text[] not null default '{}';
       create index if not exists asset_cost_budget_history_owner_idx
         on public.asset_cost_budget_history(user_id, asset_register_item_id);
       create or replace function public.capture_asset_cost_budget_history() returns trigger
@@ -34,9 +36,9 @@ export async function ensureCostBudgetHistory(): Promise<void> {
         if TG_OP <> 'DELETE' then
           insert into public.asset_cost_budget_history
             (budget_id, revision, user_id, asset_register_item_id, period, amount,
-             warning_percent, include_fuel_slip_costs, valid_from)
+             warning_percent, include_fuel_slip_costs, categories, register_id, valid_from)
           values (NEW.id, NEW.revision, NEW.user_id, NEW.asset_register_item_id, NEW.period,
-            NEW.amount, NEW.warning_percent, NEW.include_fuel_slip_costs, now());
+            NEW.amount, NEW.warning_percent, NEW.include_fuel_slip_costs, NEW.categories, NEW.register_id, now());
           return NEW;
         end if;
         return OLD;
@@ -48,9 +50,9 @@ export async function ensureCostBudgetHistory(): Promise<void> {
         for each row execute function public.capture_asset_cost_budget_history();
       insert into public.asset_cost_budget_history
         (budget_id, revision, user_id, asset_register_item_id, period, amount,
-         warning_percent, include_fuel_slip_costs, valid_from)
+         warning_percent, include_fuel_slip_costs, categories, register_id, valid_from)
       select id, revision, user_id, asset_register_item_id, period, amount,
-        warning_percent, include_fuel_slip_costs,
+        warning_percent, include_fuel_slip_costs, categories, register_id,
         case when revision = 1 then created_at else updated_at end
       from public.asset_cost_budgets
       on conflict (budget_id, revision) do nothing;
@@ -68,10 +70,10 @@ export async function ensureCostBudgetHistory(): Promise<void> {
 export async function readCostBudgetHistory(userId: string): Promise<OwnershipBudgetVersion[]> {
   const result = await getDb().query<{
     id: string; asset_id: string | null; period: 'monthly' | 'annual'; amount: string;
-    warning_percent: number; include_fuel_slip_costs: boolean; effective_from: string; effective_to: string | null;
+    categories: string[]; warning_percent: number; include_fuel_slip_costs: boolean; effective_from: string; effective_to: string | null;
   }>(`
     select budget_id::text || ':' || revision::text as id, asset_register_item_id::text as asset_id,
-      period, amount, warning_percent, include_fuel_slip_costs,
+      period, amount, warning_percent, include_fuel_slip_costs, categories,
       (valid_from at time zone 'Africa/Johannesburg')::date::text as effective_from,
       (valid_to at time zone 'Africa/Johannesburg')::date::text as effective_to
     from public.asset_cost_budget_history where user_id = $1
@@ -79,6 +81,6 @@ export async function readCostBudgetHistory(userId: string): Promise<OwnershipBu
   `, [userId]);
   return result.rows.map(row => ({ id: row.id, assetId: row.asset_id, period: row.period,
     amount: Number(row.amount), warningPercent: Number(row.warning_percent),
-    includeFuelSlipCosts: row.include_fuel_slip_costs,
+    categories: row.categories, includeFuelSlipCosts: row.include_fuel_slip_costs,
     effectiveFrom: row.effective_from, effectiveTo: row.effective_to }));
 }

@@ -1,4 +1,5 @@
 'use client';
+import { reportCostCategories } from '../../lib/cost-categories';
 import AssetSheetDialog from '../../components/asset-register/AssetSheetDialog';
 import { importPending } from '../../lib/asset-sheet';
 import { useMeteredManage } from '../../components/BusinessCreditControls';
@@ -463,6 +464,7 @@ type AssetReportStep =
 type PhotoViewerState = { assetId: string; index: number };
 
 type AssetPdfReportFilters = {
+  costCategory?: string;
   year?: string;
   month?: string;
   maintenanceType?: string;
@@ -5840,6 +5842,7 @@ function buildAssetOwnershipReportUrl(
     }
   }
 
+  if (filters?.costCategory && filters.costCategory !== 'all') searchParams.set('category', filters.costCategory);
   return `/api/my-invoices/report?${searchParams.toString()}`;
 }
 
@@ -5849,34 +5852,8 @@ function buildAssetGroupTimelineReportUrl(
   filters: AssetGroupReportFilters,
   format: AssetGroupReportRouteFormat,
 ): string {
-  if (reportKind === 'maintenance') {
-    const maintenanceSelection = filters.maintenanceType ?? 'all';
-    const scope = maintenanceSelection === 'upcoming' || maintenanceSelection === 'done'
-      ? maintenanceSelection
-      : 'total';
-    const maintenanceParams = new URLSearchParams({
-      groupId: group.id,
-      scope,
-      format,
-    });
-
-    if (
-      maintenanceSelection === 'checked'
-      || maintenanceSelection === 'serviced'
-      || maintenanceSelection === 'repaired'
-    ) {
-      maintenanceParams.set('procedureKind', maintenanceSelection);
-    }
-
-    if (filters.year && filters.year !== 'all') {
-      maintenanceParams.set('year', filters.year);
-      if (filters.month && filters.month !== 'all') maintenanceParams.set('month', filters.month);
-    }
-
-    return `/api/maintenance/report?${maintenanceParams.toString()}`;
-  }
-
   const searchParams = new URLSearchParams({ groupId: group.id, report: reportKind, format });
+  if (reportKind === 'maintenance') searchParams.set('maintenanceType', filters.maintenanceType ?? 'all');
 
   if (filters.year && filters.year !== 'all') {
     searchParams.set('year', filters.year);
@@ -5898,6 +5875,7 @@ function buildAssetGroupOwnershipReportUrl(
     if (filters.month && filters.month !== 'all') searchParams.set('month', filters.month);
   }
 
+  if (filters.costCategory && filters.costCategory !== 'all') searchParams.set('category', filters.costCategory);
   return `/api/my-invoices/report?${searchParams.toString()}`;
 }
 
@@ -6459,6 +6437,7 @@ export default function AssetRegisterClient({
   const [assetDepreciationReportYear, setAssetDepreciationReportYear] = useState('all');
   const [assetDepreciationReportMonth, setAssetDepreciationReportMonth] = useState('all');
   const [assetOwnershipReportYear, setAssetOwnershipReportYear] = useState('all');
+  const [assetOwnershipCategory, setAssetOwnershipCategory] = useState('all');
   const [assetOwnershipReportMonth, setAssetOwnershipReportMonth] = useState('all');
   const [assetReportDownloadFormat, setAssetReportDownloadFormat] = useState<AssetReportFormat>('pdf');
   const [openAssetReportSelect, setOpenAssetReportSelect] = useState<AssetReportSelectKey | null>(null);
@@ -7464,7 +7443,6 @@ export default function AssetRegisterClient({
   const assetMaintenanceReportTypeOptions = useMemo<ReportSelectOption[]>(() => {
     return [
       { value: 'all', label: 'All' },
-      { value: 'checked', label: 'Checked' },
       { value: 'serviced', label: 'Service' },
       { value: 'repaired', label: 'Repair' },
     ];
@@ -11889,6 +11867,7 @@ export default function AssetRegisterClient({
     setAssetMaintenanceReportMonth('all');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
+    setAssetOwnershipCategory('all');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -11916,6 +11895,7 @@ export default function AssetRegisterClient({
     setAssetMaintenanceReportMonth('all');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
+    setAssetOwnershipCategory('all');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -14298,6 +14278,7 @@ export default function AssetRegisterClient({
   function openAssetOwnershipReportFilter() {
     if (desktopAccess && !desktop.allow('exportCosts')) return;
     setAssetReportStep(desktopAccess ? 'ownership-filter' : 'ownership-format');
+    setAssetOwnershipCategory('all');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
@@ -14522,6 +14503,7 @@ export default function AssetRegisterClient({
 
   async function handleDownloadFilteredOwnershipReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
     const filters: AssetPdfReportFilters = {
+      costCategory: assetOwnershipCategory,
       year: assetOwnershipReportYear,
       month: assetOwnershipReportYear === 'all' ? 'all' : assetOwnershipReportMonth,
     };
@@ -20982,6 +20964,9 @@ export default function AssetRegisterClient({
                   </div>
 
                   <div className={styles.assetFuelReportFilterBox}>
+                    <ReportSelect label="Cost category" value={assetOwnershipCategory} options={reportCostCategories}
+                      isOpen={openAssetReportSelect === 'type'} onToggle={() => toggleAssetReportSelect('type')}
+                      onChange={value => { setAssetOwnershipCategory(value); setOpenAssetReportSelect(null); }} />
                     <ReportSelect
                       label="Year"
                       value={assetOwnershipReportYear}

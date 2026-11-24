@@ -1,3 +1,4 @@
+import { categoryForLine } from '../../../../lib/accounting-serial';
 import Link from 'next/link';
 import AppHeader from '../../../../components/AppHeader';
 import { cloudOwner,current,validGrant } from '../../../../lib/accounting-connection';
@@ -31,7 +32,7 @@ export default async function ProviderPage({params,searchParams}:{params:{provid
         : <><h2>Choose your company</h2>{!options.length && !error && <p>No companies available.</p>}
           {options.map(o=><form key={o.id} action={choose.bind(null,p,row.id)}><button value={o.id} name="company">{o.name}</button></form>)}</>}
       {lines && <section><h2>Supplier bill preview</h2><p>Source line amounts in the bill currency. VAT treatment follows the original bill.</p>
-        {lines.length ? <ul>{lines.map((l,i)=><li key={i}><strong>{l.asset}</strong><br/>{l.supplier} · {l.invoice}<br/>{l.description} · {l.currency} {l.amount?.toFixed(2)??'Amount unavailable'}</li>)}</ul> : <p>No supplier bill lines found.</p>}</section>}
+        {lines.length ? <ul>{lines.map((l,i)=><li key={i}><strong>{l.asset}</strong> · {categoryForLine(l.description) ?? 'Uncategorised'}<br/>{l.supplier} · {l.invoice}<br/>{l.description} · {l.currency} {l.amount?.toFixed(2)??'Amount unavailable'}</li>)}</ul> : <p>No supplier bill lines found.</p>}</section>}
       <form action={unlink.bind(null,p,row.id)}><button>Disconnect</button></form>
     </>}
   </main></>;

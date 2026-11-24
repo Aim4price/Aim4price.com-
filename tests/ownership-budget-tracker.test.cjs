@@ -24,6 +24,7 @@ test('single and umbrella routes scope budget history to authorized assets and d
   const {NextRequest,NextResponse}=require('next/server');
   const assets=[{id:'a',title:'Tractor'},{id:'private',title:'Private asset'}];
   const route=load('app/api/my-invoices/report/route.ts',{
+    '../../../../lib/cost-categories':load('lib/cost-categories.ts'),
     '../../../../lib/business-report-response':{meteredReport: async response => response},
     'next/server':{NextResponse},
     '../../../../lib/live-shared-asset-access':{requireLiveSharedAsset:async(token,assetId,permission)=>{

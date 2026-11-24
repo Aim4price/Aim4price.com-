@@ -12,7 +12,7 @@ function load(path, dependencies = {}) {
  return module.exports;
 }
 const tracking = load('lib/budget-tracking.ts');
-const reports = load('lib/budget-tracking-report.ts', { './budget-tracking': tracking, './report-theme': { REPORT_THEME_CSS: '' } });
+const reports = load('lib/budget-tracking-report.ts', { './cost-categories': load('lib/cost-categories.ts'), './budget-tracking': tracking, './report-theme': { REPORT_THEME_CSS: '' } });
 const base = { id:'one', assetId:'tractor', assetTitle:'Tractor', period:'monthly',periodLabel:'September 2026',periodKey:'2026-09',amount:1000,spent:500,remaining:500,overBy:0,percentUsed:50,warningPercent:80,includeFuelSlipCosts:false,status:'on_track' };
 const warning = { ...base, id:'two',assetId:null, assetTitle:'All saved assets',status:'warning',spent:850,remaining:150,percentUsed:85 };
 const over = { ...base,id:'three',period:'annual',status:'over_budget',spent:1250,remaining:0,overBy:250,percentUsed:125 };

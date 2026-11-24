@@ -1,0 +1,18 @@
+.dialog { width: min(980px, 100%); max-height: calc(var(--website-visible-height, 100dvh) * .90); display: flex; flex-direction: column; }
+.cards, .checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: .65rem; }
+.cards { overflow-y: auto; padding: .85rem 1.35rem; }
+.card { display: flex; align-items: center; gap: .7rem; min-height: 3.75rem; text-align: left; padding: .65rem .8rem; background: #edf5f1; border: 1px solid #accac0; border-radius: 15px; color: #133c31; font: inherit; cursor: pointer; }
+.card svg { width: 1.65rem; height: 1.65rem; flex: none; }
+.card:nth-child(4n+2) { background: #faf2e8; border-color: #d8be98; }
+.card:nth-child(4n+3) { background: #eef3fa; border-color: #b7cbe4; }
+.card:hover, .card:focus-visible { outline: 2px solid #30715a; outline-offset: -2px; }
+.budgetCategories { margin-block: .75rem; }
+.budgetCategories summary { font-weight: 750; cursor: pointer; }
+.checks { margin-top: .65rem; }
+.checks label { display: flex; align-items: center; gap: .5rem; }
+
+.reference { background: #eff6f2; border: 1px solid #c4dcd0; border-radius: 1rem; padding: 1rem 1.3rem; color: #173c31; }
+.reference summary { font-weight: 750; cursor: pointer; }
+.reference dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: .5rem 1rem; }
+.reference dl div { display: flex; gap: .65rem; align-items: baseline; }
+.reference dd { margin: 0; }

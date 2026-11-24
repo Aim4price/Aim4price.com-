@@ -1,3 +1,5 @@
+import categoryStyles from '../../my-invoices/cost-categories.module.css';
+import { costCategories } from '../../../lib/cost-categories';
 import Link from 'next/link';
 import AppHeader from '../../../components/AppHeader';
 import { accountingOwner } from '../../../lib/accounting-owner';
@@ -32,6 +34,10 @@ export default async function AccountingPage() {
       <section className={`${access.launcher} ${styles.launcher}`}>
         <div className={access.launcherIntro}><h1>Accounting connections</h1><p>Preview supplier bills and match costs to your assets by serial number or VIN.</p></div>
         <AccountingActions choices={options} />
+        <details className={categoryStyles.reference}><summary><strong>Cost-code cheat sheet</strong></summary>
+          <p>Enter the code and asset serial or VIN in the invoice line description, for example MAIN-XYZ1234 for a service.</p>
+          <dl>{costCategories.map(category => <div key={category.code}><dt><strong>{category.code}</strong></dt><dd>{category.label}</dd></div>)}</dl>
+        </details>
         <div className={styles.safety}><p><strong>Read-only preview.</strong> Previewing a bill leaves your Cost Ledger and bookkeeping records unchanged.</p></div>
       </section>
     </div>

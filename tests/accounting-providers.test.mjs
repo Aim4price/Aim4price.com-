@@ -74,6 +74,8 @@ test('Sage delimited files preserve serials, quoted paragraphs and decimal comma
   assert.throws(()=>parseExport('A,B,C\n1,"unfinished,15',','));
   assert.throws(()=>parseExport('A,B,C\n1,2',','));
   const a=[{serialNumber:'001',title:'Pump'},{serialNumber:'X123',title:'Tractor'}];
+  assert.equal(assetForLine('Oil service MAIN-001',a),'Pump');
+  assert.equal(assetForLine('REP-001 MAIN-X123',a),null);
   assert.equal(assetForLine('service S/N:001',a),'Pump');
   assert.equal(assetForLine('X123 S/N:001',a),null);
 });

@@ -210,7 +210,7 @@ test("the shared wizard remains usable as a mobile bottom sheet", () => {
 test("Aim4price capture is the full-width final choice in Add asset cost", () => {
   const costChoices = slice(
     invoices,
-    '<div className={styles.sourceChoiceGrid}>',
+    '{sourceChoiceOpen ? (',
     '<div className={styles.modalFooter}>',
   );
   const manualIndex = costChoices.indexOf("Enter cost manually");

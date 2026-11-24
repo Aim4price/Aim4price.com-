@@ -1,4 +1,5 @@
 'use client';
+import { reportCostCategories } from '../../lib/cost-categories';
 import AssetPickerDetail from '../AssetPickerDetail';
 
 import downloadStyles from "../ReportDownload.module.css";
@@ -29,6 +30,7 @@ type AssetGroupEditorStep = 1 | 2 | 3;
 export type AssetGroupReportKind = 'valuation' | 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
 export type AssetGroupReportFormat = 'pdf' | 'xlsx';
 export type AssetGroupReportFilters = {
+  costCategory?: string;
   year?: string;
   month?: string;
   maintenanceType?: string;
@@ -467,6 +469,7 @@ export default function AssetGroupManagerModal({
   const [reportFormat, setReportFormat] = useState<AssetGroupReportFormat>('pdf');
   const [reportStep, setReportStep] = useState<AssetGroupReportStep>('options');
   const [reportKind, setReportKind] = useState<AssetGroupReportKind>('valuation');
+  const [costCategory, setCostCategory] = useState('all');
   const [reportYear, setReportYear] = useState('all');
   const [reportMonth, setReportMonth] = useState('all');
   const [maintenanceType, setMaintenanceType] = useState('all');
@@ -698,6 +701,7 @@ export default function AssetGroupManagerModal({
 
     if (onDownloadReport) {
       void onDownloadReport(group, reportKind, reportFormat, {
+        costCategory,
         year: reportYear,
         month: reportYear === 'all' ? 'all' : reportMonth,
         maintenanceType: reportKind === 'maintenance' ? maintenanceType : undefined,
@@ -748,10 +752,7 @@ export default function AssetGroupManagerModal({
     })),
   ];
   const maintenanceOptions: ReportSelectOption[] = [
-    { value: 'all', label: 'All maintenance' },
-    { value: 'upcoming', label: 'Upcoming maintenance' },
-    { value: 'done', label: 'Completed maintenance' },
-    { value: 'checked', label: 'Checked only' },
+    { value: 'all', label: 'Services and repairs' },
     { value: 'serviced', label: 'Services only' },
     { value: 'repaired', label: 'Repairs only' },
   ];
@@ -930,6 +931,7 @@ export default function AssetGroupManagerModal({
                   {reportKind === 'maintenance' ? (
                     <ReportSelect label="Maintenance" value={maintenanceType} options={maintenanceOptions} onChange={setMaintenanceType} />
                   ) : null}
+                  {reportKind === 'ownership' && <ReportSelect label="Cost category" value={costCategory} options={reportCostCategories} onChange={setCostCategory} />}
                   <ReportSelect label="Year" value={reportYear} options={reportYearOptions} onChange={(value) => { setReportYear(value); setReportMonth('all'); }} />
                   <ReportSelect label="Month" value={reportMonth} options={reportMonthOptions} disabled={reportYear === 'all'} onChange={setReportMonth} />
                 </div>

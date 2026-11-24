@@ -1,4 +1,5 @@
 'use client';
+import { categorySummary } from '../../lib/cost-categories';
 import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
@@ -87,7 +88,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
     {loading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>{error}</p><button onClick={onRetry}>Try again</button></div> : !visible.length ? <div className={ledger.emptyState}>{budgets.length ? 'No budgets match these filters.' : 'No budgets yet. Add a budget to start tracking spending.'}</div> : null}
     {ready ? pagedBudgets.map(budget => <LedgerDetailsCard expanded={expandedId === budget.id} onToggle={() => setExpandedId((current) => current === budget.id ? null : budget.id)} id={`cost-budget-${budget.id}`} key={budget.id} className={`${ledger.invoiceRow} ${styles.card}`} data-status={budget.status}>
       <div className={styles.cardHeading}>
-        <div><h2 className={ledger.invoiceTitle}>{budget.assetTitle}</h2><p className={ledger.invoiceReference}>{budget.period === 'monthly' ? 'Monthly' : 'Annual'} · {budget.periodLabel}</p></div>
+        <div><h2 className={ledger.invoiceTitle}>{budget.assetTitle}</h2><p className={ledger.invoiceReference}>{budget.period === 'monthly' ? 'Monthly' : 'Annual'} · {budget.periodLabel} · {categorySummary(budget.categories)}</p></div>
         <div className={styles.spentBlock}><strong className={ledger.invoicePrice}>{money(budget.spent)}</strong><span className={ledger.invoiceVatLabel}>Spent incl. VAT</span></div>
       </div>
       <div className={styles.cardBody}>

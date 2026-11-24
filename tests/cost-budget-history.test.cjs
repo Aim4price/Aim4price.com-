@@ -9,7 +9,7 @@ test('Postgres history captures edits and deletion atomically, seeds honestly an
  const mod={exports:{}};
  new Function('require','module','exports',ts.transpileModule(fs.readFileSync('lib/cost-budget-history.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(()=>({getDb:()=>({query,connect:async()=>({query,release(){}})})}),mod,mod.exports);
  try {
- await db.exec(`create table asset_cost_budgets(id uuid primary key,user_id text,asset_register_item_id uuid,revision integer,period text,amount numeric,warning_percent smallint,include_fuel_slip_costs boolean,created_at timestamptz,updated_at timestamptz);
+ await db.exec(`create table asset_cost_budgets(id uuid primary key,user_id text,asset_register_item_id uuid,revision integer,period text,amount numeric,warning_percent smallint,include_fuel_slip_costs boolean,created_at timestamptz,updated_at timestamptz, categories text[] default '{}', register_id uuid);
  insert into asset_cost_budgets values ('00000000-0000-4000-8000-000000000001','owner','00000000-0000-4000-8000-000000000002',1,'monthly',1000,80,false,'2025-01-01','2025-01-01'),
  ('00000000-0000-4000-8000-000000000003','other',null,3,'annual',2000,80,true,'2024-01-01','2025-06-01');`);
  await mod.exports.ensureCostBudgetHistory();await mod.exports.ensureCostBudgetHistory();

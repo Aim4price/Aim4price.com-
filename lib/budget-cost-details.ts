@@ -1,5 +1,6 @@
 import type { TrackedBudget } from './budget-tracking';
 export type BudgetCost = {
+  costCategory?: string; registerId?: string;
   id: string; assetId: string; assetTitle: string; supplierName: string;
   invoiceNumber: string; invoiceDate: string | null; totalIncVat: number; source: string;
 };
@@ -11,6 +12,9 @@ export function budgetCostsUrl(budget: TrackedBudget): string {
 }
 export function allocatedBudgetCosts(costs: BudgetCost[], budget: TrackedBudget): BudgetCost[] {
   return costs.filter(cost => {
+    if (budget.registerId && cost.registerId !== budget.registerId) return false;
+    const category = cost.source === 'fuel_slip' ? 'fuel' : cost.costCategory ?? 'other';
+    if (budget.categories?.length && !budget.categories.includes(category)) return false;
     if (!cost.invoiceDate) return false;
     if (budget.assetId && cost.assetId !== budget.assetId) return false;
     if (!budget.includeFuelSlipCosts && cost.source === 'fuel_slip') return false;

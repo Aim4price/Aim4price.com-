@@ -26,11 +26,12 @@ export default function BudgetCostDetails({ budget }: { budget: TrackedBudget })
     }
     void load();
     return () => controller.abort();
-  }, [budget.id, budget.assetId, budget.periodKey, budget.period, budget.includeFuelSlipCosts, budget.spent, attempt]);
+  }, [budget.id, budget.assetId, budget.periodKey, budget.period, budget.categories, budget.registerId, budget.includeFuelSlipCosts, budget.spent, attempt]);
   return <>
     <dl className={styles.metrics}>
       <div><dt><BudgetDetailIcon kind="budget" />Budget</dt><dd>{money(budget.amount)}</dd></div>
       <div><dt><BudgetDetailIcon kind="remaining" />{budget.overBy > 0 ? 'Over budget' : 'Remaining'}</dt><dd>{money(budget.overBy > 0 ? budget.overBy : budget.remaining)}</dd></div>
+      {budget.expected !== undefined && <div><dt>Expected commitments</dt><dd>{money(budget.expected)}</dd><small>Scheduled through period end. Shared commitments use saved allocations.</small></div>}
       <div><dt><BudgetDetailIcon kind="alert" />Alert at</dt><dd>{budget.warningPercent}%</dd></div>
     </dl>
     <div className={styles.detailsMeta}>

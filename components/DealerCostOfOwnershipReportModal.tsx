@@ -1,4 +1,5 @@
 'use client';
+import { reportCostCategories } from '../lib/cost-categories';
 import { useLeadDialog } from './leads/useLeadDialog';
 import downloadStyles from "./ReportDownload.module.css";
 
@@ -11,7 +12,7 @@ import trackerStyles from './DealerMaintenanceTrackerClient.module.css';
 type DownloadFormat = 'pdf' | 'xlsx';
 type ReportRouteFormat = DownloadFormat | 'html';
 type ReportStep = 'format' | 'timeline';
-type ReportSelectKey = 'year' | 'month';
+type ReportSelectKey = 'category' | 'year' | 'month';
 type ReportOption = { value: string; label: string };
 
 type Props = {
@@ -180,6 +181,7 @@ export default function DealerCostOfOwnershipReportModal({
   const [step, setStep] = useState<ReportStep>(pdfOnly ? 'timeline' : 'format');
   const [format, setFormat] = useState<DownloadFormat>('pdf');
   const [reportYear, setReportYear] = useState('all');
+  const [category, setCategory] = useState('all');
   const [reportMonth, setReportMonth] = useState('all');
   const [openSelect, setOpenSelect] = useState<ReportSelectKey | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -203,6 +205,7 @@ export default function DealerCostOfOwnershipReportModal({
       format: routeFormat,
     });
     if (externalShare) { params.delete('accessId'); params.set('assetId',externalShare.assetId); params.set('shareToken',externalShare.token); }
+    if (category !== 'all') params.set('category', category);
     if (reportYear !== 'all') {
       params.set('year', reportYear);
       if (reportMonth !== 'all') params.set('month', reportMonth);
@@ -340,6 +343,7 @@ export default function DealerCostOfOwnershipReportModal({
               </div>
 
               <div className={assetStyles.assetFuelReportFilterBox}>
+                <ReportSelect label="Cost category" value={category} options={reportCostCategories} selectKey="category" openSelect={openSelect} onOpenChange={setOpenSelect} onChange={setCategory} />
                 <ReportSelect
                   label="Year"
                   value={reportYear}

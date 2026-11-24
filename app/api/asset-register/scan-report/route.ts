@@ -1,3 +1,6 @@
+import { listMyInvoices, type MyInvoiceRecord } from '../../../../lib/my-invoices';
+import { teamCanAccessAsset } from '../../../../lib/team-access-policy';
+import { getDesktopScope } from '../../../../lib/desktop-workspace';
 import { meteredReport } from '../../../../lib/business-report-response';
 import { requireLiveSharedAsset } from '../../../../lib/live-shared-asset-access';
 import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
@@ -21,7 +24,7 @@ import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPr
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
 import { getAssetGroupById } from '../../../../lib/asset-groups';
-import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
 import { renderReportHtmlToPdf } from '../../../../lib/report-pdf';
 import { resolveMaintenanceMeterReading } from '../../../../lib/usage-readings';
 
@@ -1490,7 +1493,6 @@ function buildMaintenanceRecordRows(
   dateRangeLabel = 'All available entries',
   maintenanceTypeLabel = 'All',
 ): KeyValueRow[] {
-  const checkedCount = entries.filter((entry) => entry.kind === 'checked').length;
   const servicedCount = entries.filter((entry) => entry.kind === 'serviced').length;
   const repairedCount = entries.filter((entry) => entry.kind === 'repaired').length;
   const gpsCount = entries.filter(
@@ -1510,7 +1512,6 @@ function buildMaintenanceRecordRows(
     { label: 'Report Type', value: maintenanceTypeLabel },
     { label: 'Report Period', value: dateRangeLabel },
     { label: 'Total records', value: String(entries.length) },
-    { label: 'Checks', value: String(checkedCount) },
     { label: 'Services', value: String(servicedCount) },
     { label: 'Repairs', value: String(repairedCount) },
     { label: 'Latest record', value: latestEntry ? formatDateTime(latestEntry.event.createdAtIso) : NOT_RECORDED },
@@ -1535,7 +1536,7 @@ function buildMaintenanceReportSummary(asset: AssetRegisterItem, entries: Mainte
   return {
     label: 'Maintenance',
     value: formatNumber(entries.length),
-    subtext: entries.length === 1 ? 'check, service or repair record' : 'checks, services and repairs',
+    subtext: entries.length === 1 ? 'service or repair record' : 'services and repairs',
     basis: 'QR Maintenance',
     updated: formatDate(entries[0]?.event.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso),
   };
@@ -1992,7 +1993,7 @@ function buildReportDisclaimer(reportKind: PdfReportKind): string {
     return 'Values are indicative market estimates based on saved Aim4price asset-register information and available pricing inputs. This depreciation log is based on saved Asset Register update entries only and is not a certified valuation, inspection report, SARS tax-depreciation calculation or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.';
   }
 
-  return 'Maintenance records are based on QR updates saved as checked, serviced or repaired. This is an operational maintenance trail and not a certified mechanical inspection report.';
+  return 'Maintenance records are based on QR updates saved as serviced or repaired. This is an operational maintenance trail and not a certified mechanical inspection report.';
 }
 
 function buildReportHtml(options: {
@@ -3221,8 +3222,9 @@ function buildMaintenanceReport(
   logoUrl: string,
   dateRangeLabel = 'All available entries',
   maintenanceReportType: MaintenanceReportType = 'all',
+  costs: MyInvoiceRecord[] = [],
 ): string {
-  const allMaintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => Boolean(entry));
+  const allMaintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => entry !== null && entry.kind !== 'checked');
   const maintenanceEntries = maintenanceReportType === 'all'
     ? allMaintenanceEntries
     : allMaintenanceEntries.filter((entry) => entry.kind === maintenanceReportType);
@@ -3236,7 +3238,7 @@ function buildMaintenanceReport(
     logoUrl,
     summary: buildMaintenanceReportSummary(asset, maintenanceEntries),
     recordRows: buildMaintenanceRecordRows(asset, maintenanceEntries, dateRangeLabel, maintenanceTypeLabel),
-    bodyHtml: buildMaintenanceBody(asset, maintenanceEntries),
+    bodyHtml: buildMaintenanceBody(asset, maintenanceEntries) + (costs.length ? `<section><h2>Service and repair costs</h2><table class="assetReportTable"><thead><tr><th>Date</th><th>Asset</th><th>Supplier</th><th>Category</th><th>Incl. VAT</th></tr></thead><tbody>${costs.map(cost => `<tr><td>${escapeHtml(cost.invoiceDate)}</td><td>${escapeHtml(cost.assetTitle)}</td><td>${escapeHtml(cost.supplierName)}</td><td>${cost.costCategory === 'service' ? 'Service' : 'Repair'}</td><td>${escapeHtml(formatMoney(cost.totalIncVat))}</td></tr>`).join('')}</tbody></table></section>` : ''),
   });
 }
 
@@ -3584,8 +3586,9 @@ function buildMaintenanceReportWorkbook(
   generatedAt: string,
   dateRangeLabel = 'All available entries',
   maintenanceReportType: MaintenanceReportType = 'all',
+  costs: MyInvoiceRecord[] = [],
 ): XlsxSheet[] {
-  const allMaintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => Boolean(entry));
+  const allMaintenanceEntries = events.map((event) => parseMaintenanceEvent(event)).filter((entry): entry is MaintenanceEntry => entry !== null && entry.kind !== 'checked');
   const maintenanceEntries = maintenanceReportType === 'all'
     ? allMaintenanceEntries
     : allMaintenanceEntries.filter((entry) => entry.kind === maintenanceReportType);
@@ -3695,6 +3698,10 @@ function buildMaintenanceReportWorkbook(
       },
       tabColor: '10382F',
     },
+    ...(costs.length ? [{ name: 'Service and repair costs', rows: [
+      ['Date', 'Asset', 'Supplier', 'Category', 'Incl. VAT'],
+      ...costs.map(cost => [cost.invoiceDate, cost.assetTitle, cost.supplierName, cost.costCategory === 'service' ? 'Service' : 'Repair', styled(cost.totalIncVat, 'currency')]),
+    ] }] : []),
   ];
 }
 
@@ -3940,11 +3947,15 @@ export async function GET(request: NextRequest) {
 
   let ownerUserId = session.user.id;
   let isDealerMaintenanceReport = false;
+  let mayReadCosts = true;
 
   if (shareToken) {
     if (groupId || dealerAccessId) return NextResponse.json({error:'Shared report access supports one asset.'},{status:403});
     try {
       const scope = await requireLiveSharedAsset(shareToken,assetId,reportKind === 'maintenance' ? 'maintenanceReports' : 'allReports');
+      if (reportKind === 'maintenance') {
+        mayReadCosts = await requireLiveSharedAsset(shareToken,assetId,'costOfOwnership').then(() => true, () => false);
+      }
       ownerUserId = scope.lead.ownerId;
       isDealerMaintenanceReport = reportKind === 'maintenance';
     } catch { return NextResponse.json({error:'Shared report access is no longer available.'},{status:403}); }
@@ -3962,6 +3973,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Maintenance report access is no longer active for this asset.' }, { status: 403 });
     }
 
+    mayReadCosts = trackedAsset.permissions.canViewCostOfOwnership;
     ownerUserId = trackedAsset.ownerUserId;
     isDealerMaintenanceReport = true;
   }
@@ -4161,6 +4173,19 @@ export async function GET(request: NextRequest) {
     return meteredReport(await buildReportDocumentResponse(html, request, baseFileName, reportFormat), request, session.user.id, 'Downloaded an asset report');
   }
 
+  let maintenanceCosts: MyInvoiceRecord[] = [];
+  if (reportKind === 'maintenance' && mayReadCosts && (!ownerAppAccess || ownerAppCan(ownerAppAccess, 'manage_finance'))) {
+    const desktop = await getDesktopScope(request.nextUrl.searchParams.get('desktopMembershipId') || undefined);
+    if (!desktop || (desktop.grant.ownerId === ownerUserId && desktop.grant.permissions.viewCosts)) {
+      const rows = await listMyInvoices(ownerUserId, { assetId: groupId ? null : assetId, year: reportYear, month: reportMonth });
+      const ids = new Set(reportAssets.filter(item => !desktop || teamCanAccessAsset(desktop.grant, item)).map(item => item.id));
+      maintenanceCosts = rows.filter(row => ids.has(row.assetId) && (
+        (row.costCategory === 'repair' && maintenanceReportType !== 'serviced') ||
+        (row.costCategory === 'service' && maintenanceReportType !== 'repaired')
+      ) && maintenanceReportType !== 'checked');
+    }
+  }
+
   const eventGroups = await Promise.all(
     reportAssets.map(async (entry) => {
       const sourceEvents = await listScanEventsForAsset(entry.id, null, {
@@ -4189,7 +4214,7 @@ export async function GET(request: NextRequest) {
     const workbook = createXlsxWorkbook(
       reportKind === 'fuel'
         ? buildFuelReportWorkbook(asset, events, ownerDetails, generatedAt, reportDateRange.label, reportAssets)
-        : buildMaintenanceReportWorkbook(asset, events, ownerDetails, generatedAt, reportDateRange.label, maintenanceReportType),
+        : buildMaintenanceReportWorkbook(asset, events, ownerDetails, generatedAt, reportDateRange.label, maintenanceReportType, maintenanceCosts),
     );
 
     return meteredReport(new NextResponse(workbook, {
@@ -4206,7 +4231,7 @@ export async function GET(request: NextRequest) {
 
   const html = reportKind === 'fuel'
     ? buildFuelReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, reportAssets)
-    : buildMaintenanceReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, maintenanceReportType);
+    : buildMaintenanceReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, maintenanceReportType, maintenanceCosts);
 
   return meteredReport(await buildReportDocumentResponse(html, request, baseFileName, reportFormat), request, session.user.id, 'Downloaded an asset report');
 }
