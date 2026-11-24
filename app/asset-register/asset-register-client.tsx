@@ -52,6 +52,8 @@ import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asse
 import downloadStyles from "../../components/ReportDownload.module.css";
 import RegisterPickerRow, { type RegisterPickerOption } from "../../components/asset-register/RegisterPickerRow";
 import registerPickerStyles from "../../components/asset-register/MoveAssetDestinationPicker.module.css";
+import { useAssetFlowTransition } from '../../components/asset-register/useAssetFlowTransition';
+import assetFlowStyles from '../../components/asset-register/AssetFlowTransition.module.css';
 import AddAssetRegisterPicker from "../../components/asset-register/AddAssetRegisterPicker";
 import { FilterQuestion } from "../../components/FilterFlow";
 import exportReportStyles from "../../components/RegisterReportOptions.module.css";
@@ -6372,6 +6374,7 @@ export default function AssetRegisterClient({
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
   const [isAcquisitionChoiceOpen, setIsAcquisitionChoiceOpen] = useState(false);
   const [newAssetAcquisitionDraft, setNewAssetAcquisitionDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
+  const assetFlow = useAssetFlowTransition();
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
   const [licenceReviewAssetIds, setLicenceReviewAssetIds] = useState<string[] | null>(null);
   const [assetUpdateMenuEnabled, setAssetUpdateMenuEnabled] = useState(false);
@@ -18122,6 +18125,7 @@ export default function AssetRegisterClient({
         </div>
       ) : null}
 
+      {assetFlow.feedback}
       {isAddAssetDestinationModalOpen ? (
         <AddAssetRegisterPicker
           options={addAssetRegisterOptions}
@@ -18193,7 +18197,7 @@ export default function AssetRegisterClient({
             </div>
             <div className={`${styles.assetSettingsActions} ${styles.newAcquisitionChoiceActions}`}>
               <button type="button" className={accountStyles.ghostButton} onClick={() => setIsAcquisitionChoiceOpen(false)}>Cancel</button>
-              <button type="button" className={accountStyles.primaryButton} onClick={continueManualEntryFromAcquisitionChoice} disabled={newAssetAcquisitionDraft.newlyAcquired === null}>Continue</button>
+              <button type="button" className={accountStyles.primaryButton} onClick={event => assetFlow.start(event.currentTarget, 'Choose asset type', continueManualEntryFromAcquisitionChoice)} disabled={newAssetAcquisitionDraft.newlyAcquired === null}>Continue</button>
             </div>
           </div>
         </div>
@@ -18285,7 +18289,7 @@ export default function AssetRegisterClient({
                         type="button"
                         key={section.step}
                         className={`${styles.assetFormSectionTab} ${isActive ? styles.assetFormSectionTabActive : ''}`}
-                        onClick={() => openAssetFormSection(section.step)}
+                        onClick={event => { if (!isActive) assetFlow.start(event.currentTarget, section.label, () => openAssetFormSection(section.step)); }}
                         aria-current={isActive ? 'step' : undefined}
                       >
                         <span className={styles.assetFormSectionTabNumber}>{index + 1}</span>
@@ -18311,7 +18315,7 @@ export default function AssetRegisterClient({
                         <input value={kindLabel(editingAsset.kind)} disabled readOnly />
                       </label>
                     ) : (
-                      <div className={styles.manualAssetTypeGrid} role="group" aria-label="Choose an asset type">
+                      <div className={`${styles.manualAssetTypeGrid} ${assetFlowStyles.typeGrid}`} role="group" aria-label="Choose an asset type">
                         {MANUAL_ASSET_TYPE_OPTIONS.map((option, index) => {
                           const isSelected = hasManualAssetKindSelection && assetFormKind === option.value;
 
@@ -18320,7 +18324,8 @@ export default function AssetRegisterClient({
                               type="button"
                               key={option.value}
                               className={`${styles.manualAssetTypeCard} ${isSelected ? styles.manualAssetTypeCardSelected : ''}`}
-                              onClick={() => selectManualAssetKind(option.value, true)}
+                              data-asset-kind={option.value}
+                              onClick={event => assetFlow.start(event.currentTarget, option.label, () => selectManualAssetKind(option.value, true))}
                               aria-pressed={isSelected}
                               autoFocus={index === 0}
                             >
@@ -19141,7 +19146,7 @@ export default function AssetRegisterClient({
                     <button
                       type="button"
                       className={styles.secondaryButton}
-                      onClick={goToPreviousManualAssetStep}
+                      onClick={event => editingAsset ? goToPreviousManualAssetStep() : assetFlow.start(event.currentTarget, 'Going back…', goToPreviousManualAssetStep)}
                       disabled={isAssetAutosaveBusy}
                     >
                       Back
@@ -19158,7 +19163,7 @@ export default function AssetRegisterClient({
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={goToNextManualAssetStep}
+                      onClick={event => editingAsset ? goToNextManualAssetStep() : assetFlow.start(event.currentTarget, ASSET_FORM_SECTION_TABS.find(section => section.step === manualAssetStep + 1)?.label || 'Next step', goToNextManualAssetStep)}
                     >
                       Next
                     </button>
