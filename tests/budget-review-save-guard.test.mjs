@@ -25,13 +25,13 @@ const saveCostBudget = slice(
 const budgetModal = slice('{budgetModalOpen ?', '{budgetDeleteCandidate ?');
 
 test('entering budget Review only advances local wizard state', () => {
-  assert.match(continueBudgetWizard, /if \(budgetWizardStep === 3\)/);
-  assert.match(continueBudgetWizard, /setBudgetWizardStep\(4\)/);
+  assert.match(continueBudgetWizard, /if \(budgetWizardStep === 4\)/);
+  assert.match(continueBudgetWizard, /setBudgetWizardStep\(5\)/);
   assert.doesNotMatch(continueBudgetWizard, /fetch\(|saveCostBudget|\/api\/my-invoices\/budgets/);
 });
 
 test('budget persistence is guarded behind the explicit Review save action', () => {
-  assert.match(saveCostBudget, /if \(budgetWizardStep !== 4 \|\| budgetSaving\) return;/);
+  assert.match(saveCostBudget, /if \(budgetWizardStep !== 5 \|\| budgetSaving\) return;/);
   assert.match(saveCostBudget, /\/api\/my-invoices\/budgets/);
   assert.match(saveCostBudget, /method: editingBudgetId \? 'PATCH' : 'POST'/);
 
@@ -63,8 +63,8 @@ test('wizard steps reset their scroll position without focus-induced jumps', () 
   assert.match(client, /manualCostWizardStepHeadingRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
 });
 
-test('editing starts at the period with the existing asset retained', () => {
-  const edit = slice('function openEditBudget(', 'function openBudgetAssetPicker(');
+test('editing starts at cost categories with the existing asset retained', () => {
+  const edit = slice('function openEditBudget(', 'function confirmBudgetAssetPicker(');
   assert.match(edit, /setBudgetWizardStep\(2\)/);
   assert.match(edit, /setBudgetSelectedAssetIds\(budget.assetId \? \[budget.assetId\] : \[\]\)/);
   assert.match(budgetModal, /budgetWizardStep === \(editingBudgetId \? 2 : 1\) \? closeBudgetModal : goBackBudgetWizard/);

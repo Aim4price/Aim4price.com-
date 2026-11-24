@@ -27,7 +27,7 @@ test('budget confirmation advances directly for one or multiple assets', () => {
     const result = run('confirmBudgetAssetPicker', {editingBudgetId:null, budgetPickerAssetIds:ids, budgetDraft:{}, budgetWizardStep:1});
     assert.equal(result.budgetWizardStep, 2);
     assert.deepEqual(result.budgetSelectedAssetIds, ids);
-    assert.equal(result.budgetAssetPickerOpen, false);
+    assert.equal(result.budgetDraft.assetId, ids[0]);
   }
 });
 test('empty selections never advance or clear the current selection', () => {
@@ -39,7 +39,7 @@ test('empty selections never advance or clear the current selection', () => {
 test('recurring confirmation advances directly and preserves all selected assets', () => {
   const ids = ['tractor', 'truck'];
   const result = run('confirmRecurringAssetPicker', {recurringPickerAssetIds:ids, recurringWizardStep:1});
-  assert.equal(result.recurringWizardStep, 2);
+  assert.equal(result.recurringWizardStep, 3);
   assert.deepEqual(result.recurringAssetIds, ids);
   assert.equal(result.recurringAssetPickerOpen, false);
 });

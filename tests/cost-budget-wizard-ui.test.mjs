@@ -17,14 +17,14 @@ const modalStart = client.indexOf('{budgetModalOpen ?');
 const modalEnd = client.indexOf('{budgetDeleteCandidate ?', modalStart);
 const budgetModal = client.slice(modalStart, modalEnd);
 
-test('spending budget uses a guided four-step flow with a dedicated period step', () => {
+test('spending budget uses a guided five-step flow with a dedicated period step', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal should be present');
-  assert.match(client, /type BudgetWizardStep = 1 \| 2 \| 3 \| 4/);
+  assert.match(client, /type BudgetWizardStep = 1 \| 2 \| 3 \| 4 \| 5/);
   assert.match(client, /const \[budgetWizardStep, setBudgetWizardStep\]/);
   assert.doesNotMatch(budgetModal, /styles\.invoiceDropWizardProgress/);
   assert.match(budgetModal, /styles\.invoiceDropCodeModal/);
   assert.match(budgetModal, /styles\.invoiceDropWizardPanel/);
-  assert.match(budgetModal, /What should this budget cover\?/);
+  assert.match(budgetModal, /Which costs should count towards this budget\?/);
   assert.match(budgetModal, /Choose the budget period/);
   assert.match(budgetModal, /Set the spending limit/);
   assert.match(budgetModal, /Review budget/);
@@ -34,19 +34,18 @@ test('spending budget uses a guided four-step flow with a dedicated period step'
 });
 
 test('coverage uses the Fuel Ledger saved-asset picker design with multi-select', () => {
-  assert.match(budgetModal, /<strong>Choose assets<\/strong>/);
   for (const picker of [fuelClient, budgetModal]) {
     assert.match(picker, /data-asset-choice-modal="true"/);
     assert.match(picker, /data-asset-choice-toolbar="true"/);
     assert.match(picker, /data-asset-choice-row="true"/);
   }
-  assert.match(budgetModal, /<h2 id="budget-scope-picker-title">Choose Saved Assets<\/h2>/);
+  assert.match(budgetModal, /<h2 id="budget-scope-picker-title">Choose assets<\/h2>/);
   assert.match(budgetModal, /styles\.pickerToolbar/);
   assert.match(budgetModal, /styles\.budgetAssetPickerToolbar/);
   assert.match(budgetModal, /filteredBudgetAssets/);
   assert.match(budgetModal, /budgetPickerAssetIds\.includes\(asset\.id\)/);
   assert.match(budgetModal, /toggleBudgetPickerAsset\(asset\.id\)/);
-  assert.match(budgetModal, /`Select all shown \(\$\{selectableFilteredBudgetAssets\.length\}\)`/);
+  assert.match(budgetModal, /`Select all shown \(\$\{filteredBudgetAssets\.length\}\)`/);
   assert.match(budgetModal, /toggleAllFilteredBudgetAssets/);
   assert.match(budgetModal, /styles\.budgetSelectAllButton/);
   assert.match(budgetModal, /pickerStyles\.multi/);
@@ -83,18 +82,22 @@ test('budget coverage uses its own complete asset list, independent of fuel excl
   assert.match(budgetAssetSelectors, /budgetAssets\.filter/);
   assert.match(budgetAssetSelectors, /if \(!query\) return budgetAssets/);
   assert.match(createBudget, /budgetAssets\.some/);
-  assert.match(budgetModal, /!budgetAssets\.length/);
+  assert.match(budgetModal, /Add a saved asset to create a budget/);
   assert.doesNotMatch(budgetAssetSelectors, /workUseExcluded|fuel_asset_exclusions/);
 });
 
-test('period is selected on step two in a wider, responsive budget modal', () => {
-  const coverageStart = budgetModal.indexOf('{budgetWizardStep === 1 ?');
-  const periodStart = budgetModal.indexOf('{budgetWizardStep === 2 ?', coverageStart);
-  const limitStart = budgetModal.indexOf('{budgetWizardStep === 3 ?', periodStart);
-  const coverageStep = budgetModal.slice(coverageStart, periodStart);
+test('cost categories have a dedicated slide before selecting the period', () => {
+  const categoriesStart = budgetModal.indexOf('aria-labelledby="budget-categories-title"');
+  const periodStart = budgetModal.indexOf('aria-labelledby="budget-period-title"');
+  const limitStart = budgetModal.indexOf('aria-labelledby="budget-limit-title"');
+  assert.ok(categoriesStart > 0 && periodStart > categoriesStart && limitStart > periodStart);
+  const categoryStep = budgetModal.slice(categoriesStart, periodStart);
   const periodStep = budgetModal.slice(periodStart, limitStart);
-
-  assert.doesNotMatch(coverageStep, /Budget reset period|Monthly|Annual/);
+  assert.match(categoryStep, /Which costs should count towards this budget/);
+  assert.match(categoryStep, /All costs/);
+  assert.match(categoryStep, /costCategories\.map/);
+  assert.doesNotMatch(categoryStep, /<details|Budget reset period/);
+  assert.doesNotMatch(periodStep, /costCategories\.map/);
   assert.match(periodStep, /Choose the budget period/);
   assert.match(periodStep, /role="group" aria-label="Budget reset period"/);
   assert.match(periodStep, /styles\.budgetWizardPeriodChoices/);
@@ -114,12 +117,9 @@ test('period-specific duplicate checks happen after coverage is selected', () =>
   );
 
   assert.match(client, /const budgetUnavailableAssetIdsByPeriod = useMemo/);
-  assert.match(client, /const budgetPickerUnavailableAssetIds = useMemo/);
-  assert.match(client, /budgetUnavailableAssetIdsByPeriod\.monthly\.has\(asset\.id\)/);
-  assert.match(client, /budgetUnavailableAssetIdsByPeriod\.annual\.has\(asset\.id\)/);
-  assert.match(continueBudgetWizard, /if \(budgetWizardStep === 2\)[\s\S]*?budgetPeriodUnavailableAssetIds\.has/);
+  assert.match(continueBudgetWizard, /if \(budgetWizardStep === 3\)[\s\S]*?budgetPeriodUnavailableAssetIds\.has/);
   assert.match(continueBudgetWizard, /budgetUnavailableAllPeriods\.has\(budgetDraft\.period\)/);
-  assert.match(continueBudgetWizard, /setBudgetWizardStep\(3\)/);
+  assert.match(continueBudgetWizard, /setBudgetWizardStep\(4\)/);
 });
 
 test('limit validation happens before review and the review preserves every choice', () => {
@@ -137,14 +137,12 @@ test('limit validation happens before review and the review preserves every choi
 
 });
 
-test('budget scope and amount distinguish per-asset limits from one shared register limit', () => {
-  assert.match(budgetModal, /A separate limit per asset/);
-  assert.match(budgetModal, /Whole register[\s\S]*?One shared spending limit/);
-  assert.match(budgetModal, /registerId: register\.value, assetId: 'all'/);
-  assert.match(client, /assetId: selectedIds\[0\],\s*registerId: ''/);
+test('new budgets offer only individual assets and show the amount per asset', () => {
+  assert.match(budgetModal, /Each gets its own spending limit/);
+  assert.doesNotMatch(budgetModal, /Whole register|registerChoice|registers\.map|Choose umbrella/i);
   assert.match(budgetModal, /selectedBudgetAssets\.length > 1 \? 'Amount per asset'/);
   assert.match(budgetModal, /budgetDraft\.registerId \? 'Register'/);
-  assert.match(client, /assetIdsToSave: Array<string \| null> = budgetDraft\.registerId \? \[null\]/);
+  assert.match(client, /assetIdsToSave: Array<string \| null> = editingBudgetId[\s\S]*?: budgetSelectedAssetIds;/);
 });
 
 test('multi-asset creation saves one independently editable budget per selected asset', () => {
