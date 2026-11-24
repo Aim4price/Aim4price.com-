@@ -22,4 +22,6 @@
 .mapping small {display:block;margin:5px 0}
 .dialog .check {display:flex;align-items:center;gap:10px}
 .dialog .check input {width:auto;min-height:0}
-.link {display:inline-flex;align-items:center;background:#145440;color:white;border-radius:12px;padding:12px 20px;font-weight:bold;text-decoration:none}
+.dialog .pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
