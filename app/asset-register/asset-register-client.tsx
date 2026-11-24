@@ -2,6 +2,7 @@
 import { appendReportCategories } from '../../lib/cost-categories';
 import OwnershipReportCategories from '../../components/OwnershipReportCategories';
 import categoryStyles from '../my-invoices/cost-categories.module.css';
+import AssetMediaPanel from '../../components/asset-register/AssetMediaPanel';
 import AssetSheetDialog from '../../components/asset-register/AssetSheetDialog';
 import { importPending } from '../../lib/asset-sheet';
 import { useMeteredManage } from '../../components/BusinessCreditControls';
@@ -15901,6 +15902,10 @@ export default function AssetRegisterClient({
   const isAssetAutosaveBusy = Boolean(editingAsset) && (assetAutosaveState === 'pending' || assetAutosaveState === 'saving');
   const isAssetStatusFocusedView = manualAssetStep === 3 && assetStatusEditView !== 'hub';
   const isPagedAssetForm = isPagedAssetDetails || (!showAssetUpdateMenu && isAssetStatusFocusedView);
+  const isMediaStep = !showAssetUpdateMenu && manualAssetStep === 4;
+  const useCompactAssetDialog = isPagedAssetForm || isMediaStep;
+  const documentUploadDisabled = isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS || Boolean(desktopAccess && !desktopAccess.data.permissions.uploadDocuments);
+  const photoUploadDisabled = isUploadingPhotos || Boolean(desktopAccess && !desktopAccess.data.permissions.uploadPhotos);
   const settingsUsageMode = editingAsset ? getAssetSettingsUsageMode(editingAsset) : 'none';
   const settingsUsageCurrentValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, settingsUsageMode) : null;
   const assetSettingsMapsUrl = editingAsset ? buildAssetSettingsGoogleMapsUrl(editingAsset) : null;
@@ -18247,7 +18252,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetFormModal} ${isPagedAssetForm ? updateStyles.pagedDialog : ''} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''} ${manualAssetStep === 3 && assetStatusEditView === 'hub' && !showAssetUpdateMenu ? styles.paperworkOverviewModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetFormModal} ${useCompactAssetDialog ? updateStyles.pagedDialog : ''} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''} ${manualAssetStep === 3 && assetStatusEditView === 'hub' && !showAssetUpdateMenu ? styles.paperworkOverviewModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
@@ -18272,7 +18277,7 @@ export default function AssetRegisterClient({
                       {assetDraft.title.trim() ||
                         (editingAsset ? editingAsset.title : `Add ${selectedManualAssetType.label.toLowerCase()}`)}
                     </h3>
-                    {isPagedAssetForm ? <p>Year Model: {(editingAsset ? editingAsset.yearModel : assetDraft.yearModel) || 'Not recorded'} • Usage: {editingAsset ? buildAssetUsageValue(editingAsset) : draftUsage} • Condition: {conditionLabel(editingAsset ? editingAsset.condition : assetDraft.condition)}</p> : !editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : assetUpdateMenuEnabled ? <p>{ASSET_FORM_SECTION_TABS.find((section) => section.step === manualAssetStep)?.label}</p> : null}
+                    {isPagedAssetForm ? <p>Year Model: {(editingAsset ? editingAsset.yearModel : assetDraft.yearModel) || 'Not recorded'} • Usage: {editingAsset ? buildAssetUsageValue(editingAsset) : draftUsage} • Condition: {conditionLabel(editingAsset ? editingAsset.condition : assetDraft.condition)}</p> : isMediaStep && editingAsset ? <p>Documents &amp; photos</p> : !editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : assetUpdateMenuEnabled ? <p>{ASSET_FORM_SECTION_TABS.find((section) => section.step === manualAssetStep)?.label}</p> : null}
                   </div>
                 </div>
               )}
@@ -18305,7 +18310,7 @@ export default function AssetRegisterClient({
                 </div>
               </div>
             ) : (
-            <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${isPagedAssetForm ? updateStyles.pagedBody : ''} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
+            <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${useCompactAssetDialog ? updateStyles.pagedBody : ''} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
               {manualAssetStep > 1 && !assetUpdateMenuEnabled && !isPagedAssetDetails ? (
                 <nav className={styles.assetFormSectionTabs} aria-label="Asset form sections">
                   {ASSET_FORM_SECTION_TABS.map((section, index) => {
@@ -18982,161 +18987,57 @@ export default function AssetRegisterClient({
                   />
                 ) : null}
 
-                {manualAssetStep === 4 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
-                    <div className={`${styles.manualStageGrid} ${styles.manualUploadGrid}`}>
-                      <div className={styles.field} ref={node => {if(node) node.inert = Boolean(desktopAccess && !desktopAccess.data.permissions.uploadDocuments);}} data-access-restricted={desktopAccess && !desktopAccess.data.permissions.uploadDocuments ? "true" : undefined}>
-                        <span>Other documents</span>
-
-                        <div className={styles.documentUploadPanel}>
-                          <div className={styles.uploadRow}>
-                            <label
-                              className={`${styles.secondaryButton} ${styles.filePickerButton} ${isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS ? styles.filePickerButtonDisabled : ''}`}
-                            >
-                              <span>{isUploadingDocuments ? 'Uploading...' : 'Add documents'}</span>
-                              <input
-                                ref={documentInputRef}
-                                type="file"
-                                accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
-                                multiple
-                                className={styles.fileInput}
-                                onChange={handleDocumentFilesSelected}
-                                disabled={isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS}
-                              />
-                            </label>
-
-                            <span className={styles.uploadCount}>
-                              {manualDraftDocumentCount} / {MAX_DOCUMENTS}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={styles.field} ref={node => {if(node) node.inert = Boolean(desktopAccess && !desktopAccess.data.permissions.uploadPhotos);}} data-access-restricted={desktopAccess && !desktopAccess.data.permissions.uploadPhotos ? "true" : undefined}>
-                        <span>Photos</span>
-
-                        <div className={styles.uploadPanel}>
-                          <div className={styles.uploadRow}>
-                            <label
-                              className={`${styles.secondaryButton} ${styles.filePickerButton} ${isUploadingPhotos ? styles.filePickerButtonDisabled : ''}`}
-                            >
-                              <span>{isUploadingPhotos ? 'Uploading...' : manualDraftPhotoCount >= MAX_PHOTOS ? 'Add / replace photos' : 'Add photos'}</span>
-                              <input
-                                ref={photoInputRef}
-                                type="file"
-                                accept="image/jpeg,image/png,image/webp"
-                                multiple
-                                className={styles.fileInput}
-                                onChange={handlePhotoFilesSelected}
-                                disabled={isUploadingPhotos}
-                              />
-                            </label>
-
-                            <span className={styles.uploadCount}>
-                              {manualDraftPhotoCount} / {MAX_PHOTOS}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {assetDraft.documents.length ? (
-                      <div className={styles.documentDraftList}>
-                        {assetDraft.documents.map((document, documentIndex) => (
-                          <div className={styles.documentDraftRow} key={document.id}>
-                            <span className={styles.documentDraftIcon}>
-                              <DocumentIcon className={styles.buttonIcon} />
-                            </span>
-                            <div>
-                              <strong>{displayDocumentName(document.fileName, documentIndex)}</strong>
-                              <small>{assetDocumentCategoryLabel(document.category)} · {formatByteSize(document.byteSize)}</small>
-                            </div>
-                            <button
-                              type="button"
-                              className={styles.documentOpenLink}
-                              onClick={() => { void openAssetDocument(document); }}
-                            >
-                              Open
-                            </button>
-                            <button type="button" className={styles.documentRemoveButton} onClick={() => removeDraftDocument(document.id)}>
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    {pendingDocumentFiles.length ? (
-                      <div className={styles.documentDraftList}>
-                        {pendingDocumentFiles.map((file, index) => (
-                          <div className={`${styles.documentDraftRow} ${styles.pendingDraftRow}`} key={`${file.name}-${file.size}-${index}`}>
-                            <span className={styles.documentDraftIcon}>
-                              <DocumentIcon className={styles.buttonIcon} />
-                            </span>
-                            <div>
-                              <strong>{shortDocumentName(file.name)}</strong>
-                              <small>Ready to upload · {formatByteSize(file.size)}</small>
-                            </div>
-                            <button type="button" className={styles.documentRemoveButton} onClick={() => removePendingDocumentFile(index)}>
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    {draftPhotoItems.length ? (
-                      <div className={styles.photoDraftSection}>
-                        <div className={styles.photoMainHelp}>
-                          <strong>Main photo</strong>
-                          <span>The first photo below is used first on the asset card, PDFs and marketplace listing.</span>
-                        </div>
-
-                        <div className={styles.photoGrid}>
-                          {draftPhotoItems.map((photoItem, index) => (
-                            <div
-                              className={`${styles.photoThumb} ${photoItem.isMain ? styles.photoThumbMain : ''} ${photoItem.source === 'pending' ? styles.pendingPhotoThumb : ''}`}
-                              key={photoItem.key}
-                            >
-                              <div className={styles.photoThumbMedia}>
-                                <img
-                                  src={photoItem.previewUrl || FALLBACK_ASSET_IMAGE}
-                                  alt={photoItem.isMain ? 'Main asset photo' : `Asset photo ${index + 1}`}
-                                />
-                                {photoItem.isMain ? <span className={styles.photoMainBadge}>Main photo</span> : null}
-                                {photoItem.source === 'pending' ? <span className={styles.photoPendingBadge}>Ready</span> : null}
-                              </div>
-
-                              <div className={styles.photoThumbActions} ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
-                                <button
-                                  type="button"
-                                  className={`${styles.photoMakeMainButton} ${photoItem.isMain ? styles.photoMakeMainButtonActive : ''}`}
-                                  onClick={() => selectMainDraftPhoto(photoItem)}
-                                  disabled={photoItem.isMain}
-                                >
-                                  {photoItem.isMain ? 'Main' : 'Make main'}
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className={styles.photoRemoveButton}
-                                  onClick={() =>
-                                    photoItem.source === 'saved' && photoItem.url
-                                      ? removeDraftPhoto(photoItem.url)
-                                      : photoItem.pendingId
-                                        ? removePendingPhotoFile(photoItem.pendingId)
-                                        : undefined
-                                  }
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </section>
+                {isMediaStep ? (
+                  <div className={styles.fullWidth}>
+                    <input ref={documentInputRef} type="file" hidden multiple
+                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
+                      disabled={documentUploadDisabled} onChange={handleDocumentFilesSelected} />
+                    <input ref={photoInputRef} type="file" hidden multiple accept="image/jpeg,image/png,image/webp"
+                      disabled={photoUploadDisabled} onChange={handlePhotoFilesSelected} />
+                    <AssetMediaPanel
+                      documentUpload={{
+                        label: isUploadingDocuments ? 'Uploading documents…' : 'Add documents',
+                        count: manualDraftDocumentCount,
+                        limit: MAX_DOCUMENTS,
+                        disabled: documentUploadDisabled,
+                        open: () => documentInputRef.current?.click(),
+                      }}
+                      photoUpload={{
+                        label: isUploadingPhotos ? 'Uploading photos…' : manualDraftPhotoCount >= MAX_PHOTOS ? 'Add / replace photos' : 'Add photos',
+                        count: manualDraftPhotoCount,
+                        limit: MAX_PHOTOS,
+                        disabled: photoUploadDisabled,
+                        open: () => photoInputRef.current?.click(),
+                      }}
+                      documents={[
+                        ...assetDraft.documents.map((document, index) => ({
+                          key: document.id,
+                          name: displayDocumentName(document.fileName, index),
+                          detail: `${assetDocumentCategoryLabel(document.category)} · ${formatByteSize(document.byteSize)}`,
+                          open: () => void openAssetDocument(document),
+                          remove: desktopAccess ? undefined : () => removeDraftDocument(document.id),
+                        })),
+                        ...pendingDocumentFiles.map((file, index) => ({
+                          key: `queued-${file.name}-${file.size}-${index}`,
+                          name: shortDocumentName(file.name),
+                          detail: `Ready to upload · ${formatByteSize(file.size)}`,
+                          remove: () => removePendingDocumentFile(index),
+                        })),
+                      ]}
+                      photos={draftPhotoItems.map((photo) => ({
+                        key: photo.key,
+                        src: photo.previewUrl || FALLBACK_ASSET_IMAGE,
+                        label: photo.label,
+                        main: photo.isMain,
+                        pending: photo.source === 'pending',
+                        makeMain: desktopAccess ? undefined : () => selectMainDraftPhoto(photo),
+                        remove: desktopAccess ? undefined : () => {
+                          if (photo.source === 'saved' && photo.url) removeDraftPhoto(photo.url);
+                          else if (photo.pendingId) removePendingPhotoFile(photo.pendingId);
+                        },
+                      }))}
+                    />
+                  </div>
                 ) : null}
 
               </form>
