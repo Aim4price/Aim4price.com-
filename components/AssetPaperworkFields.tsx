@@ -1,5 +1,7 @@
 'use client';
 import {useState,useEffect,type ReactNode} from 'react';
+import AssetActionIcon from './asset-register/AssetActionIcon';
+import actionStyles from './leads/ManageActionGrid.module.css';
 import DateInput from './DateInput';
 import ModalSelect from './AssetModalSelect';
 import styles from '../app/asset-register/page.module.css';
@@ -79,19 +81,24 @@ export default function AssetPaperworkFields({showReturnAction = false,assetStat
  useEffect(()=>setAssetStatusAdvancedOpen(false),[assetStatusEditView]);
  return <section data-asset-paperwork className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth} ${styles.assetStatusStageCard} ${styles.paperworkPanel}`}>
                     {assetStatusEditView === 'hub' ? (
-                      <>
-                        <div className={styles.assetStatusHubGrid}>
+                      <div className={`${styles.assetUpdateMenuBody} ${styles.ownerCommandModal} ${actionStyles.paperworkHub}`}>
+                        <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionStyles.grid}`} data-manage-actions>
                           {(['finance', 'insurance', 'license'] as const)
                             .filter(section => section !== 'license' || assetLicenseApplicable)
                             .map(section => (
-                              <button key={section} type="button" className={styles.assetStatusHubCard}
-                                onClick={() => openAssetStatusEditView(section)} disabled={isSavingAssetStatus}>
-                                <strong>{PAPERWORK_LABELS[section]}</strong>
-                                <small className={styles.paperworkStatus}>{summaries[section]}</small>
+                              <button key={section} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
+                                data-manage-action={section} onClick={() => openAssetStatusEditView(section)} disabled={isSavingAssetStatus}>
+                                {section === 'insurance' ? (
+                                  <svg className={styles.buttonIcon} aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m12 3 8 3v5c0 5-3.1 8.4-8 10-4.9-1.6-8-5-8-10V6z" />
+                                    <path d="m9 12 2 2 4-5" />
+                                  </svg>
+                                ) : <AssetActionIcon action={section === 'finance' ? 'addCosts' : 'serialNumber'} className={styles.buttonIcon} />}
+                                <span><strong>{PAPERWORK_LABELS[section]}</strong><small>{summaries[section]}</small></span>
                               </button>
                             ))}
                         </div>
-                      </>
+                      </div>
                     ) : (
                       <div data-paperwork-header className={styles.paperworkSectionHeader}>
                         <div className={styles.paperworkSectionCopy}>
