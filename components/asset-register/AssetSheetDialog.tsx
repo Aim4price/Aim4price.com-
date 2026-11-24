@@ -246,13 +246,14 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       <div className={parts.closeWrap}>
         <ShareModalCloseButton aria-label="Close add asset options" disabled={busy || transition.pending} onClick={onClose} />
       </div>
-      <header className={parts.dialogHeader}>
+      <header className={cards ? css.choiceHeader : parts.dialogHeader}>
         <h2 id="add-asset-choice-title">{{ choose: 'Add assets', one: 'Add 1 asset', multiple: 'Add multiple assets', file: 'Import assets', map: 'Match columns', edit: 'Edit asset sheet', review: 'Review assets' }[stage]}</h2>
         <p>{registerName}</p>
         <div className={parts.partsProgress} aria-hidden="true">
           <span style={{ width: ({ choose: 25, one: 50, multiple: 50, file: 60, map: 65, edit: 80, review: 100 }[stage]) + '%' }} />
         </div>
       </header>
+      <div className={cards ? css.choiceScroll : css.transparentWrapper}>
       <fieldset disabled={busy || transition.pending} className={css.body}>
         {cards && <div className={`${parts.shareChoices} ${parts.entryMethods} ${css.pair}`}>
           {cards.map(([next, label, hint, tone, path]) => {
@@ -270,11 +271,9 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
             return <button key={next} type="button" data-tone={tone} onClick={event => transition.start(event.currentTarget, label, () => next === 'manual' ? onManual() : change(next))}>{content}</button>;
           })}
         </div>}
-        {stage === 'multiple' && <>
-          <div className={parts.entryExample}>
-            <button aria-expanded={example} onClick={() => setExample(!example)}>See an example</button>
-          </div>
-          {example && <div>
+        {stage === 'multiple' && <div className={css.example}>
+            <button type="button" aria-controls="asset-sheet-example" aria-expanded={example} onClick={() => setExample(!example)}>See an example</button>
+          <div id="asset-sheet-example" hidden={!example} className={css.exampleContent}>
             <p>Enter an asset name, or use both make and model.</p>
             <table>
               <thead>
@@ -297,7 +296,8 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
                 </tr>
               </tbody>
             </table>
-          </div>}</>}
+          </div>
+        </div>}
         {stage === 'file' && <>
           <label>Choose a CSV or Excel file<input aria-label="Upload asset file" type="file" accept=".xlsx,.csv" onChange={e => {
             const f = e.target.files?.[0]; if (f)
@@ -397,6 +397,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
           <button disabled={!currentPage} onClick={() => setPage(currentPage - 1)}>Previous</button>Page {currentPage + 1} of {pages}<button disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}>Next</button>
         </div>}
       </fieldset>
+      </div>
       {error && <p role="alert" className={parts.error}>{error}</p>}
       <footer className={parts.entryFooter}>
         <button disabled={busy || transition.pending} onClick={event => transition.start(event.currentTarget, 'Going back…', back)}>Back</button>

@@ -30,25 +30,44 @@
   width: min(780px, var(--website-dialog-reference-width, calc(100% - 24px)));
   padding: 28px;
   container-type: inline-size;
+  overflow: hidden;
 }
 
-.dialog:has(.pair) > header {
-  margin-bottom: 0;
+.choiceHeader {
+  flex: none;
+  margin: 0;
   padding: 0;
-  border-bottom: 0;
 }
 
-.dialog:has(.pair) > header :is(h2, p) {
+.dialog .choiceHeader h2 {
+  margin: 0;
+  padding-inline-end: 52px;
+  font: 800 32px/1.15 var(--font-heading, "Montserrat"), sans-serif;
+}
+
+.choiceHeader p {
+  margin: 8px 0 0;
   padding-inline-end: 48px;
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--app-text-muted, #536c60);
 }
 
-.dialog:has(.pair) > header p {
-  margin-top: 8px;
+.choiceHeader > div { margin-top: 16px; }
+
+.transparentWrapper { display: contents; }
+
+.choiceScroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
-.dialog:has(.pair) .body {
-  padding: 20px 3px;
-  gap: 14px;
+.choiceScroll .body {
+  overflow: visible;
+  padding: 16px 2px;
+  gap: 12px;
 }
 
 .dialog .body .pair {
@@ -66,28 +85,63 @@
   gap: 4px;
 }
 
-.dialog .body .pair + div {
-  border-top: 0;
-  padding-top: 0;
+.example {
+  min-width: 0;
+  border: 1px solid var(--app-border, #c8d9cf);
+  border-radius: 14px;
+  background: var(--app-surface, white);
 }
 
-.dialog .pair + div > button[aria-expanded] {
+.dialog .example > button {
+  width: 100%;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   padding: 10px 16px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  box-shadow: none;
+  font-weight: 750;
 }
 
-.dialog .pair + div > button[aria-expanded]::after {
+.example > button::after {
   content: '';
   width: 8px;
   height: 8px;
+  margin-inline-end: 2px;
   border: solid currentColor;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
 }
 
-.dialog .pair + div > button[aria-expanded="true"]::after {
-  transform: rotate(225deg);
+.example > button[aria-expanded="true"]::after { transform: rotate(225deg); }
+
+.exampleContent {
+  margin: 0 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--app-border, #d9e4dd);
+  overflow-x: auto;
 }
+
+.exampleContent p {
+  margin: 0 0 10px;
+  font-weight: 600;
+  color: var(--app-text, #25483b);
+}
+
+.dialog .exampleContent th {
+  background: var(--app-surface-soft, #edf4ef);
+}
+
+.dialog .exampleContent td,
+.dialog .exampleContent th {
+  padding: 8px 10px;
+  border-color: var(--app-border, #d9e4dd);
+  white-space: normal;
+}
+
+.dialog .exampleContent tr:last-child td { border-bottom: 0; }
 
 @container (max-width: 480px) {
   .dialog .body .pair { grid-template-columns: 1fr; gap: 10px; }
