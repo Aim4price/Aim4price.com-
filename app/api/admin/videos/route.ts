@@ -9,7 +9,7 @@ export async function POST(request:NextRequest){
  const access=await requireAdminApiAccess();if(!access.ok)return access.response;
  if(!isTrustedRequestOrigin(request.headers.get('origin'),request.nextUrl.origin))return json({error:'Invalid request origin.'},403);
  const q=request.nextUrl.searchParams,audience=q.get('audience'),feature=q.get('feature'),action=q.get('action'),revision=Number(q.get('revision'));
- if(!validVideoSlot(audience,feature)||!q.has('revision')||!Number.isSafeInteger(revision)||revision<0||!['link','publish','unpublish','discard'].includes(action||''))return json({error:'Choose a valid video and action.'},400);
+ if((audience!=='owners' && audience!=='businesses')||!validVideoSlot(audience,feature)||!q.has('revision')||!Number.isSafeInteger(revision)||revision<0||!['link','publish','unpublish','discard'].includes(action||''))return json({error:'Choose a valid video and action.'},400);
  try {
   await saveTutorialVideo({audience:audience!,feature:feature!,revision,actor:access.actor.userId,action:action as 'link'|'publish'|'unpublish'|'discard',link:q.get('link')||undefined,draftId:q.get('draftId')||undefined});
   return json({slots:await listVideoSlots()});
