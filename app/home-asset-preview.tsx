@@ -627,7 +627,7 @@ function ManagePreview() {
 function CostPreview() {
   const reports = [
     { kind: 'valuation', title: 'Asset valuation', description: 'Values, notes and documents.' },
-    { kind: 'maintenance', title: 'Maintenance report', description: 'Service and repair costs.' },
+    { kind: 'maintenance', title: 'Maintenance report', description: 'Recorded services, repairs & checks.' },
     { kind: 'fuel', title: 'Fuel report', description: 'Monthly fuel costs.' },
     { kind: 'depreciation', title: 'Depreciation log', description: 'Saved value changes.' },
     { kind: 'ownership', title: 'Cost of ownership', description: 'Ownership costs and budgets.' },
