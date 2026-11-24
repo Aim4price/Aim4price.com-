@@ -93,6 +93,7 @@
   font: inherit;
   font-size: .94rem;
   font-weight: 650;
+  white-space: nowrap;
   text-align: left;
   cursor: pointer;
 }
