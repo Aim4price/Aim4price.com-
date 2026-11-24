@@ -19,7 +19,11 @@ export default function Page(){const [open,setOpen]=useState(true);return <><but
  const layout = await page.$eval('[aria-labelledby="cost-category-title"]', dialog => {
   const tiles = [...dialog.querySelectorAll('[data-category]')].map(el=>el.getBoundingClientRect());
   const labels = [...dialog.querySelectorAll('[data-category] strong')];
-  const singleLine = labels.every(label => { const range=document.createRange();range.selectNodeContents(label);return range.getClientRects().length===1 && label.scrollWidth<=label.clientWidth+1; });
+  const subtitles = [...dialog.querySelectorAll('[data-category] small')];
+  const concise = labels.length === 16 && subtitles.length === 16
+   && labels.every(el=>el.textContent.trim().split(/\s+/).length<=2)
+   && subtitles.every(el=>el.textContent.trim().length>0 && el.textContent.trim().split(/\s+/).length<=3);
+  const singleLine = concise && [...labels, ...subtitles].every(label => { const range=document.createRange();range.selectNodeContents(label);return range.getClientRects().length===1 && label.scrollWidth<=label.clientWidth+1; });
   const bounds = dialog.getBoundingClientRect();
   const close = dialog.querySelector('[data-modal-close]').getBoundingClientRect();
   return {count:tiles.length, singleLine, columns:new Set(tiles.map(tile=>tile.left)).size, rows:new Set(tiles.map(tile=>tile.top)).size,

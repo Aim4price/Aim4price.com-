@@ -65,7 +65,9 @@
 }
 
 .icon svg { width: 1.55rem; height: 1.55rem; }
-.card strong { font-size: .95rem; font-weight: 800; line-height: 1.25; white-space: nowrap; }
+.copy { display: grid; min-width: 0; gap: .2rem; }
+.copy small { color: var(--app-muted, #465c53); font-size: .85rem; font-weight: 600; line-height: 1.25; white-space: nowrap; }
+.copy strong { font-size: .95rem; font-weight: 800; line-height: 1.25; white-space: nowrap; }
 .card:is(:hover, :focus-visible) { border-color: var(--ink); }
 :global(html[data-app-theme="dark"]) .icon { color: color-mix(in srgb, var(--ink) 40%, white); }
 
