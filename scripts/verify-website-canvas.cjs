@@ -378,6 +378,27 @@ async function check(browser, url) {
     await page.click(pager + (button === 'Next' ? ' button:last-child' : ' button:first-child'));
     await page.waitForSelector(`input[aria-label="Asset name row ${firstRow}"]`);
   }
+  // The widest name and the invalid year are outside the first page of this sheet.
+  const nameGrip = assetDialog + ' [aria-label="Resize Asset name column"]';
+  await page.click(pager + ' button:last-child');
+  await page.waitForSelector('input[aria-label="Asset name row 40"]');
+  await page.type('input[aria-label="Asset name row 40"]', ' with high-pressure irrigation pump and control panel'.repeat(3));
+  await page.type('input[aria-label="Year row 39"]', 'bad');
+  await page.click(pager + ' button:first-child');
+  await page.waitForSelector('input[aria-label="Asset name row 1"]');
+  await page.click(nameGrip, {clickCount: 2});
+  const fittedWidth = await page.$eval(nameGrip, e => Number(e.getAttribute('aria-valuenow')));
+  assert.ok(fittedWidth > 640, 'Fit includes the long name on the second page');
+  await page.focus(nameGrip);
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await page.$eval(nameGrip, e => Number(e.getAttribute('aria-valuenow'))), fittedWidth + 12);
+  await page.click(assetDialog + ' footer button[class*="primary"]');
+  await page.waitForFunction(() => {
+    const input = document.querySelector('input[aria-label="Year row 39"]');
+    if (!input || document.activeElement !== input) return false;
+    const r = input.getBoundingClientRect();
+    return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === input;
+  });
   await page.click('[aria-label="Close add asset options"]');
   await page.setViewport({width:430,height:600});
   // Set the intended 150% scenario directly; repeated steps depend on the

@@ -64,6 +64,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [validate, setValidate] = useState(false);
+  const [focusError, setFocusError] = useState<{ row: number; field: Column; vat: boolean } | null>(null);
   const [checks, setChecks] = useState<{
     skip: string;
   }[]>([]);
@@ -82,6 +83,15 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   const router = useRouter();
   const transition = useAssetFlowTransition();
   const dialog = useLeadDialog(onClose, busy || transition.pending);
+  useLayoutEffect(() => {
+    if (!focusError) return;
+    const selector = focusError.vat ? 'button[aria-label="Current values in rand"]'
+      : `[data-row="${focusError.row}"] input[data-field="${focusError.field}"]`;
+    const target = dialog.current?.querySelector<HTMLElement>(selector);
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'center', inline: 'center' });
+    setFocusError(null);
+  }, [focusError, dialog]);
   const heading = useRef<HTMLHeadingElement>(null);
   const previousStage = useRef(stage);
   useLayoutEffect(() => {
@@ -227,9 +237,12 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
     setError('');
     const invalid = rows.findIndex(r => columns.some(k => r[k]) && Object.keys(rowErrors(r, basis)).length);
     if (invalid >= 0) {
-      const invalidFields = columns.filter(k => rowErrors(rows[invalid], basis)[k] && !visible.includes(k));
+      const errors = rowErrors(rows[invalid], basis);
+      const fields = columns.filter(k => errors[k]);
+      const invalidFields = fields.filter(k => !visible.includes(k));
       if (invalidFields.length) setDraft({ ...draft, visible: [...visible, ...invalidFields] });
       setPage(Math.floor(invalid / size));
+      setFocusError({ row: invalid, field: fields[0], vat: fields[0] === 'value' && !basis });
       return setError('Check the highlighted cells in row ' + (invalid + 1) + '.');
     }
     if (!filled.length)

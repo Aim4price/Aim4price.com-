@@ -5,11 +5,10 @@ import styles from "./SheetColumnHeader.module.css";
 
 type Layout = { order: string[]; widths: Record<string, number> };
 const emptyLayout: Layout = { order: [], widths: {} };
-const minWidth = 100;
-const maxWidth = 640;
+const minWidth = 64;
 
 function bounded(width: number) {
-  return Math.min(maxWidth, Math.max(minWidth, Math.round(width)));
+  return Math.max(minWidth, Math.round(width));
 }
 
 export function useSheetColumns(storageKey: string) {
@@ -67,20 +66,89 @@ type HeaderProps = {
   index: number;
   count: number;
   width: number;
+  getValues: () => string[];
   onMove: (direction: number) => void;
   onResize: (width: number, persist: boolean) => void;
 };
 
-export default function SheetColumnHeader({ label, hint, index, count, width, onMove, onResize }: HeaderProps) {
-  const drag = useRef<{ x: number; width: number; scale: number; pointer: number } | null>(null);
-  function dragWidth(event: PointerEvent<HTMLSpanElement>) {
-    const start = drag.current!;
-    return bounded(start.width + (event.clientX - start.x) / start.scale);
+type Drag = {
+  pointer: number;
+  startX: number;
+  x: number;
+  width: number;
+  scale: number;
+  host: HTMLElement;
+  startLeft: number;
+  nextLeft?: number;
+  frame?: number;
+};
+
+export default function SheetColumnHeader({ label, hint, index, count, width, getValues, onMove, onResize }: HeaderProps) {
+  const drag = useRef<Drag | null>(null);
+  useEffect(() => () => { if (drag.current?.frame !== undefined) cancelAnimationFrame(drag.current.frame); }, []);
+
+  function dragWidth(d: Drag, left = d.nextLeft ?? d.host.scrollLeft) {
+    return bounded(d.width + (d.x - d.startX) / d.scale + left - d.startLeft);
   }
 
-  return <div className={styles.header}>
+  function panAtEdge() {
+    const d = drag.current;
+    if (!d) return;
+    d.frame = undefined;
+    // Apply the scroll after React has laid out the wider column, even for the last column.
+    if (d.nextLeft !== undefined) {
+      d.host.scrollLeft = d.nextLeft;
+      d.nextLeft = undefined;
+    }
+    const view = d.host.getBoundingClientRect();
+    const edge = 20 * d.scale;
+    const fromRight = (d.x - view.right + edge) / edge;
+    const fromLeft = (d.x - view.left - edge) / edge;
+    const speed = fromRight > 0 ? Math.min(1, fromRight) : Math.max(-1, Math.min(0, fromLeft));
+    const left = Math.max(0, d.host.scrollLeft + Math.round(speed * 12));
+    if (left === d.host.scrollLeft || (speed < 0 && dragWidth(d) <= minWidth)) return;
+    d.nextLeft = left;
+    onResize(dragWidth(d), false);
+    d.frame = requestAnimationFrame(panAtEdge);
+  }
+
+  function fit(grip: HTMLElement) {
+    const cell = grip.closest('th');
+    const context = document.createElement('canvas').getContext('2d');
+    if (!cell || !context) return;
+    const input = cell.closest('table')?.tBodies[0]?.rows[0]?.cells[cell.cellIndex]?.querySelector('input');
+    function padding(element: Element) {
+      const style = getComputedStyle(element);
+      return parseFloat(style.paddingLeft) + parseFloat(style.paddingRight);
+    }
+    const measure = (element: Element, values: string[]) => {
+      const style = getComputedStyle(element);
+      context.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      let longest = 0;
+      for (const value of values) longest = Math.max(longest, context.measureText(value).width);
+      return Math.ceil(longest);
+    };
+    const heading = cell.querySelector('strong')!;
+    const note = cell.querySelector('small');
+    const moves = cell.querySelector<HTMLElement>('[data-column-moves]');
+    const caption = Math.max(measure(heading, [label]), note && hint ? measure(note, [hint]) : 0);
+    const headerWidth = padding(cell) + caption + (moves?.offsetWidth ?? 0) + 12;
+    const contentWidth = input ? padding(input) + measure(input, getValues()) + 6 : 0;
+    onResize(Math.max(headerWidth, contentWidth), true);
+  }
+
+  function endDrag(event: PointerEvent<HTMLSpanElement>, commit: boolean) {
+    const d = drag.current;
+    if (!d || d.pointer !== event.pointerId) return;
+    if (d.frame !== undefined) cancelAnimationFrame(d.frame);
+    d.x = event.clientX;
+    drag.current = null;
+    onResize(commit ? dragWidth(d) : d.width, commit);
+  }
+
+  return <div className={styles.header} data-compact={width < 132 || undefined}>
     <span className={styles.caption}><strong title={label}>{label}</strong>{hint && <small title={hint}>{hint}</small>}</span>
-    {count > 1 && <span className={styles.moves}>
+    {count > 1 && <span className={styles.moves} data-column-moves>
       {[-1, 1].map(direction => {
         const side = direction < 0 ? "left" : "right";
         return <button key={side} type="button" title={`Move ${label} ${side}`} aria-label={`Move ${label} ${side}`}
@@ -98,26 +166,39 @@ export default function SheetColumnHeader({ label, hint, index, count, width, on
       })}
     </span>}
     <span className={styles.grip} role="separator" tabIndex={0} aria-label={`Resize ${label} column`} aria-orientation="vertical"
-      aria-valuemin={minWidth} aria-valuemax={maxWidth} aria-valuenow={width} aria-valuetext={`${width} pixels`}
-      title="Drag to resize, or use the left and right arrow keys"
+      aria-valuemin={minWidth} aria-valuemax={Number.MAX_SAFE_INTEGER} aria-valuenow={width} aria-valuetext={`${width} pixels`}
+      title="Drag or use arrow keys to resize. Double-click or press Enter to fit all rows."
+      onDoubleClick={event => fit(event.currentTarget)}
       onPointerDown={event => {
         if (event.button !== 0 || !event.isPrimary) return;
         const cell = event.currentTarget.closest("th")!;
-        drag.current = { x: event.clientX, width, scale: cell.getBoundingClientRect().width / cell.offsetWidth || 1, pointer: event.pointerId };
+        const host = cell.closest<HTMLElement>("[data-sheet-scroll]")!;
+        drag.current = { startX: event.clientX, x: event.clientX, width, host, startLeft: host.scrollLeft,
+          scale: cell.getBoundingClientRect().width / cell.offsetWidth || 1, pointer: event.pointerId };
         event.currentTarget.setPointerCapture(event.pointerId);
         event.preventDefault();
       }}
-      onPointerMove={event => { if (drag.current?.pointer === event.pointerId) onResize(dragWidth(event), false); }}
-      onPointerUp={event => {
-        if (drag.current?.pointer !== event.pointerId) return;
-        onResize(dragWidth(event), true);
-        drag.current = null;
+      onPointerMove={event => {
+        const d = drag.current;
+        if (!d || d.pointer !== event.pointerId || event.clientX === d.x) return;
+        d.x = event.clientX;
+        onResize(dragWidth(d), false);
+        if (d.frame === undefined) d.frame = requestAnimationFrame(panAtEdge);
       }}
-      onLostPointerCapture={() => { if (drag.current) { onResize(drag.current.width, false); drag.current = null; } }}
+      onPointerUp={event => endDrag(event, true)}
+      onPointerCancel={event => endDrag(event, false)}
+      onLostPointerCapture={event => endDrag(event, false)}
       onKeyDown={event => {
-        if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-        event.preventDefault();
-        onResize(bounded(width + (event.key === "ArrowLeft" ? -12 : 12)), true);
+        if (event.key === "Enter") {
+          event.preventDefault();
+          fit(event.currentTarget);
+        } else if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+          event.preventDefault();
+          const step = event.shiftKey ? 48 : 12;
+          onResize(bounded(width + (event.key === "ArrowLeft" ? -step : step)), true);
+          const grip = event.currentTarget;
+          requestAnimationFrame(() => grip.scrollIntoView({ block: "nearest", inline: "nearest" }));
+        }
       }} />
   </div>;
 }
