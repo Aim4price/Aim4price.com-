@@ -3,7 +3,7 @@ import { appendReportCategories } from '../../lib/cost-categories';
 import OwnershipReportCategories from '../../components/OwnershipReportCategories';
 import categoryStyles from '../my-invoices/cost-categories.module.css';
 import AssetMediaPanel from '../../components/asset-register/AssetMediaPanel';
-import AssetSheetDialog from '../../components/asset-register/AssetSheetDialog';
+import AssetSheetDialog, { type AssetSheetEntry } from '../../components/asset-register/AssetSheetDialog';
 import { importPending, savedSheetDetails, type AssetSheetDetail, type CustomColumn } from '../../lib/asset-sheet';
 import { useMeteredManage } from '../../components/BusinessCreditControls';
 import AssetAverageUsage from '../../components/asset-register/AssetAverageUsage';
@@ -6381,6 +6381,7 @@ export default function AssetRegisterClient({
   const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
   const [isAddAssetDestinationModalOpen, setIsAddAssetDestinationModalOpen] = useState(false);
   const [addAssetTargetRegisterId, setAddAssetTargetRegisterId] = useState('');
+  const [addAssetEntry, setAddAssetEntry] = useState<AssetSheetEntry>('choose');
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
   const [isAcquisitionChoiceOpen, setIsAcquisitionChoiceOpen] = useState(false);
   const [newAssetAcquisitionDraft, setNewAssetAcquisitionDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
@@ -9733,8 +9734,9 @@ export default function AssetRegisterClient({
     }
   }
 
-  function openAddAssetChoiceModal() {
+  function openAddAssetChoiceModal(entry: AssetSheetEntry = 'choose') {
     if (!canAddAssetsToActiveRegister) return;
+    setAddAssetEntry(entry);
     setNotice(null);
     setIsAssetFilterOpen(false);
 
@@ -16617,7 +16619,7 @@ export default function AssetRegisterClient({
                 <button
                   type="button"
                   className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`}
-                  onClick={openAddAssetChoiceModal}
+                  onClick={() => openAddAssetChoiceModal()}
                   data-tooltip="Add assets to your register."
                   data-tooltip-style="description"
                 >
@@ -16628,7 +16630,7 @@ export default function AssetRegisterClient({
             </div>
           </div>
 
-          {!isLoading && canAddAssetsToActiveRegister ? <AssetRegisterGuide empty={!assets.length} /> : null}
+          {!isLoading && canAddAssetsToActiveRegister ? <AssetRegisterGuide onAdd={openAddAssetChoiceModal} /> : null}
 
           {!isLoading && assets.length ? (
             filteredAssets.length ? (
@@ -17799,7 +17801,7 @@ export default function AssetRegisterClient({
               {canAddAssetsToActiveRegister ? (
                 <div className={styles.emptyStateActions}>
                   {isCombinedRegisterView ? (
-                    <button type="button" className={styles.secondaryButton} onClick={openAddAssetChoiceModal}>
+                    <button type="button" className={styles.secondaryButton} onClick={() => openAddAssetChoiceModal()}>
                       Go to valuation
                     </button>
                   ) : (
@@ -17807,7 +17809,7 @@ export default function AssetRegisterClient({
                       Go to valuation
                     </Link>
                   )}
-                  <button type="button" className={styles.primaryButton} onClick={openAddAssetChoiceModal}>
+                  <button type="button" className={styles.primaryButton} onClick={() => openAddAssetChoiceModal()}>
                     <PlusIcon className={styles.buttonIcon} />
                     <span>Add Assets</span>
                   </button>
@@ -18187,7 +18189,7 @@ export default function AssetRegisterClient({
         />
       ) : null}
 
-      {isAddChoiceModalOpen && <AssetSheetDialog registerId={addAssetTargetRegisterId} registerName={addAssetTargetRegisterName}
+      {isAddChoiceModalOpen && <AssetSheetDialog initialStage={addAssetEntry} registerId={addAssetTargetRegisterId} registerName={addAssetTargetRegisterName}
         savedColumns={Array.from(new Set(assets.filter(asset => asset.registerId === addAssetTargetRegisterId)
           .flatMap(asset => savedSheetDetails(asset.specsJson).map(detail => `custom:${detail.name}` as CustomColumn))))}
         valuationHref={addAssetValuationHref} request={ownerFetch} onManual={openManualEntryFromChoice} onClose={closeAddAssetChoiceModal}

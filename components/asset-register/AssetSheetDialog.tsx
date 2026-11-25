@@ -16,7 +16,8 @@ import uploadStyles from '../PartsImportForm.module.css';
 import { columnLetter } from '../../lib/parts-import-mapping';
 import AssetSheetEditor, { type AssetDraft } from './AssetSheetEditor';
 import css from './AssetSheetDialog.module.css';
-type Stage = 'choose' | 'one' | 'multiple' | 'file' | 'map' | 'edit' | 'review';
+export type AssetSheetEntry = 'choose' | 'one' | 'edit' | 'file';
+type Stage = AssetSheetEntry | 'multiple' | 'map' | 'review';
 type Sheet = {
   name: string;
   rows: string[][];
@@ -41,9 +42,10 @@ const mappingChoices = [
   { value: '', label: 'Choose a field' }, { value: 'skip', label: 'Skip column' }, ...columns.map(value => ({ value, label: assetColumns[value] })),
   { value: 'hours', label: 'Usage in hours' }, { value: 'km', label: 'Usage in km' }, { value: 'percentage', label: 'Usage in %' },
 ];
-export default function AssetSheetDialog({ registerId, registerName, savedColumns = [], valuationHref, onManual, onBack, onClose, onSaved, request }: {
+export default function AssetSheetDialog({ registerId, registerName, initialStage = 'choose', savedColumns = [], valuationHref, onManual, onBack, onClose, onSaved, request }: {
   registerId: string;
   registerName: string;
+  initialStage?: AssetSheetEntry;
   savedColumns?: CustomColumn[];
   valuationHref: string;
   onManual: () => void;
@@ -52,7 +54,7 @@ export default function AssetSheetDialog({ registerId, registerName, savedColumn
   onSaved: (added: number, skipped: number) => void;
   request: typeof fetch;
 }) {
-  const [stage, setStage] = useState<Stage>('choose');
+  const [stage, setStage] = useState<Stage>(initialStage);
   const [draft, setDraft] = useState<AssetDraft>(() => ({ rows: [blankAsset()], visible: startColumns, custom: [], basis: '' }));
   const { rows, visible, basis, custom } = draft;
   const allColumns = [...columns, ...custom];
