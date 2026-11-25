@@ -9,9 +9,9 @@ import styles from './AssetRegisterGuide.module.css';
 type GuideEntry = Exclude<AssetSheetEntry, 'choose'>;
 
 const entries = [
-  { stage: 'one', tone: 'blue', title: 'Add one asset', description: 'Get an Aim4price estimate or enter your own value.' },
-  { stage: 'edit', tone: 'green', title: 'Add in a sheet', description: 'Type or paste your assets, one per row.' },
-  { stage: 'file', tone: 'amber', title: 'Import a file', description: 'Upload an Excel or CSV list of assets.' },
+  { stage: 'one', tone: 'blue', title: 'Add one asset', description: 'Get an estimate or set a value.' },
+  { stage: 'edit', tone: 'green', title: 'Add in a sheet', description: 'Type or paste your asset list.' },
+  { stage: 'file', tone: 'amber', title: 'Import a file', description: 'Upload an Excel or CSV file.' },
 ] as const;
 
 export default function AssetRegisterGuide({ onAdd }: { onAdd: (entry: GuideEntry) => void }) {
@@ -57,11 +57,13 @@ export default function AssetRegisterGuide({ onAdd }: { onAdd: (entry: GuideEntr
         <div className={styles.notes}>
           <section>
             <h3>Manage an asset</h3>
-            <p>Open <strong>Manage</strong> to record fuel, costs and maintenance. Choose <strong>Reports</strong> to see the asset’s value and running costs.</p>
+            <p>Log fuel, costs and maintenance in <strong>Manage</strong>.</p>
+            <p>See values and running costs in <strong>Reports</strong>.</p>
           </section>
           <section>
             <h3>Group assets</h3>
-            <p>A register is your asset list. An umbrella groups related assets, like a tractor and planter. Each keeps its own records.</p>
+            <p>Group a truck and trailer under one umbrella.</p>
+            <p>Each keeps its own records in your register.</p>
           </section>
         </div>
       </div>
