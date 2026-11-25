@@ -3993,7 +3993,7 @@ export default function MyInvoicesClient({
             </div>
           ) : (
             <form
-              className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal, wizardStyles.dialog, styles.accountCostModal, accountStyles.modalTheme].join(' ')}
+              className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal, budgetWizardStep === 2 ? categoryStyles.categoryDialog : '', wizardStyles.dialog, styles.accountCostModal, accountStyles.modalTheme].join(' ')}
               onSubmit={(event) => event.preventDefault()}
             >
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
@@ -4013,41 +4013,22 @@ export default function MyInvoicesClient({
               <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body, budgetWizardStep === 5 ? reviewStyles.body : ''].join(' ')}>
 
                 {budgetWizardStep === 2 ? (
-                  <section className={categoryStyles.budgetCategoryPanel} aria-labelledby="budget-categories-title">
-                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <h3 ref={budgetWizardStepHeadingRef} id="budget-categories-title" tabIndex={-1}>Which costs should count towards this budget?</h3>
-                    </div>
-                    <div className={categoryStyles.categoryOptions} role="group" aria-label="Costs included in this budget">
-                      <div className={categoryStyles.choiceToolbar}>
-                        <button type="button" aria-pressed={!budgetDraft.categories.length}
-                          onClick={() => { setBudgetFormError(''); setBudgetDraft(current => ({ ...current, categories: [] })); }}>All costs</button>
-                        {budgetCountsFuel && <label className={`${styles.budgetFuelToggle} ${categoryStyles.fuelSwitch}`}>
-                          <input
-                            type="checkbox"
-                            checked={budgetDraft.includeFuelSlipCosts}
-                            onChange={(event) => setBudgetDraft((current) => ({
-                              ...current,
-                              includeFuelSlipCosts: event.target.checked,
-                            }))}
-                            disabled={budgetSaving}
-                          />
-                          <span aria-hidden="true" />
-                          <strong>Count fuel slip costs</strong>
-                        </label>}
-                      </div>
-                      <div className={categoryStyles.checks}>
-                        {costCategories.map(category => (
-                          <button type="button" key={category.value} aria-pressed={budgetDraft.categories.includes(category.value)}
-                            onClick={() => {
-                              setBudgetFormError('');
-                              setBudgetDraft(current => ({ ...current, categories: current.categories.includes(category.value)
-                                ? current.categories.filter(value => value !== category.value)
-                                : [...current.categories, category.value].sort() }));
-                            }}>{'shortLabel' in category ? category.shortLabel : category.label}</button>
-                        ))}
-                      </div>
-                    </div>
-                  </section>
+                  <OwnershipReportCategories
+                    question="Which costs should count towards this budget?"
+                    headingRef={budgetWizardStepHeadingRef}
+                    selected={budgetDraft.categories}
+                    emptyMeansAll
+                    onChange={categories => {
+                      setBudgetFormError('');
+                      setBudgetDraft(current => ({ ...current, categories: [...categories].sort() }));
+                    }}
+                    fuelSlips={{
+                      included: budgetCountsFuel && budgetDraft.includeFuelSlipCosts,
+                      disabled: budgetSaving || !budgetCountsFuel,
+                      hint: budgetCountsFuel ? undefined : 'Choose Fuel or All costs to include fuel slips.',
+                      onChange: included => setBudgetDraft(current => ({ ...current, includeFuelSlipCosts: included })),
+                    }}
+                  />
                 ) : null}
 
                 {budgetWizardStep === 3 ? (

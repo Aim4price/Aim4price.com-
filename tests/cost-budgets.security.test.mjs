@@ -106,7 +106,7 @@ test('Cost Ledger exposes total-spend controls only to the direct owner experien
   assert.match(costClient, /const canManageBudgets = !dealerMode/);
   assert.match(costClient, /Spending budgets/);
   assert.match(costClient, /Budget amount/);
-  assert.match(costClient, /Count fuel slip costs/);
+  assert.match(costClient, /included: budgetCountsFuel && budgetDraft\.includeFuelSlipCosts/);
   assert.match(costClient, /warningPercent/);
   assert.match(costClient, /budgetId/);
   assert.match(costClient, /focusedBudgetId/);

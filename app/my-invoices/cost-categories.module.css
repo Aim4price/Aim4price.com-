@@ -1,9 +1,12 @@
 /* Inline-size containment needs a definite width inside the canvas's centred overlay grid. */
-.dialog.dialog.dialog[role="dialog"][data-download-dialog="true"] {
+.dialog.dialog.dialog[role="dialog"][data-download-dialog="true"],
+.categoryDialog.categoryDialog.categoryDialog {
   width: min(78rem, var(--website-dialog-reference-width, calc(100vw - 3rem))) !important;
   container-type: inline-size;
   box-sizing: border-box;
 }
+
+.categoryDialog > :has(> .reportCategories) { scrollbar-gutter: auto !important; }
 
 .cards {
   display: grid;
@@ -78,72 +81,10 @@
   .cards { grid-template-columns: minmax(0, 1fr); }
 }
 
-.budgetCategoryPanel {
-  display: grid;
-  align-content: start;
-  gap: .75rem;
-  min-width: 0;
-}
-.choiceToolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: .5rem 1rem;
-}
-.choiceToolbar .fuelSwitch {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.8rem;
-  gap: .55rem;
-  margin: 0;
-  padding: .45rem .8rem;
-  border-radius: .65rem;
-  box-shadow: none;
-}
-.choiceToolbar .fuelSwitch:focus-within {
-  outline: 2px solid var(--app-accent, #278264);
-  outline-offset: 2px;
-}
-.categoryOptions, .checks { display: grid; gap: .65rem; }
-.categoryOptions { container-type: inline-size; }
-.checks { grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
-@container (min-width: 48rem) {
-  .checks { grid-template-columns: repeat(4, minmax(max-content, 1fr)); }
-}
-.categoryOptions button {
-  display: flex;
-  align-items: center;
-  gap: .55rem;
-  min-height: 2.8rem;
-  padding: .6rem .8rem;
-  border: 1px solid var(--app-line, #cbdad3);
-  border-radius: .65rem;
-  background: var(--app-surface, white);
-  color: var(--app-text, #133c31);
-  font: inherit;
-  font-size: .94rem;
-  font-weight: 650;
-  white-space: nowrap;
-  text-align: left;
-  cursor: pointer;
-}
-.categoryOptions button[aria-pressed="true"] {
-  background: var(--app-surface-soft, #e5f3ec);
-  border-color: var(--app-accent, #278264);
-}
-.categoryOptions button::before {
-  content: ''; display: grid; place-items: center; box-sizing: border-box; width: 1.2rem; height: 1.2rem; flex: none;
-  border: 1px solid var(--app-line, #a5bcb2); border-radius: .35rem;
-}
-.categoryOptions button[aria-pressed="true"]::before { content: '✓'; background: #17674f; border-color: #17674f; color: white; }
-.categoryOptions button:focus-visible { outline: 2px solid var(--app-accent, #278264); outline-offset: 2px; }
-
 .reportCategories { --selected-green: #185e47; display: grid; gap: .7rem; }
 .reportToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
 .reportToggles { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
-.reportToolbar strong { color: var(--app-text, #10352b); font-size: 1.05rem; }
+.reportToolbar h3 { margin: 0; font-weight: 700; line-height: 1.3; color: var(--app-text, #10352b); font-size: 1.05rem; }
 .reportToolbar button {
   padding: .4rem .8rem;
   min-height: 2.25rem;
@@ -155,6 +96,7 @@
   font-weight: 750;
   cursor: pointer;
 }
+.reportToolbar button:disabled { cursor: not-allowed; border-style: dashed; }
 .reportCategories .card {
   min-height: 4rem;
   padding-block: .45rem;

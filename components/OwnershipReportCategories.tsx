@@ -1,31 +1,52 @@
 'use client';
 
+import { useId, type Ref } from 'react';
 import { costCategories } from '../lib/cost-categories';
 import RecurringFieldIcon from '../app/my-invoices/RecurringFieldIcon';
 import styles from '../app/my-invoices/cost-categories.module.css';
 
-export default function OwnershipReportCategories({ selected, onChange, fuelSlips }: {
+type Props = {
   selected: string[];
-  fuelSlips?: { included: boolean; onChange: (included: boolean) => void };
   onChange: (categories: string[]) => void;
-}) {
-  const all = selected.includes('all');
+  question?: string;
+  headingRef?: Ref<HTMLHeadingElement>;
+  emptyMeansAll?: boolean;
+  fuelSlips?: {
+    included: boolean;
+    onChange: (included: boolean) => void;
+    disabled?: boolean;
+    hint?: string;
+  };
+};
+
+export default function OwnershipReportCategories({
+  selected, onChange, fuelSlips, headingRef, emptyMeansAll = false,
+  question = 'Which costs should this report include?',
+}: Props) {
+  const headingId = useId();
+  const all = emptyMeansAll ? selected.length === 0 : selected.includes('all');
+
+  function chooseAll() {
+    if (emptyMeansAll || (all && fuelSlips)) onChange([]);
+    else onChange(['all']);
+  }
 
   function toggle(value: string) {
     const next = all ? [value] : selected.includes(value)
       ? selected.filter(category => category !== value)
       : [...selected, value];
-    onChange(next.length === costCategories.length ? ['all'] : next);
+    onChange(!emptyMeansAll && next.length === costCategories.length ? ['all'] : next);
   }
 
-  return <section aria-label="Cost categories" className={styles.reportCategories}>
+  return <section aria-labelledby={headingId} className={styles.reportCategories}>
     <div className={styles.reportToolbar}>
-      <strong>Which costs should this report include?</strong>
+      <h3 id={headingId} ref={headingRef} tabIndex={headingRef ? -1 : undefined}>{question}</h3>
       <div className={styles.reportToggles}>
-        <button type="button" aria-pressed={all} onClick={() => onChange(all && fuelSlips ? [] : ['all'])}>
+        <button type="button" aria-pressed={all} onClick={chooseAll}>
           {all && <span aria-hidden="true">✓ </span>}All costs
         </button>
         {fuelSlips && <button type="button" aria-pressed={fuelSlips.included}
+          disabled={fuelSlips.disabled} title={fuelSlips.hint}
           onClick={() => fuelSlips.onChange(!fuelSlips.included)}>
           {fuelSlips.included && <span aria-hidden="true">✓ </span>}Fuel slips
         </button>}
