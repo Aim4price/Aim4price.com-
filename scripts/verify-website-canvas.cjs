@@ -399,8 +399,18 @@ async function check(browser, url) {
     const r = input.getBoundingClientRect();
     return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === input;
   });
-  await page.click('[aria-label="Close add asset options"]');
   await page.setViewport({width:430,height:600});
+  await page.$$eval(assetDialog + ' [aria-label="Sheet tools"] button', buttons =>
+    buttons.find(button => button.textContent.trim() === 'Add column').click());
+  await page.waitForSelector('dialog[open] [data-detail="value"]');
+  await page.click('dialog[open] [data-detail="value"]');
+  const vat = assetDialog + ' button[aria-label="Current values in rand"]';
+  await page.click(vat);
+  const taxOption = '[role="listbox"][aria-label="Current values in rand"] [role="option"]';
+  await page.waitForSelector(taxOption, {visible:true});
+  await page.click(taxOption);
+  assert.match(await page.$eval(vat, button => button.textContent), /exclude VAT/);
+  await page.click('[aria-label="Close add asset options"]');
   // Set the intended 150% scenario directly; repeated steps depend on the
   // current automatic scale and no longer stop at the former 150% maximum.
   await page.$eval('[aria-label="Zoom in"]',e=>e.click());
