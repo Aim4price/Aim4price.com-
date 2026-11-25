@@ -5,7 +5,7 @@ import valuationStyles from '../valuation/page.module.css';
 import entryStyles from '../marketplace/marketplace-entry.module.css';
 
 // Reuse Marketplace's entry layout so spacing, cards and responsive behaviour stay aligned.
-export default function CostEntryChoices({ showAccounting = false }: { showAccounting?: boolean }) {
+export default function CostEntryChoices() {
   return (
     <main className={valuationStyles.page}>
       <AppHeader active="none" />
@@ -38,7 +38,6 @@ export default function CostEntryChoices({ showAccounting = false }: { showAccou
                     </Link>
                   ))}
                 </nav>
-                {showAccounting && <Link href="/account/accounting" prefetch={false}>Accounting connections</Link>}
               </div>
             </div>
           </div>

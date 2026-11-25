@@ -1,7 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),ts=require('typescript');
-function load(file,mocks){const exports={};mocks={ '../../lib/billing':{getBillingAgreement:async()=>null,isAccountBillingHeld:async()=>true}, '../../components/BusinessCredits':{default:'BusinessCredits',getBusinessCredits:async()=>({workspace:{role:'owner',paid_since:null,upgrade_requested_at:null},balance:{limit:500,used:82,held:1}})}, '../../lib/accounting-pilot':{isAccountingPilotSession:()=>false}, '../../components/AccountDirectoryListing':{default:'DirectoryListing'}, '../business/business-client':{default:'BusinessDetails'}, '../../lib/business-accounts':{readBusinessAccount:async()=>({review:{website:'',evidence:''}})}, '../business/page.module.css':{default:{}}, ...mocks};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(id=>id in mocks?mocks[id]:require(id),exports);return exports;}
+function load(file,mocks){const exports={};mocks={ '../../lib/billing':{getBillingAgreement:async()=>null,isAccountBillingHeld:async()=>true}, '../../components/BusinessCredits':{default:'BusinessCredits',getBusinessCredits:async()=>({workspace:{role:'owner',paid_since:null,upgrade_requested_at:null},balance:{limit:500,used:82,held:1}})}, '../../components/AccountDirectoryListing':{default:'DirectoryListing'}, '../business/business-client':{default:'BusinessDetails'}, '../../lib/business-accounts':{readBusinessAccount:async()=>({review:{website:'',evidence:''}})}, '../business/page.module.css':{default:{}}, ...mocks};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(id=>id in mocks?mocks[id]:require(id),exports);return exports;}
 const token='a'.repeat(43);
 const lead={share:{senderName:'Private sender',assets:[{title:'Private tractor',serialNumber:'PRIVATE-SERIAL'}]},details:{recipientEmail:'private@example.test',request:'Private request'},reports:[{id:'report',label:'Private report'}]};
 const mocks={
@@ -235,4 +235,52 @@ test('opening an inbox member inline keeps the selected asset and applies the sh
    assert.equal(card.props.inline,true);assert.equal(card.props.enquiry.access,access);
   }
  }
+});
+
+test('active Owners can open accounting from Account using their own desktop login', async () => {
+  const owner = {user: {id: 'ordinary-owner', email: 'farm@example.test'}};
+  let desktop = owner;
+  let accountType = 'owner';
+  const auth = {
+    getAnyServerSession: async () => owner,
+    getServerSession: async () => desktop,
+    isAdminSupportSession: session => Boolean(session?.adminSupport),
+  };
+  const profile = {
+    getAccountProfile: async () => ({accountType, accountStatus: 'active'}),
+    getAccountScanPinStatus: async () => null,
+  };
+  const access = {requireActivePageAccess: async () => ({session: desktop?.adminSupport ? desktop : owner})};
+  const navigation = {notFound: () => { throw Error('Not found'); }};
+  const page = load('app/account/page.tsx', {
+    '../../lib/auth-session': auth,
+    '../../lib/account-profile': profile,
+    '../../lib/account-access': access,
+    '../../lib/team-login': {getManagedTeamActor: async () => null},
+    '../../lib/team-access': {canManageTeamAccess: async () => true},
+    '../../lib/sharing-foundation': {sharingPlan: async () => 'desktop'},
+    '../../lib/middleman-account': load('lib/middleman-account.ts', {}),
+    'next/navigation': navigation,
+    './account-client': {default: 'AccountClient'},
+  });
+  const {accountingOwner} = load('lib/accounting-owner.ts', {
+    './auth-session': auth, './account-profile': profile, './account-access': access,
+    'next/navigation': navigation,
+  });
+
+  assert.equal((await page.default()).props.showAccounting, true);
+  assert.equal(await accountingOwner(), owner.user.id);
+  for (const role of ['dealer', 'business']) {
+    accountType = role;
+    assert.ok(!(await page.default()).props.showAccounting);
+    await assert.rejects(accountingOwner(), /Not found/);
+  }
+
+  accountType = 'owner';
+  desktop = {...owner, adminSupport: {adminUserId: 'admin', targetUserId: owner.user.id}};
+  assert.equal((await page.default()).props.showAccounting, false);
+  await assert.rejects(accountingOwner(), /Not found/);
+  for (desktop of [null, {user: {id: 'different-owner'}}]) {
+    await assert.rejects(accountingOwner(), /Not found/);
+  }
 });

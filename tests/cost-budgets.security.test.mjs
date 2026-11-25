@@ -318,7 +318,6 @@ test('cost entry chooser preserves record, review and asset deep links behind ow
     '../../lib/desktop-workspace': {getDesktopScope: async () => null},
     'next/navigation': {redirect: path => {throw new Error(`redirect:${path}`);}},
     '../../lib/account-access': {requireActivePageAccess: async () => ({session:{user:{id:'owner'}}})},
-    '../../lib/accounting-pilot': {isAccountingPilotSession: () => false},
     '../../lib/account-profile': {getAccountProfile: async () => ({accountType})},
     '../../lib/internal-return-path': {
       readSingleSearchParam: value => String(Array.isArray(value) ? value[0] ?? '' : value ?? '').trim(),
@@ -335,6 +334,9 @@ test('cost entry chooser preserves record, review and asset deep links behind ow
     assert.ok(name in dependencies); return dependencies[name];
   },module,module.exports);
   const page = module.exports.default;
+  for (const file of ['cost-entry-choices.tsx', 'my-invoices-client.tsx']) {
+    assert.doesNotMatch(read('app/my-invoices/' + file), /\/account\/accounting/);
+  }
   assert.equal((await page({})).type,CostEntryChoices);
   for (const searchParams of [{view:'costs'},{invoiceId:'invoice-1'},{budgetId:'budget-1'},
     {captureRequestId:'review-1'},{assetId:'asset-1',add:'1'}]) {

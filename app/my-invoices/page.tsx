@@ -1,4 +1,3 @@
-import { isAccountingPilotSession } from '../../lib/accounting-pilot';
 import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
 import { getDesktopScope, desktopWorkspace } from '../../lib/desktop-workspace';
 import { redirect } from 'next/navigation';
@@ -53,14 +52,12 @@ export default async function MyInvoicesPage({ searchParams }: MyInvoicesPagePro
     || readSingleSearchParam(searchParams?.invoiceId)
     || readSingleSearchParam(searchParams?.budgetId)
     || readSingleSearchParam(searchParams?.captureRequestId);
-  const showAccounting = isAccountingPilotSession(session);
   if (readSingleSearchParam(searchParams?.view) !== 'costs' && !hasDirectTarget) {
-    return <CostEntryChoices showAccounting={showAccounting} />;
+    return <CostEntryChoices />;
   }
 
   return (
     <MyInvoicesClient
-      showAccounting={showAccounting}
       initialAssetId={initialAssetId}
       initialOpenAdd={initialOpenAdd}
       initialReturnTo={initialReturnTo}

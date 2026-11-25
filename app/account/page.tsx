@@ -1,10 +1,9 @@
 import { getBillingAgreement, isAccountBillingHeld } from '../../lib/billing';
-import { isAccountingPilotSession } from '../../lib/accounting-pilot';
 import { canManageTeamAccess } from '../../lib/team-access';
 import {getBusinessCredits} from '../../components/BusinessCredits';
 import { readBusinessAccount } from '../../lib/business-accounts';
 import { sharingPlan } from '../../lib/sharing-foundation';
-import { getAnyServerSession } from '../../lib/auth-session';
+import { getAnyServerSession, isAdminSupportSession } from '../../lib/auth-session';
 import { redirect } from 'next/navigation';
 import { getAccountProfile, getAccountScanPinStatus } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
@@ -58,5 +57,5 @@ export default async function AccountPage() {
   const subscription = fullBusiness ? { fullAccess:true, paidSince:null, pending:false, owner:true, remaining:0, limit:0 } : undefined;
   const workspaceInvite = fullBusiness ? (await getBusinessCredits(session.user.id))?.workspace.owner_invite_id : null;
   const invite = workspaceInvite || (profile.inviteId ? 'account-' + profile.inviteId : undefined);
-  return <AccountClient ownerBilling={ownerBilling} inviteLink={invite ? '/auth?accountType=owner&invite='+invite+'#signup' : undefined} subscription={subscription} showAccounting={profile.accountType === "owner" && isAccountingPilotSession(session)} canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
+  return <AccountClient ownerBilling={ownerBilling} inviteLink={invite ? '/auth?accountType=owner&invite='+invite+'#signup' : undefined} subscription={subscription} showAccounting={profile.accountType === 'owner' && !isAdminSupportSession(session)} canManageDesktopUsers={canManageDesktopUsers} initialProfile={profile} initialScanPinStatus={scanPinStatus} />;
 }
