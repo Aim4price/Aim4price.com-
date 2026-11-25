@@ -1,6 +1,6 @@
-/* Use the report dialog shell, with room for four compact category tiles per row. */
+/* Inline-size containment needs a definite width inside the canvas's centred overlay grid. */
 .dialog.dialog.dialog[role="dialog"][data-download-dialog="true"] {
-  width: min(100%, 78rem) !important;
+  width: min(78rem, var(--website-dialog-reference-width, calc(100vw - 3rem))) !important;
   container-type: inline-size;
   box-sizing: border-box;
 }

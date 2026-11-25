@@ -335,7 +335,28 @@ async function check(browser, url) {
   await page.waitForFunction(()=>document.querySelector('section[data-story-step]')?.dataset.storyStep==='brand',{timeout:10000});
   console.log('PASS story scroll: Manage at 68.75%, Brand at the top');
   // Header actions, notifications, Manage and the footer use real components.
-  signedIn=true;await page.evaluate(()=>sessionStorage.clear());await visit('/canvas-validation?page=account',768);
+  signedIn=true;await page.evaluate(()=>sessionStorage.clear());
+  await visit('/canvas-validation?page=cost-ledger',1920,870);
+  await page.click('button[data-tooltip="Download your cost records."]');
+  await page.click('[data-download-option]');
+  const costPicker = '[role="dialog"][data-cost-picker]';
+  await page.waitForSelector(costPicker);
+  for (const width of [1920, 430]) {
+    await page.setViewport({width, height:870});
+    await page.waitForFunction(selector => {
+      const dialog = document.querySelector(selector);
+      const bounds = dialog.getBoundingClientRect();
+      const scale = Number(dialog.closest('[data-website-canvas]').dataset.websiteScale);
+      const grid = dialog.querySelector('[data-category]').parentElement;
+      return bounds.width / scale > 1000 && bounds.left >= -1 && bounds.right <= innerWidth + 1
+        && dialog.scrollWidth <= dialog.clientWidth + 1 && getComputedStyle(grid).gridTemplateColumns.split(' ').length === 4;
+    }, {timeout:5000}, costPicker);
+  }
+  await page.click(costPicker + ' [data-category="repair"]');
+  await page.click(costPicker + ' [data-download-primary]');
+  await page.waitForSelector('[aria-label="Report format"]');
+  console.log('PASS Cost Ledger download opens the full category grid on the website canvas');
+  await visit('/canvas-validation?page=account',768);
   await page.click('[aria-label="Open manage menu"]');await page.waitForSelector('[class*="accountPopover"]');
   await page.screenshot({path:path.join(output,'manage-768.png')});await page.click('[aria-label="Open manage menu"]');
   await page.click('[aria-label^="Notifications"]');await page.waitForSelector('[aria-label="Close notifications"]');
