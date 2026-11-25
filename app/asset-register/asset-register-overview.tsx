@@ -557,18 +557,6 @@ export default function AssetRegisterOverview() {
     }
   }, [portalHost]);
 
-  const goToAssets = useCallback(() => {
-    selectView('assets');
-
-    window.requestAnimationFrame(() => {
-      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-      portalHost?.scrollIntoView({
-        block: 'start',
-        behavior: reduceMotion ? 'auto' : 'smooth',
-      });
-    });
-  }, [portalHost, selectView]);
-
   const loadOverview = useCallback(async () => {
     overviewRequest.current?.abort();
     const controller = new AbortController();
@@ -775,23 +763,6 @@ export default function AssetRegisterOverview() {
               ))}
             </div>
           )}
-
-          <div className={styles.overviewFooter}>
-            <button
-              type="button"
-              className={styles.goToAssetsButton}
-              onClick={goToAssets}
-            >
-              <span className={styles.goToAssetsIcon}>{assetsViewIcon()}</span>
-              <span className={styles.goToAssetsCopy}>
-                <strong>Go to assets</strong>
-                {!loading ? <small>{assets.length} asset{assets.length === 1 ? '' : 's'} in this register</small> : null}
-              </span>
-              <span className={styles.goToAssetsChevron} aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none" focusable="false"><path d="m9 6 6 6-6 6" /></svg>
-              </span>
-            </button>
-          </div>
         </section>
       ) : null}
       {openItem && createPortal(
