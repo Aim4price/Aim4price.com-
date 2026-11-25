@@ -36946,21 +36946,14 @@ button.documentOpenLink {
 }
 
 /* === Combined-register creation and unambiguous umbrella member controls === */
-.toolbarUmbrellaButton {
-  color: var(--app-text, #0b5e47) !important;
-  border: 1.5px solid var(--app-line, rgba(31, 151, 106, 0.52)) !important;
-  background:
-    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(42, 158, 115, 0.1)), transparent 42%),
-    linear-gradient(180deg, var(--app-surface, #fbfffd) 0%, var(--app-surface-soft, #edf9f3) 100%) !important;
-  box-shadow:
-    0 10px 22px var(--app-shadow-colour, rgba(20, 112, 82, 0.07)),
-    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
+.page .toolbarActions > .toolbarUmbrellaButton {
+  color: var(--app-success, #11543e) !important;
+  border-color: var(--app-success-line, #82b9a5) !important;
+  background: var(--app-success-soft, #e1f2e9) !important;
 }
 
-.toolbarUmbrellaButton:hover:not(:disabled) {
-  color: var(--app-text, #064936) !important;
-  border-color: var(--app-line, rgba(23, 130, 91, 0.72)) !important;
-  background: linear-gradient(180deg, var(--app-surface, #f7fffb) 0%, var(--app-surface-soft, #e2f5eb) 100%) !important;
+.page .toolbarActions > .toolbarUmbrellaButton:is(:hover, :focus-visible):not(:disabled) {
+  background: color-mix(in srgb, var(--app-success-soft, #e1f2e9) 90%, var(--app-success, #11543e)) !important;
 }
 
 .assetCardRow > .assetCard {
@@ -41454,9 +41447,7 @@ button.documentOpenLink {
 .assetNoticeStack:empty { display:none; }
 .assetNoticeStack > * { margin:0; }
 
-/* Yellow highlights hovered/focused umbrella controls, preserving their resting surfaces and green borders. */
-.page .toolbarUmbrellaButton:hover:not(:disabled),
-.page .toolbarUmbrellaButton:focus-visible,
+/* Highlight umbrella member controls on hover or keyboard focus. */
 .page .assetGroupMemberActions .assetGroupButton:not(:disabled):is(:hover, :focus-visible) {
   background: #fff6cf !important;
 }

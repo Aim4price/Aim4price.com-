@@ -297,7 +297,7 @@ function RegisterPreview() {
           </div>
           <div className={styles.registerPreviewSearch} aria-hidden="true">
             <span><RegisterIcon name="search"/>Toyota Hilux<i><RegisterIcon name="close"/></i></span>
-            <span><RegisterIcon name="refresh"/>Refresh</span><span><RegisterIcon name="umbrella"/>Create Umbrella</span><span data-tone="primary"><RegisterIcon name="plus"/>Add Asset</span>
+            <span><RegisterIcon name="refresh"/>Refresh</span><span data-tone="umbrella"><RegisterIcon name="umbrella"/>Create Umbrella</span><span data-tone="primary"><RegisterIcon name="plus"/>Add Assets</span>
           </div>
           <section className={styles.registerPreviewGroup}>
             <header>
