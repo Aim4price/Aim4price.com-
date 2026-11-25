@@ -105,6 +105,8 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   }
   const cards = stage === 'choose' || stage === 'one' || stage === 'multiple' ? choices[stage] : null;
   const importStep = stage === 'file' || stage === 'map';
+  const sheetStep = stage === 'edit' || stage === 'review';
+  const sheetReturnLabel = stage === 'review' ? 'Edit sheet' : history.at(-1) === 'map' ? 'Change mapping' : null;
   const chosenFields = mapping.filter((key): key is Exclude<Mapping, ''> => !!key && key !== 'skip');
   const needsIdentity = !chosenFields.includes('title') && !(chosenFields.includes('make') && chosenFields.includes('model'));
   const unmatched = mapping.filter(key => !key).length;
@@ -295,7 +297,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
           <span style={{ width: ({ choose: 25, one: 50, multiple: 50, file: 60, map: 65, edit: 80, review: 100 }[stage]) + '%' }} />
         </div>}
       </header>
-      <div className={cards ? css.choiceScroll : css.transparentWrapper}>
+      <div className={cards ? css.choiceScroll : sheetStep ? css.sheetBody : css.transparentWrapper}>
       <fieldset key={stage} disabled={busy || transition.pending} data-parts-import={importStep || undefined} className={css.body}>
         {cards && <div className={`${parts.shareChoices} ${parts.entryMethods} ${parts.partsIntent} ${css.pair}`}>
           {cards.map(([next, label, hint, tone, path]) => {
@@ -392,13 +394,22 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
             </table>
           </div>
         </>}
-        {(stage === 'review' || stage === 'edit') && pages > 1 && <div className={parts.actions}>
-          <button disabled={!currentPage} onClick={() => setPage(currentPage - 1)}>Previous</button>Page {currentPage + 1} of {pages}<button disabled={currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}>Next</button>
-        </div>}
       </fieldset>
       </div>
       {error && <p role="alert" className={parts.error}>{error}</p>}
-      <footer className={parts.entryFooter}>
+      {sheetStep ? <footer className={`${parts.entryFooter} ${css.sheetFooter}`}>
+        {pages > 1 && <nav className={css.sheetPages} aria-label={stage === 'edit' ? 'Sheet pages' : 'Review pages'}>
+          <button type="button" disabled={busy || transition.pending || currentPage === 0} onClick={() => setPage(currentPage - 1)}>Previous</button>
+          <span aria-live="polite" aria-atomic="true">Page {currentPage + 1} of {pages}</span>
+          <button type="button" disabled={busy || transition.pending || currentPage + 1 >= pages} onClick={() => setPage(currentPage + 1)}>Next</button>
+        </nav>}
+        <div className={css.sheetActions}>
+          {sheetReturnLabel && <button type="button" disabled={busy || transition.pending} onClick={event => transition.start(event.currentTarget, sheetReturnLabel, back)}>{sheetReturnLabel}</button>}
+          {stage === 'edit'
+            ? <button type="button" className={parts.primary} disabled={busy || transition.pending} onClick={() => void submit()}>{busy ? 'Reviewing assets…' : 'Review assets'}</button>
+            : <button type="button" className={parts.primary} disabled={busy || transition.pending || !ready} onClick={() => void submit(true)}>{busy ? 'Adding assets…' : 'Add ' + ready + ' asset' + (ready === 1 ? '' : 's')}</button>}
+        </div>
+      </footer> : <footer className={parts.entryFooter}>
         <button disabled={busy || transition.pending} onClick={event => transition.start(event.currentTarget, 'Going back…', back)}>Back</button>
         {stage === 'file' && <button type="button" className={css.template} disabled={busy || transition.pending} onClick={() => void template()}>Download Excel template</button>}
         {stage === 'file' && pasteMode && <button className={parts.primary} disabled={busy || transition.pending || !pasteText.trim()} onClick={() => {
@@ -407,8 +418,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
         }}>Check columns</button>}
         {stage === 'map' && <p className={uploadStyles.footerStatus}>{mappingIssue || 'Columns matched'}</p>}
         {stage === 'map' && <button className={parts.primary} disabled={busy || transition.pending || !!mappingIssue} onClick={mapTable}>Edit sheet</button>}
-        {stage === 'edit' && <button className={parts.primary} disabled={busy || transition.pending} onClick={() => void submit()}>{busy ? 'Reviewing assets…' : 'Review assets'}</button>}
-        {stage === 'review' && <button className={parts.primary} disabled={busy || transition.pending || !ready} onClick={() => void submit(true)}>{busy ? 'Adding assets…' : 'Add ' + ready + ' asset' + (ready === 1 ? '' : 's')}</button>}</footer>
+      </footer>}
     </section>
   </div>;
 }
