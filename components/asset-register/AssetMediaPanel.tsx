@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import AssetActionIcon from './AssetActionIcon';
 import css from './AssetMediaPanel.module.css';
 
@@ -41,6 +41,7 @@ function RemoveButton({ label, onClick }: { label: string; onClick: () => void }
 }
 
 export default function AssetMediaPanel({ documents, photos, documentUpload, photoUpload, initialPhotoUrl }: Props) {
+  const listId = useId();
   const [selection, setSelection] = useState<Kind>('photos');
   const [page, setPage] = useState(() => {
     const index = photos.findIndex(photo => photo.src === initialPhotoUrl);
@@ -58,6 +59,7 @@ export default function AssetMediaPanel({ documents, photos, documentUpload, pho
   const current = Math.min(page, lastPage);
   // Keep neighbouring photos visible when the last page is only partly filled.
   const start = kind === 'photos' ? Math.min(current * size, Math.max(0, count - size)) : current * size;
+  const end = Math.min(start + size, count);
   const sectionTitle = kind === 'photos' ? 'Photos' : 'Documents';
 
   function show(next: Kind) {
@@ -79,14 +81,24 @@ export default function AssetMediaPanel({ documents, photos, documentUpload, pho
               <button type="button" aria-pressed={kind === 'photos'} onClick={() => show('photos')}>Photos</button>
             </div>
           ) : <h4>{sectionTitle}</h4>}
-          {lastPage > 0 && <nav className={css.pager} aria-label={`${sectionTitle} pages`}>
-            <button type="button" disabled={current === 0} onClick={() => setPage(current - 1)} aria-label={`Previous ${kind}`}><span className={css.previous} aria-hidden="true" /></button>
-            <span aria-live="polite">{start + 1}–{Math.min(start + size, count)} of {count}</span>
-            <button type="button" disabled={current === lastPage} onClick={() => setPage(current + 1)} aria-label={`Next ${kind}`}><span className={css.next} aria-hidden="true" /></button>
-          </nav>}
+          {lastPage > 0 && (
+            <nav className={css.pager} aria-label={`${sectionTitle} pages`}>
+              <span className={css.range} role="status" aria-atomic="true">
+                Showing {start + 1}{end > start + 1 && `–${end}`} of {count}
+              </span>
+              <button type="button" aria-controls={listId} aria-label={`Back to previous ${kind}`}
+                disabled={current === 0} onClick={() => setPage(current - 1)}>
+                <span className={css.previous} aria-hidden="true" /> Back
+              </button>
+              <button type="button" aria-controls={listId} aria-label={`Next ${kind}`}
+                disabled={current === lastPage} onClick={() => setPage(current + 1)}>
+                Next <span className={css.next} aria-hidden="true" />
+              </button>
+            </nav>
+          )}
         </div>
         {kind === 'photos' ? (
-          <ul className={css.gallery} aria-label="Asset photos">
+          <ul id={listId} className={css.gallery} aria-label="Asset photos">
             {photos.slice(start, start + size).map(photo => (
               <li key={photo.key} className={css.photo} data-main={photo.main}
                 ref={photo.src === initialPhotoUrl ? entryPhoto : undefined}
@@ -110,7 +122,7 @@ export default function AssetMediaPanel({ documents, photos, documentUpload, pho
             ))}
           </ul>
         ) : (
-          <ul className={css.documentList} aria-label="Asset documents">
+          <ul id={listId} className={css.documentList} aria-label="Asset documents">
             {documents.slice(start, start + size).map(doc => (
               <li key={doc.key} className={css.document}>
                 <span className={css.icon}><AssetActionIcon action="documents" /></span>
