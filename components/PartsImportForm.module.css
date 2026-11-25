@@ -13,9 +13,9 @@
 .drop strong { font-size:17px; }
 .drop span { font-size:14px; font-weight:450; }
 .drop input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-.upload .uploadHint { margin:0; text-align:center; font-size:13px; color:var(--app-text,#254c40); }
-.paste label { display:grid; gap:10px; }
-.paste textarea { min-height:176px!important; resize:vertical; padding:16px!important; line-height:1.5; font-size:15px!important; }
+.paste { display:grid; gap:6px; }
+.upload .paste p { margin:0 0 4px; color:var(--app-text,#254c40); font-size:14px; line-height:1.45; }
+.paste textarea { width:100%; min-height:clamp(112px, calc(var(--website-visible-height, 100dvh) * .22), 176px)!important; resize:vertical; padding:16px!important; line-height:1.5; font-size:15px!important; }
 .fileSummary { display:flex; align-items:center; justify-content:space-between; gap:16px; min-width:0; }
 .fileSummary>div { display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 12px; min-width:0; }
 .fileSummary strong { font-size:15px; overflow-wrap:anywhere; }

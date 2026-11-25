@@ -33,8 +33,6 @@
   overflow: hidden;
 }
 
-.transparentWrapper { display: contents; }
-
 .sheetBody {
   min-width: 0;
   min-height: 0;
@@ -141,11 +139,30 @@
   }
 }
 
-.dialog.dialog:has([data-parts-import]) {
-  width: min(1040px, var(--entry-available-width));
+.dialog.importFrame {
+  width: min(1040px, var(--entry-available-width), 100%);
+  overflow: hidden;
 }
-.body[data-parts-import] {
-  padding: 2px 4px 12px;
+.importScroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  container-type: inline-size;
+}
+.importScroll .body {
+  overflow: visible;
+  padding: 4px 5px 16px;
+}
+.mappingHead { position: sticky; top: 0; z-index: 1; }
+.importFrame footer { margin-block-start: 8px; }
+@container (min-width: 540px) {
+  .importScroll [data-headings-only] > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 539px) {
+  .importScroll [aria-label='File columns'] > div:first-child { display: none; }
+  .importScroll [aria-label='File columns'] > div { grid-template-columns: minmax(0, 1fr); gap: 8px; }
 }
 .dialog .template {
   margin-inline-start: auto;

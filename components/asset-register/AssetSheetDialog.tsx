@@ -80,6 +80,8 @@ export default function AssetSheetDialog({ registerId, registerName, savedColumn
   const filled = rows.filter(hasAssetData);
   const ready = checks.filter(c => !c.skip).length;
   const sheet = sheets[sheetIndex];
+  const sourceRows = sheet?.rows.slice(Number(header)) ?? [];
+  const headingsOnly = Boolean(sheet && header && !sourceRows.length);
   const size = 20;
   const pages = Math.max(1, Math.ceil((stage === 'review' ? filled : rows).length / size));
   const currentPage = Math.min(page, pages - 1);
@@ -201,7 +203,7 @@ export default function AssetSheetDialog({ registerId, registerName, savedColumn
     if (mappingIssue) return setError(mappingIssue);
     const used = matched.map(targetColumn);
     const readings = matched.map((key, i) => targetColumn(key) === 'usage' ? i : -1).filter(i => i >= 0);
-    for (const cells of sheet.rows.slice(header ? 1 : 0)) {
+    for (const cells of sourceRows) {
       const populated = readings.filter(i => cells[i]?.trim());
       if (populated.length > 1)
         return setError('An asset has two usage readings. Match the column you want to keep.');
@@ -209,14 +211,12 @@ export default function AssetSheetDialog({ registerId, registerName, savedColumn
       if (populated.length && suppliedUnit && mapping[populated[0]] !== 'usage' && usageUnit(suppliedUnit) !== mapping[populated[0]])
         return setError('The usage column and its unit disagree. Check the column matches.');
     }
-    const mapped = sheet.rows.slice(header ? 1 : 0).map(r => mapAssetRow(r, matched));
-    if (!mapped.length)
-      return setError('The sheet has no asset rows.');
+    const mapped = sourceRows.map(r => mapAssetRow(r, matched));
     if (mapped.some(r => !hasAssetData(r)))
       return setError('Some rows have no mapped details. Check the column matches or remove empty asset rows from the source.');
     const signature = JSON.stringify([header, matched]);
     if (mappedSource.current?.sheet !== sheet || mappedSource.current.signature !== signature) {
-      setDraft({ rows: mapped, visible: [...columns, ...mappedCustom].filter(k => k === 'title' || used.includes(k) || mapped.some(r => r[k])), custom: mappedCustom, basis: '' });
+      setDraft({ rows: headingsOnly ? [blankAsset()] : mapped, visible: [...columns, ...mappedCustom].filter(k => k === 'title' || used.includes(k) || mapped.some(r => r[k])), custom: mappedCustom, basis: '' });
       setUndo(null);
       mappedSource.current = { sheet, signature };
     }
@@ -315,7 +315,7 @@ export default function AssetSheetDialog({ registerId, registerName, savedColumn
       if (!busy && !transition.pending)
         onClose();
     }} />
-    <section ref={dialog} tabIndex={-1} data-dialog-initial-focus className={`${parts.modal} ${parts.entryModal} ${css.dialog}`} aria-labelledby="add-asset-choice-title" role="dialog" aria-modal="true">
+    <section ref={dialog} tabIndex={-1} data-dialog-initial-focus className={`${parts.modal} ${parts.entryModal} ${css.dialog} ${importStep ? css.importFrame : ''}`} aria-labelledby="add-asset-choice-title" role="dialog" aria-modal="true">
       {transition.feedback}
       <div className={parts.closeWrap}>
         <ShareModalCloseButton aria-label="Close add asset options" disabled={busy || transition.pending} onClick={onClose} />
@@ -327,8 +327,8 @@ export default function AssetSheetDialog({ registerId, registerName, savedColumn
           <span style={{ width: ({ choose: 25, one: 50, multiple: 50, file: 60, map: 65, edit: 80, review: 100 }[stage]) + '%' }} />
         </div>}
       </header>
-      <div className={cards ? css.choiceScroll : sheetStep ? css.sheetBody : css.transparentWrapper}>
-      <fieldset key={stage} disabled={busy || transition.pending} data-parts-import={importStep || undefined} className={css.body}>
+      <div key={stage} className={cards ? css.choiceScroll : importStep ? css.importScroll : css.sheetBody}>
+      <fieldset disabled={busy || transition.pending} data-parts-import={importStep || undefined} className={css.body}>
         {cards && <div className={`${parts.shareChoices} ${parts.entryMethods} ${parts.partsIntent} ${css.pair}`}>
           {cards.map(([next, label, hint, tone, path]) => {
             const content = <>
@@ -376,7 +376,7 @@ export default function AssetSheetDialog({ registerId, registerName, savedColumn
             pasteMode={pasteMode} onModeChange={mode => { setPasteMode(mode); setError(''); }} pasted={pasteText} onPasteChange={setPasteText} onFile={load} />}
         {stage === 'map' && sheet && <section className={uploadStyles.mapping}>
           <div className={uploadStyles.heading}><h3>Match columns</h3><p>Choose which asset field to use for each column.</p></div>
-          <div className={uploadStyles.fileSummary}><div><strong>{sheet.name}</strong><span>{sheet.rows.length - Number(header)} rows</span></div>
+          <div className={uploadStyles.fileSummary}><div><strong>{sheet.name}</strong><span>{sourceRows.length} {sourceRows.length === 1 ? 'row' : 'rows'}</span></div>
             {sheets.length > 1 && <Select label="Worksheet" buttonLabel="Worksheet" className={uploadStyles.worksheet} value={String(sheetIndex)}
               options={sheets.map((s, i) => ({ value: String(i), label: s.name }))} onChange={v => {
                 try { selectSheet(sheets, Number(v)); } catch (e) { setError((e as Error).message); }
@@ -385,11 +385,11 @@ export default function AssetSheetDialog({ registerId, registerName, savedColumn
           <label className={uploadStyles.headerChoice}><input type="checkbox" checked={header} onChange={e => {
             try { selectSheet(sheets, sheetIndex, e.target.checked); } catch (err) { setError((err as Error).message); }
           }} /><span>First row contains headings</span></label>
-          <div className={uploadStyles.columnList} role="group" aria-label="File columns">
-            <div className={uploadStyles.columnHead} aria-hidden="true"><span>Your file</span><span>Sample values</span><span>Use as</span></div>
+          <div className={uploadStyles.columnList} data-headings-only={headingsOnly || undefined} role="group" aria-label="File columns">
+            <div className={`${uploadStyles.columnHead} ${css.mappingHead}`} aria-hidden="true"><span>Your file</span>{!headingsOnly && <span>Sample values</span>}<span>Use as</span></div>
             {mapping.map((v, i) => <div key={i} className={uploadStyles.columnRow} data-skipped={v === 'skip' || undefined}>
               <div className={uploadStyles.columnName}><span className={uploadStyles.letter}>{columnLetter(i)}</span><strong>{header && sheet.rows[0][i] || 'Column ' + columnLetter(i)}</strong></div>
-              <div className={uploadStyles.samples}>{sheet.rows.slice(Number(header), Number(header) + 2).map((r, n) => <span key={n}>{r[i] || '—'}</span>)}</div>
+              {!headingsOnly && <div className={uploadStyles.samples}>{sourceRows.slice(0, 2).map((r, n) => <span key={n}>{r[i] || '—'}</span>)}</div>}
               <Select className={uploadStyles.columnSelect} label={'Match column ' + (i + 1)} buttonLabel={'Match column ' + (i + 1)} value={v}
                 options={[...mappingChoices, ...importCustom.map(k => ({value:k,label:columnLabel(k)}))].filter(o => !o.value || o.value === 'skip' || o.value === v || !mapping.includes(o.value as Match)).concat({ value: 'new', label: 'Custom field…' })}
                 onChange={next => { setMapping(mapping.map((m, j) => j === i ? next as Match : m)); setError(''); }} />
@@ -450,8 +450,8 @@ export default function AssetSheetDialog({ registerId, registerName, savedColumn
           try { selectSheet([{ name: 'Pasted cells', rows: readPartsCsv(pasteText) }], 0); }
           catch (e) { setError((e as Error).message); }
         }}>Check columns</button>}
-        {stage === 'map' && <p className={uploadStyles.footerStatus}>{mappingIssue || 'Columns matched'}</p>}
-        {stage === 'map' && <button className={parts.primary} disabled={busy || transition.pending || !!mappingIssue} onClick={mapTable}>Edit sheet</button>}
+        {stage === 'map' && <p className={uploadStyles.footerStatus} role="status">{mappingIssue || (headingsOnly ? 'Headings only. Add your first asset in the sheet.' : 'Columns matched')}</p>}
+        {stage === 'map' && <button className={parts.primary} disabled={busy || transition.pending || !!mappingIssue} onClick={mapTable}>{headingsOnly ? 'Start blank sheet' : 'Edit sheet'}</button>}
       </footer>}
     </section>
   </div>;
