@@ -3,14 +3,15 @@
 import { useId, useRef } from 'react';
 import type { AssetSheetEntry } from './AssetSheetDialog';
 import ShareModalCloseButton from './ShareModalCloseButton';
+import entryStyles from '../../app/dealer/parts/parts.module.css';
 import styles from './AssetRegisterGuide.module.css';
 
 type GuideEntry = Exclude<AssetSheetEntry, 'choose'>;
 
 const entries = [
-  { stage: 'one', title: 'Add one asset', description: 'Get an Aim4price estimate or enter your own value.' },
-  { stage: 'edit', title: 'Add in a sheet', description: 'Type or paste your assets, one per row.' },
-  { stage: 'file', title: 'Import a file', description: 'Upload an Excel or CSV list of assets.' },
+  { stage: 'one', tone: 'blue', title: 'Add one asset', description: 'Get an Aim4price estimate or enter your own value.' },
+  { stage: 'edit', tone: 'green', title: 'Add in a sheet', description: 'Type or paste your assets, one per row.' },
+  { stage: 'file', tone: 'amber', title: 'Import a file', description: 'Upload an Excel or CSV list of assets.' },
 ] as const;
 
 export default function AssetRegisterGuide({ onAdd }: { onAdd: (entry: GuideEntry) => void }) {
@@ -35,7 +36,7 @@ export default function AssetRegisterGuide({ onAdd }: { onAdd: (entry: GuideEntr
         const rect = event.currentTarget.getBoundingClientRect();
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) close();
       }}>
-      <header className={styles.dialogHeader}>
+      <header className={`${entryStyles.dialogHeader} ${styles.dialogHeader}`}>
         <div>
           <h2 id={id + '-title'}>Start here</h2>
           <p>How would you like to add your assets?</p>
@@ -43,11 +44,13 @@ export default function AssetRegisterGuide({ onAdd }: { onAdd: (entry: GuideEntr
         <ShareModalCloseButton aria-label="Close asset register guide" onClick={close} />
       </header>
       <div className={styles.guideContent}>
-        <div className={styles.choices}>
+        <div className={`${entryStyles.shareChoices} ${styles.choices}`}>
           {entries.map(entry => (
-            <button type="button" key={entry.stage} data-entry={entry.stage} onClick={() => { close(); onAdd(entry.stage); }}>
-              <strong>{entry.title}</strong>
-              <span>{entry.description}</span>
+            <button type="button" key={entry.stage} className={styles.method} data-entry={entry.stage} data-tone={entry.tone} onClick={() => { close(); onAdd(entry.stage); }}>
+              <span>
+                <strong>{entry.title}</strong>
+                <small>{entry.description}</small>
+              </span>
             </button>
           ))}
         </div>
