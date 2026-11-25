@@ -30,7 +30,8 @@ test("the restored account receives server-preloaded profile and PIN data", asyn
     read("app/account/account-client.tsx"),
   ]);
 
-  assert.match(page, /const \[profile, scanPinStatus\] = await Promise\.all/);
+  assert.match(page, /await getAccountProfile\(session\.user\)/);
+  assert.match(page, /getAccountScanPinStatus\(session\.user\.id\)/);
   assert.match(page, /initialProfile=\{profile\}/);
   assert.match(page, /initialScanPinStatus=\{scanPinStatus\}/);
   assert.match(source, /useState<AccountProfile \| null>\(initialProfile\)/);

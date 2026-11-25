@@ -502,7 +502,6 @@ test('Account sends managed staff to My access without reading the main account 
  const page=load('app/account/page.tsx',{
   '../../lib/billing':{getBillingAgreement:async()=>null,isAccountBillingHeld:()=>false},
   '../../lib/middleman-account':load('lib/middleman-account.ts',{}),
-  '../../lib/accounting-pilot':{isAccountingPilotSession:()=>false},
   '../../components/BusinessCredits':()=>null,
   '../../lib/team-access':{canManageTeamAccess:async()=>false},
   '../../components/AccountDirectoryListing':()=>null,
