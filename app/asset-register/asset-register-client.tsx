@@ -16618,11 +16618,11 @@ export default function AssetRegisterClient({
                   type="button"
                   className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`}
                   onClick={openAddAssetChoiceModal}
-                  data-tooltip="Add a new asset to your asset register."
+                  data-tooltip="Add assets to your register."
                   data-tooltip-style="description"
                 >
                   <PlusIcon className={styles.buttonIcon} />
-                  <span>Add Asset</span>
+                  <span>Add Assets</span>
                 </button>
               ) : null}
             </div>
@@ -17795,7 +17795,7 @@ export default function AssetRegisterClient({
           ) : !isLoading ? (
             <div className={styles.emptyState}>
               <h3>No assets saved yet</h3>
-              <p>Start with one vehicle, machine or piece of equipment. Choose Add Asset to get an estimate or enter your own value.</p>
+              <p>Start with one vehicle, machine or piece of equipment. Choose Add Assets to get an estimate or enter your own value.</p>
               {canAddAssetsToActiveRegister ? (
                 <div className={styles.emptyStateActions}>
                   {isCombinedRegisterView ? (
@@ -17809,7 +17809,7 @@ export default function AssetRegisterClient({
                   )}
                   <button type="button" className={styles.primaryButton} onClick={openAddAssetChoiceModal}>
                     <PlusIcon className={styles.buttonIcon} />
-                    <span>Add Asset</span>
+                    <span>Add Assets</span>
                   </button>
                 </div>
               ) : null}

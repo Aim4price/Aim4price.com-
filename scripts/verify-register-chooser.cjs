@@ -96,7 +96,7 @@ async function click(page, text) {
         let navigations=0;
         const onNavigation=frame=>{if(frame===page.mainFrame())navigations++};
         page.on('framenavigated',onNavigation);
-        await click(page,'Add Asset');
+        await click(page,'Add Assets');
         await page.waitForSelector('[aria-labelledby="add-asset-destination-title"]');
         const modal='[aria-labelledby="add-asset-destination-title"]';
         const trigger=modal+' button[aria-haspopup="listbox"]';
@@ -127,7 +127,7 @@ async function click(page, text) {
     }
     empty=true;
     await page.goto('http://localhost:3036/register-chooser-validation',{waitUntil:'networkidle2'});
-    await click(page,'Add Asset');
+    await click(page,'Add Assets');
     assert.equal(await page.$('[aria-labelledby="add-asset-destination-title"]'),null);
     assert.ok(await page.$eval('body',e=>e.textContent.includes('Create an Asset Register before adding an asset.')));
     console.log('PASS empty register guard');

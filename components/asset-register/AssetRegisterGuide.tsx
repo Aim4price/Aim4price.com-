@@ -10,7 +10,7 @@ export default function AssetRegisterGuide({ empty = false }: { empty?: boolean 
     </summary>
     <div className={styles.body}>
       <ol className={styles.steps}>
-        <li><span className={styles.stepNumber} aria-hidden="true">1</span><div><strong>Add one asset</strong><p>Select <b>Add Asset</b>. Get an estimate or enter your own value, then save.</p></div></li>
+        <li><span className={styles.stepNumber} aria-hidden="true">1</span><div><strong>Add one asset</strong><p>Select <b>Add Assets</b>. Get an estimate or enter your own value, then save.</p></div></li>
         <li><span className={styles.stepNumber} aria-hidden="true">2</span><div><strong>Build its history</strong><p>Open <b>Manage</b> to add costs, fuel and maintenance.</p></div></li>
         <li><span className={styles.stepNumber} aria-hidden="true">3</span><div><strong>See the result</strong><p>Open <b>Manage</b>, then <b>Reports</b>, to review values and ownership costs.</p></div></li>
       </ol>

@@ -3345,6 +3345,7 @@
 .registerPreview [data-tone='share'] { border-color: #e77d36; color: #85430d; background: #fff6ed; box-shadow: 0 6px 12px #b56a1710; }
 .registerPreview [data-tone='details'] { border-color: #78b9ee; color: #163d62; background: linear-gradient(#fff,#edf6ff); }
 .registerPreview [data-tone='manage'] { border-color: #64ca98; color: #07583f; background: linear-gradient(#fff,#effaf4); }
+.registerPreview [data-tone='umbrella'] { border-color: var(--app-success-line, #82b9a5); color: var(--app-success, #11543e); background: var(--app-success-soft, #e1f2e9); }
 .registerPreview [data-tone='primary'] { border-color: #17845e; color: #fff; background: linear-gradient(#20745c,#08533f); box-shadow: 0 6px 12px #1656401a; }
 .registerPreviewStats { position: relative; display: grid; grid-template-columns: repeat(3,1fr); gap: 11px; }
 .registerPreviewStats > div { display: grid; grid-template-rows: 21px 51px 1fr; min-width: 0; padding: 13px 16px 6px; border: 1px solid #bfd4dc; border-radius: 15px; background: linear-gradient(#fafcfd,#f3f7f8); }

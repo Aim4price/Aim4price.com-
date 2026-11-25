@@ -323,7 +323,7 @@ async function check(browser, url) {
   // A real Asset Register dialog stays scaled and reachable at both extremes.
   await visit('/canvas-validation?page=register',430,600);
   async function openAssetChoice() {
-    await page.$$eval('button',elements=>elements.find(e=>e.textContent.trim()==='Add Asset')?.click());
+    await page.$$eval('button',elements=>elements.find(e=>e.textContent.trim()==='Add Assets')?.click());
     const destination = '[role="dialog"]';
     await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="dialog"]')).some(dialog=>dialog.textContent.includes('Choose asset register')));
     const registers = `${destination} [aria-label="Available asset registers"]`;
