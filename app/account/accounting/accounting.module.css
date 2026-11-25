@@ -9,3 +9,100 @@ dialog.dialog:not([open]) { display: none; }
 @media (max-width: 760px) {
   :global(body:not(:has([data-website-canvas]))) .dialog .providerGrid { grid-template-columns: 1fr; }
 }
+
+.cheatSheet {
+  container-type: inline-size;
+  color: var(--app-text, #123e31);
+}
+
+.sheetTitle {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  min-width: 0;
+}
+
+.bookIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2.65rem;
+  height: 2.65rem;
+  border-radius: .8rem;
+  background: #175541;
+  color: white;
+}
+
+.sheetBody {
+  padding: 1.2rem 1.5rem;
+}
+
+.invoiceExample {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .75rem 1.5rem;
+  padding: .8rem 1rem;
+  border-inline-start: .22rem solid var(--app-accent, #267354);
+  border-radius: .25rem .8rem .8rem .25rem;
+  background: var(--app-surface-soft, #edf5f0);
+}
+
+.invoiceExample strong { font-size: 1rem; }
+.invoiceExample p { margin: .15rem 0 0; line-height: 1.45; }
+.invoiceExample samp {
+  padding: .45rem .75rem;
+  border: 1px solid var(--app-line, #c9dbd1);
+  border-radius: .55rem;
+  background: var(--app-surface, white);
+  font: inherit;
+  user-select: all;
+}
+
+.invoiceExample code, .codeList code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+  letter-spacing: .025em;
+}
+
+.codeList {
+  margin: .9rem 0 0;
+  column-count: 1;
+  column-gap: 1.15rem;
+  column-rule: 1px solid var(--app-line, #d4e2da);
+}
+
+.codeList > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .35rem;
+  padding: .4rem 0;
+  break-inside: avoid;
+}
+
+.codeList dt { font-size: .98rem; font-weight: 650; line-height: 1.35; }
+.codeList dd { margin: 0; }
+.codeList code {
+  display: inline-block;
+  min-width: 5.8ch;
+  padding: .12rem .35rem;
+  box-sizing: border-box;
+  border-radius: .35rem;
+  background: var(--app-surface-soft, #edf5f0);
+  color: var(--app-text, #144936);
+  font-size: .95rem;
+  text-align: center;
+  user-select: all;
+}
+
+@container (min-width: 36rem) {
+  .codeList { column-count: 2; }
+}
+@container (min-width: 68rem) {
+  .codeList { column-count: 4; }
+}
+@container (max-width: 35.99rem) {
+  .cheatSheet > summary, .sheetBody { padding: 1rem; }
+  .sheetTitle { gap: .6rem; }
+}

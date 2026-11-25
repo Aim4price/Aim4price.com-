@@ -140,12 +140,6 @@
 .categoryOptions button[aria-pressed="true"]::before { content: '✓'; background: #17674f; border-color: #17674f; color: white; }
 .categoryOptions button:focus-visible { outline: 2px solid var(--app-accent, #278264); outline-offset: 2px; }
 
-.reference { background: #eff6f2; border: 1px solid #c4dcd0; border-radius: 1rem; padding: 1rem 1.3rem; color: #173c31; }
-.reference summary { font-weight: 750; cursor: pointer; }
-.reference dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: .5rem 1rem; }
-.reference dl div { display: flex; gap: .65rem; align-items: baseline; }
-.reference dd { margin: 0; }
-
 .reportCategories { --selected-green: #185e47; display: grid; gap: .7rem; }
 .reportToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
 .reportToolbar strong { color: var(--app-text, #10352b); font-size: 1.05rem; }
