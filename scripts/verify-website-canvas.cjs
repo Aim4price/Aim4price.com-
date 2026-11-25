@@ -14,6 +14,53 @@ const widths = [1440, 1920, 1600, 1366, 1280, 1024, 768, 430];
 const user = { id:'canvas-fixture', name:'Canvas Test Owner', email:'canvas@example.invalid', accountType:'owner', accountSubtype:null };
 const profile = { userId:user.id,name:user.name,displayName:user.name,email:user.email,accountType:'owner',accountSubtype:'',logoUrl:'',extraPhotoUrls:[],businessName:'Test farm',phone:'',province:'Gauteng',townCity:'Test town',addressLine1:'',addressLine2:'',websiteUrl:'',vatNumber:'',notes:'',marketplaceSellerName:'',marketplacePhone:'',marketplaceEmail:'',marketplaceLocation:'',partnerServices:'',partnerBrandFocus:'',partnerDescription:'',partnerDirectoryStatus:'inactive',partnerLatitude:null,partnerLongitude:null,partnerServiceRadiusKm:null,discoveryParticipationEnabled:false,partnerDirectoryEnabled:false,createdAtIso:null,updatedAtIso:null };
 const delay = ms => new Promise(resolve=>setTimeout(resolve,ms));
+async function checkAssetImportLayout(page) {
+  const dialog = '[aria-labelledby="add-asset-choice-title"]';
+  const footer = dialog + ' footer';
+  await page.click(dialog + ' [data-tone="green"]');
+  await page.waitForSelector(dialog + ' [data-tone="amber"]');
+  await page.click(dialog + ' [data-tone="amber"]');
+  await page.waitForSelector(dialog + ' input[type="file"]');
+  await page.click(dialog + ' [aria-label="Import source"] button:last-child');
+  const paste = dialog + ' textarea';
+  await page.waitForSelector(paste);
+  async function checkFrame() {
+    const frame = await page.$eval(dialog, node => {
+      const header = node.querySelector('header').getBoundingClientRect();
+      const footer = node.querySelector('footer');
+      const body = node.querySelector('[data-parts-import]').parentElement.getBoundingClientRect();
+      const bounds = footer.getBoundingClientRect();
+      const reachable = [...footer.querySelectorAll('button')].every(button => {
+        const rect = button.getBoundingClientRect();
+        return document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)?.closest('button') === button;
+      });
+      return { fits: header.top >= -1 && bounds.bottom <= innerHeight + 1,
+        separate: header.bottom <= body.top + 1 && body.bottom <= bounds.top + 1, reachable };
+    });
+    assert.deepEqual(frame, {fits:true, separate:true, reachable:true}, 'Import header, scroll area and footer have separate hit targets');
+  }
+  await checkFrame();
+  assert.ok(await page.$eval(paste, input => {
+    const hint = document.getElementById(input.getAttribute('aria-describedby'));
+    return hint && hint.getBoundingClientRect().bottom <= input.getBoundingClientRect().top + 1;
+  }), 'Paste guidance stays with its input');
+  await page.type(paste, ['Asset name','Make','Model','Category','Year','Serial / VIN','Usage','Usage unit','Current value'].join('\t'));
+  await page.click(footer + ' button:last-child');
+  const last = dialog + ' button[aria-label="Match column 9"]';
+  await page.waitForSelector(last);
+  await checkFrame();
+  await page.$eval(last, el => el.scrollIntoView({block:'end', behavior:'instant'}));
+  await checkFrame();
+  assert.ok(await page.$eval(last, button => {
+    const r = button.getBoundingClientRect();
+    return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('button') === button;
+  }), 'The last mapping control can be reached above the footer');
+  assert.equal(await page.$eval(footer + ' button:last-child', b => b.textContent), 'Start blank sheet');
+  await page.click(footer + ' button:last-child');
+  await page.waitForSelector('input[aria-label="Asset name row 1"]');
+  assert.equal(await page.$eval('input[aria-label="Serial / VIN row 1"]', input => input.value), '');
+}
+
 async function check(browser, url) {
   const page = await browser.newPage();
   const errors=[]; page.on('pageerror', e=>{errors.push(e.message);console.error('Browser error',page.url(),e.stack)});
@@ -347,8 +394,12 @@ async function check(browser, url) {
   assert.equal(await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>Boolean(e.closest('[data-website-canvas]'))),true);
   const autoModalWidth=await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>parseFloat(getComputedStyle(e).width));
   await page.screenshot({path:path.join(output,'register-modal-auto-430.png')});
-  // A forty-row sheet adds pagination. Exercise it at the short desktop height where it used to overlap Back.
+  // Long import mappings must scroll independently of their footer.
   await page.setViewport({width:1745,height:776});
+  await checkAssetImportLayout(page);
+  await page.click('[aria-label="Close add asset options"]');
+  // A forty-row sheet adds pagination at the short desktop height where it used to overlap Back.
+  await openAssetChoice();
   const assetDialog = '[aria-labelledby="add-asset-choice-title"]';
   await page.click(assetDialog + ' [data-tone="green"]');
   await page.waitForFunction(() => document.querySelector('#add-asset-choice-title')?.textContent === 'Add multiple assets');
