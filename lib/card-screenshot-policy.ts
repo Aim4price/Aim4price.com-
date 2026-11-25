@@ -5,7 +5,7 @@ export const hoverCards = {
   owner: workspaceCards('owner', false, '/business'),
   business: workspaceCards('business', false, '/business'),
 };
-export const maxRecordingBytes = 25 * 1024 * 1024;
+export const maxScreenshotBytes = 5 * 1024 * 1024;
 
 export function hoverAudience(profile: {accountType: string; accountStatus: string}): HoverAudience | null {
   if (profile.accountStatus !== 'active') return null;

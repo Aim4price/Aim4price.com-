@@ -5,8 +5,8 @@ import { getServerSession } from '../../lib/auth-session';
 import { sharingPlan } from '../../lib/sharing-foundation';
 import { receivedAssetsHref, workspaceCards, workspaceRole } from '../../lib/workspace-navigation';
 import { getManagedTeamActor } from '../../lib/team-login';
-import { hoverAudience } from '../../lib/hover-video-policy';
-import { hoverRecordings } from '../../lib/hover-videos';
+import { hoverAudience } from '../../lib/card-screenshot-policy';
+import { cardScreenshots } from '../../lib/card-screenshots';
 import WorkspaceGrid from './workspace-grid';
 import styles from './workspace.module.css';
 
@@ -25,12 +25,12 @@ export default async function WorkspacePage() {
   const cards = workspaceCards(role, plan === 'free', receivedAssetsHref(profile.accountType, plan));
   const freeBusiness = role === 'business' && plan === 'free';
   const audience = hoverAudience(profile);
-  const recordings = audience ? await hoverRecordings(audience) : {};
+  const screenshots = audience ? await cardScreenshots(audience) : {};
   return <>
     <AppHeader active="workspace"/>
     <main data-workspace-page>
       <div className={styles.shell}>
-        <WorkspaceGrid key={session.user.id + role} cards={cards} recordings={recordings} role={role} userId={session.user.id} freeBusiness={freeBusiness}/>
+        <WorkspaceGrid key={session.user.id + role} cards={cards} screenshots={screenshots} role={role} userId={session.user.id} freeBusiness={freeBusiness}/>
       </div>
     </main>
   </>;
