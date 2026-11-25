@@ -29,12 +29,13 @@ export default function OwnershipReportCategories({ selected, onChange }: {
         const chosen = selected.includes(category.value);
         return <button type="button" key={category.value} className={styles.card}
           data-category={category.value} aria-pressed={chosen} onClick={() => toggle(category.value)}>
-          <span className={styles.icon} aria-hidden="true"><RecurringFieldIcon kind={category.icon} /></span>
+          <span className={chosen ? styles.selectionCheck : styles.icon} aria-hidden="true">
+            {chosen ? '✓' : <RecurringFieldIcon kind={category.icon} />}
+          </span>
           <span className={styles.copy}>
             <strong>{'shortLabel' in category ? category.shortLabel : category.label}</strong>
             <small>{category.subtitle}</small>
           </span>
-          {chosen && <span className={styles.selectionCheck} aria-hidden="true">✓</span>}
         </button>;
       })}
     </div>

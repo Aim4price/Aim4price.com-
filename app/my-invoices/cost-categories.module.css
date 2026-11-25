@@ -146,7 +146,7 @@
 .reference dl div { display: flex; gap: .65rem; align-items: baseline; }
 .reference dd { margin: 0; }
 
-.reportCategories { display: grid; gap: .7rem; }
+.reportCategories { --selected-green: #185e47; display: grid; gap: .7rem; }
 .reportToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
 .reportToolbar strong { color: var(--app-text, #10352b); font-size: 1.05rem; }
 .reportToolbar button {
@@ -160,7 +160,31 @@
   font-weight: 750;
   cursor: pointer;
 }
-.reportToolbar button[aria-pressed="true"] { background: var(--brand-mid, #165340); color: white; }
-.reportCategories .card { position: relative; min-height: 4rem; padding-block: .45rem; }
-.reportCategories .card[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
-.selectionCheck { position: absolute; top: .15rem; right: .35rem; color: var(--app-text, #10352b); font-size: .8rem; font-weight: 800; }
+.reportCategories .card {
+  min-height: 4rem;
+  padding-block: .45rem;
+  border-color: color-mix(in srgb, var(--edge) 30%, var(--app-surface, white));
+  background: var(--app-surface, white);
+  box-shadow: none;
+}
+.reportCategories .card[aria-pressed="false"]:hover { border-color: var(--ink); }
+.reportCategories .card[aria-pressed="true"],
+.reportToolbar button[aria-pressed="true"] {
+  background: var(--selected-green);
+  border-color: #39876b;
+  color: white;
+}
+.reportCategories .card[aria-pressed="true"] .copy small { color: #e4f4ec; }
+.selectionCheck {
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 50%;
+  background: white;
+  color: var(--selected-green);
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1;
+}
