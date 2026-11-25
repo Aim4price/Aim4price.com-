@@ -92,7 +92,9 @@ async function click(page, text) {
       assets[0].kind=kind;
       if (width === 1920) {
         assets[0].photos = Array.from({length: 7}, (_, index) => '/brand/home-asset-hilux.webp?photo=' + (index + 1));
-        assets[0].documents = [{id: 'manual', url: '/manual.pdf', fileName: 'Manual.pdf'}];
+        assets[0].documents = Array.from({length: 5}, (_, i) => ({
+          id: 'manual-' + i, url: '/manual-' + i + '.pdf', fileName: 'Manual ' + (i + 1) + '.pdf',
+        }));
       }
       const sections=['identity',...(['manual','property','stock'].includes(kind)?['classification']:[]),...(kind==='stock'?[]:['condition']),'values','notes'];
       await page.setViewport({width,height:width===1536?696:width===1366?768:width===1920?870:900,deviceScaleFactor:width===1536?1.25:1});
@@ -118,6 +120,23 @@ async function click(page, text) {
         assert.match(await page.$eval('[aria-label="Photos pages"]', el => el.textContent), /2–7 of 7/);
         assert.equal(await page.$('[data-asset-update-section], [data-details-page]'), null);
         await page.screenshot({path: path.join(output, 'edit-seventh-photo.png')});
+        const photoBack = '[aria-label="Back to previous photos"]';
+        const photoNext = '[aria-label="Next photos"]';
+        assert.equal(await page.$eval(photoNext, button => button.disabled), true);
+        await page.focus(photoBack);
+        await page.keyboard.press('Enter');
+        await page.waitForSelector(photoBack + ':disabled');
+        assert.equal(await page.$eval('[aria-label="Photos pages"] [role="status"]', el => el.textContent), 'Showing 1–6 of 7');
+        await page.click(photoNext);
+        await page.waitForSelector(photoNext + ':disabled');
+        assert.equal(await page.$eval('[aria-label="Asset photos"] li:last-child img', img => img.getAttribute('src')), assets[0].photos[6]);
+        await click(page, 'Documents');
+        await page.click('[aria-label="Next documents"]');
+        await page.waitForSelector('[aria-label="Next documents"]:disabled');
+        assert.equal(await page.$$eval('[aria-label="Asset documents"] li', rows => rows.length), 1);
+        await page.click('[aria-label="Back to previous documents"]');
+        await page.waitForSelector('[aria-label="Back to previous documents"]:disabled');
+        assert.equal(await page.$$eval('[aria-label="Asset documents"] li', rows => rows.length), 4);
         await click(page, 'Done');
         await page.waitForFunction(selector => document.activeElement === document.querySelector(selector), {}, photoStage);
         assert.equal(await page.$('[role="dialog"]'), null);
