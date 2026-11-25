@@ -18650,14 +18650,6 @@ export default function AssetRegisterClient({
                         </div>
                       ) : null}
 
-                      {editingAsset && !desktopAccess && assetDraft.sheetDetails.length > 0 && <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
-                        {assetDraft.sheetDetails.map((detail, index) => <label key={detail.name} className={styles.field}>
-                          <span>{detail.name}</span><input value={detail.value} maxLength={250} onChange={event => {
-                            const value = event.target.value;
-                            setAssetDraft(current => ({ ...current, sheetDetails: current.sheetDetails.map((d, i) => i === index ? { ...d, value } : d) }));
-                          }} />
-                        </label>)}
-                      </div>}
                       {assetFormKind !== 'property' && assetFormKind !== 'stock' ? (
                         <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`} data-details-section="identity">
                           <label className={styles.field} data-asset-detail-edit-target="serial" ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>
@@ -18703,6 +18695,15 @@ export default function AssetRegisterClient({
                           </label>
                         </div>
                       ) : null}
+
+                      {editingAsset && !desktopAccess && assetDraft.sheetDetails.length > 0 && <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`} data-details-section="identity">
+                        {assetDraft.sheetDetails.map((detail, index) => <label key={detail.name} className={styles.field}>
+                          <span>{detail.name}</span><input value={detail.value} maxLength={250} onChange={event => {
+                            const value = event.target.value;
+                            setAssetDraft(current => ({ ...current, sheetDetails: current.sheetDetails.map((d, i) => i === index ? { ...d, value } : d) }));
+                          }} />
+                        </label>)}
+                      </div>}
 
                       <div data-details-section="condition">
                       {assetFormKind === 'property' ? (
