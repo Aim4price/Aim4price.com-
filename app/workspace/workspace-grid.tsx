@@ -7,17 +7,29 @@ import PageHelp from '../../components/PageHelp';
 import type { workspaceCards, WorkspaceRole } from '../../lib/workspace-navigation';
 import { useWorkspaceVisibility } from '../../lib/use-workspace-visibility';
 import { cardTopic } from './card-help';
+import valuationStyles from '../valuation/page.module.css';
 import styles from './workspace.module.css';
 
 type Cards = ReturnType<typeof workspaceCards>;
 
+function CardPreview({recording}: {recording:string}) {
+  const [playing,setPlaying] = useState(false);
+  return <span className={styles.preview} aria-hidden="true">
+    <video className={`${valuationStyles.sectorVideo} ${playing ? valuationStyles.sectorVideoMobileActive : ''}`}
+      src={'/api/hover-videos/'+recording} muted loop autoPlay playsInline onPlaying={()=>setPlaying(true)}/>
+    <span className={valuationStyles.sectorVideoOverlay}/>
+  </span>;
+}
+
 function WorkspaceTile({card, role, free, recording}: {recording?:string; card: Cards[number]; role: WorkspaceRole; free: boolean}) {
   const {key, label, href, locked} = card;
   const [hovered,setHovered] = useState(false);
+  const [focused,setFocused] = useState(false);
   return <article className={styles.card} onPointerEnter={event => setHovered(!!recording && event.pointerType === 'mouse' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)}
     onPointerLeave={() => setHovered(false)}>
-    {recording && hovered && <video className={styles.hoverClip} src={'/api/hover-videos/'+recording} muted loop autoPlay playsInline aria-hidden="true"/>}
-    <Link className={styles.cardLink} href={locked ? '/account' : href} prefetch={false}
+    {recording && (hovered || focused) && <CardPreview recording={recording}/>}
+    <Link onFocus={event => setFocused(event.currentTarget.matches(':focus-visible') && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)}
+      onBlur={()=>setFocused(false)} className={styles.cardLink} href={locked ? '/account' : href} prefetch={false}
       aria-label={locked ? label + ' — view account options' : label}>
       <strong>{label}</strong>
       {locked && <span title="Included with Paid Business" aria-hidden="true" className={styles.plan}><svg aria-hidden="true" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="4" y="8" width="12" height="9" rx="2"/><path d="M7 8V6a3 3 0 0 1 6 0v2"/></svg></span>}

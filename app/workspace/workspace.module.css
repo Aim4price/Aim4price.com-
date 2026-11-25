@@ -53,6 +53,5 @@
   .cardLink { min-height:6.5rem; }
 }
 
-.hoverClip { position:absolute; inset:0; width:100%; height:100%; border-radius:inherit; object-fit:contain; background:#102e23; pointer-events:none; }
-.hoverClip + .cardLink strong { background:#163c30; border-radius:.35rem; padding:.15rem .4rem; }
-@media (prefers-reduced-motion:reduce) { .hoverClip { display:none; } }
+.preview { position:absolute; inset:0; border-radius:inherit; overflow:hidden; pointer-events:none; }
+@media (prefers-reduced-motion:reduce) { .preview { display:none; } }
