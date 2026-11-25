@@ -6,6 +6,9 @@
   min-height: 38px;
   padding-inline-end: 2px;
 }
+.header[data-compact] { flex-direction: column; align-items: flex-start; gap: 0; }
+.header[data-compact] .caption { flex: none; max-width: 100%; }
+.header[data-compact] .caption small { display: none; }
 .caption { flex: 1; min-width: 0; }
 .caption strong, .caption small { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .moves { display: inline-flex; align-items: center; }

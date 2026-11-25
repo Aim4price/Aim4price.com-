@@ -69,10 +69,10 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
       <button disabled={!canUndo} onClick={() => { setSelected([]); onUndo(); }}><DetailIcon kind="undo" />Undo</button>
     </div>
     {(visible.includes('value') || rows.some(r => r.value.trim())) &&
-      <Select label="Current values in rand" placeholder="Choose VAT basis" value={basis}
+      <Select label="Current values in rand" buttonLabel="Current values in rand" placeholder="Choose VAT basis" value={basis}
         options={[{ value: 'excluded', label: 'Current values exclude VAT' }, { value: 'included', label: 'Current values include VAT' }]}
         onChange={v => onChange({ basis: v as Basis })} />}
-    <div ref={grid} className={css.gridScroll} role="region" aria-label="Assets spreadsheet" tabIndex={0}>
+    <div ref={grid} data-sheet-scroll className={css.gridScroll} role="region" aria-label="Assets spreadsheet" tabIndex={0}>
       <table className={`${parts.editorTable} ${css.assetGrid}`} style={{ width: tableWidth }}>
         <colgroup><col style={{ width: rowControlWidth }} />{visible.map(k => <col key={k} style={{ width: widthOf(k) }} />)}</colgroup>
         <thead><tr><th scope="col"><input type="checkbox" aria-label="Select all rows" checked={selected.length === rows.length}
@@ -80,7 +80,7 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
           onChange={e => setSelected(e.target.checked ? rows.map((_, i) => i) : [])} /></th>
           {visible.map((k, position) => <th key={k} scope="col">
             <SheetColumnHeader label={assetColumns[k]} hint={k === 'title' ? 'Or use make and model' : 'Optional'}
-              index={position} count={visible.length} width={widthOf(k)}
+              index={position} count={visible.length} width={widthOf(k)} getValues={() => rows.map(row => row[k])}
               onMove={direction => layout.move(columns, visible, k, direction)}
               onResize={(width, persist) => layout.resize(k, width, persist)} />
           </th>)}</tr></thead>
@@ -96,7 +96,7 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
               </button>
             </div></td>
             {visible.map(k => <td key={k}>
-              <input aria-label={assetColumns[k] + ' row ' + (index + 1)} value={r[k]} placeholder={k === 'unit' ? 'hours, km or %' : undefined}
+              <input data-field={k} title={r[k] || undefined} aria-label={assetColumns[k] + ' row ' + (index + 1)} value={r[k]} placeholder={k === 'unit' ? 'hours, km or %' : undefined}
                 aria-invalid={!!errors[k]} aria-describedby={errors[k] ? 'asset-error-' + index + '-' + k : undefined}
                 onBlur={() => { editing.current = null; }} onPaste={e => { editing.current = null; onPaste(e, index, k, visible); }}
                 onChange={e => {

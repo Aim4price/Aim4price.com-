@@ -524,7 +524,7 @@ export default function PartsImportForm({
               <div ref={sheetRef} className={styles.editorWrap} role="region" aria-label="Parts spreadsheet" tabIndex={0}>
                 <table className={`${styles.editorTable} ${styles.independentRows}`}>
                   <thead>
-                    <tr onScroll={e => panSheet(e.currentTarget.scrollLeft)}>
+                    <tr data-sheet-scroll onScroll={e => panSheet(e.currentTarget.scrollLeft)}>
                       <th scope="col">
                         {<input
                           type="checkbox"
@@ -538,7 +538,7 @@ export default function PartsImportForm({
                       {orderedColumns.map(i => (
                         <th scope="col" key={columnIds[i]} data-field={columnIds[i]} data-column={i} hidden={hiddenColumns.includes(i)} style={{ flex: '0 0 ' + widthOf(i) + 'px' }}>
                           <SheetColumnHeader label={labels[i]} hint={i === 0 || i === 2 ? undefined : 'Optional'}
-                            index={visibleColumns.indexOf(i)} count={visibleColumns.length} width={widthOf(i)}
+                            index={visibleColumns.indexOf(i)} count={visibleColumns.length} width={widthOf(i)} getValues={() => rows.map(row => row[i] ?? "")}
                             onMove={direction => layout.move(columnIds, visibleIds, columnIds[i], direction)}
                             onResize={(width, persist) => layout.resize(columnIds[i], width, persist)} />
                         </th>
