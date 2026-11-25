@@ -87,15 +87,16 @@ test('budget coverage uses its own complete asset list, independent of fuel excl
 });
 
 test('cost categories have a dedicated slide before selecting the period', () => {
-  const categoriesStart = budgetModal.indexOf('aria-labelledby="budget-categories-title"');
+  const categoriesStart = budgetModal.indexOf('<OwnershipReportCategories');
   const periodStart = budgetModal.indexOf('aria-labelledby="budget-period-title"');
   const limitStart = budgetModal.indexOf('aria-labelledby="budget-limit-title"');
   assert.ok(categoriesStart > 0 && periodStart > categoriesStart && limitStart > periodStart);
   const categoryStep = budgetModal.slice(categoriesStart, periodStart);
   const periodStep = budgetModal.slice(periodStart, limitStart);
   assert.match(categoryStep, /Which costs should count towards this budget/);
-  assert.match(categoryStep, /All costs/);
-  assert.match(categoryStep, /costCategories\.map/);
+  assert.match(categoryStep, /selected=\{budgetDraft\.categories\}/);
+  assert.match(categoryStep, /emptyMeansAll/);
+  assert.match(categoryStep, /headingRef=\{budgetWizardStepHeadingRef\}/);
   assert.doesNotMatch(categoryStep, /<details|Budget reset period/);
   assert.doesNotMatch(periodStep, /costCategories\.map/);
   assert.match(periodStep, /Choose the budget period/);
