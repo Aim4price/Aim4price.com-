@@ -456,6 +456,22 @@ async function check(browser, url) {
   });
   const pager = assetDialog + ' footer nav[aria-label="Sheet pages"]';
   await page.waitForSelector(pager);
+  const selectAllRows = assetDialog + ' input[aria-label="Select all rows"]';
+  const editRow = assetDialog + ' button[aria-label="Edit row 1"]';
+  await page.click(assetDialog + ' label:has(input[aria-label="Select row 1"])');
+  assert.ok(await page.$eval(selectAllRows, input => input.indeterminate));
+  await page.click(editRow);
+  await page.waitForSelector('dialog[open] #asset-sheet-tool-title');
+  assert.equal(await page.$eval('#asset-sheet-tool-title', el => el.textContent), 'Edit row 1');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('dialog[open] #asset-sheet-tool-title', {hidden: true});
+  assert.ok(await page.$eval(editRow, button => document.activeElement === button));
+  assert.equal(await page.$eval(assetDialog + ' [role="status"]', el => el.textContent), '1 selected');
+  await page.focus(selectAllRows);
+  await page.keyboard.press('Space');
+  assert.equal(await page.$eval(assetDialog + ' [role="status"]', el => el.textContent), '40 selected');
+  await page.keyboard.press('Space');
+  assert.ok(await page.$eval(selectAllRows, input => !input.checked && !input.indeterminate));
   for (const [button, firstRow] of [['Next', 21], ['Previous', 1]]) {
     const footer = await page.$eval(assetDialog + ' footer', element => {
       const buttons = Array.from(element.querySelectorAll('button'));

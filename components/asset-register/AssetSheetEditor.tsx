@@ -60,7 +60,7 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
   }
   return <div className={parts.stockSheet}>
     <div className={`${parts.sheetToolbar} ${css.tools}`} role="group" aria-label="Sheet tools">
-      <span>{selected.length ? selected.length + ' selected' : populated + (populated === 1 ? ' asset' : ' assets')}</span>
+      <span role="status">{selected.length ? selected.length + ' selected' : populated + (populated === 1 ? ' asset' : ' assets')}</span>
       <button disabled={rows.length >= maxAssets} onClick={addRow}>+ Add row</button>
       <button onClick={() => setTool({ kind: 'add' })}><DetailIcon kind="addColumn" />Add column</button>
       <button onClick={() => setTool({ kind: 'columns' })}><DetailIcon kind="columns" />Manage columns</button>
@@ -74,9 +74,14 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
     <div ref={grid} data-sheet-scroll className={css.gridScroll} role="region" aria-label="Assets spreadsheet" tabIndex={0}>
       <table className={`${parts.editorTable} ${css.assetGrid}`} style={{ width: tableWidth }}>
         <colgroup><col style={{ width: rowControlWidth }} />{visible.map(k => <col key={k} style={{ width: widthOf(k) }} />)}</colgroup>
-        <thead><tr><th scope="col"><input type="checkbox" aria-label="Select all rows" checked={selected.length === rows.length}
-          ref={el => { if (el) el.indeterminate = selected.length > 0 && selected.length < rows.length; }}
-          onChange={e => setSelected(e.target.checked ? rows.map((_, i) => i) : [])} /></th>
+        <thead><tr><th scope="col">
+          <label className={css.rowSelect}>
+            <input type="checkbox" aria-label="Select all rows" checked={rows.length > 0 && selected.length === rows.length}
+              ref={el => { if (el) el.indeterminate = selected.length > 0 && selected.length < rows.length; }}
+              onChange={e => setSelected(e.target.checked ? rows.map((_, i) => i) : [])} />
+            Select all
+          </label>
+        </th>
           {visible.map((k, position) => <th key={k} scope="col">
             <SheetColumnHeader label={columnLabel(k)} hint={k === 'title' ? 'Or use make and model' : 'Optional'}
               index={position} count={visible.length} width={widthOf(k)} getValues={() => rows.map(row => row[k] ?? '')}
@@ -87,12 +92,13 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
           const index = page * size + j;
           const errors = validate && hasAssetData(r) ? rowErrors(r, basis) : {};
           return <tr key={index} data-row={index} data-selected={selected.includes(index) || undefined}>
-            <td><div className={parts.sheetRowControls}>
-              <input type="checkbox" aria-label={'Select row ' + (index + 1)} checked={selected.includes(index)} onChange={e => setSelected(e.target.checked ? [...selected, index] : selected.filter(i => i !== index))} />
-              <span className={parts.sheetRowNumber}>{index + 1}</span>
-              <button type="button" className={parts.sheetRowAction} aria-haspopup="dialog" aria-label={'Actions for row ' + (index + 1)} onClick={() => setTool({ kind: 'row', index })}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><path d="m9 3 1-1h4l1 3 2 1 3-.5 2 3-2 2v3l2 2-2 3-3-.5-2 1-1 3h-4l-1-3-2-1-3 .5-2-3 2-2v-3l-2-2 2-3 3 .5 2-1Z" /><circle cx="12" cy="12" r="3" /></svg>
-              </button>
+            <td><div className={css.rowControls}>
+              <label className={css.rowSelect}>
+                <input type="checkbox" aria-label={'Select row ' + (index + 1)} checked={selected.includes(index)} onChange={e => setSelected(e.target.checked ? [...selected, index] : selected.filter(i => i !== index))} />
+                {index + 1}
+              </label>
+              <button type="button" className={css.editRow} aria-haspopup="dialog" aria-label={'Edit row ' + (index + 1)}
+                onClick={() => setTool({ kind: 'row', index })}>Edit</button>
             </div></td>
             {visible.map(k => <td key={k}>
               <input data-field={k} title={r[k] || undefined} aria-label={columnLabel(k) + ' row ' + (index + 1)} value={r[k] ?? ''} placeholder={k === 'unit' ? 'hours, km or %' : undefined}
