@@ -8,7 +8,7 @@ import { withAssetInputTransaction, prepareAssetRegisterRevaluation, createManua
 import { ensureCreditSchema, CreditLimitError } from '../../../../lib/business-credits';
 import { withDatabaseClient } from '../../../../lib/db';
 import { ensureAssetLifecycleSchema, recordManualAssetLifecycle } from '../../../../lib/asset-lifecycle';
-import { assetTitle, columns, maxAssets, parseAmount, rowErrors, usageUnit, type AssetRow } from '../../../../lib/asset-sheet';
+import { assetTitle, columnLabel, readSheetColumns, readSheetRow, maxAssets, parseAmount, rowErrors, usageUnit, type CustomColumn, type AssetRow } from '../../../../lib/asset-sheet';
 import { getBillingAgreement } from '../../../../lib/billing';
 import { hostedRegisterBand, ownerHosting, rand } from '../../../../lib/hosting-pricing';
 import { pricingInputExVat } from '../../../../lib/pricing-vat';
@@ -33,14 +33,17 @@ export async function POST(req: NextRequest) {
     body.rows.length < 1 || body.rows.length > maxAssets)
     return fail('Choose a register and review the sheet.');
   const rows: AssetRow[] = [];
-  for (const raw of body.rows) {
-    if (!raw || columns.some(k => typeof raw[k] !== 'string'))
-      return fail('Invalid asset row.');
-    const row = Object.fromEntries(columns.map(k => [k, raw[k].trim()])) as AssetRow;
-    const error = Object.values(rowErrors(row, body.basis))[0];
-    if (error)
-      return fail(`Row ${rows.length + 1}: ${error}`);
-    rows.push(row);
+  let custom: CustomColumn[];
+  try {
+    custom = readSheetColumns(body.customColumns);
+    for (const raw of body.rows) {
+      const row = readSheetRow(raw, custom);
+      const error = Object.values(rowErrors(row, body.basis))[0];
+      if (error) throw Error(error);
+      rows.push(row);
+    }
+  } catch (error) {
+    return fail(`Row ${rows.length + 1}: ${(error as Error).message}`);
   }
   const register = await getAssetRegisterForUser(owner, body.registerId);
   if (!register)
@@ -94,6 +97,7 @@ export async function POST(req: NextRequest) {
           lifeWorkedPercent: unit === 'percentage' ? reading : null, usageMetric: unit === 'km' ? 'km' : 'hours',
           value: row.value ? pricingInputExVat(parseAmount(row.value), body.basis === 'included') : 0,
           specsJson: {
+            ...(custom.length ? { assetSheetFields: custom.map(key => ({ name: columnLabel(key), value: row[key] })) } : {}),
             assetImportKey: checks[i].key, importedCategory: row.category, usageTypeConfirmed: Boolean(unit),
             usageMode: unit === 'percentage' ? 'percent' : unit, insuranceStatus: 'unknown',
             financeStatus: 'unknown', licenseStatus: 'unknown'

@@ -225,3 +225,5 @@
   background: var(--app-surface-soft, #edf5f1);
 }
 .dialog .reviewTable th, .dialog .reviewTable td { padding: 12px; }
+
+.customName { grid-column: 1 / -1; display: grid; gap: 6px; font-weight: 650; }

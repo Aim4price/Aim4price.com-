@@ -3,9 +3,56 @@ export const assetColumns = {
   title: 'Asset name', make: 'Make', model: 'Model', category: 'Category', year: 'Year',
   serial: 'Serial / VIN', usage: 'Usage', unit: 'Usage unit', value: 'Current value',
 };
-export type Column = keyof typeof assetColumns;
+export type BuiltInColumn = keyof typeof assetColumns;
+export type CustomColumn = `custom:${string}`;
+export type Column = BuiltInColumn | CustomColumn;
 export type AssetRow = Record<Column, string>;
-export const columns = Object.keys(assetColumns) as Column[];
+export const columns = Object.keys(assetColumns) as BuiltInColumn[];
+export const maxCustomColumns = 12;
+export const isCustomColumn = (key: string): key is CustomColumn => key.startsWith('custom:');
+export const columnLabel = (key: Column) => isCustomColumn(key) ? key.slice(7) : assetColumns[key];
+export const hasAssetData = (row: AssetRow) => Object.values(row).some(value => value.trim());
+
+export function customColumn(name: string, existing: readonly CustomColumn[]): CustomColumn {
+  const label = name.trim().replace(/\s+/g, ' ');
+  if (!label || label.length > 60 || /[\u0000-\u001f\u007f]/.test(label)) throw Error('Use a field name between 1 and 60 characters.');
+  if (mapHeading(label) || Object.values(assetColumns).some(s => s.toLowerCase() === label.toLowerCase())
+    || existing.some(k => columnLabel(k).toLowerCase() === label.toLowerCase())) throw Error('A column with this name already exists.');
+  if (existing.length >= maxCustomColumns) throw Error(`Use up to ${maxCustomColumns} custom columns per sheet.`);
+  return `custom:${label}`;
+}
+
+export type AssetSheetDetail = { name: string; value: string };
+export function savedSheetDetails(specs: Record<string, unknown> | null | undefined): AssetSheetDetail[] {
+  const details = specs?.assetSheetFields;
+  return Array.isArray(details) ? details.filter((d): d is AssetSheetDetail =>
+    d && typeof d.name === 'string' && typeof d.value === 'string') : [];
+}
+
+export function readSheetColumns(input: unknown): CustomColumn[] {
+  if (input === undefined) return [];
+  if (!Array.isArray(input) || input.length > maxCustomColumns) throw Error('Invalid custom columns.');
+  const result: CustomColumn[] = [];
+  for (const key of input) {
+    if (typeof key !== 'string' || !isCustomColumn(key) || customColumn(columnLabel(key), result) !== key) throw Error('Invalid custom column name.');
+    result.push(key);
+  }
+  return result.sort();
+}
+
+export function readSheetRow(input: unknown, custom: CustomColumn[]): AssetRow {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw Error('Invalid asset row.');
+  const raw = input as Record<string, unknown>;
+  if (Object.keys(raw).some(k => isCustomColumn(k) && !custom.some(id => id === k))) throw Error('Unknown custom column.');
+  const row = blankAsset();
+  for (const key of [...columns, ...custom]) {
+    const value = raw[key];
+    if (value === undefined && isCustomColumn(key)) { row[key] = ''; continue; }
+    if (typeof value !== 'string') throw Error('Invalid asset row.');
+    row[key] = value.trim();
+  }
+  return row;
+}
 export const maxAssets = 250;
 export const blankAsset = (): AssetRow => ({ title: '', make: '', model: '', category: '', year: '', serial: '', usage: '', unit: '', value: '' });
 export type Basis = '' | 'included' | 'excluded';
@@ -81,7 +128,7 @@ export function rowErrors(row: AssetRow, basis: Basis) {
     errors.value = 'Enter a positive rand amount, e.g. 125000.50.';
   if (row.value && !basis)
     errors.value = 'Choose the VAT basis for current values.';
-  for (const key of columns)
+  for (const key of Object.keys(row) as Column[])
     if (row[key].length > 250)
       errors[key] = 'Use 250 characters or fewer.';
   return errors;
