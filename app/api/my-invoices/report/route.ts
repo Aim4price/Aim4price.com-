@@ -71,7 +71,7 @@ function parseFilters(request: NextRequest): MyInvoiceListFilters | null {
   const searchParams = request.nextUrl.searchParams;
   const assetId = searchParams.get('assetId');
   const selected = [...new Set(searchParams.getAll('category'))];
-  if (selected.some(value => value !== 'all' && !costCategory(value))) return null;
+  if (selected.some(value => value !== 'all' && value !== 'fuel_slip' && !costCategory(value))) return null;
 
   return {
     assetId: assetId && assetId !== 'all' ? assetId : null,

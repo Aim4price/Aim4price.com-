@@ -1,5 +1,5 @@
 'use client';
-import { costCategories, categorySummary, reportCostCategories } from '../../lib/cost-categories';
+import { costCategories, categorySummary, appendReportCategories } from '../../lib/cost-categories';
 import categoryStyles from './cost-categories.module.css';
 import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
@@ -26,6 +26,7 @@ import registerStyles from '../asset-register/page.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
 import focusStyles from '../../components/LedgerCardFocus.module.css';
 import { downloadCanonicalReportFile } from '../../lib/report-open';
+import OwnershipReportCategories from '../../components/OwnershipReportCategories';
 import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import budgetModalStyles from '../../components/BudgetModal.module.css';
 import downloadStyles from "../../components/ReportDownload.module.css";
@@ -1025,13 +1026,16 @@ function buildReportUrl(
   filters: InvoiceFilterState,
   format: ReportRouteFormat,
   includeFuelSlipCosts: boolean,
-
+  categories: readonly string[],
 ): string {
   const params = new URLSearchParams({ format, includeFuelSlipCosts: includeFuelSlipCosts ? 'true' : 'false' });
 
   if (filters.assetId !== 'all') params.set('assetId', filters.assetId);
   if (filters.year !== 'all') params.set('year', filters.year);
   if (filters.month !== 'all') params.set('month', filters.month);
+
+  appendReportCategories(params, categories);
+  if (includeFuelSlipCosts && !categories.includes('all')) params.append('category', 'fuel_slip');
 
   return `/api/my-invoices/report?${params.toString()}`;
 }
@@ -1108,6 +1112,8 @@ export default function MyInvoicesClient({
   const [usageMetricDropdownOpen, setUsageMetricDropdownOpen] = useState(false);
   const [filterAssetSearch, setFilterAssetSearch] = useState('');
   const [filterOwnerSearch, setFilterOwnerSearch] = useState('');
+  const [downloadCategories, setDownloadCategories] = useState<string[]>(['all']);
+  const [downloadFuelSlips, setDownloadFuelSlips] = useState(true);
   const [downloadOpen, setDownloadOpen] = useState(false);
 
   const [dealerDefaults, setDealerDefaults] = useState<DealerDefaults>(initialDealerDefaults);
@@ -3073,6 +3079,8 @@ export default function MyInvoicesClient({
     if (!desktop.allow('exportCosts')) return;
 
     setOpenFilterDropdown(null);
+    setDownloadCategories(['all']);
+    setDownloadFuelSlips(true);
     setDownloadOpen(true);
   }
 
@@ -4972,10 +4980,15 @@ export default function MyInvoicesClient({
         </FilterFlow>
       ) : null}
 
-      {!dealerMode && downloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Cost reports" allLabel="All costs" assets={assets}
-        fields={[{key:'category',label:'Cost category',initial:'all',options:reportCostCategories},{key:'fuel',label:'External fuel costs',initial:'true',options:[{value:'true',label:'Include fuel costs'},{value:'false',label:'Exclude fuel costs'}]}]}
+      {!dealerMode && downloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Download Cost Ledger" allLabel="All assets" assets={assets}
+        costStep={{
+          className: categoryStyles.dialog,
+          canContinue: downloadCategories.length > 0 || downloadFuelSlips,
+          content: <OwnershipReportCategories selected={downloadCategories} onChange={setDownloadCategories}
+            fuelSlips={{included: downloadFuelSlips, onChange: setDownloadFuelSlips}} />,
+        }}
         onClose={closeDownloadModal} onDownload={async selection => {
-          const url = accountScopedUrl(buildReportUrl({...DEFAULT_FILTERS,assetId:selection.assetId,year:selection.year,month:selection.month}, selection.format === 'pdf' ? 'html' : 'xlsx', selection.fields.fuel === 'true') + '&category=' + encodeURIComponent(selection.fields.category));
+          const url = accountScopedUrl(buildReportUrl({...DEFAULT_FILTERS,assetId:selection.assetId,year:selection.year,month:selection.month}, selection.format === 'pdf' ? 'html' : 'xlsx', downloadFuelSlips, downloadCategories));
           if(selection.format === 'xlsx') await downloadCanonicalReportFile(url);
           else if(!openCanonicalReportUrl(url)) throw new Error('Allow pop-ups to open your report.');
         }} /> : null}

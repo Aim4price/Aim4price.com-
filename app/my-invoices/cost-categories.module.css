@@ -142,6 +142,7 @@
 
 .reportCategories { --selected-green: #185e47; display: grid; gap: .7rem; }
 .reportToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
+.reportToggles { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .reportToolbar strong { color: var(--app-text, #10352b); font-size: 1.05rem; }
 .reportToolbar button {
   padding: .4rem .8rem;
