@@ -35,6 +35,26 @@
 
 .transparentWrapper { display: contents; }
 
+.sheetBody {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.sheetBody .body { overflow: visible; }
+
+.dialog .sheetFooter,
+.sheetPages,
+.sheetActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.sheetPages, .sheetActions { max-width: 100%; }
+.sheetPages span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.sheetActions { margin-inline-start: auto; }
+
 .choiceScroll {
   flex: 0 1 auto;
   min-height: 0;

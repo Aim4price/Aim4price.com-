@@ -347,7 +347,39 @@ async function check(browser, url) {
   assert.equal(await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>Boolean(e.closest('[data-website-canvas]'))),true);
   const autoModalWidth=await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>parseFloat(getComputedStyle(e).width));
   await page.screenshot({path:path.join(output,'register-modal-auto-430.png')});
+  // A forty-row sheet adds pagination. Exercise it at the short desktop height where it used to overlap Back.
+  await page.setViewport({width:1745,height:776});
+  const assetDialog = '[aria-labelledby="add-asset-choice-title"]';
+  await page.click(assetDialog + ' [data-tone="green"]');
+  await page.waitForFunction(() => document.querySelector('#add-asset-choice-title')?.textContent === 'Add multiple assets');
+  await page.click(assetDialog + ' [data-tone="green"]');
+  await page.waitForSelector('input[aria-label="Asset name row 1"]');
+  await page.$eval('input[aria-label="Asset name row 1"]', input => {
+    const data = new DataTransfer();
+    data.setData('text/plain', Array.from({length:40}, (_, i) => 'Pump ' + (i + 1)).join('\n'));
+    input.dispatchEvent(new ClipboardEvent('paste', {clipboardData:data, bubbles:true, cancelable:true}));
+  });
+  const pager = assetDialog + ' footer nav[aria-label="Sheet pages"]';
+  await page.waitForSelector(pager);
+  for (const [button, firstRow] of [['Next', 21], ['Previous', 1]]) {
+    const footer = await page.$eval(assetDialog + ' footer', element => {
+      const buttons = Array.from(element.querySelectorAll('button'));
+      const overlap = buttons.some((a, i) => buttons.slice(i + 1).some(b => {
+        const x = a.getBoundingClientRect(), y = b.getBoundingClientRect();
+        return Math.min(x.right, y.right) > Math.max(x.left, y.left) && Math.min(x.bottom, y.bottom) > Math.max(x.top, y.top);
+      }));
+      return {overlap, reachable: buttons.filter(b => !b.disabled).every(b => {
+        const r = b.getBoundingClientRect();
+        return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('button') === b;
+      }), labels: buttons.map(b => b.textContent.trim())};
+    });
+    assert.deepEqual(footer.labels, ['Previous','Next','Review assets']);
+    assert.ok(footer.reachable && !footer.overlap, 'Every sheet footer action has its own hit target');
+    await page.click(pager + (button === 'Next' ? ' button:last-child' : ' button:first-child'));
+    await page.waitForSelector(`input[aria-label="Asset name row ${firstRow}"]`);
+  }
   await page.click('[aria-label="Close add asset options"]');
+  await page.setViewport({width:430,height:600});
   // Set the intended 150% scenario directly; repeated steps depend on the
   // current automatic scale and no longer stop at the former 150% maximum.
   await page.$eval('[aria-label="Zoom in"]',e=>e.click());
