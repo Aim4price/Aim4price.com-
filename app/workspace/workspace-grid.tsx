@@ -15,10 +15,19 @@ function WorkspaceTile({card, role, free, screenshot}: {screenshot?:string; card
   const {key, label, href, locked} = card;
   const [hovered,setHovered] = useState(false);
   const [focused,setFocused] = useState(false);
-  return <article className={styles.card} onPointerEnter={event => setHovered(!!screenshot && event.pointerType === 'mouse')}
+  const [requested,setRequested] = useState(false);
+  const [loaded,setLoaded] = useState<string>();
+  return <article className={styles.card} onPointerEnter={event => {
+    if (screenshot && event.pointerType === 'mouse') { setRequested(true); setHovered(true); }
+  }}
     onPointerLeave={() => setHovered(false)}>
-    {screenshot && (hovered || focused) && <span className={styles.preview} aria-hidden="true"><img alt="" src={'/workspace/screenshots/'+screenshot}/></span>}
-    <Link onFocus={event => setFocused(event.currentTarget.matches(':focus-visible'))}
+    {screenshot && requested && <span className={styles.preview} aria-hidden="true"
+      data-visible={loaded === screenshot && (hovered || focused)}>
+      <img key={screenshot} alt="" src={'/workspace/screenshots/'+screenshot} onLoad={()=>setLoaded(screenshot)}/>
+    </span>}
+    <Link onFocus={event => {
+      if (screenshot && event.currentTarget.matches(':focus-visible')) { setRequested(true); setFocused(true); }
+    }}
       onBlur={()=>setFocused(false)} className={styles.cardLink} href={locked ? '/account' : href} prefetch={false}
       aria-label={locked ? label + ' — view account options' : label}>
       <strong>{label}</strong>
