@@ -6,6 +6,7 @@ import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asse
 import { createPortal } from '../../components/WebsitePortal';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import registerStyles from './page.module.css';
+import sharedStyles from '../leads/shared-assets.module.css';
 import styles from './asset-register-overview.module.css';
 
 type OverviewCategory = 'problem' | 'maintenance' | 'licence' | 'note';
@@ -192,7 +193,7 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
         detail: text(problem.note) || text(problem.summary) || 'A problem note was reported for this asset.',
         meta: [
           text(problem.operatorName) ? `Reported by ${text(problem.operatorName)}` : '',
-          reported ? `Reported ${reported}` : '',
+          reported,
         ].filter(Boolean).join(' • '),
         sortPriority: 0,
         sortTime: new Date(problem.createdAtIso || 0).getTime() || 0,
@@ -219,14 +220,17 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
 
     const maintenance = asset.maintenanceAlert;
     if (maintenance && maintenance.computedStatus !== 'done' && maintenance.computedStatus !== 'cancelled') {
+      const status = text(maintenance.computedStatusLabel) || 'Upcoming';
+      const heading = text(maintenance.heading);
       items.push({
         ...base,
         id: `maintenance:${maintenance.id}`,
         category: 'maintenance',
         section: sectionForAlert(maintenance.computedStatus),
-        status: text(maintenance.computedStatusLabel) || 'Upcoming',
-        headline: text(maintenance.heading)
-          || (maintenance.maintenanceType === 'checkup' ? 'Check-up due' : 'Service due'),
+        status,
+        headline: heading && heading !== 'Maintenance upcoming'
+          ? heading
+          : `${maintenance.maintenanceType === 'checkup' ? 'Check-up' : 'Service'} · ${status}`,
         detail: text(maintenance.body)
           || `${maintenance.maintenanceType === 'checkup' ? 'Check-up' : 'Service'} is scheduled for this asset.`,
         meta: maintenanceMeta(maintenance),
@@ -635,7 +639,7 @@ export default function AssetRegisterOverview() {
       ? 'Updates unavailable'
       : overviewItems.length === 0
         ? 'No open updates'
-        : `${overviewItems.length} update${overviewItems.length === 1 ? '' : 's'}${attentionCount ? ` · ${attentionCount} need attention` : ''}`;
+        : `${overviewItems.length} update${overviewItems.length === 1 ? '' : 's'}${attentionCount ? ` · ${attentionCount} need${attentionCount === 1 ? 's' : ''} attention` : ''}`;
 
   const assetSwitchDetail = loading
     ? 'Loading register…'
@@ -681,7 +685,7 @@ export default function AssetRegisterOverview() {
 
       {activeView === 'overview' ? (
         <section className={styles.overview} aria-label="Asset Register overview">
-          <p className={styles.overviewHint}>Open an update to read it, go to the asset or mark it as noted.</p>
+          <p className={styles.overviewHint}>Open an update to view the asset or mark the update as noted.</p>
           {clearError ? <p className={styles.actionError} role="alert">{clearError}</p> : null}
           <span className={styles.screenReaderStatus} role="status">{clearMessage}</span>
           {loading ? (
@@ -712,60 +716,61 @@ export default function AssetRegisterOverview() {
             </div>
           ) : (
             <div className={registerStyles.assetList}>
-              {overviewItems.map((item) => (
-                <div key={item.id} className={registerStyles.assetCardRow}>
-                  <article
-                    className={`${registerStyles.assetCard} ${registerStyles.cardToggleSurface}`}
-                    data-message-banner
-                    onClick={event => {
-                      if ((event.target as Element).closest('button, a, input, select, textarea')) return;
-                      if (window.getSelection()?.toString()) return;
-                      event.currentTarget.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
-                      setClearError('');
-                      setOpenItem(item);
-                    }}
-                  >
-                    <span aria-hidden="true" data-tooltip="Open message" className={`${registerStyles.controlTooltip} ${registerStyles.cardToggleHint}`} />
-                    <div aria-hidden="true" className={`${registerStyles.assetSideActions} ${registerStyles.assetGroupMemberActions}`}>
-                      <span className={`${styles.categoryIcon} ${categoryClassName(item.category)}`}>
+              {overviewItems.map((item) => {
+                // Upcoming alerts and licence reminders already describe the due date or readings in the message.
+                const context = [item.registerName, item.section !== 'coming_up' && item.category !== 'licence' ? item.meta : '']
+                  .filter(Boolean).join(' · ');
+                const tone = categoryClassName(item.category);
+                return (
+                  <div key={item.id} className={sharedStyles.frame}>
+                    <article
+                      className={`${sharedStyles.card} ${registerStyles.cardToggleSurface}`}
+                      data-message-banner
+                      onClick={event => {
+                        if ((event.target as Element).closest('button, a, input, select, textarea')) return;
+                        if (window.getSelection()?.toString()) return;
+                        event.currentTarget.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+                        setClearError('');
+                        setOpenItem(item);
+                      }}
+                    >
+                      <span aria-hidden="true" data-tooltip="Open update" className={`${registerStyles.controlTooltip} ${registerStyles.cardToggleHint}`} />
+                      <span aria-hidden="true" className={`${sharedStyles.icon} ${styles.categoryIcon} ${tone}`}>
                         {categoryIcon(item.category)}
                       </span>
-                    </div>
-                    <div className={`${registerStyles.assetHeader} ${styles.updateHeader}`}>
-                      <div className={registerStyles.assetTitleBlock}>
-                        <h2>{item.assetTitle}</h2>
-                        <p className={styles.updatePreview}>{item.detail}</p>
-                        <div className={registerStyles.assetMetaRow}>
-                          <span className={registerStyles.assetValueMethodLabel}>
-                            {[assetMeta(item), item.meta].filter(Boolean).join(' · ')}
+                      <div className={sharedStyles.body}>
+                        <div className={sharedStyles.heading}><h2>{item.assetTitle}</h2></div>
+                        <div className={sharedStyles.metadata}>
+                          <p className={styles.updatePreview}>{item.detail}</p>
+                        </div>
+                        <div className={sharedStyles.preview}>
+                          <span className={`${registerStyles.assetGroupPreview} ${styles.updateLabel} ${item.section === 'needs_attention' && item.category !== 'note' ? styles.priorityLabel : tone}`} title={item.headline}>
+                            {item.headline}
                           </span>
+                          {item.assetIdentifier && (
+                            <span className={registerStyles.assetGroupPreview} title={`Serial / VIN ${item.assetIdentifier}`}>
+                              Serial / VIN {item.assetIdentifier}
+                            </span>
+                          )}
+                          {context && <small className={styles.updateSource}>{context}</small>}
                         </div>
                       </div>
-                      <div className={registerStyles.assetHeaderAside}>
-                        <div className={registerStyles.valueBlock}>
-                          <strong className={item.section === 'needs_attention' ? styles.attentionStatus : undefined}>{item.status}</strong>
-                          <span>{item.headline === 'Maintenance upcoming' ? 'Maintenance' : item.headline}</span>
-                        </div>
-                        <div className={registerStyles.assetHeaderActions}>
-                          <button
-                            type="button"
-                            className={`${registerStyles.expandButton} ${registerStyles.cardViewDetailsButton} ${registerStyles.controlTooltip} ${styles.openUpdateButton}`}
-                            aria-label={`Open ${item.headline} for ${item.assetTitle}`}
-                            aria-haspopup="dialog"
-                            data-tooltip="Open message"
-                            onClick={() => { setClearError(''); setOpenItem(item); }}
-                          >
-                            <svg className={`${registerStyles.buttonIcon} ${registerStyles.assetDetailsChevron}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                              <path d="m9 5 7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                            <span>Open update</span>
-                          </button>
-                        </div>
+                      <div className={sharedStyles.actions}>
+                        <button
+                          type="button"
+                          className={sharedStyles.toggle}
+                          aria-label={`Open ${item.headline} for ${item.assetTitle}`}
+                          aria-haspopup="dialog"
+                          data-tooltip="Open update"
+                          onClick={() => { setClearError(''); setOpenItem(item); }}
+                        >
+                          Open
+                        </button>
                       </div>
-                    </div>
-                  </article>
-                </div>
-              ))}
+                    </article>
+                  </div>
+                );
+              })}
             </div>
           )}
         </section>
