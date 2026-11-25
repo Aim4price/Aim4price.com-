@@ -711,55 +711,60 @@ export default function AssetRegisterOverview() {
               </div>
             </div>
           ) : (
-            <div className={styles.overviewList}>
+            <div className={registerStyles.assetList}>
               {overviewItems.map((item) => (
-                <article
-                  key={item.id}
-                  data-message-banner
-                  onClick={event => {
-                    if ((event.target as Element).closest('button, a, input, select, textarea')) return;
-                    if (window.getSelection()?.toString()) return;
-                    event.currentTarget.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
-                    setClearError('');
-                    setOpenItem(item);
-                  }}
-                  className={`${registerStyles.assetCard} ${styles.overviewCard} ${
-                    item.section === 'needs_attention'
-                      ? styles.cardAttention
-                      : item.section === 'coming_up'
-                        ? styles.cardUpcoming
-                        : styles.cardRecent
-                  }`}
-                >
-                  <span aria-hidden="true" data-tooltip="Open message" className={styles.cardHoverHint} />
-                  <div className={`${styles.categoryIcon} ${categoryClassName(item.category)}`}>
-                    {categoryIcon(item.category)}
-                  </div>
-
-                  <div className={styles.cardBody}>
-                    <h3 className={styles.assetTitle}>{item.assetTitle}</h3>
-                    <strong className={styles.headline}>{item.headline}</strong>
-                    <p className={styles.detail}>{item.detail}</p>
-
-                    <div className={styles.metaRow}>
-                      {assetMeta(item) ? <span>{assetMeta(item)}</span> : null}
-                      {item.meta ? <span>{item.meta}</span> : null}
+                <div key={item.id} className={registerStyles.assetCardRow}>
+                  <article
+                    className={`${registerStyles.assetCard} ${registerStyles.cardToggleSurface}`}
+                    data-message-banner
+                    onClick={event => {
+                      if ((event.target as Element).closest('button, a, input, select, textarea')) return;
+                      if (window.getSelection()?.toString()) return;
+                      event.currentTarget.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+                      setClearError('');
+                      setOpenItem(item);
+                    }}
+                  >
+                    <span aria-hidden="true" data-tooltip="Open message" className={`${registerStyles.controlTooltip} ${registerStyles.cardToggleHint}`} />
+                    <div aria-hidden="true" className={`${registerStyles.assetSideActions} ${registerStyles.assetGroupMemberActions}`}>
+                      <span className={`${styles.categoryIcon} ${categoryClassName(item.category)}`}>
+                        {categoryIcon(item.category)}
+                      </span>
                     </div>
-                  </div>
-
-                  <div className={styles.cardActions}>
-                    <button
-                      type="button"
-                      className={styles.viewAssetButton}
-                      aria-label={`Open ${item.headline} for ${item.assetTitle}`}
-                      aria-haspopup="dialog"
-                      data-tooltip="Open message"
-                      onClick={() => { setClearError(''); setOpenItem(item); }}
-                    >
-                      Open
-                    </button>
-                  </div>
-                </article>
+                    <div className={`${registerStyles.assetHeader} ${styles.updateHeader}`}>
+                      <div className={registerStyles.assetTitleBlock}>
+                        <h2>{item.assetTitle}</h2>
+                        <p className={styles.updatePreview}>{item.detail}</p>
+                        <div className={registerStyles.assetMetaRow}>
+                          <span className={registerStyles.assetValueMethodLabel}>
+                            {[assetMeta(item), item.meta].filter(Boolean).join(' · ')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className={registerStyles.assetHeaderAside}>
+                        <div className={registerStyles.valueBlock}>
+                          <strong className={item.section === 'needs_attention' ? styles.attentionStatus : undefined}>{item.status}</strong>
+                          <span>{item.headline === 'Maintenance upcoming' ? 'Maintenance' : item.headline}</span>
+                        </div>
+                        <div className={registerStyles.assetHeaderActions}>
+                          <button
+                            type="button"
+                            className={`${registerStyles.expandButton} ${registerStyles.cardViewDetailsButton} ${registerStyles.controlTooltip} ${styles.openUpdateButton}`}
+                            aria-label={`Open ${item.headline} for ${item.assetTitle}`}
+                            aria-haspopup="dialog"
+                            data-tooltip="Open message"
+                            onClick={() => { setClearError(''); setOpenItem(item); }}
+                          >
+                            <svg className={`${registerStyles.buttonIcon} ${registerStyles.assetDetailsChevron}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                              <path d="m9 5 7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                            <span>Open update</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                </div>
               ))}
             </div>
           )}

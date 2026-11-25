@@ -104,13 +104,11 @@ test('Overview hides the asset workspace and uses the Assets tab for navigation'
 });
 
 test('overview keeps Asset Register card styling with loading, error and responsive states', () => {
-  assert.match(overview, /registerStyles\.assetCard/);
-  assert.match(styles, /\.overviewCard,[\s\S]*?\.stateCard/);
-  assert.match(styles, /border-radius: 1\.5rem/);
-  assert.match(styles, /background: linear-gradient\(180deg, rgba\(255, 255, 255, 0\.98\)/);
-  assert.match(styles, /\.cardAttention/);
-  assert.match(styles, /\.cardUpcoming/);
-  assertNoWebsiteReflow(styles);
+  for (const name of ['assetList', 'assetCardRow', 'assetCard', 'assetHeader', 'assetTitleBlock', 'assetMetaRow', 'assetHeaderActions', 'cardViewDetailsButton']) {
+    assert.ok(overview.includes(`registerStyles.${name}`), `Overview should use the register's ${name} style`);
+  }
+  assert.match(overview, /<h2>\{item.assetTitle\}<\/h2>/);
+  assert.match(overview, /aria-haspopup="dialog"/);
   assertNoWebsiteReflow(styles);
   assert.match(overview, /Checking the register/);
   assert.match(overview, /Overview unavailable/);
