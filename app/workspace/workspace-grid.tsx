@@ -7,28 +7,18 @@ import PageHelp from '../../components/PageHelp';
 import type { workspaceCards, WorkspaceRole } from '../../lib/workspace-navigation';
 import { useWorkspaceVisibility } from '../../lib/use-workspace-visibility';
 import { cardTopic } from './card-help';
-import valuationStyles from '../valuation/page.module.css';
 import styles from './workspace.module.css';
 
 type Cards = ReturnType<typeof workspaceCards>;
 
-function CardPreview({recording}: {recording:string}) {
-  const [playing,setPlaying] = useState(false);
-  return <span className={styles.preview} aria-hidden="true">
-    <video className={`${valuationStyles.sectorVideo} ${playing ? valuationStyles.sectorVideoMobileActive : ''}`}
-      crossOrigin="use-credentials" src={'/workspace/recordings/'+recording} muted loop autoPlay playsInline onPlaying={()=>setPlaying(true)}/>
-    <span className={valuationStyles.sectorVideoOverlay}/>
-  </span>;
-}
-
-function WorkspaceTile({card, role, free, recording}: {recording?:string; card: Cards[number]; role: WorkspaceRole; free: boolean}) {
+function WorkspaceTile({card, role, free, screenshot}: {screenshot?:string; card: Cards[number]; role: WorkspaceRole; free: boolean}) {
   const {key, label, href, locked} = card;
   const [hovered,setHovered] = useState(false);
   const [focused,setFocused] = useState(false);
-  return <article className={styles.card} onPointerEnter={event => setHovered(!!recording && event.pointerType === 'mouse' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)}
+  return <article className={styles.card} onPointerEnter={event => setHovered(!!screenshot && event.pointerType === 'mouse')}
     onPointerLeave={() => setHovered(false)}>
-    {recording && (hovered || focused) && <CardPreview recording={recording}/>}
-    <Link onFocus={event => setFocused(event.currentTarget.matches(':focus-visible') && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)}
+    {screenshot && (hovered || focused) && <span className={styles.preview} aria-hidden="true"><img alt="" src={'/workspace/screenshots/'+screenshot}/></span>}
+    <Link onFocus={event => setFocused(event.currentTarget.matches(':focus-visible'))}
       onBlur={()=>setFocused(false)} className={styles.cardLink} href={locked ? '/account' : href} prefetch={false}
       aria-label={locked ? label + ' — view account options' : label}>
       <strong>{label}</strong>
@@ -38,8 +28,8 @@ function WorkspaceTile({card, role, free, recording}: {recording?:string; card: 
   </article>;
 }
 
-export default function WorkspaceGrid({cards, role, userId, freeBusiness, recordings = {}}: {
-  recordings?:Record<string,string>; cards: Cards; role: WorkspaceRole; userId: string; freeBusiness: boolean;
+export default function WorkspaceGrid({cards, role, userId, freeBusiness, screenshots = {}}: {
+  screenshots?:Record<string,string>; cards: Cards; role: WorkspaceRole; userId: string; freeBusiness: boolean;
 }) {
   const { hidden, save } = useWorkspaceVisibility(userId, role);
   const [editing, setEditing] = useState(false);
@@ -71,7 +61,7 @@ export default function WorkspaceGrid({cards, role, userId, freeBusiness, record
       </footer>
     </ShareDisclosureDialog>}
     {visible.length > 0 && <nav className={styles.grid} aria-label="Workspace pages">
-      {[...available, ...paid].map(card => <WorkspaceTile key={card.key} card={card} recording={recordings[card.key]} role={role} free={freeBusiness}/>)}
+      {[...available, ...paid].map(card => <WorkspaceTile key={card.key} card={card} screenshot={screenshots[card.key]} role={role} free={freeBusiness}/>)}
     </nav>}
     {visible.length === 0 && <p>Choose cards in Customise workspace to show them here.</p>}
   </>;

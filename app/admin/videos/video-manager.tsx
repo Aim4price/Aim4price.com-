@@ -1,13 +1,13 @@
 'use client';
 import { useState } from 'react';
-import HoverManager, { type HoverRecordings } from './hover-manager';
+import HoverManager, { type CardScreenshots } from './hover-manager';
 import Link from 'next/link';
 import AdminSelect from '../../../components/AdminSelect';
 import { tutorialCatalogue, tutorialPageHref, type TutorialAudience } from '../../../lib/tutorial-catalogue';
 import type { VideoSlot } from '../../../lib/tutorial-videos';
 import { youtubeEmbed } from '../../../lib/tutorial-video-policy';
 import styles from './videos.module.css';
-export default function VideoManager({initialSlots, initialHover = {owner:{},business:{}}}:{initialSlots:VideoSlot[]; initialHover?:HoverRecordings}){
+export default function VideoManager({initialSlots, initialHover = {owner:{},business:{}}}:{initialSlots:VideoSlot[]; initialHover?:CardScreenshots}){
  const [hoverMode,setHoverMode]=useState(false);
  const [hover,setHover]=useState(initialHover);
  const [slots,setSlots]=useState(initialSlots),[audience,setAudience]=useState<TutorialAudience>('owners'),[feature,setFeature]=useState('welcome'),[query,setQuery]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState(''),[confirm,setConfirm]=useState<'publish'|'unpublish'|'discard'|null>(null);
@@ -44,8 +44,8 @@ export default function VideoManager({initialSlots, initialHover = {owner:{},bus
  }
  return <><div className={styles.switcher}>
    <button disabled={busy} aria-pressed={!hoverMode} onClick={()=>setHoverMode(false)}>Tutorial videos</button>
-   <button disabled={busy} aria-pressed={hoverMode} onClick={()=>setHoverMode(true)}>Hovering videos</button>
- </div>{hoverMode ? <HoverManager recordings={hover} onChange={setHover} busy={busy} setBusy={setBusy}/> : <><section className={styles.toolbar}><label>Audience<AdminSelect value={audience} disabled={busy} onChange={event=>{setAudience(event.target.value as TutorialAudience);choose('welcome');setQuery('');}}>{Object.entries(tutorialCatalogue).filter(([value])=>value==='owners'||value==='businesses').map(([value,item])=><option key={value} value={value}>{item.label}</option>)}</AdminSelect></label><label>Find a feature<input type="search" value={query} disabled={busy} onChange={e=>setQuery(e.target.value)} placeholder="Search video topics"/></label><Link href={tutorialPageHref(audience)} target="_blank" rel="noopener noreferrer">Open guide</Link></section>
+   <button disabled={busy} aria-pressed={hoverMode} onClick={()=>setHoverMode(true)}>Card screenshots</button>
+ </div>{hoverMode ? <HoverManager screenshots={hover} onChange={setHover} busy={busy} setBusy={setBusy}/> : <><section className={styles.toolbar}><label>Audience<AdminSelect value={audience} disabled={busy} onChange={event=>{setAudience(event.target.value as TutorialAudience);choose('welcome');setQuery('');}}>{Object.entries(tutorialCatalogue).filter(([value])=>value==='owners'||value==='businesses').map(([value,item])=><option key={value} value={value}>{item.label}</option>)}</AdminSelect></label><label>Find a feature<input type="search" value={query} disabled={busy} onChange={e=>setQuery(e.target.value)} placeholder="Search video topics"/></label><Link href={tutorialPageHref(audience)} target="_blank" rel="noopener noreferrer">Open guide</Link></section>
  <div className={styles.workspace}><aside className={styles.list}><h2>{catalogue.label}</h2><nav aria-label="Video topics">{choices.filter(x=>x.title.toLowerCase().includes(query.toLowerCase())).map(x=>{const row=slots.find(s=>s.audience===audience&&s.feature===x.id);return <button disabled={busy} key={x.id} aria-current={feature===x.id?'true':undefined} onClick={()=>choose(x.id)}><span>{x.id==='welcome'?'Welcome':`${choices.indexOf(x)}. ${x.title}`}</span><small>{status(row)}</small></button>;})}{!choices.some(x=>x.title.toLowerCase().includes(query.toLowerCase()))&&<p>No matching topics. Try another search.</p>}</nav></aside>
  <section className={styles.editor} aria-label="Selected video"><div className={styles.title}><div><p>{catalogue.label}</p><h2>{selected.title}</h2></div><span className={styles.badge}>{status(slot)}</span></div>
  <form onSubmit={previewLink} className={styles.linkForm}>
