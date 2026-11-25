@@ -369,8 +369,16 @@ async function check(browser, url) {
   assert.equal(await page.$eval('[data-site-workspace-zoom-controls]',e=>e.dataset.zoomPreference),'auto');
   // A real Asset Register dialog stays scaled and reachable at both extremes.
   await visit('/canvas-validation?page=register',430,600);
-  async function openAssetChoice() {
-    await page.$$eval('button',elements=>elements.find(e=>e.textContent.trim()==='Add Assets')?.click());
+  const guideTrigger = 'button[aria-haspopup="dialog"]:has(+ dialog)';
+  const guide = 'dialog[open]:has([data-entry="edit"])';
+  async function openAssetChoice(entry) {
+    if (entry) {
+      await page.click(guideTrigger);
+      await page.waitForSelector(guide, {visible: true});
+      await page.click(guide + ' [data-entry="' + entry + '"]');
+    } else {
+      await page.$$eval('button',elements=>elements.find(e=>e.textContent.trim()==='Add Assets')?.click());
+    }
     const destination = '[role="dialog"]';
     await page.waitForFunction(()=>Array.from(document.querySelectorAll('[role="dialog"]')).some(dialog=>dialog.textContent.includes('Choose asset register')));
     const registers = `${destination} [aria-label="Available asset registers"]`;
@@ -390,7 +398,22 @@ async function check(browser, url) {
     await page.waitForSelector('[aria-labelledby="add-asset-choice-title"]');
     assert.equal(await page.$(registers),null,'Continuing with the selected register closes the picker and opens Add Asset options');
   }
+  await page.waitForSelector(guideTrigger, {visible: true});
+  assert.equal(await page.$(guide), null, 'The guide opens on request');
+  await page.focus(guideTrigger);
+  await page.keyboard.press('Enter');
+  await page.waitForSelector(guide, {visible:true});
+  assert.ok(await page.$eval(guide, node => node.matches(':modal')));
+  await page.keyboard.press('Escape');
+  await page.waitForSelector(guide, {hidden:true});
+  assert.ok(await page.$eval(guideTrigger, node => document.activeElement === node));
+  for (const [entry, title] of [['one','Add 1 asset'], ['edit','Add in a sheet'], ['file','Import assets']]) {
+    await openAssetChoice(entry);
+    assert.equal(await page.$eval('#add-asset-choice-title', el => el.textContent), title);
+    await page.click('[aria-label="Close add asset options"]');
+  }
   await openAssetChoice();
+  assert.equal(await page.$eval('#add-asset-choice-title', el => el.textContent), 'Add assets');
   assert.equal(await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>Boolean(e.closest('[data-website-canvas]'))),true);
   const autoModalWidth=await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>parseFloat(getComputedStyle(e).width));
   await page.screenshot({path:path.join(output,'register-modal-auto-430.png')});
