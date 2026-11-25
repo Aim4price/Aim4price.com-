@@ -21,58 +21,110 @@
 }
 
 .launcher, .guideDialog {
-  color: var(--app-text, #173f32);
-  font-family: var(--font-body, 'Montserrat'), sans-serif;
+  color: var(--app-text, #153c31);
+  font-family: var(--font-body), sans-serif;
 }
 
 .launcher {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  width: 100%; margin: .25rem 0 1rem; padding: .8rem 1.25rem;
-  border: 1px solid var(--app-border, #c9dcd2); border-radius: 1rem;
-  background: var(--app-surface-soft, #f1f7f4);
-  text-align: start; cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  margin: .25rem 0 1rem;
+  padding: .7rem 1.25rem;
+  border: 1px solid var(--app-line, #cadfd4);
+  border-radius: 1.25rem;
+  background: linear-gradient(105deg, var(--app-surface, #fff) 35%, var(--app-surface-soft, #f2f8f5));
+  box-shadow: var(--shadow-card);
+  text-align: start;
+  cursor: pointer;
 }
-.launcher strong { font-size: 1.2rem; font-weight: 800; }
+.launcher strong {
+  font: 800 1.15rem/1.25 var(--font-heading), sans-serif;
+  letter-spacing: -.025em;
+}
 .openLabel {
-  padding: .45rem .85rem; border: 1px solid var(--app-border, #c9dcd2); border-radius: .65rem;
-  background: var(--app-surface, #fff); font-size: 1rem; font-weight: 700; white-space: nowrap;
+  display: inline-grid;
+  place-items: center;
+  min-height: var(--control-min-height);
+  padding-inline: 1rem;
+  border: 1px solid var(--app-success-line, #9ccab7);
+  border-radius: .9rem;
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-success-soft, #e9f3ed));
+  font: 780 1rem/1.2 var(--font-body), sans-serif;
+  white-space: nowrap;
 }
-.launcher:hover, .choices button:hover { border-color: var(--app-accent, #39866b); box-shadow: 0 0 0 2px var(--app-border, #c8ded3); }
-.launcher:focus-visible, .guideDialog button:focus-visible { outline: 3px solid var(--app-accent, #267755); outline-offset: 3px; }
+.launcher:hover { border-color: var(--app-success-line, #79af98); }
+.launcher:hover .openLabel { background: var(--app-success-soft, #e1efea); }
+.launcher:focus-visible, .guideDialog button:focus-visible {
+  outline: 3px solid var(--app-accent, #267755);
+  outline-offset: 3px;
+}
 
 .guideDialog {
-  box-sizing: border-box; width: min(58rem, calc(var(--website-visible-width, 100vw) - 2rem));
-  max-width: calc(100% - 2rem); max-height: calc(var(--website-visible-height, 100dvh) - 2rem);
-  padding: 0; margin: auto; overflow: hidden; container-type: inline-size;
-  border: 1px solid var(--app-border, #c9dcd2); border-radius: 1.5rem;
-  background: var(--app-surface, #fff); box-shadow: 0 1.5rem 5rem #0d2b2440;
+  --guide-gutter: 2rem;
+  width: min(64rem, calc(var(--website-visible-width, 100vw) - 2rem));
+  max-width: calc(100% - 2rem);
+  max-height: calc(var(--website-visible-height, 100dvh) - 2rem);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  container-type: inline-size;
+  border: 1px solid var(--app-line, #c8dcd0);
+  border-radius: 1.75rem;
+  background: linear-gradient(145deg, var(--app-surface, #fff) 35%, var(--app-surface-soft, #f5f9f7));
+  box-shadow: 0 30px 80px var(--app-shadow-colour, rgb(15 41 33 / 26%));
 }
 .guideDialog[open] { display: flex; flex-direction: column; }
-.guideDialog::backdrop { background: rgba(17, 39, 33, .50); backdrop-filter: blur(6px); }
-.dialogHeader {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex: none;
-  padding: 1.4rem 1.75rem; border-bottom: 1px solid var(--app-border, #d5e4db);
-  background: var(--app-surface-soft, #eef6f1);
+.guideDialog::backdrop {
+  background: var(--modal-backdrop-color);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
-.dialogHeader h2 { margin: 0; font-size: 1.9rem; font-weight: 800; line-height: 1.2; letter-spacing: -.035em; }
-.dialogHeader p { margin: .35rem 0 0; font-size: 1.05rem; line-height: 1.45; }
-.guideContent { padding: 1.4rem 1.75rem; overflow: auto; min-height: 0; overscroll-behavior: contain; }
-.choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
-.choices button {
-  display: flex; flex-direction: column; align-items: flex-start; gap: .4rem; padding: 1rem 1.1rem;
-  text-align: start; cursor: pointer; font: inherit; color: inherit;
-  background: var(--app-surface, #fff); border: 1px solid var(--app-border, #ccded3); border-radius: .85rem;
+.guideDialog .dialogHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex: none;
+  gap: 1rem;
+  margin: 0 var(--guide-gutter);
+  padding: var(--guide-gutter) 0 1.35rem;
+  border-color: var(--app-line, #d5e4db);
 }
-.choices button:hover { background: var(--app-surface-soft, #f1f7f4); }
-.choices strong { font-size: 1.12rem; font-weight: 800; }
-.choices span, .notes p { margin: 0; font-size: 1rem; line-height: 1.5; }
+.dialogHeader h2 { font-family: var(--font-heading), sans-serif; letter-spacing: -.04em; line-height: 1.15; }
+.dialogHeader p { color: var(--app-muted, #526b60); line-height: 1.45; }
+.guideContent {
+  min-height: 0;
+  padding: 1.45rem var(--guide-gutter) var(--guide-gutter);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.guideDialog .choices { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.choices button.method {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 7rem;
+  padding: 1.1rem 1.25rem;
+  border-style: solid;
+  color: inherit;
+  cursor: pointer;
+  text-align: start;
+}
+.method small { text-wrap: balance; }
+.choices button.method:is(:hover, :focus-visible) { border-color: var(--app-accent, #27805f); }
 .notes {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem;
-  margin-top: 1.4rem; padding-top: 1.15rem; border-top: 1px solid var(--app-border, #d5e4db);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--guide-gutter);
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--app-line, #d5e4db);
 }
-.notes h3 { margin: 0 0 .3rem; font-size: 1.05rem; font-weight: 750; }
-@container (max-width: 39rem) {
-  .choices, .notes { grid-template-columns: minmax(0, 1fr); }
-  .notes { gap: .85rem; }
-  .dialogHeader, .guideContent { padding: 1.1rem; }
+.notes h3 { margin: 0 0 .35rem; font: 750 1.05rem/1.3 var(--font-heading), sans-serif; letter-spacing: -.015em; }
+.notes p { margin: 0; font-size: 1rem; font-weight: 550; line-height: 1.5; text-wrap: pretty; color: var(--app-muted, #38574b); }
+@container (max-width: 40rem) {
+  .guideDialog .dialogHeader, .guideContent { --guide-gutter: 1.15rem; }
+  .guideDialog .choices, .notes { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+  .choices button.method { min-height: auto; padding: .9rem 1rem; }
 }
