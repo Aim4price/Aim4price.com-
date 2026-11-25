@@ -949,7 +949,8 @@ function buildInvoiceFilterClause(filters: MyInvoiceListFilters, values: unknown
   const categories = filters.costCategories ?? (filters.costCategory ? [filters.costCategory] : []);
   if (categories.length) {
     values.push(categories);
-    clauses.push(`(case when i.source = 'fuel_slip' then 'fuel' else coalesce(i.cost_category, 'other') end) = any($${values.length}::text[])`);
+    const categoryMatch = `(case when i.source = 'fuel_slip' then 'fuel' else coalesce(i.cost_category, 'other') end) = any($${values.length}::text[])`;
+    clauses.push(categories.includes('fuel_slip') ? `(${categoryMatch} OR i.source = 'fuel_slip')` : categoryMatch);
   }
 
   if (filters.year) {

@@ -10,7 +10,7 @@
 
 /* One Aim4price green for icons in every step of the shared download flow. */
 .surface { --download-icon-color: #145c43; }
-.surface svg,
+.surface:not([data-cost-picker]) svg,
 .surface [data-download-header] > button { color: var(--app-text, var(--download-icon-color)) !important; }
 .formatHeading { display: grid; gap: .28rem; margin-bottom: .9rem; }
 .formatHeading strong { color: var(--app-text, #10352b); font-size: 1.05rem; font-weight: 900; line-height: 1.2; }

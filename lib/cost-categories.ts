@@ -23,7 +23,7 @@ export function costCategory(value: unknown) {
 }
 
 export function categorySummary(values?: readonly string[]) {
-  return values?.length ? values.map(value => costCategory(value)?.label ?? value).join(', ') : 'All costs';
+  return values?.length ? values.map(value => value === 'fuel_slip' ? 'Fuel slips' : costCategory(value)?.label ?? value).join(', ') : 'All costs';
 }
 
 export function appendReportCategories(params: URLSearchParams, selected: readonly string[] = []) {

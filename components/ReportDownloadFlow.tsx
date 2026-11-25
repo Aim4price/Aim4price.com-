@@ -2,7 +2,7 @@
 import AssetChooseIcon from './AssetChooseIcon';
 import AssetPickerDetail from './AssetPickerDetail';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { FilterQuestion } from './FilterFlow';
 import report from './ReportDownload.module.css';
 import styles from './ReportDownloadFlow.module.css';
@@ -14,6 +14,7 @@ type Choice = { value: string; label: string };
 type Props = {
   title: string; allLabel: string;
   assets: Array<{ id: string; title: string; serialNumber?: string; meta?: string; selectedMethod?: string; categoryLabel?: string }>;
+  costStep?: { className: string; content: ReactNode; canContinue: boolean };
   pdfOnly?: boolean; instantDownload?: boolean; compactTimeline?: boolean; skipTimeline?: boolean; years?: string[]; budgetPeriods?: boolean; lockedAssetId?: string;
   fields?: Array<{ key: string; label: string; initial: string; options: Choice[]; allAssetsOnly?: boolean }>;
   scopes?: Array<{ label: string; description: string; field: string; value: string }>;
@@ -29,8 +30,8 @@ function ScopeIcon({ kind = 'all' }: { kind?: string }) {
   </svg>;
 }
 
-export default function ReportDownloadFlow({ pdfOnly = false, title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, instantDownload = false, compactTimeline = false, skipTimeline = false, fields = [], scopes = [], onClose, onDownload }: Props) {
-  const [step, setStep] = useState<'scope' | 'asset' | 'timeline' | 'format'>(lockedAssetId ? (skipTimeline ? 'format' : 'timeline') : 'scope');
+export default function ReportDownloadFlow({ pdfOnly = false, costStep, title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, instantDownload = false, compactTimeline = false, skipTimeline = false, fields = [], scopes = [], onClose, onDownload }: Props) {
+  const [step, setStep] = useState<'scope' | 'asset' | 'costs' | 'timeline' | 'format'>(lockedAssetId ? (costStep ? 'costs' : skipTimeline ? 'format' : 'timeline') : 'scope');
   const [selection, setSelection] = useState<ReportSelection>({ assetId: lockedAssetId || 'all', year: 'all', month: 'all', format: 'pdf', fields: Object.fromEntries(fields.map(field => [field.key, field.initial])) });
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
@@ -62,14 +63,20 @@ export default function ReportDownloadFlow({ pdfOnly = false, title, allLabel, a
   }
   function back() {
     if (busy) return;
-    if (step === 'format' && !skipTimeline) setStep('timeline');
+    if (costStep && step === 'timeline') setStep('format');
+    else if (costStep && step === 'format') setStep('costs');
+    else if (step === 'costs') {
+      if (lockedAssetId) onClose();
+      else setStep(selection.assetId === 'all' ? 'scope' : 'asset');
+    }
+    else if (step === 'format' && !skipTimeline) setStep('timeline');
     else if ((step === 'timeline' || step === 'format') && !lockedAssetId) setStep(selection.assetId === 'all' ? 'scope' : 'asset');
     else if (step === 'asset') setStep('scope');
     else onClose();
   }
 
   return <div className={`${styles.overlay} ${report.backdrop}`} data-website-overlay onClick={event => { if (event.target === event.currentTarget) back(); }}>
-    <div ref={dialog} className={`${styles.surface} ${step === 'asset' ? picker.modal : report.dialog}`} data-compact-download={compactTimeline ? "true" : undefined} data-download-dialog={step !== 'asset' ? 'true' : undefined} data-asset-choice-modal={step === 'asset' ? 'true' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} onKeyDown={event => {
+    <div ref={dialog} className={`${styles.surface} ${step === 'asset' ? picker.modal : report.dialog} ${step === 'costs' ? costStep?.className : ''}`} data-cost-picker={step === 'costs' || undefined} data-compact-download={compactTimeline ? "true" : undefined} data-download-dialog={step !== 'asset' ? 'true' : undefined} data-asset-choice-modal={step === 'asset' ? 'true' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} onKeyDown={event => {
       if (event.key === 'Escape') { event.stopPropagation(); if (!busy) back(); }
       if (event.key !== 'Tab') return;
       const items = Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]') || []).filter(item => item.getClientRects().length);
@@ -77,10 +84,10 @@ export default function ReportDownloadFlow({ pdfOnly = false, title, allLabel, a
       if (event.shiftKey && (document.activeElement === first || document.activeElement === heading.current)) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }}>
-      <header data-download-header="true" data-asset-choice-header={step === 'asset' ? 'true' : undefined}><div><h2 id={titleId} ref={heading} tabIndex={-1}>{step === 'scope' ? title : step === 'asset' ? `Choose asset for ${title.replace(/ reports$/i, '').toLowerCase()}` : step === 'timeline' ? 'Choose report timeline' : selectedAsset?.title || title}</h2><p>{step === 'scope' ? 'Choose the records to include.' : step === 'asset' ? 'Choose a saved asset.' : step === 'format' && selectedAsset?.meta ? selectedAsset.meta : `${selectedAsset?.title || allLabel} · ${periodLabel}`}</p></div><button type="button" disabled={busy} onClick={back} aria-label="Close download" data-modal-close="true"><span aria-hidden="true">×</span></button></header>
+      <header data-download-header="true" data-asset-choice-header={step === 'asset' ? 'true' : undefined}><div><h2 id={titleId} ref={heading} tabIndex={-1}>{step === 'scope' ? title : step === 'asset' ? `Choose asset for ${title.replace(/ reports$/i, '').toLowerCase()}` : step === 'timeline' ? 'Choose report timeline' : selectedAsset?.title || title}</h2><p>{step === 'scope' ? 'Choose the records to include.' : step === 'asset' ? 'Choose a saved asset.' : step === 'format' && selectedAsset?.meta ? selectedAsset.meta : `${selectedAsset?.title || allLabel} · ${periodLabel}`}</p></div><button type="button" disabled={busy} onClick={costStep ? onClose : back} aria-label="Close download" data-modal-close="true"><span aria-hidden="true">×</span></button></header>
       <div className={step === 'asset' ? picker.contents : styles.body} data-download-body={step !== 'asset' ? 'true' : undefined}>
         {step === 'scope' ? <div data-download-grid="true">
-          <button type="button" data-download-option="true" onClick={() => { setSelection(s=>({...s,assetId:'all',fields:Object.fromEntries(fields.map(field=>[field.key,field.initial]))})); setStep('timeline'); }}><span data-download-icon="true"><ScopeIcon /></span><span data-download-copy="true"><strong>{allLabel}</strong><small>All records in your chosen period.</small></span></button>
+          <button type="button" data-download-option="true" onClick={() => { setSelection(s=>({...s,assetId:'all',fields:Object.fromEntries(fields.map(field=>[field.key,field.initial]))})); setStep(costStep ? 'costs' : 'timeline'); }}><span data-download-icon="true"><ScopeIcon /></span><span data-download-copy="true"><strong>{allLabel}</strong><small>All records in your chosen period.</small></span></button>
           <button type="button" data-download-option="true" onClick={() => setStep('asset')}><span data-download-icon="true"><ScopeIcon kind="asset" /></span><span data-download-copy="true"><strong>Specific asset</strong><small>One asset’s records.</small></span></button>
           {scopes.map(scope => <button type="button" key={scope.value} data-download-option="true" onClick={() => {setSelection(s=>({...s,assetId:'all',fields:{...s.fields,[scope.field]:scope.value}}));setStep('timeline');}}><span data-download-icon="true"><ScopeIcon kind={scope.value} /></span><span data-download-copy="true"><strong>{scope.label}</strong><small>{scope.description}</small></span></button>)}
         </div> : step === 'asset' ? <>
@@ -88,11 +95,11 @@ export default function ReportDownloadFlow({ pdfOnly = false, title, allLabel, a
             <input aria-label="Search saved assets" placeholder="Search assets..." value={search} onChange={event=>setSearch(event.target.value)} />
             <button type="button" className={picker.secondary} onClick={()=>setSearch('')}>Clear</button>
           </div>
-          <div data-asset-choice-list="true">{assets.filter(asset=>`${asset.title} ${asset.serialNumber || ''}`.toLowerCase().includes(search.trim().toLowerCase())).map(asset=><button type="button" key={asset.id} data-asset-choice-row="true" onClick={()=>{setSelection(s=>({...s,assetId:asset.id}));setStep('timeline');}}>
+          <div data-asset-choice-list="true">{assets.filter(asset=>`${asset.title} ${asset.serialNumber || ''}`.toLowerCase().includes(search.trim().toLowerCase())).map(asset=><button type="button" key={asset.id} data-asset-choice-row="true" onClick={()=>{setSelection(s=>({...s,assetId:asset.id}));setStep(costStep ? 'costs' : 'timeline');}}>
             <span data-asset-choice-copy="true"><strong>{asset.title}</strong>{asset.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}{asset.selectedMethod ? <AssetPickerDetail>{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</AssetPickerDetail> : null}<AssetSerialNumber value={asset.serialNumber} /></span>
             <span data-asset-choice-value="true"><AssetChooseIcon /></span>
           </button>)}{!assets.some(asset=>`${asset.title} ${asset.serialNumber || ''}`.toLowerCase().includes(search.trim().toLowerCase())) ? <div className={picker.empty}>No saved assets found.</div> : null}</div>
-        </> : step === 'timeline' ? <div className={`${styles.fields} ${compactTimeline ? styles.compactFields : ''}`}>
+        </> : step === 'costs' ? costStep?.content : step === 'timeline' ? <div className={`${styles.fields} ${compactTimeline || costStep ? styles.compactFields : ''}`}>
           {budgetPeriods ? <p>Budgets show the current month and year. Historical budget snapshots are not available.</p> : <>
             <FilterQuestion menuClassName={styles.timelineMenu} label="Year" value={selection.year} options={[{value:'all',label:'All years'},...availableYears.map(year=>({value:year,label:year}))]} onChange={year=>setSelection(s=>({...s,year,month:'all'}))} />
             <FilterQuestion menuClassName={styles.timelineMenu} label="Month" disabledHint="Choose a year to select a month." value={selection.month} disabled={selection.year === 'all'} options={[{value:'all',label:'All months'},...Array.from({length:12},(_,i)=>({value:String(i+1),label:new Date(2000,i).toLocaleString('en-ZA',{month:'long'})}))]} onChange={month=>setSelection(s=>({...s,month}))} />
@@ -104,7 +111,19 @@ export default function ReportDownloadFlow({ pdfOnly = false, title, allLabel, a
         </>}
         {busy ? <p role="status">Preparing report…</p> : null}{error ? <p role="alert" className={styles.error}>{error}</p> : null}
       </div>
-      <footer data-download-footer="true" data-asset-choice-footer={step === 'asset' ? 'true' : undefined}>{step !== 'scope' && !(lockedAssetId && (step === 'timeline' || skipTimeline)) ? <button type="button" disabled={busy} onClick={back}>Back</button> : null}<button type="button" disabled={busy} onClick={back}>Cancel</button>{step === 'timeline' || (step === 'format' && !instantDownload) ? <button type="button" disabled={busy} data-download-primary="true" onClick={()=>step === 'format' ? void submit(selection.format) : setStep('format')}>{busy ? 'Preparing…' : 'Next'}</button> : null}</footer>
+      <footer data-download-footer="true" data-asset-choice-footer={step === 'asset' ? 'true' : undefined}>
+        {step !== 'scope' && !(lockedAssetId && (costStep ? step === 'costs' : step === 'timeline' || skipTimeline)) &&
+          <button type="button" disabled={busy} onClick={back}>Back</button>}
+        <button type="button" disabled={busy} onClick={costStep ? onClose : back}>Cancel</button>
+        {step === 'costs' && <button type="button" data-download-primary="true" disabled={!costStep?.canContinue}
+          onClick={() => setStep('format')}>Next</button>}
+        {step === 'format' && !instantDownload && <button type="button" disabled={busy} data-download-primary="true"
+          onClick={() => costStep ? setStep('timeline') : void submit(selection.format)}>{busy ? 'Preparing…' : 'Next'}</button>}
+        {step === 'timeline' && <button type="button" disabled={busy} data-download-primary="true"
+          onClick={() => costStep ? void submit(selection.format) : setStep('format')}>
+          {busy ? 'Preparing…' : !costStep ? 'Next' : selection.format === 'pdf' ? 'Open PDF report' : 'Download Excel'}
+        </button>}
+      </footer>
     </div>
   </div>;
 }
