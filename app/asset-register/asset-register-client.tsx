@@ -4,7 +4,7 @@ import OwnershipReportCategories from '../../components/OwnershipReportCategorie
 import categoryStyles from '../my-invoices/cost-categories.module.css';
 import AssetMediaPanel from '../../components/asset-register/AssetMediaPanel';
 import AssetSheetDialog from '../../components/asset-register/AssetSheetDialog';
-import { importPending } from '../../lib/asset-sheet';
+import { importPending, savedSheetDetails, type AssetSheetDetail, type CustomColumn } from '../../lib/asset-sheet';
 import { useMeteredManage } from '../../components/BusinessCreditControls';
 import AssetAverageUsage from '../../components/asset-register/AssetAverageUsage';
 import { PageHelpHeading } from '../../components/PageHelp';
@@ -1117,6 +1117,7 @@ type MarketplacePublishDraft = {
 };
 
 type AssetDraft = {
+  sheetDetails: AssetSheetDetail[];
   kind: AssetKind;
   generalAssetCategory: GeneralAssetCategoryKey | '';
   propertyAssetSubtype: PropertyAssetSubtypeKey | '';
@@ -1783,6 +1784,7 @@ const QUOTE_TONE_STYLES: Record<PartnerType, QuoteToneStyle> = {
 };
 
 const initialAssetDraft: AssetDraft = {
+  sheetDetails: [],
   kind: 'equipment',
   generalAssetCategory: '',
   propertyAssetSubtype: '',
@@ -4104,6 +4106,8 @@ const HIDDEN_BASIC_SPEC_KEYS = new Set([
   'asset flag',
   'asset flagged at',
   'asset flag updated at',
+  'asset sheet fields',
+  'assetsheetfields',
   'asset import key',
   'assetimportkey',
   'flagged',
@@ -4779,6 +4783,7 @@ function buildDraftFromAsset(asset: RegisterAsset): AssetDraft {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
 
   return {
+    sheetDetails: savedSheetDetails(asset.specsJson),
     kind: normalizeDraftKind(asset.kind),
     generalAssetCategory: normalizeGeneralAssetCategory(specs.generalAssetCategory ?? specs.general_asset_category),
     propertyAssetSubtype: normalizePropertyAssetSubtype(specs.propertyAssetSubtype ?? specs.property_asset_subtype),
@@ -12574,6 +12579,7 @@ export default function AssetRegisterClient({
       ? normalizeLicenseRegistrationText(assetStatusDraft.licenseRegistrationNumber)
       : '';
     const specsJson: Record<string, unknown> = {
+      ...(editingAsset && assetDraft.sheetDetails.length ? { assetSheetFields: assetDraft.sheetDetails } : {}),
       ...buildStatusSpecsFragment(assetStatusDraft, licenseApplicable),
       ...(editingAsset?.specsJson?.assetImportKey && !replacementPrice ? {} : replacementPrice !== null
         ? {
@@ -17321,6 +17327,9 @@ export default function AssetRegisterClient({
                                         ) : (
                                           renderAssetDetailRow('usage', 'Usage', buildAssetUsageValue(asset))
                                         )}
+                                        {savedSheetDetails(asset.specsJson).filter(detail => detail.value).map(detail =>
+                                          <div key={detail.name} className={styles.assetDetailRow}><span className={cardLayout.detailLabel}>{detail.name}</span>
+                                            <strong title={detail.value}>{detail.value}</strong></div>)}
                                         {renderAssetDetailRow(
                                           'condition',
                                           'Condition',
@@ -18179,6 +18188,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAddChoiceModalOpen && <AssetSheetDialog registerId={addAssetTargetRegisterId} registerName={addAssetTargetRegisterName}
+        savedColumns={Array.from(new Set(assets.filter(asset => asset.registerId === addAssetTargetRegisterId)
+          .flatMap(asset => savedSheetDetails(asset.specsJson).map(detail => `custom:${detail.name}` as CustomColumn))))}
         valuationHref={addAssetValuationHref} request={ownerFetch} onManual={openManualEntryFromChoice} onClose={closeAddAssetChoiceModal}
         onBack={()=>{closeAddAssetChoiceModal();setIsAddAssetDestinationModalOpen(true);}}
         onSaved={(added,skipped)=>{closeAddAssetChoiceModal();setSearchTerm('');setAssetFilters([]);setCurrentPage(1);
@@ -18639,6 +18650,14 @@ export default function AssetRegisterClient({
                         </div>
                       ) : null}
 
+                      {editingAsset && !desktopAccess && assetDraft.sheetDetails.length > 0 && <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
+                        {assetDraft.sheetDetails.map((detail, index) => <label key={detail.name} className={styles.field}>
+                          <span>{detail.name}</span><input value={detail.value} maxLength={250} onChange={event => {
+                            const value = event.target.value;
+                            setAssetDraft(current => ({ ...current, sheetDetails: current.sheetDetails.map((d, i) => i === index ? { ...d, value } : d) }));
+                          }} />
+                        </label>)}
+                      </div>}
                       {assetFormKind !== 'property' && assetFormKind !== 'stock' ? (
                         <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`} data-details-section="identity">
                           <label className={styles.field} data-asset-detail-edit-target="serial" ref={node => {if(node) node.inert = Boolean(desktopAccess);}} data-access-restricted={desktopAccess ? "true" : undefined}>

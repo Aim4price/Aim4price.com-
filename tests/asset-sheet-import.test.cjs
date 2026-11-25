@@ -41,3 +41,55 @@ test('Excel preserves zero-padded serials and translates percentage-formatted re
   assert.equal(asset.unit,'percentage');
   assert.equal(asset.usage,'35');
 });
+
+test('custom columns keep text and validate names and custom-only rows', () => {
+  const { customColumn, readSheetColumns, readSheetRow, hasAssetData } = load('lib/asset-sheet.ts');
+  const key = customColumn('  Insurance   reference  ', []);
+  assert.equal(key, 'custom:Insurance reference');
+  assert.throws(() => customColumn('insurance reference', [key]), /already exists/);
+  assert.throws(() => customColumn('Serial number', []), /already exists/);
+  assert.throws(() => readSheetColumns(['custom:']), /name/);
+  assert.throws(() => readSheetRow({ ...blankAsset(), [key]: '123' }, []), /Unknown/);
+  const row = mapAssetRow([' 000123 '], [key]);
+  assert.equal(readSheetRow(row, [key])[key], '000123');
+  assert.equal(hasAssetData(row), true);
+  assert.ok(rowErrors(row, '').title);
+  assert.ok(rowErrors({ ...row, title:'Pump', [key]:'x'.repeat(251) }, '')[key]);
+});
+
+test('preview and save preserve custom fields on each asset and retries skip saved rows', async () => {
+  const id = '3292cc39-60aa-4923-a6b2-d126154ef650';
+  const assets = [];
+  const session = { user: {id:'owner'} };
+  const mocks = {
+    '../../../../lib/auth-session': {getServerSession: async () => session},
+    '../../../../lib/asset-register-account-access': {getAssetRegisterAccountAccess: async () => ({accountType:'owner'})},
+    '../../../../lib/owner-workspace-access': {resolveOwnerWorkspaceContext: async () => ({ok:true,context:{ownerUserId:'owner'}})},
+    '../../../../lib/asset-registers': {getAssetRegisterForUser: async () => ({id})},
+    '../../../../lib/asset-register-db': {
+      listAssetRegisterItemsForRegisters: async () => assets,
+      withAssetInputTransaction: fn => fn({query:async () => {}}),
+      prepareAssetRegisterRevaluation: async () => {},
+      createManualAssetRegisterItem: async (owner, item) => { assert.equal(owner,'owner'); assets.push(item); return item; }
+    },
+    '../../../../lib/business-credits': {}, '../../../../lib/billing': {}, '../../../../lib/hosting-pricing': {},
+    '../../../../lib/db': {withDatabaseClient: (_,fn) => fn()},
+    '../../../../lib/asset-lifecycle': {ensureAssetLifecycleSchema:async () => {},recordManualAssetLifecycle:async () => {}}
+  };
+  const { POST } = load('app/api/asset-register/import/route.ts', mocks);
+  const { savedSheetDetails } = load('lib/asset-sheet.ts');
+  const customColumns = ['custom:Insurance reference','custom:Cost centre'];
+  const rows = [mapAssetRow(['Pump','000012','Dairy'],['title',...customColumns]), {...blankAsset(),title:'Tank'}];
+  const send = async (action, token, body = {}) => {
+    const response = await POST({json: async () => ({registerId:id, basis:'',customColumns,rows,action,token,...body})});
+    return {status:response.status, data:await response.json()};
+  };
+  const preview = await send('preview');
+  assert.ok(preview.data.token);
+  assert.equal((await send('save', preview.data.token, {rows:[{...rows[0],'custom:Cost centre':'Workshop'},rows[1]]})).status,409);
+  assert.deepEqual((await send('save',preview.data.token,{customColumns:[...customColumns].reverse()})).data,{added:2,skipped:0});
+  assert.deepEqual(savedSheetDetails(assets[0].specsJson),[{name:'Cost centre',value:'Dairy'},{name:'Insurance reference',value:'000012'}]);
+  assert.deepEqual(savedSheetDetails(assets[1].specsJson).map(d=>d.value),['','']);
+  assert.deepEqual((await send('save',preview.data.token)).data,{added:0,skipped:2});
+  assert.equal(assets.length,2);
+});

@@ -9,7 +9,7 @@ import Select from '../AssetModalSelect';
 import ShareModalCloseButton from './ShareModalCloseButton';
 import { MAX_PARTS_CSV_BYTES, readPartsCsv } from '../../lib/parts-network-csv';
 import { readPartsExcel } from '../../lib/parts-network-excel';
-import { assetColumns, assetTitle, blankAsset, columns, mapAssetRow, mapHeading, maxAssets, rowErrors, usageUnit, targetColumn, type Column, type Mapping } from '../../lib/asset-sheet';
+import { assetColumns, assetTitle, columnLabel, customColumn, hasAssetData, isCustomColumn, blankAsset, columns, type CustomColumn, mapAssetRow, mapHeading, maxAssets, rowErrors, usageUnit, targetColumn, type Column, type Mapping } from '../../lib/asset-sheet';
 import parts from '../../app/dealer/parts/parts.module.css';
 import SpreadsheetUpload from '../SpreadsheetUpload';
 import uploadStyles from '../PartsImportForm.module.css';
@@ -36,14 +36,15 @@ const choices = {
   ],
 } as const;
 const startColumns: Column[] = ['title', 'year', 'serial'];
-type Match = Mapping | 'skip';
+type Match = Mapping | 'skip' | 'new';
 const mappingChoices = [
   { value: '', label: 'Choose a field' }, { value: 'skip', label: 'Skip column' }, ...columns.map(value => ({ value, label: assetColumns[value] })),
   { value: 'hours', label: 'Usage in hours' }, { value: 'km', label: 'Usage in km' }, { value: 'percentage', label: 'Usage in %' },
 ];
-export default function AssetSheetDialog({ registerId, registerName, valuationHref, onManual, onBack, onClose, onSaved, request }: {
+export default function AssetSheetDialog({ registerId, registerName, savedColumns = [], valuationHref, onManual, onBack, onClose, onSaved, request }: {
   registerId: string;
   registerName: string;
+  savedColumns?: CustomColumn[];
   valuationHref: string;
   onManual: () => void;
   onBack: () => void;
@@ -52,13 +53,15 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   request: typeof fetch;
 }) {
   const [stage, setStage] = useState<Stage>('choose');
-  const [draft, setDraft] = useState<AssetDraft>(() => ({ rows: [blankAsset()], visible: startColumns, basis: '' }));
-  const { rows, visible, basis } = draft;
+  const [draft, setDraft] = useState<AssetDraft>(() => ({ rows: [blankAsset()], visible: startColumns, custom: [], basis: '' }));
+  const { rows, visible, basis, custom } = draft;
+  const allColumns = [...columns, ...custom];
   const [undo, setUndo] = useState<AssetDraft | null>(null);
   const mappedSource = useRef<{ sheet: Sheet; signature: string } | null>(null);
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [sheetIndex, setSheetIndex] = useState(0);
   const [mapping, setMapping] = useState<Match[]>([]);
+  const [names, setNames] = useState<string[]>([]);
   const [header, setHeader] = useState(true);
   const [example, setExample] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -74,7 +77,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   const [page, setPage] = useState(0);
   const [pasteMode, setPasteMode] = useState(false);
   const [pasteText, setPasteText] = useState('');
-  const filled = rows.filter(row => columns.some(key => row[key].trim()));
+  const filled = rows.filter(hasAssetData);
   const ready = checks.filter(c => !c.skip).length;
   const sheet = sheets[sheetIndex];
   const size = 20;
@@ -86,7 +89,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   useLayoutEffect(() => {
     if (!focusError) return;
     const selector = focusError.vat ? 'button[aria-label="Current values in rand"]'
-      : `[data-row="${focusError.row}"] input[data-field="${focusError.field}"]`;
+      : `[data-row="${focusError.row}"] input[data-field="${CSS.escape(focusError.field)}"]`;
     const target = dialog.current?.querySelector<HTMLElement>(selector);
     target?.focus({ preventScroll: true });
     target?.scrollIntoView({ block: 'center', inline: 'center' });
@@ -117,10 +120,23 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   const importStep = stage === 'file' || stage === 'map';
   const sheetStep = stage === 'edit' || stage === 'review';
   const sheetReturnLabel = stage === 'review' ? 'Edit sheet' : history.at(-1) === 'map' ? 'Change mapping' : null;
-  const chosenFields = mapping.filter((key): key is Exclude<Mapping, ''> => !!key && key !== 'skip');
-  const needsIdentity = !chosenFields.includes('title') && !(chosenFields.includes('make') && chosenFields.includes('model'));
-  const unmatched = mapping.filter(key => !key).length;
-  const mappingIssue = needsIdentity ? 'Match Asset name, or both Make and Model.' : unmatched ? 'Choose a field or Skip for each column.' : '';
+  const importCustom = [...new Set([...savedColumns, ...custom])];
+  const matched: Mapping[] = [];
+  const mappedCustom: CustomColumn[] = [];
+  let mappingIssue = '';
+  for (const [i, choice] of mapping.entries()) {
+    if (!choice) mappingIssue ||= 'Choose a field or Skip for each column.';
+    try {
+      const key = choice === 'new' ? customColumn(names[i] || '', mappedCustom) : choice === 'skip' ? '' : choice;
+      if (key && isCustomColumn(key)) {
+        const canonical = importCustom.find(k => k.toLowerCase() === key.toLowerCase()) ?? key;
+        if (choice !== 'new') customColumn(columnLabel(canonical), mappedCustom);
+        mappedCustom.push(canonical);
+        matched.push(canonical);
+      } else matched.push(key);
+    } catch (cause) { mappingIssue ||= (cause as Error).message; matched.push(''); }
+  }
+  if (!matched.includes('title') && !(matched.includes('make') && matched.includes('model'))) mappingIssue ||= 'Match Asset name, or both Make and Model.';
   function updateDraft(next: Partial<AssetDraft>, remember = true) {
     if (remember) setUndo(draft);
     setDraft(previous => ({ ...previous, ...next }));
@@ -138,7 +154,8 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
     const matched = new Set<Mapping>();
     const guessed = Array.from({ length: width }, (_, i): Match => {
       if (table.every(row => !row[i]?.trim())) return 'skip';
-      const key = hasHeader ? mapHeading(table[0][i] || '') : '';
+      const label = table[0][i]?.trim() || '';
+      const key = hasHeader ? mapHeading(label) || importCustom.find(k => columnLabel(k).toLowerCase() === label.toLowerCase()) || '' : '';
       if (!key || matched.has(key)) return '';
       matched.add(key);
       return key;
@@ -154,6 +171,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       });
       setMapping(next);
     } else {
+      setNames(guessed.map((_, i) => hasHeader ? table[0][i]?.trim() || '' : ''));
       setMapping(guessed);
     }
     if (stage !== 'map') transition.start(dialog.current, 'Match columns', () => change('map'));
@@ -181,8 +199,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   }
   function mapTable() {
     if (mappingIssue) return setError(mappingIssue);
-    const matched = mapping.map(key => key === 'skip' ? '' : key);
-    const used = chosenFields.map(targetColumn);
+    const used = matched.map(targetColumn);
     const readings = matched.map((key, i) => targetColumn(key) === 'usage' ? i : -1).filter(i => i >= 0);
     for (const cells of sheet.rows.slice(header ? 1 : 0)) {
       const populated = readings.filter(i => cells[i]?.trim());
@@ -195,11 +212,11 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
     const mapped = sheet.rows.slice(header ? 1 : 0).map(r => mapAssetRow(r, matched));
     if (!mapped.length)
       return setError('The sheet has no asset rows.');
-    if (mapped.some(r => !columns.some(k => r[k])))
+    if (mapped.some(r => !hasAssetData(r)))
       return setError('Some rows have no mapped details. Check the column matches or remove empty asset rows from the source.');
-    const signature = JSON.stringify([header, mapping]);
+    const signature = JSON.stringify([header, matched]);
     if (mappedSource.current?.sheet !== sheet || mappedSource.current.signature !== signature) {
-      setDraft({ rows: mapped, visible: columns.filter(k => k === 'title' || used.includes(k) || mapped.some(r => r[k])), basis: '' });
+      setDraft({ rows: mapped, visible: [...columns, ...mappedCustom].filter(k => k === 'title' || used.includes(k) || mapped.some(r => r[k])), custom: mappedCustom, basis: '' });
       setUndo(null);
       mappedSource.current = { sheet, signature };
     }
@@ -235,10 +252,10 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
   async function submit(save = false) {
     setValidate(true);
     setError('');
-    const invalid = rows.findIndex(r => columns.some(k => r[k]) && Object.keys(rowErrors(r, basis)).length);
+    const invalid = rows.findIndex(r => hasAssetData(r) && Object.keys(rowErrors(r, basis)).length);
     if (invalid >= 0) {
       const errors = rowErrors(rows[invalid], basis);
-      const fields = columns.filter(k => errors[k]);
+      const fields = allColumns.filter(k => errors[k]);
       const invalidFields = fields.filter(k => !visible.includes(k));
       if (invalidFields.length) setDraft({ ...draft, visible: [...visible, ...invalidFields] });
       setPage(Math.floor(invalid / size));
@@ -249,7 +266,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
       return setError('Add at least one asset.');
     setBusy(true);
     try {
-      const result = await request('/api/asset-register/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: save ? 'save' : 'preview', registerId, rows: filled, basis, token }) });
+      const result = await request('/api/asset-register/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: save ? 'save' : 'preview', registerId, rows: filled, customColumns: custom, basis, token }) });
       const data = await result.json();
       if (!result.ok)
         throw Error(data.error || 'Could not review these assets.');
@@ -374,12 +391,14 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
               <div className={uploadStyles.columnName}><span className={uploadStyles.letter}>{columnLetter(i)}</span><strong>{header && sheet.rows[0][i] || 'Column ' + columnLetter(i)}</strong></div>
               <div className={uploadStyles.samples}>{sheet.rows.slice(Number(header), Number(header) + 2).map((r, n) => <span key={n}>{r[i] || '—'}</span>)}</div>
               <Select className={uploadStyles.columnSelect} label={'Match column ' + (i + 1)} buttonLabel={'Match column ' + (i + 1)} value={v}
-                options={mappingChoices.filter(o => !o.value || o.value === 'skip' || o.value === v || !mapping.includes(o.value as Match))}
+                options={[...mappingChoices, ...importCustom.map(k => ({value:k,label:columnLabel(k)}))].filter(o => !o.value || o.value === 'skip' || o.value === v || !mapping.includes(o.value as Match)).concat({ value: 'new', label: 'Custom field…' })}
                 onChange={next => { setMapping(mapping.map((m, j) => j === i ? next as Match : m)); setError(''); }} />
+              {v === 'new' && <label className={css.customName}>Field name<input aria-label={`Custom field name for column ${columnLetter(i)}`} maxLength={60} value={names[i] || ''}
+                onChange={e => setNames(names.map((name, j) => j === i ? e.target.value : name))} /></label>}
             </div>)}
           </div>
         </section>}
-        {stage === 'edit' && <AssetSheetEditor draft={draft} registerId={registerId} register={registerName} validate={validate} page={currentPage} size={size}
+        {stage === 'edit' && <AssetSheetEditor savedColumns={savedColumns} draft={draft} registerId={registerId} register={registerName} validate={validate} page={currentPage} size={size}
           onPage={setPage} onChange={updateDraft} onPaste={paste} canUndo={!!undo} onUndo={() => {
             if (undo) { setDraft(undo); setUndo(null); setError(''); }
           }} />}
@@ -395,6 +414,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
                   <th>Asset name</th>
                   <th>Serial / VIN</th>
                   <th>Current value</th>
+                  {custom.map(k => <th key={k}>{columnLabel(k)}</th>)}
                   <th>Status</th>
                 </tr>
               </thead>
@@ -402,6 +422,7 @@ export default function AssetSheetDialog({ registerId, registerName, valuationHr
                 <td>{assetTitle(r)}</td>
                 <td>{r.serial || '—'}</td>
                 <td>{r.value ? 'R ' + r.value + (basis === 'included' ? ' incl. VAT' : ' excl. VAT') : 'Awaiting valuation'}</td>
+                {custom.map(k => <td key={k}>{r[k] || '—'}</td>)}
                 <td>{checks[currentPage * size + j]?.skip || 'Ready'}</td>
               </tr>)}</tbody>
             </table>

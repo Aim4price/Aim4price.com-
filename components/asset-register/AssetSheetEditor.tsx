@@ -1,7 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState, type ClipboardEvent } from 'react';
-import { assetColumns, blankAsset, columns, maxAssets, rowErrors, type AssetRow, type Column, type Basis } from '../../lib/asset-sheet';
+import { columnLabel, isCustomColumn, hasAssetData, blankAsset, columns, maxAssets, type BuiltInColumn, type CustomColumn, rowErrors, type AssetRow, type Column, type Basis } from '../../lib/asset-sheet';
 import parts from '../../app/dealer/parts/parts.module.css';
 import { DetailIcon } from '../PartsDetailFields';
 import Select from '../AssetModalSelect';
@@ -9,8 +9,8 @@ import AssetSheetTools, { type AssetTool } from './AssetSheetTools';
 import SheetColumnHeader, { useSheetColumns } from '../SheetColumnHeader';
 import css from './AssetSheetDialog.module.css';
 
-export type AssetDraft = { rows: AssetRow[]; visible: Column[]; basis: Basis };
-const initialWidths: Record<Column, number> = {
+export type AssetDraft = { rows: AssetRow[]; visible: Column[]; custom: CustomColumn[]; basis: Basis };
+const initialWidths: Record<BuiltInColumn, number> = {
   title: 340, make: 172, model: 180, category: 180, year: 112,
   serial: 210, usage: 136, unit: 142, value: 172,
 };
@@ -18,6 +18,7 @@ const rowControlWidth = 132;
 
 type Props = {
   registerId: string;
+  savedColumns: CustomColumn[];
   draft: AssetDraft;
   register: string;
   validate: boolean;
@@ -30,10 +31,11 @@ type Props = {
   canUndo: boolean;
 };
 
-export default function AssetSheetEditor({ draft: { rows, visible: fields, basis }, registerId, register, validate, page, size, onPage, onChange, onPaste, onUndo, canUndo }: Props) {
+export default function AssetSheetEditor({ draft: { rows, visible: fields, basis, custom }, savedColumns, registerId, register, validate, page, size, onPage, onChange, onPaste, onUndo, canUndo }: Props) {
   const layout = useSheetColumns('aim4price:asset-sheet:' + registerId);
   const visible = layout.ordered(fields);
-  const widthOf = (key: Column) => layout.widths[key] ?? initialWidths[key];
+  const allColumns = [...columns, ...custom];
+  const widthOf = (key: Column) => layout.widths[key] ?? (isCustomColumn(key) ? 200 : initialWidths[key]);
   const tableWidth = visible.reduce((total, key) => total + widthOf(key), rowControlWidth);
   const grid = useRef<HTMLDivElement>(null);
   const focusRow = useRef<number | null>(null);
@@ -51,19 +53,16 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
   const [tool, setTool] = useState<AssetTool | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
   const editing = useRef<HTMLInputElement | null>(null);
-  const populated = rows.filter(r => columns.some(k => r[k].trim())).length;
+  const populated = rows.filter(hasAssetData).length;
   function removeRow(index: number) {
     onChange({ rows: rows.length === 1 ? [blankAsset()] : rows.filter((_, i) => i !== index) });
     setSelected(selected.filter(i => i !== index).map(i => i > index ? i - 1 : i));
-  }
-  function changeColumns(fields: Column[]) {
-    onChange({ visible: fields });
   }
   return <div className={parts.stockSheet}>
     <div className={`${parts.sheetToolbar} ${css.tools}`} role="group" aria-label="Sheet tools">
       <span>{selected.length ? selected.length + ' selected' : populated + (populated === 1 ? ' asset' : ' assets')}</span>
       <button disabled={rows.length >= maxAssets} onClick={addRow}>+ Add row</button>
-      <button disabled={visible.length === columns.length} onClick={() => setTool({ kind: 'add' })}><DetailIcon kind="addColumn" />Add column</button>
+      <button onClick={() => setTool({ kind: 'add' })}><DetailIcon kind="addColumn" />Add column</button>
       <button onClick={() => setTool({ kind: 'columns' })}><DetailIcon kind="columns" />Manage columns</button>
       <button disabled={!populated && !selected.length} onClick={() => setTool({ kind: 'bulk' })}><DetailIcon kind="edit" />Bulk edit</button>
       <button disabled={!canUndo} onClick={() => { setSelected([]); onUndo(); }}><DetailIcon kind="undo" />Undo</button>
@@ -79,14 +78,14 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
           ref={el => { if (el) el.indeterminate = selected.length > 0 && selected.length < rows.length; }}
           onChange={e => setSelected(e.target.checked ? rows.map((_, i) => i) : [])} /></th>
           {visible.map((k, position) => <th key={k} scope="col">
-            <SheetColumnHeader label={assetColumns[k]} hint={k === 'title' ? 'Or use make and model' : 'Optional'}
-              index={position} count={visible.length} width={widthOf(k)} getValues={() => rows.map(row => row[k])}
-              onMove={direction => layout.move(columns, visible, k, direction)}
+            <SheetColumnHeader label={columnLabel(k)} hint={k === 'title' ? 'Or use make and model' : 'Optional'}
+              index={position} count={visible.length} width={widthOf(k)} getValues={() => rows.map(row => row[k] ?? '')}
+              onMove={direction => layout.move(allColumns, visible, k, direction)}
               onResize={(width, persist) => layout.resize(k, width, persist)} />
           </th>)}</tr></thead>
         <tbody>{rows.slice(page * size, (page + 1) * size).map((r, j) => {
           const index = page * size + j;
-          const errors = validate && columns.some(k => r[k].trim()) ? rowErrors(r, basis) : {};
+          const errors = validate && hasAssetData(r) ? rowErrors(r, basis) : {};
           return <tr key={index} data-row={index} data-selected={selected.includes(index) || undefined}>
             <td><div className={parts.sheetRowControls}>
               <input type="checkbox" aria-label={'Select row ' + (index + 1)} checked={selected.includes(index)} onChange={e => setSelected(e.target.checked ? [...selected, index] : selected.filter(i => i !== index))} />
@@ -96,7 +95,7 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
               </button>
             </div></td>
             {visible.map(k => <td key={k}>
-              <input data-field={k} title={r[k] || undefined} aria-label={assetColumns[k] + ' row ' + (index + 1)} value={r[k]} placeholder={k === 'unit' ? 'hours, km or %' : undefined}
+              <input data-field={k} title={r[k] || undefined} aria-label={columnLabel(k) + ' row ' + (index + 1)} value={r[k] ?? ''} placeholder={k === 'unit' ? 'hours, km or %' : undefined}
                 aria-invalid={!!errors[k]} aria-describedby={errors[k] ? 'asset-error-' + index + '-' + k : undefined}
                 onBlur={() => { editing.current = null; }} onPaste={e => { editing.current = null; onPaste(e, index, k, visible); }}
                 onChange={e => {
@@ -111,7 +110,7 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
       </table>
     </div>
     {tool && <AssetSheetTools tool={tool} rows={rows} selected={selected} visible={visible} register={register}
-      onColumns={changeColumns} onRows={(next, field) => onChange({ rows: next, visible: field && !visible.includes(field) ? [...visible, field] : visible })}
+      custom={custom} savedColumns={savedColumns} onChange={onChange} onRows={(next, field) => onChange({ rows: next, visible: field && !visible.includes(field) ? [...visible, field] : visible })}
       onRemove={removeRow} onClose={() => setTool(null)} />}
   </div>;
 }

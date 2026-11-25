@@ -1,4 +1,5 @@
 "use client";
+import SheetColumnCards from './SheetColumnCards';
 import { useEffect, useRef, useState } from "react";
 import ShareModalCloseButton from "./asset-register/ShareModalCloseButton";
 import { createPortal } from "react-dom";
@@ -120,15 +121,15 @@ export default function PartsSheetTools({ tool, rows, selected, hidden, vatInclu
           <div className={styles.columnImpact}><strong>{columnValueCount} {columnValueCount===1 ? "part affected" : "parts affected"}</strong><p>{columnAction.kind==="delete" ? "Removes this column and its values from all parts." : "Clears these values. The column stays in your sheet."}</p></div>
           <p className={styles.bulkHint}>Draft only. You can undo this before saving the sheet.</p>
         </section> : <>
-          <div className={styles.columnIntro}><p tabIndex={-1} data-column-heading>Choose which columns to show.</p><span>Hidden values are kept.</span></div>
-          <div className={styles.manageColumns}>{labels.slice(columnPage*6,columnPage*6+6).map((label,offset)=>{const i=columnPage*6+offset;const count=rows.filter(r=>r[i]?.trim()).length;return <div key={i} className={styles.manageColumnRow}>
-            <label><input type="checkbox" checked={!hidden.includes(i)} disabled={i===0 || i===2} onChange={e=>onHidden(e.target.checked ? hidden.filter(n=>n!==i) : [...hidden,i])}/><span><strong title={label}>{label}</strong><small>{i===0 || i===2 ? "Required · always visible" : `${count} ${count===1 ? "part" : "parts"} with values`}</small></span></label>
-            <div className={styles.columnCardActions}>
-              {i===0 || i===2 ? <span>Required column</span> : <button type="button" disabled={!rows.some(row=>row[i]?.trim())} onClick={()=>setColumnAction({index:i,kind:"clear"})} aria-label={`Clear ${label} values`}>Clear values</button>}
-              {i!==0 && i!==2 && <button type="button" className={styles.detailTrash} aria-label={`Delete ${label} column`} disabled={i>=5 && removableFieldIds && !removableFieldIds.includes(extraFields[i-5].id)} title={i>=5 && removableFieldIds && !removableFieldIds.includes(extraFields[i-5].id) ? "Use Edit in a sheet to delete an existing column" : "Delete column"} onClick={()=>setColumnAction({index:i,kind:"delete"})}><DetailIcon kind="delete"/></button>}
-            </div>
-          </div>})}</div>
-          {labels.length>6 && <div className={styles.bulkPager}><button disabled={!columnPage} onClick={()=>setColumnPage(columnPage-1)}>Previous columns</button><span>{columnPage+1} / {Math.ceil(labels.length/6)}</span><button disabled={(columnPage+1)*6>=labels.length} onClick={()=>setColumnPage(columnPage+1)}>Next columns</button></div>}
+          <SheetColumnCards page={columnPage} onPage={setColumnPage} cards={labels.map((label, i) => {
+            const count = rows.filter(row => row[i]?.trim()).length;
+            const locked = i === 0 || i === 2;
+            const canDelete = i < 5 || !removableFieldIds || removableFieldIds.includes(extraFields[i-5].id);
+            return { id: i, label, count, locked, visible: !hidden.includes(i), canDelete,
+              hint: locked ? 'Required · always visible' : `${count} ${count === 1 ? 'part' : 'parts'} with values`,
+              deleteHint: canDelete ? undefined : 'Use Edit in a sheet to delete an existing column' };
+          })} onToggle={(i, shown) => onHidden(shown ? hidden.filter(n => n !== i) : [...hidden, i])}
+            onAction={(index, kind) => setColumnAction({index, kind})} />
         </>}
 
       </>}

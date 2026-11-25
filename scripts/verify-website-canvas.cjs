@@ -404,12 +404,35 @@ async function check(browser, url) {
     buttons.find(button => button.textContent.trim() === 'Add column').click());
   await page.waitForSelector('dialog[open] [data-detail="value"]');
   await page.click('dialog[open] [data-detail="value"]');
+  await page.click('dialog[open] footer button:last-child');
   const vat = assetDialog + ' button[aria-label="Current values in rand"]';
   await page.click(vat);
   const taxOption = '[role="listbox"][aria-label="Current values in rand"] [role="option"]';
   await page.waitForSelector(taxOption, {visible:true});
   await page.click(taxOption);
   assert.match(await page.$eval(vat, button => button.textContent), /exclude VAT/);
+  async function openSheetTool(label) {
+    await page.$$eval(assetDialog + ' [aria-label="Sheet tools"] button', (buttons, name) =>
+      buttons.find(b => b.textContent.trim() === name).click(), label);
+    await page.waitForSelector('dialog[open]');
+  }
+  await openSheetTool('Add column');
+  await page.click('dialog[open] [data-detail="custom"]');
+  await page.type('dialog[open] [aria-label="Custom field name"]', 'Insurance reference');
+  await page.click('dialog[open] footer button:last-child');
+  const customCell = 'input[aria-label="Insurance reference row 39"]';
+  await page.waitForSelector(customCell);
+  await page.type(customCell, '000129');
+  await openSheetTool('Manage columns');
+  await page.click('dialog[open] [aria-label="Column pages"] button:last-child');
+  await page.click('dialog[open] input[aria-label="Insurance reference"]');
+  await page.click('dialog[open] footer button:last-child');
+  assert.equal(await page.$(customCell), null);
+  await openSheetTool('Manage columns');
+  await page.click('dialog[open] [aria-label="Column pages"] button:last-child');
+  await page.click('dialog[open] input[aria-label="Insurance reference"]');
+  await page.click('dialog[open] footer button:last-child');
+  assert.equal(await page.$eval(customCell, cell => cell.value), '000129');
   await page.click('[aria-label="Close add asset options"]');
   // Set the intended 150% scenario directly; repeated steps depend on the
   // current automatic scale and no longer stop at the former 150% maximum.
