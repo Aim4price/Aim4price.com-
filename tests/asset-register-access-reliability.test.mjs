@@ -99,6 +99,7 @@ test('actual ownership SQL rejects another account and counts only active assets
   await db.exec(`create table asset_registers (
     id text primary key, user_id text, business_name text, email text, phone text,
     address_line_1 text, logo_urls jsonb, show_logos_on_register boolean,
+    include_in_combined_totals boolean not null default true,
     is_primary boolean, is_selected boolean, created_at timestamptz, updated_at timestamptz
   );
   create table asset_register_items (id text, user_id text, register_id text, lifecycle_state text);

@@ -123,12 +123,6 @@
   gap: 0.72rem;
 }
 
-.overviewList {
-  display: grid;
-  gap: 0.7rem;
-}
-
-.overviewCard,
 .stateCard {
   border: 1px solid var(--line);
   border-radius: 1.5rem;
@@ -136,51 +130,13 @@
   box-shadow: 0 12px 24px rgba(20, 36, 33, 0.03);
 }
 
-.overviewCard {
-  position: relative;
-  cursor: pointer;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.95rem;
-  padding: 0.95rem 1rem;
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
-}
-
-.overviewCard:hover,
-.overviewCard:focus-within {
-  border-color: var(--brand-mid);
-  box-shadow: var(--action-hover-shadow, 0 0 0 4px rgba(22, 117, 77, .16), 0 8px 24px rgba(22, 117, 77, .18));
-  outline: 2px solid var(--action-hover-outline, rgba(22, 117, 77, .48));
-  outline-offset: 2px;
-}
-
-.cardHoverHint {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.cardAttention {
-  border-left: 4px solid var(--danger-line);
-}
-
-.cardUpcoming {
-  border-left: 4px solid var(--blue-soft-border);
-}
-
-.cardRecent {
-  border-left: 4px solid var(--brand-soft-border);
-}
-
 .categoryIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.8rem;
-  height: 2.8rem;
-  border-radius: 0.95rem;
+  width: 2.08rem;
+  height: 2.08rem;
+  border-radius: 0.56rem;
   color: var(--brand-mid);
   background: var(--brand-soft);
   border: 1px solid var(--brand-soft-border);
@@ -227,45 +183,34 @@
   border-color: #f0dfb4;
 }
 
-.cardBody {
-  display: grid;
-  gap: 0.4rem;
-  min-width: 0;
+/* Give a single update icon the same row height as the owner's three-action rail. */
+:global([data-website-canvas]) .updateHeader {
+  min-block-size: 7.6rem;
+  align-content: center;
 }
 
-.assetTitle {
-  margin: 0.04rem 0 0;
-  color: var(--text);
-  font-size: 1.07rem;
-  line-height: 1.2;
-  letter-spacing: -0.025em;
+.updatePreview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.headline {
-  color: var(--text);
-  font-size: 0.92rem;
-  line-height: 1.35;
+.openUpdateButton {
+  grid-column: -2 / -1;
 }
 
-.detail {
-  margin: 0;
-  color: #5f6c78;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
+.attentionStatus::before {
+  content: '';
+  display: inline-block;
+  width: 0.35em;
+  height: 0.35em;
+  margin-inline-end: 0.35em;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: var(--danger-text);
 }
 
-.metaRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.8rem;
-  margin-top: 0.25rem;
-  color: var(--text-muted);
-  font-size: 0.79rem;
-  font-weight: 700;
-}
-
-.viewAssetButton,
 .retryButton {
   display: inline-flex;
   align-items: center;
@@ -286,7 +231,6 @@
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
-.viewAssetButton:hover,
 .retryButton:hover {
   transform: translateY(-1px);
   border-color: #c4d3e5;
@@ -396,8 +340,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .viewSwitchButton,
-  .overviewCard,
-  .viewAssetButton,
   .retryButton,
   .loadingDot::after {
     animation: none;
@@ -406,49 +348,6 @@
 }
 
 
-.cardActions {
-  display: grid;
-  gap: 0.5rem;
-  min-width: 7rem;
-  margin-left: 0.5rem;
-}
-
-.viewAssetButton {
-  border-color: var(--brand-mid);
-  background: linear-gradient(135deg, var(--brand-mid), var(--brand-dark));
-  color: #fff;
-  border-radius: 0.7rem;
-}
-
-.viewAssetButton:hover {
-  border-color: var(--brand-dark);
-  box-shadow: 0 6px 14px rgba(16, 56, 47, 0.12);
-}
-
-.clearButton {
-  min-height: 2.75rem;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--brand-soft-border);
-  border-radius: 0.7rem;
-  background: var(--brand-soft);
-  color: var(--brand-mid);
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 750;
-  cursor: pointer;
-}
-
-.clearButton:hover:not(:disabled) {
-  border-color: var(--brand-mid);
-}
-
-.clearButton:disabled {
-  opacity: 0.6;
-  cursor: wait;
-}
-
-.viewAssetButton:focus-visible,
-.clearButton:focus-visible,
 .retryButton:focus-visible {
   outline: 3px solid var(--brand-mid);
   outline-offset: 3px;
