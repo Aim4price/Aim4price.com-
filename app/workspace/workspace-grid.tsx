@@ -16,7 +16,7 @@ function CardPreview({recording}: {recording:string}) {
   const [playing,setPlaying] = useState(false);
   return <span className={styles.preview} aria-hidden="true">
     <video className={`${valuationStyles.sectorVideo} ${playing ? valuationStyles.sectorVideoMobileActive : ''}`}
-      src={'/api/hover-videos/'+recording} muted loop autoPlay playsInline onPlaying={()=>setPlaying(true)}/>
+      crossOrigin="use-credentials" src={'/workspace/recordings/'+recording} muted loop autoPlay playsInline onPlaying={()=>setPlaying(true)}/>
     <span className={valuationStyles.sectorVideoOverlay}/>
   </span>;
 }
