@@ -14,14 +14,9 @@ type Cards = ReturnType<typeof workspaceCards>;
 function WorkspaceTile({card, role, free, recording}: {recording?:string; card: Cards[number]; role: WorkspaceRole; free: boolean}) {
   const {key, label, href, locked} = card;
   const [hovered,setHovered] = useState(false);
-  const [watching,setWatching] = useState(false);
   return <article className={styles.card} onPointerEnter={event => setHovered(!!recording && event.pointerType === 'mouse' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches)}
     onPointerLeave={() => setHovered(false)}>
-    {recording && hovered && !watching && <video className={styles.hoverClip} src={'/api/hover-videos/'+recording} muted loop autoPlay playsInline aria-hidden="true"/>}
-    {recording && <button type="button" className={styles.watch} aria-label={'Watch '+label+' recording'} onClick={()=>setWatching(true)}>▶ Watch</button>}
-    {recording && watching && <ShareDisclosureDialog title={label} titleId={'watch-'+key} closeLabel="Close recording" onClose={()=>setWatching(false)}>
-      <video controls autoPlay playsInline className={styles.fullClip} src={'/api/hover-videos/'+recording}/>
-    </ShareDisclosureDialog>}
+    {recording && hovered && <video className={styles.hoverClip} src={'/api/hover-videos/'+recording} muted loop autoPlay playsInline aria-hidden="true"/>}
     <Link className={styles.cardLink} href={locked ? '/account' : href} prefetch={false}
       aria-label={locked ? label + ' — view account options' : label}>
       <strong>{label}</strong>
