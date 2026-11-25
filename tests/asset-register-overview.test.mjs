@@ -84,7 +84,7 @@ test('overview starts directly with asset update cards and avoids extra heading 
 test('view switch communicates useful counts without bringing the pill strip back', () => {
   assert.match(overview, /overviewSwitchDetail/);
   assert.match(overview, /assetSwitchDetail/);
-  assert.match(overview, /need attention/);
+  assert.match(overview, /attentionCount === 1 \? 's' : ''/);
   assert.match(overview, /Loading register…/);
   assert.doesNotMatch(styles, /\.viewSwitchCount/);
 });
@@ -103,9 +103,10 @@ test('Overview hides the asset workspace and uses the Assets tab for navigation'
   assert.doesNotMatch(overview, /Show \d+ more/);
 });
 
-test('overview keeps Asset Register card styling with loading, error and responsive states', () => {
-  for (const name of ['assetList', 'assetCardRow', 'assetCard', 'assetHeader', 'assetTitleBlock', 'assetMetaRow', 'assetHeaderActions', 'cardViewDetailsButton']) {
-    assert.ok(overview.includes(`registerStyles.${name}`), `Overview should use the register's ${name} style`);
+test('overview uses the Shared Assets card, icon, typography and Open control', () => {
+  assert.match(overview, /import sharedStyles from '\.\.\/leads\/shared-assets\.module\.css'/);
+  for (const name of ['frame', 'card', 'icon', 'body', 'heading', 'metadata', 'preview', 'actions', 'toggle']) {
+    assert.ok(overview.includes(`sharedStyles.${name}`), `Overview should use the Shared Assets ${name} style`);
   }
   assert.match(overview, /<h2>\{item.assetTitle\}<\/h2>/);
   assert.match(overview, /aria-haspopup="dialog"/);
