@@ -9,6 +9,9 @@ import AssetRegisterClient from '../../app/asset-register/asset-register-client'
 import AccountClient from '../../app/account/account-client';
 import MarketplaceClient from '../../app/marketplace/marketplace-client';
 import FuelClient from '../../app/fuel/fuel-client';
+import dynamic from 'next/dynamic';
+
+const CostLedger = dynamic(() => import('../../app/my-invoices/my-invoices-client'));
 
 export default function CanvasValidationPage() {
   const page = useSearchParams().get('page');
@@ -19,6 +22,7 @@ export default function CanvasValidationPage() {
   if (page === 'account') return <AccountClient />;
   if (page === 'marketplace') return <MarketplaceClient initialFilters={{brand:'',model:'',drive:'',type:''}} isSignedIn accountType="owner" initialListings={[]} />;
   if (page === 'fuel') return <FuelClient addedByLabel="Canvas test owner" />;
+  if (page === 'cost-ledger') return <CostLedger />;
   return <main><AppHeader active="home" /><div style={{margin:80, width:400}}>
     <button ref={anchor} onClick={() => setOpen(!open)} aria-controls="canvas-test-dropdown" aria-haspopup="listbox" aria-expanded={open}>Test dropdown</button>
     {open && <DropdownOverlay id="canvas-test-dropdown" anchorRef={anchor} role="listbox" style={{background:'white',border:'1px solid green'}}>
