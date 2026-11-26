@@ -11,6 +11,23 @@ function load(name, dependencies) {
   return module.exports;
 }
 
+test('All costs and individual category selections stay in sync', () => {
+  const {costCategories, allCostCategoriesSelected, toggleCostCategory, categorySummary} = load('cost-categories', {});
+  const ids = costCategories.map(category => category.value);
+  const withoutRepairs = ids.filter(id => id !== 'repair');
+
+  for (const all of [['all'], ids]) {
+    assert.equal(allCostCategoriesSelected(all), true);
+    assert.equal(categorySummary(all), 'All costs');
+    assert.deepEqual(toggleCostCategory(all, 'repair'), withoutRepairs);
+  }
+  assert.equal(allCostCategoriesSelected(withoutRepairs), false);
+  assert.deepEqual(toggleCostCategory(withoutRepairs, 'repair'), ['all']);
+  assert.deepEqual(toggleCostCategory(['repair'], 'repair'), []);
+  assert.equal(allCostCategoriesSelected([]), false);
+  assert.deepEqual(toggleCostCategory([], 'repair'), ['repair']);
+});
+
 test('register and category budgets count incurred costs once and exclude pending dealer records', async () => {
   const db = new PGlite();
   const query = async (sql, params) => {

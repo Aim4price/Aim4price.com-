@@ -22,8 +22,21 @@ export function costCategory(value: unknown) {
   return costCategories.find(category => category.value === value);
 }
 
+export function allCostCategoriesSelected(selected: readonly string[]) {
+  return selected.includes('all') || costCategories.every(category => selected.includes(category.value));
+}
+
+export function toggleCostCategory(selected: readonly string[], value: string) {
+  const current = allCostCategoriesSelected(selected) ? costCategories.map(category => category.value) : selected;
+  const next = current.includes(value)
+    ? current.filter(category => category !== value)
+    : [...current, value];
+  return allCostCategoriesSelected(next) ? ['all'] : next;
+}
+
 export function categorySummary(values?: readonly string[]) {
-  return values?.length ? values.map(value => value === 'fuel_slip' ? 'Fuel slips' : costCategory(value)?.label ?? value).join(', ') : 'All costs';
+  if (!values?.length || allCostCategoriesSelected(values)) return 'All costs';
+  return values.map(value => value === 'fuel_slip' ? 'Fuel slips' : costCategory(value)?.label ?? value).join(', ');
 }
 
 export function appendReportCategories(params: URLSearchParams, selected: readonly string[] = []) {

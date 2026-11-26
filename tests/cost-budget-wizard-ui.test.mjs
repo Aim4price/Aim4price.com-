@@ -95,7 +95,7 @@ test('cost categories have a dedicated slide before selecting the period', () =>
   const periodStep = budgetModal.slice(periodStart, limitStart);
   assert.match(categoryStep, /Which costs should count towards this budget/);
   assert.match(categoryStep, /selected=\{budgetDraft\.categories\}/);
-  assert.match(categoryStep, /emptyMeansAll/);
+  assert.match(budgetModal, /budgetWizardStep === 2 && !budgetDraft\.categories\.length/);
   assert.match(categoryStep, /headingRef=\{budgetWizardStepHeadingRef\}/);
   assert.doesNotMatch(categoryStep, /<details|Budget reset period/);
   assert.doesNotMatch(periodStep, /costCategories\.map/);
