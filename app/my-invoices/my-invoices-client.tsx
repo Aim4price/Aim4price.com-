@@ -157,7 +157,7 @@ type InvoiceSummary = {
 };
 
 type BudgetPeriod = 'monthly' | 'annual';
-type BudgetWizardStep = 1 | 2 | 3 | 4 | 5;
+type BudgetWizardStep = 0 | 1 | 2 | 3 | 4 | 5;
 type CostBudgetStatusName = 'on_track' | 'warning' | 'over_budget';
 
 type CostBudgetProgress = {
@@ -2156,7 +2156,7 @@ export default function MyInvoicesClient({
     const candidateAssetId = typeof requestedAssetId === 'string' ? requestedAssetId : budgetLaunchAssetId || activeFilters.assetId;
     const defaultAssetId = candidateAssetId !== 'all' && budgetAssets.some((asset) => asset.id === candidateAssetId) ? candidateAssetId : '';
     setEditingBudgetId(null);
-    setBudgetWizardStep(defaultAssetId ? 2 : 1);
+    setBudgetWizardStep(defaultAssetId && budgetLaunchAssetId ? 2 : 0);
     setBudgetDraft(buildEmptyCostBudgetDraft(defaultAssetId));
     setBudgetSelectedAssetIds(defaultAssetId ? [defaultAssetId] : []);
     setBudgetPickerAssetIds(defaultAssetId ? [defaultAssetId] : []);
@@ -2239,6 +2239,10 @@ export default function MyInvoicesClient({
 
   function continueBudgetWizard() {
     setBudgetFormError('');
+    if (budgetWizardStep === 0) {
+      setBudgetWizardStep(1);
+      return;
+    }
     if (budgetWizardStep === 2) {
       if (!budgetDraft.categories.length) return;
       setBudgetWizardStep(3);
@@ -2268,7 +2272,7 @@ export default function MyInvoicesClient({
 
   function goBackBudgetWizard() {
     setBudgetFormError('');
-    setBudgetWizardStep((current) => Math.max(1, current - 1) as BudgetWizardStep);
+    setBudgetWizardStep((current) => Math.max(0, current - 1) as BudgetWizardStep);
   }
 
   async function saveCostBudget() {
@@ -3960,15 +3964,10 @@ export default function MyInvoicesClient({
                 <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetModal} aria-label="Close budget" data-modal-close="true"><span aria-hidden="true">×</span></button>
               </div>
               <div className={styles.modalDivider} />
-              <div className={`${styles.pickerToolbar} ${styles.budgetTypeChoices}`} role="group" aria-label="Budget type">
-                {(['Single asset', 'Group of assets'] as const).map((label, i) => (
-                  <button type="button" key={label} disabled={Boolean(editingBudgetId)} aria-pressed={groupBudget === Boolean(i)}
-                    className={groupBudget === Boolean(i) ? styles.primaryButton : styles.secondaryButton}
-                    onClick={() => setGroupBudget(Boolean(i))}>{label}</button>
-                ))}
-                {groupBudget && <input aria-label="Group name" placeholder="Group name, e.g. Delivery fleet" maxLength={100}
-                  value={groupName} onChange={event => setGroupName(event.target.value)} />}
-              </div>
+              {groupBudget && <div className={styles.pickerToolbar}>
+                <input aria-label="Group name" placeholder="Group name, e.g. Delivery fleet" maxLength={100}
+                  value={groupName} onChange={event => setGroupName(event.target.value)} />
+              </div>}
               <div
                 className={`${styles.pickerToolbar} ${styles.budgetAssetPickerToolbar}`}
                 data-asset-choice-toolbar="true"
@@ -4038,7 +4037,7 @@ export default function MyInvoicesClient({
                 {budgetPickerAssetIds.length ? (
                   <button type="button" className={styles.secondaryButton} onClick={() => setBudgetPickerAssetIds([])}>Clear selection</button>
                 ) : null}
-                <button type="button" className={styles.secondaryButton} onClick={closeBudgetModal}>Cancel</button>
+                <button type="button" className={styles.secondaryButton} onClick={editingBudgetId ? closeBudgetModal : goBackBudgetWizard}>{editingBudgetId ? 'Cancel' : 'Back'}</button>
                 <button
                   type="button"
                   className={styles.primaryButton}
@@ -4058,7 +4057,7 @@ export default function MyInvoicesClient({
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
                 <div className={wizardStyles.headerText}>
                   <h2 className={reviewStyles.title} ref={budgetWizardStep === 5 ? budgetWizardStepHeadingRef : undefined} tabIndex={budgetWizardStep === 5 ? -1 : undefined} id="budget-modal-title">{budgetWizardStep === 5 ? 'Review budget' : editingBudgetId ? 'Edit budget' : 'Spending budget'}</h2>
-                  <p>{budgetWizardStep === 2
+                  <p>{budgetWizardStep === 0 ? 'Choose how the spending limit applies.' : budgetWizardStep === 2
                     ? 'Choose all costs or select specific categories.'
                     : budgetWizardStep === 3
                       ? 'Choose when the spending limit resets.'
@@ -4071,6 +4070,26 @@ export default function MyInvoicesClient({
 
               <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body, budgetWizardStep === 5 ? reviewStyles.body : ''].join(' ')}>
 
+                {budgetWizardStep === 0 && (
+                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-type-title">
+                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                      <h3 id="budget-type-title" ref={budgetWizardStepHeadingRef} tabIndex={-1}>Is this budget for single assets or multiple assets?</h3>
+                    </div>
+                    <div className={styles.budgetWizardPeriodChoices} role="group" aria-labelledby="budget-type-title">
+                      {[false, true].map(group => (
+                        <button key={String(group)} type="button" aria-pressed={groupBudget === group}
+                          className={`${styles.budgetWizardPeriodChoice} ${groupBudget === group ? styles.budgetWizardPeriodChoiceActive : ''}`}
+                          onClick={() => setGroupBudget(group)}>
+                          <span className={styles.budgetWizardPeriodChoiceIndicator} aria-hidden="true">{groupBudget === group ? '✓' : ''}</span>
+                          <span className={styles.budgetWizardPeriodChoiceCopy}>
+                            <strong>{group ? 'Multiple assets' : 'Single assets'}</strong>
+                            <small>{group ? 'One shared limit for the group.' : 'A separate limit for each asset.'}</small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
                 {budgetWizardStep === 2 ? (
                   <OwnershipReportCategories
                     question="Which costs should count towards this budget?"
@@ -4250,10 +4269,10 @@ export default function MyInvoicesClient({
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`}
-                  onClick={budgetWizardStep === (editingBudgetId && !groupBudget ? 2 : 1) ? closeBudgetModal : goBackBudgetWizard}
+                  onClick={budgetWizardStep === 0 || (editingBudgetId && !groupBudget && budgetWizardStep === 2) ? closeBudgetModal : goBackBudgetWizard}
                   disabled={budgetSaving}
                 >
-                  {budgetWizardStep === (editingBudgetId && !groupBudget ? 2 : 1) ? 'Cancel' : 'Back'}
+                  {budgetWizardStep === 0 || (editingBudgetId && !groupBudget && budgetWizardStep === 2) ? 'Cancel' : 'Back'}
                 </button>
                 {budgetWizardStep < 5 ? (
                   <button key="budget-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueBudgetWizard} disabled={budgetSaving || (budgetWizardStep === 2 && !budgetDraft.categories.length)}>

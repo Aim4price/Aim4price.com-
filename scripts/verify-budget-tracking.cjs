@@ -48,7 +48,9 @@ async function main(){let server,browser;const created=[];try{
  await click('Manage');await page.waitForSelector('[role=dialog]');await click('Delete budget');await page.waitForSelector('[role=alertdialog]');await page.keyboard.press('Escape');assert.equal(await page.$('[role=alertdialog]'),null);
  await click('Add Budget');await page.waitForSelector('[role=dialog]');await page.keyboard.press('Escape');
  await click('Add Budget');
- await click('Group of assets');
+ assert.equal(await page.$('[data-asset-choice-list]'),null);
+ await click('Next');await page.waitForSelector('[data-asset-choice-list]');
+ await click('Back');await click('Multiple assets');await click('Next');
  await page.type('input[aria-label="Group name"]','Delivery fleet');
  await click('Select all shown (2)');await click('Next');await click('Next');
  assert.match(await page.$eval('[role=dialog]', e=>e.textContent), /One shared limit for Delivery fleet/);
