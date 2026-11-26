@@ -1,5 +1,6 @@
 import { Workbook, type Row } from 'exceljs';
-import { assetColumns, columns, coreColumns, maxAssets, moneyColumns, sheetChoices, templateGuideTitle, type BuiltInColumn } from './asset-sheet';
+import { assetTemplateGuideTitle } from './parts-network-excel';
+import { assetColumns, columns, coreColumns, maxAssets, moneyColumns, sheetChoices, type BuiltInColumn } from './asset-sheet';
 
 const green = 'FF155541';
 const ink = 'FF183D32';
@@ -67,7 +68,7 @@ export function buildAssetTemplate() {
       cell.alignment = { vertical: 'middle', wrapText: true, indent: 1 };
     });
   }
-  band(templateGuideTitle, green);
+  band(assetTemplateGuideTitle, green);
   instruction('Where to start', 'Enter one asset per row on the Assets tab. Give it a name, or enter both Brand and Model.');
   instruction('What to fill in', 'Fill in the details you know. Leave unknown values blank. Paperwork and notes are optional.');
   instruction('Values in rand', 'Use the same VAT basis for current, replacement and insured values. Choose inclusive or exclusive when you review the sheet.');

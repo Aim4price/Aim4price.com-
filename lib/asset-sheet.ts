@@ -13,7 +13,6 @@ export const columns = Object.keys(assetColumns) as BuiltInColumn[];
 export const coreColumns: BuiltInColumn[] = ['title', 'category', 'make', 'model', 'year', 'serial', 'condition', 'usage', 'unit', 'value', 'replacement'];
 const originalColumns: BuiltInColumn[] = ['title', 'make', 'model', 'category', 'year', 'serial', 'usage', 'unit', 'value'];
 export const moneyColumns = ['value', 'replacement', 'insuredValue'] as const;
-export const templateGuideTitle = 'Aim4price asset upload guide';
 export const sheetTypes = ['Vehicle', 'Equipment', 'Property', 'Tools', 'Stock', 'Tractor', 'Manual'];
 export const sheetConditions = { excellent: 'Excellent', good: 'Good', fair: 'Fair', used: 'Used', serious: 'Requires attention' } as const;
 export function conditionKey(input: string) {
