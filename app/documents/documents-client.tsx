@@ -108,7 +108,7 @@ type VaultResponse = {
 
 type VaultView = 'documents' | 'recycle-bin';
 type ModalMode = 'upload' | 'edit';
-type UploadStep = 1 | 2 | 3;
+type DocumentSlide = 'assets' | 'files' | 'details';
 type Notice = { tone: 'success' | 'error'; message: string };
 type SummaryNavigation = { hasOverflow: boolean; atStart: boolean; atEnd: boolean };
 type IconName =
@@ -176,11 +176,6 @@ const CATEGORY_DESCRIPTIONS: Record<DocumentCategory, string> = {
 const MAX_DOCUMENT_FILES_PER_BATCH = 20;
 const MAX_DOCUMENT_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_DOCUMENT_BATCH_BYTES = 250 * 1024 * 1024;
-const UPLOAD_STEPS: Array<{ step: UploadStep; label: string; description: string }> = [
-  { step: 1, label: 'Upload document', description: 'Choose the files you want to keep in your vault.' },
-  { step: 2, label: 'Document details', description: 'Add the type, title and any useful dates or notes.' },
-  { step: 3, label: 'Link to assets', description: 'Linking is optional. You can upload without choosing an asset.' },
-];
 const ALLOWED_DOCUMENT_EXTENSIONS = new Set([
   '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp',
 ]);
@@ -396,21 +391,22 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [notice, setNotice] = useState<Notice | null>(null);
   const [modalNotice, setModalNotice] = useState<Notice | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode | null>(uploadContext ? 'upload' : null);
-  const [uploadStep, setUploadStep] = useState<UploadStep>(1);
+  const [uploadStep, setUploadStep] = useState<DocumentSlide>('assets');
   const [editingDocument, setEditingDocument] = useState<VaultDocument | null>(null);
   const [documentPendingDelete, setDocumentPendingDelete] = useState<VaultDocument | null>(null);
   const [draft, setDraft] = useState<DocumentDraft>(() => ({ ...createEmptyDraft(), assetIds: uploadContext ? [uploadContext.asset.id] : [] }));
   const [documentExpires, setDocumentExpires] = useState(false);
+  const [filePage, setFilePage] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [filePickerDragging, setFilePickerDragging] = useState(false);
-  const showAssetPicker = Boolean(modalMode && uploadStep === 3 && !(modalMode === 'upload' && initialAssetId));
   const [assetPage, setAssetPage] = useState(1);
   const [assetsPerPage, setAssetsPerPage] = useState(2);
   const assetListRef = useRef<HTMLDivElement | null>(null);
   const [assetSearch, setAssetSearch] = useState('');
   const [documentTypeSearch, setDocumentTypeSearch] = useState('');
   const [showDocumentTypeOptions, setShowDocumentTypeOptions] = useState(false);
+  const showAssetPicker = Boolean(modalMode && !showDocumentTypeOptions && uploadStep === 'assets' && !(modalMode === 'upload' && initialAssetId));
   const [summaryNavigation, setSummaryNavigation] = useState<SummaryNavigation>({
     hasOverflow: false,
     atStart: true,
@@ -683,14 +679,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   );
   const accountLevelDocuments = Math.max(0, summary.totalDocuments - summary.linkedDocuments);
   const hasDocumentsInView = documents.length > 0;
-  const activeUploadStep = uploadStep === 3 && initialAssetId
-    ? { label: 'Confirm and upload', description: 'Your documents will be saved to this asset.' }
-    : UPLOAD_STEPS[uploadStep - 1];
+  const finalSlide = modalMode === 'edit' ? uploadStep === 'assets' : uploadStep === 'details';
+  const currentFilePage = Math.min(filePage, Math.max(0, selectedFiles.length - 1));
 
   function documentActionLabel() {
     if (uploadProgress) return `Uploading ${uploadProgress.current} of ${uploadProgress.total}…`;
     if (busy) return 'Saving…';
-    if (uploadStep < 3) return 'Next';
+    if (!finalSlide) return 'Next';
     if (modalMode === 'edit') return 'Save changes';
     return selectedFiles.length > 1 ? `Upload ${selectedFiles.length} documents` : 'Upload document';
   }
@@ -716,6 +711,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       assetIds: initialAssetId ? [initialAssetId] : [],
     });
     setSelectedFiles([]);
+    setFilePage(0);
     setUploadProgress(null);
     setFilePickerDragging(false);
     setAssetPage(1);
@@ -723,7 +719,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setDocumentTypeSearch('');
     setShowDocumentTypeOptions(false);
     setModalNotice(null);
-    setUploadStep(1);
+    setUploadStep('assets');
+    setTypePage(0);
     setModalMode('upload');
     setNotice(null);
   }
@@ -742,6 +739,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       assetIds: document.assetLinks.map((asset) => asset.id),
     });
     setSelectedFiles([]);
+    setFilePage(0);
     setUploadProgress(null);
     setFilePickerDragging(false);
     setAssetPage(1);
@@ -749,7 +747,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setDocumentTypeSearch(getAccountDocumentTypeLabel(document.documentType) ?? '');
     setShowDocumentTypeOptions(false);
     setModalNotice(null);
-    setUploadStep(2);
+    setUploadStep('details');
     setModalMode('edit');
     setNotice(null);
   }
@@ -780,7 +778,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       documentType: option.value,
       category: option.category,
     }));
-    closeDocumentTypePicker();
+    if (modalMode === 'upload') {
+      setShowDocumentTypeOptions(false);
+      setUploadStep('files');
+    } else closeDocumentTypePicker();
   }
 
   function closeDocumentTypePicker() {
@@ -873,6 +874,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   function clearSelectedFiles() {
     setSelectedFiles([]);
+    setFilePage(0);
     setModalNotice(null);
     updateDraft('title', '');
   }
@@ -930,38 +932,48 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   function continueDocumentFlow() {
     setModalNotice(null);
-    if (uploadStep === 1) {
+    if (uploadStep === 'assets') {
+      if (desktop.workspace && !draft.assetIds.length) {
+        setModalNotice({ tone: 'error', message: 'Choose at least one asset.' });
+        return;
+      }
+      setDocumentTypeSearch('');
+      setTypePage(0);
+      setShowDocumentTypeOptions(true);
+    } else if (uploadStep === 'files') {
       if (!selectedFiles.length) {
         setModalNotice({ tone: 'error', message: 'Select at least one document before continuing.' });
         return;
       }
-      setUploadStep(2);
-      return;
-    }
-    if (uploadStep === 2 && validateDocumentDetails()) {
+      setUploadStep('details');
+    } else if (validateDocumentDetails()) {
       setAssetSearch('');
       setAssetPage(1);
-      setUploadStep(3);
+      setUploadStep('assets');
     }
   }
 
   function returnToPreviousUploadStep() {
     setModalNotice(null);
-    setShowDocumentTypeOptions(false);
-    setUploadStep((current) => Math.max(1, current - 1) as UploadStep);
+    if (modalMode === 'edit') setUploadStep('details');
+    else if (uploadStep === 'details') setUploadStep('files');
+    else if (uploadStep === 'files') {
+      setUploadStep('assets');
+      setShowDocumentTypeOptions(true);
+    } else closeModal();
   }
 
   async function submitDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!modalMode || busyRef.current) return;
 
-    if (uploadStep < 3) {
+    if (!finalSlide) {
       continueDocumentFlow();
       return;
     }
 
     if (!validateDocumentDetails()) {
-      setUploadStep(2);
+      setUploadStep('details');
       return;
     }
     if (modalMode === 'upload' && !selectedFiles.length) {
@@ -1048,6 +1060,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         setModalMode(null);
         setEditingDocument(null);
         setSelectedFiles([]);
+        setFilePage(0);
         if (refreshSucceeded) {
           setNotice({
             tone: 'success',
@@ -1305,7 +1318,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             <Icon name="filter" /> Filters
             {category !== 'all' ? <span className={styles.activeFilterText}>1 active</span> : null}
           </button>
-          <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={view === 'recycle-bin' || busy} data-tooltip="Upload documents to your account and link them to assets." data-tooltip-style="description">
+          <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={loading || loadFailed || view === 'recycle-bin' || busy} data-tooltip="Upload documents to your account and link them to assets." data-tooltip-style="description">
             <Icon name="upload" /> Upload documents
           </button>
         </section>
@@ -1462,13 +1475,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <section ref={modalRef} className={`${styles.modal} ${styles.accountDocumentModal} ${accountStyles.modalTheme} ${modalMode === 'upload' ? wizardStyles.dialog : styles.editDocumentModal}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
               <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
-                <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
-                <p>{modalMode === 'upload' ? uploadContext?.asset.title || 'Add files, details and links in three short steps.' : 'Update the details, then choose the linked assets.'}</p>
+                <h2 id="document-modal-title">{modalMode === 'edit' ? 'Edit document' : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
+                {modalMode === 'edit' && <p>Update details and linked assets.</p>}
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
 
-            <form onSubmit={submitDocument} className={styles.modalForm}>
+            <form onSubmit={submitDocument} className={styles.modalForm} data-upload-slide={modalMode === 'upload' ? uploadStep : undefined}>
               <div ref={modalMode === 'upload' ? uploadWizardBodyRef : undefined} className={`${styles.modalScroll} ${modalMode === 'upload' ? wizardStyles.body : ''}`}>
                 {modalNotice ? (
                   <div className={styles.modalNotice} role="alert">
@@ -1478,19 +1491,9 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   </div>
                 ) : null}
 
-                {modalMode === 'upload' ? (
-                  <p className={wizardStyles.intro}>Complete one short step at a time. Your documents are uploaded on the final step.</p>
-                ) : null}
-
                 <div className={modalMode === 'upload' ? `${styles.uploadWizardPanel} ${wizardStyles.panel}` : undefined}>
-                {modalMode === 'upload' ? (
-                  <div className={wizardStyles.panelHeading}>
-                    <h3>{activeUploadStep.label}</h3>
-                    <p>{activeUploadStep.description}</p>
-                  </div>
-                ) : null}
                 <fieldset className={`${styles.modalFields} ${modalMode === 'upload' ? styles.uploadWizardFields : ''}`} disabled={busy}>
-                {modalMode === 'upload' && uploadStep === 1 ? (
+                {modalMode === 'upload' && uploadStep === 'files' ? (
                   <>
                   <div
                     className={`${styles.filePicker} ${selectedFiles.length ? styles.filePickerSelected : ''} ${filePickerDragging ? styles.filePickerDragging : ''}`}
@@ -1527,7 +1530,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                         <button type="button" onClick={clearSelectedFiles} disabled={busy}>Clear all</button>
                       </header>
                       <div className={styles.fileQueueList}>
-                        {selectedFiles.map((file) => (
+                        {selectedFiles.slice(currentFilePage, currentFilePage + 1).map((file) => (
                           <article key={fileIdentity(file)}>
                             <span className={styles.fileQueueIcon}><Icon name="document" /></span>
                             <span><strong title={file.name}>{file.name}</strong><small>{formatBytes(file.size)}</small></span>
@@ -1535,12 +1538,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                           </article>
                         ))}
                       </div>
+                      {selectedFiles.length > 1 && <nav className={styles.filePages} aria-label="Selected files">
+                        <button type="button" disabled={!currentFilePage} onClick={() => setFilePage(currentFilePage - 1)}>Previous file</button>
+                        <span>{currentFilePage + 1} / {selectedFiles.length}</span>
+                        <button type="button" disabled={currentFilePage + 1 >= selectedFiles.length} onClick={() => setFilePage(currentFilePage + 1)}>Next file</button>
+                      </nav>}
                     </section>
                   ) : null}
 
-                  {selectedFiles.length > 1 ? (
-                    <div className={styles.batchHint}><Icon name="info" /><span>File names will become document titles. You can edit individual titles after upload.</span></div>
-                  ) : null}
                   </>
                 ) : modalMode === 'edit' ? (
                   <div className={styles.currentFile}>
@@ -1549,18 +1554,18 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   </div>
                 ) : null}
 
-                {uploadStep === 2 ? <div className={styles.formGrid}>
+                {uploadStep === 'details' ? <div className={styles.formGrid}>
                   {modalMode === 'edit' || selectedFiles.length <= 1 ? <label className={styles.field}>
                     <span>
                       Document title
-                      {modalMode === 'edit' ? <b>*</b> : <em>Optional · filename used by default</em>}
+                      {modalMode === 'edit' ? <b>*</b> : <em>Defaults to filename</em>}
                     </span>
                     <input value={draft.title} onChange={(event) => updateDraft('title', event.target.value)} maxLength={180} placeholder="e.g. Company registration certificate" required={modalMode === 'edit'} />
                   </label> : null}
-                  <div className={`${styles.field} ${styles.documentTypeField}`}>
+                  {modalMode === 'edit' && <div className={`${styles.field} ${styles.documentTypeField}`}>
                     <label htmlFor="document-type-trigger">
                       {selectedFiles.length > 1 ? 'Document type for all files' : 'Document type'}
-                      {modalMode === 'upload' ? <b>*</b> : <em>Optional for older records</em>}
+                      <em>Optional for older records</em>
                     </label>
                     <button
                       ref={documentTypeInputRef}
@@ -1574,7 +1579,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                       <span>{getAccountDocumentTypeLabel(draft.documentType) || 'Choose document type'}</span>
                       <AssetChooseIcon />
                     </button>
-                  </div>
+                  </div>}
                   <div className={styles.expiryFields}>
                     <label className={styles.expiryToggle}>
                       <input
@@ -1604,17 +1609,17 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                       value={draft.notes}
                       onChange={(event) => updateDraft('notes', event.target.value)}
                       maxLength={5000}
-                      rows={4}
+                      rows={2}
                       placeholder={draft.documentType === 'other'
                         ? 'Describe what this document is'
                         : selectedFiles.length > 1
-                          ? 'Add a shared reference, reminder or context for this batch…'
-                          : 'Add a short reminder, reference number or context…'}
+                          ? 'Add a shared note'
+                          : 'Add a note'}
                     />
                   </label>
                 </div> : null}
 
-                {modalMode === 'upload' && uploadStep === 3 && initialAssetId ? (
+                {modalMode === 'upload' && uploadStep === 'assets' && initialAssetId ? (
                   <section className={styles.lockedAssetLink} aria-labelledby="linked-asset-heading">
                     <span className={styles.lockedAssetIcon}><Icon name="link" /></span>
                     <div>
@@ -1637,14 +1642,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   type="button"
                   className={`${styles.cancelButton} ${modalMode === 'upload' ? wizardStyles.secondaryAction : ''}`}
                   disabled={busy}
-                  onClick={modalMode === 'upload' && uploadStep > 1 ? returnToPreviousUploadStep : closeModal}
+                  onClick={modalMode === 'upload' && uploadStep !== 'assets' ? returnToPreviousUploadStep : closeModal}
                 >
-                  {modalMode === 'upload' && uploadStep > 1 ? <><Icon name="chevron-left" /> Back</> : 'Cancel'}
+                  {modalMode === 'upload' && uploadStep !== 'assets' ? <><Icon name="chevron-left" /> Back</> : 'Cancel'}
                 </button>
                 <button type="submit" className={`${styles.uploadButton} ${modalMode === 'upload' ? wizardStyles.primaryAction : ''}`} disabled={busy}>
                   {busy
                     ? <span className={styles.buttonSpinner} />
-                    : <Icon name={uploadStep < 3 ? 'chevron-right' : modalMode === 'upload' ? 'upload' : 'edit'} />}
+                    : <Icon name={!finalSlide ? 'chevron-right' : modalMode === 'upload' ? 'upload' : 'edit'} />}
                   {documentActionLabel()}
                 </button>
               </footer>
@@ -1658,7 +1663,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <section ref={documentTypeModalRef} className={`${downloadStyles.dialog} ${categoryStyles.dialog}`} data-download-dialog="true" role="dialog" aria-modal="true" aria-labelledby="document-type-title">
             <header data-download-header="true">
               <h2 id="document-type-title">Document type</h2>
-              <button type="button" onClick={closeDocumentTypePicker} aria-label="Close document type chooser" data-modal-close="true">×</button>
+              <button type="button" onClick={modalMode === 'upload' ? closeModal : closeDocumentTypePicker} aria-label="Close document type chooser" data-modal-close="true">×</button>
             </header>
             <input className={styles.documentTypeSearch} type="search" value={documentTypeSearch} onChange={(event) => { setDocumentTypeSearch(event.target.value); setTypePage(0); }} placeholder="Search types" aria-label="Search document types" data-modal-initial-focus="true" />
             <div className={categoryStyles.cards} data-document-types>
@@ -1784,7 +1789,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   : 'Account-level document'}
               </span>
               <button type="button" className={styles.cancelButton} disabled={busy} onClick={returnToPreviousUploadStep}>
-                <Icon name="chevron-left" /> Back
+                {modalMode === 'upload' ? 'Cancel' : <><Icon name="chevron-left" /> Back</>}
               </button>
               <button type="submit" className={styles.uploadButton} data-asset-choice-action="primary" disabled={busy}>
                 {documentActionLabel()}

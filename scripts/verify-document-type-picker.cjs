@@ -124,33 +124,35 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await click('Clear');
   await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
   assert.deepEqual(edits[1].assetIds,[]);
-  await click('Upload documents');await page.waitForSelector('input[type=file]');
+  async function chooseInsurance() {
+   await page.waitForSelector('#document-type-title');
+   await page.type('[aria-label="Search document types"]','insurance');
+   await click('Insurance policy');
+   await page.waitForSelector('input[type=file]');
+  }
+  await click('Upload documents');await page.waitForSelector(search);
+  await page.type(search,'SN-23');await page.click(row);
+  await page.click('[data-asset-choice-action="primary"]');await chooseInsurance();
   await fs.writeFile('/tmp/document-picker-fixture.txt','Local test document');
-  await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');await click('Next');await page.waitForSelector('#document-type-trigger');
-  await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');await page.type('[aria-label="Search document types"]','insurance');await click('Insurance policy');
-  await page.waitForSelector('#document-type-trigger');assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Insurance policy/);
-  await click('Next');await page.waitForSelector(search);
+  await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');
+  await click('Next');await page.waitForSelector('[data-upload-slide="details"]');
   await click('Upload document');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
-  assert.equal(uploads.length,1);
+  assert.equal(uploads.length,1);assert.match(uploads[0],/tractor-23/);
   // Asset cards use this same wizard, with a fixed link and no vault page underneath.
   for (const viewport of [{width:1440,height:900},{width:390,height:844}]) {
    uploads.length=0;failNextUpload=true;
    await page.setViewport(viewport);
    await page.goto('http://127.0.0.1:3049/document-type-validation/asset',{waitUntil:'networkidle0',timeout:120000});
-   await page.waitForSelector('input[type=file]');
-   assert.equal(await page.$('#document-vault-title'),null);
+   await page.waitForSelector('#linked-asset-heading');
+   assert.match(await page.$eval('#linked-asset-heading',e=>e.textContent),/2022 New Holland/);
+   await click('Next');await chooseInsurance();
    await click('Next');await page.waitForFunction(()=>document.body.textContent.includes('Select at least one document'));
    await fs.writeFile('/tmp/document-picker-second.txt','Second local document');
    await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt','/tmp/document-picker-second.txt');
-   await click('Next');await page.waitForSelector('#document-type-trigger');
-   await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');await page.type('[aria-label="Search document types"]','insurance');await click('Insurance policy');
-   await page.waitForSelector('#document-type-trigger');
-   await click('Next');await page.waitForSelector('#linked-asset-heading');
-   assert.match(await page.$eval('#linked-asset-heading',e=>e.textContent),/2022 New Holland/);
-   assert(!await page.$$eval('button',buttons=>buttons.some(b=>b.textContent.includes('Choose assets')||b.textContent.includes('Change assets'))));
-   await page.screenshot({path:'/tmp/asset-document-confirm-'+viewport.width+'.png'});
-   await click('Back');await page.waitForSelector('#document-type-trigger');assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Insurance policy/);
-   await click('Next');await page.waitForSelector('#linked-asset-heading');await click('Upload 2 documents');
+   await click('Next file');await click('Previous file');
+   await click('Next');await page.waitForSelector('[data-upload-slide="details"]');
+   await click('Back');await page.waitForSelector('input[type=file]');
+   await click('Next');await click('Upload 2 documents');
    await page.waitForFunction(()=>document.body.textContent.includes('1 file remains'));
    assert.equal(uploads.length,2);assert.equal(await page.$eval('[data-saved]',e=>e.textContent),'1 saved');
    await click('Upload document');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
@@ -160,7 +162,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    assert.match(uploads[2],/filename="document-picker-fixture.txt"/);
    const requestId=body=>body.match(/name="requestId"\r\n\r\n([^\r]+)/)?.[1];
    assert(requestId(uploads[0]));assert.equal(requestId(uploads[0]),requestId(uploads[2]));
-   await click('Add document');await page.waitForSelector('input[type=file]');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+   await click('Add document');await page.waitForSelector('#linked-asset-heading');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
   }
   assert.deepEqual(errors,[]);
   console.log('PASS paged document links, search, bulk selection, edit and upload, fixed links, partial retry, and desktop/mobile fit');

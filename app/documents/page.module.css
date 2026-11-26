@@ -4310,3 +4310,13 @@
 .assetPager button:hover:not(:disabled) { border-color: var(--app-accent, #167055); }
 .assetPager button:disabled { opacity: .45; cursor: default; }
 .assetPager svg { width: 1.1rem; height: 1.1rem; }
+
+.modalForm[data-upload-slide] .modalScroll { scrollbar-gutter: auto; }
+.modalForm[data-upload-slide] .uploadWizardPanel { padding: 0; border: 0; box-shadow: none; }
+.modalForm[data-upload-slide] .filePicker { min-height: 5rem; padding: .85rem 1rem; }
+.modalForm[data-upload-slide] .fileQueueList { max-height: none; overflow: visible; }
+.modalForm[data-upload-slide] .formGrid { gap: .75rem 1.1rem; }
+.modalForm[data-upload-slide] .notesField textarea { min-height: 3.2rem; height: 3.2rem; }
+.filePages { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .4rem .8rem; }
+.filePages button { padding: .45rem .75rem; border: 1px solid var(--app-line); border-radius: .65rem; color: var(--app-text); background: var(--app-surface); font: inherit; cursor: pointer; }
+.filePages button:disabled { opacity: .5; }
