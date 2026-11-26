@@ -1,4 +1,4 @@
-.content { width:min(100% - 3rem,60rem); margin:2rem auto 4rem; color:#17362c; }
+.content { width:var(--website-page-width, min(100% - 3rem,60rem)); margin:2rem auto 4rem; color:#17362c; }
 .back { display:inline-flex; padding:.7rem 0; margin-bottom:1rem; color:#22614b; text-decoration:none; font-weight:600; }
 .panel { border:1px solid #dce6ec; border-radius:1.5rem; padding:2rem; background:rgba(255,255,255,.96); box-shadow:0 18px 48px #17362c0c; }
 .heading { display:flex; align-items:center; gap:1rem; margin-bottom:1.75rem; }

@@ -24,6 +24,13 @@
 .accessLabel > span { width: 5px; height: 5px; border-radius: 50%; background: #7ba68c; }
 .pageContent { padding: 30px 32px 60px; min-width: 0; max-width: 1800px; margin: auto; }
 .pageContent:focus { outline: none; }
+@media screen {
+  :global([data-website-canvas]) .workspaceBar,
+  :global([data-website-canvas]) .pageContent {
+    padding-inline: max(32px, calc((100% - var(--shell-max)) / 2));
+  }
+}
+
 .collapsed .brandText, .collapsed .adminIdentity, .collapsed .adminAvatar { display: none; }
 .collapsed .group h2, .collapsed .item > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .collapsed .item { justify-content: center; padding: 10px; }

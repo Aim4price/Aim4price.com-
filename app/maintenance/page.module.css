@@ -24,7 +24,7 @@
 }
 
 .shell {
-  width: min(calc(100% - 2rem), 1320px);
+  width: var(--website-page-width, min(calc(100% - 2rem), 1320px));
   margin: 0 auto;
   padding: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 2), 1.6rem) 0 3rem;
 }

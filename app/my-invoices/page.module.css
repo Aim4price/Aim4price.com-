@@ -106,7 +106,7 @@
 }
 
 .dealerCostsPage .shell {
-  width: min(calc(100% - (var(--ledger-inline-gutter) * 2)), 1280px);
+  width: var(--website-page-width, min(calc(100% - (var(--ledger-inline-gutter) * 2)), 1280px));
   padding-inline: 0;
 }
 

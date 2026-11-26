@@ -230,7 +230,7 @@
 
 /* Marketplace entry: align the discovery surface with the application header. */
 .entryContainer.entryContainer {
-  width: min(calc(100% - 3rem), 1360px);
+  width: var(--website-page-width, min(calc(100% - 3rem), 1360px));
 }
 
 .entryShell.entryShell,

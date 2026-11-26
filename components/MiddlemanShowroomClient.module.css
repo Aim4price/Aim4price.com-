@@ -23,7 +23,7 @@
 .managerPageMobile { min-height: calc(var(--website-design-vh, 1dvh) * 100); padding: 1rem; }
 /* Match Advert Studio's centered title and workspace exactly. */
 .managerTitle, .managerToolbar, .managerGrid {
-  width: min(100%, calc(1320px - 3.4rem));
+  width: var(--website-page-width, min(100%, calc(1320px - 3.4rem)));
   margin-inline: auto;
   min-width: 0;
 }

@@ -1,4 +1,9 @@
 .page { max-width: 82rem; margin: 0 auto; padding: 2rem 1.5rem 5rem; color: var(--app-text,#14392f); font-family: var(--font-heading,"Montserrat"),sans-serif; }
+:global([data-website-canvas]) .page {
+  width: var(--website-page-width);
+  max-width: none;
+  padding-inline: 0;
+}
 .header { display:flex; justify-content:space-between; align-items:center; gap:1.5rem; margin-bottom:1.6rem; flex-wrap:wrap; }
 .page h1 { font-size:clamp(2rem,calc(var(--website-design-vw, 1vw) * 3),2.7rem); line-height:1.12; letter-spacing:-.04em; margin:0 0 .65rem; }
 .page h2 { margin:0; font-size:1.25rem; }

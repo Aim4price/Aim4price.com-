@@ -74,6 +74,11 @@ async function check(browser, url) {
         checks: payload.rows.map(() => ({skip:''})), token:'fixture-preview', metered:false, hosting:''
       })});
     }
+    if (target.pathname === '/api/parts-network' && target.searchParams.get('view') === 'inbox') {
+      return request.respond({status:200, contentType:'application/json', body:JSON.stringify({
+        ok:true, shared:[], invitations:[], enquiries:[]
+      })});
+    }
     if(target.pathname.startsWith('/api/')) {
       const body = target.pathname==='/api/me' ? {ok:true,signedIn,user:signedIn?user:null} : target.pathname==='/api/account-profile' ? {ok:true,profile} : {ok:true,register:{id:'canvas-register',name:'Test farm',businessName:'Test farm'},items:[],assets:[],groups:[],registers:[{id:'canvas-register',name:'Test farm',businessName:'Test farm'}],notifications:[],listings:[],storages:[],recentEvents:[],recentFuelSlips:[],requests:[],budgets:[],scanPin:{enabled:false,hasPin:false,updatedAtIso:null},enabled:false,hasPin:false};
       return request.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
@@ -342,6 +347,31 @@ async function check(browser, url) {
   console.log('PASS story scroll: Manage at 68.75%, Brand at the top');
   // Header actions, notifications, Manage and the footer use real components.
   signedIn=true;await page.evaluate(()=>sessionStorage.clear());
+  // Compare visible panel borders, including the nested white valuation and chooser cards.
+  for (const viewport of [1440, 1920, 768]) {
+    let reference;
+    const panels = [
+      ['shared-assets', '[class*="titlePanel"] > div'],
+      ['workspace', '[data-workspace-page] > div'],
+      ['value-asset', '#valuation-wizard-card'],
+      ['cost-choices', '[class*="entryCard"]'],
+      ['advert-studio', '[class*="entryCard"]'],
+    ];
+    for (const [view, selector] of panels) {
+      await visit('/canvas-validation?page=' + view, viewport);
+      await page.waitForSelector(selector, {visible:true});
+      const edges = await page.$eval(selector, panel => {
+        const canvas = panel.closest('[data-website-canvas]');
+        const scale = Number(canvas.dataset.websiteScale);
+        const rect = panel.getBoundingClientRect();
+        const origin = canvas.getBoundingClientRect().left;
+        return [(rect.left - origin) / scale, (rect.right - origin) / scale];
+      });
+      if (!reference) reference = edges;
+      assert.ok(edges.every((edge, i) => Math.abs(edge - reference[i]) <= 1),
+        `${view} panel at ${viewport}px: ${edges} vs Shared Assets ${reference}`);
+    }
+  }
   await visit('/canvas-validation?page=cost-ledger',1920,870);
   await page.click('button[data-tooltip="Download your cost records."]');
   await page.click('[data-download-option]');

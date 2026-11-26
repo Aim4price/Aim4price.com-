@@ -1,5 +1,5 @@
 .panel {
-  max-width: 65rem;
+  max-width: var(--website-page-width, 65rem);
   margin: clamp(1rem, calc(3 * var(--website-design-vw, 1vw)), 2.5rem) auto;
   padding: clamp(1.25rem, calc(4 * var(--website-design-vw, 1vw)), 2.5rem);
   border: 1px solid var(--app-line, #ceded7);

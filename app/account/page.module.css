@@ -1729,7 +1729,7 @@
 }
 
 .shell {
-  width: min(calc(100% - 2rem), 1320px);
+  width: var(--website-page-width, min(calc(100% - 2rem), 1320px));
   margin: 0 auto;
   padding: 1.35rem 0 3rem;
   gap: 1.25rem;

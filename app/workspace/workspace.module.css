@@ -1,6 +1,6 @@
 .shell {
   container-type:inline-size;
-  width: min(92%, 76rem);
+  width: var(--website-page-width, min(92%, 76rem));
   box-sizing: border-box;
   margin: var(--layout-section-gap, 1.5rem) auto;
   padding: clamp(1.2rem, 3%, 2.25rem);

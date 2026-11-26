@@ -26,7 +26,7 @@
 .libraryPanel,
 .workspace,
 .notice {
-  width: min(100%, calc(1320px - 3.4rem));
+  width: var(--website-page-width, min(100%, calc(1320px - 3.4rem)));
   margin-inline: auto;
 }
 

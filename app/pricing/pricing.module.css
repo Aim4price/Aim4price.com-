@@ -165,7 +165,7 @@
 .detailsList details[open] > summary::after { content: '−'; }
 
 /* Match the homepage account cards, with room for the pricing actions. */
-.shell { max-width:78rem; width:var(--shell-width,min(calc(100% - 40px),78rem)); }
+.shell { max-width:var(--website-page-width,78rem); width:var(--shell-width,min(calc(100% - 40px),78rem)); }
 .hero { padding:3.5rem 0 2.5rem; }
 .hero h1 { font-size:clamp(2.4rem,calc(var(--website-design-vw,1vw)*4),3.6rem); }
 .pricingChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(1rem,calc(var(--website-design-vw,1vw)*1.4),1.2rem); }

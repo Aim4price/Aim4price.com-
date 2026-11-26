@@ -307,7 +307,7 @@
 }
 
 .detailPage {
-  width: min(calc(100% - 2rem), 1360px);
+  width: var(--website-page-width, min(calc(100% - 2rem), 1360px));
 }
 
 .backLink {
