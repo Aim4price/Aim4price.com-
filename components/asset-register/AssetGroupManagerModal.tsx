@@ -7,10 +7,11 @@ import downloadStyles from "../ReportDownload.module.css";
 
 import AssetReportTypeIcon from './AssetReportTypeIcon';
 
+import { calculateDropdownOverlayPosition } from '../../lib/dropdown-overlay-position';
 import { websiteLogicalRect, websiteVisibleViewport } from '../../lib/website-canvas';
 
 import { createPortal } from '../WebsitePortal';
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import DropdownOverlay from '../DropdownOverlay';
 import {
   assetGroupMemberCountsTowardTotal,
@@ -42,6 +43,8 @@ type ReportSelectOption = {
   label: string;
   tone?: 'default' | 'danger';
 };
+
+type MemberValueOption = ReportSelectOption & { detail?: string };
 
 function MembersIcon({ className }: IconProps) {
   return (
@@ -157,81 +160,115 @@ function AssetGroupMemberSelect({
 }: {
   label: string;
   value: string;
-  options: ReportSelectOption[];
+  options: MemberValueOption[];
   disabled?: boolean;
   onChange: (value: string) => void;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [menu, setMenu] = useState<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
-  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
+  const menuId = useId();
   const selected = options.find((option) => option.value === value) ?? options[0];
+
+  useLayoutEffect(() => {
+    const button = buttonRef.current;
+    if (!menu || !button) return;
+    const rect = websiteLogicalRect(button.getBoundingClientRect());
+    const viewport = websiteVisibleViewport();
+    const list = button.closest('[data-asset-choice-list]');
+    const bounds = list && websiteLogicalRect(list.getBoundingClientRect());
+    const top = Math.max(viewport.top, bounds?.top ?? viewport.top);
+    const bottom = Math.min(viewport.top + viewport.height, bounds?.bottom ?? Infinity);
+
+    // Measure at the trigger width so wrapped option text is included before choosing a side.
+    menu.style.width = `${Math.min(rect.width, viewport.width - 16)}px`;
+    const position = calculateDropdownOverlayPosition({
+      anchor: rect,
+      viewport: { ...viewport, top, height: bottom - top },
+      contentWidth: rect.width,
+      contentHeight: menu.scrollHeight + menu.offsetHeight - menu.clientHeight,
+      maxHeight: 320,
+      matchAnchorWidth: true,
+      gap: 5,
+      gutter: 8,
+    });
+    Object.assign(menu.style, {
+      left: `${position.left}px`, top: `${position.top}px`,
+      width: `${position.width}px`, maxHeight: `${position.maxHeight}px`,
+    });
+    const chosen = menu.querySelector<HTMLButtonElement>('[aria-selected="true"]');
+    if (chosen) {
+      chosen.focus({ preventScroll: true });
+      menu.scrollTop = Math.max(0, chosen.offsetTop - (menu.clientHeight - chosen.offsetHeight) / 2);
+    }
+  }, [menu]);
 
   useEffect(() => {
     if (!open) return;
-
-    const button = rootRef.current?.querySelector('button');
-    if (!(button instanceof HTMLButtonElement)) return;
-    const rect = websiteLogicalRect(button.getBoundingClientRect());
-    const viewport = websiteVisibleViewport();
-    const estimatedMenuHeight = Math.min(240, options.length * 48 + 14);
-    const roomBelow = viewport.height - rect.bottom;
-    const openUpward = roomBelow < estimatedMenuHeight + 16 && rect.top > roomBelow;
-    const width = Math.min(rect.width, viewport.width - 24);
-
-    setMenuStyle({
-      left: Math.max(12, Math.min(rect.left, viewport.width - width - 12)),
-      top: openUpward
-        ? Math.max(12, rect.top - estimatedMenuHeight - 8)
-        : Math.min(viewport.height - estimatedMenuHeight - 12, rect.bottom + 8),
-      width,
-    });
-
     function handleOutside(event: MouseEvent | TouchEvent) {
       const target = event.target;
       if (!(target instanceof Node)) return;
-      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      if (rootRef.current?.contains(target) || menu?.contains(target)) return;
       setOpen(false);
     }
 
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpen(false);
-    }
-
-    function closeOnViewportChange() {
+    function closeOnViewportChange(event: Event) {
+      if (event.target instanceof Node && menu?.contains(event.target)) return;
       setOpen(false);
     }
 
     document.addEventListener('mousedown', handleOutside);
     document.addEventListener('touchstart', handleOutside);
-    document.addEventListener('keydown', handleEscape);
+    window.addEventListener('aim4price:canvas-geometry', closeOnViewportChange);
     window.addEventListener('resize', closeOnViewportChange);
     window.addEventListener('scroll', closeOnViewportChange, true);
     return () => {
       document.removeEventListener('mousedown', handleOutside);
       document.removeEventListener('touchstart', handleOutside);
-      document.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('aim4price:canvas-geometry', closeOnViewportChange);
       window.removeEventListener('resize', closeOnViewportChange);
       window.removeEventListener('scroll', closeOnViewportChange, true);
     };
-  }, [open, options.length]);
+  }, [open, menu]);
 
-  const menu = open && typeof document !== 'undefined'
+  const popup = open && typeof document !== 'undefined'
     ? createPortal(
-        <div ref={menuRef} className={styles.memberSelectMenu} role="listbox" aria-label={label} style={menuStyle} data-dropdown-overlay-portal="true">
+        <div ref={setMenu} id={menuId} className={styles.memberSelectMenu} role="listbox" aria-label={label} data-dropdown-overlay-portal="true"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' || event.key === 'Tab') {
+              if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); }
+              buttonRef.current?.focus({ preventScroll: true });
+              setOpen(false);
+              return;
+            }
+            const items = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'));
+            const index = items.indexOf(document.activeElement as HTMLButtonElement);
+            const target = event.key === 'ArrowDown' ? items[Math.min(index + 1, items.length - 1)]
+              : event.key === 'ArrowUp' ? items[Math.max(0, index - 1)]
+              : event.key === 'Home' ? items[0] : event.key === 'End' ? items[items.length - 1] : null;
+            if (target) { event.preventDefault(); target.focus(); }
+          }}
+        >
           {options.map((option) => (
             <button
               key={option.value}
               type="button"
               role="option"
+              tabIndex={-1}
               aria-selected={option.value === value}
               className={`${styles.memberSelectOption} ${option.value === value ? styles.memberSelectOptionActive : ''} ${option.tone === 'danger' ? styles.memberSelectOptionDanger : ''}`}
               onClick={() => {
+                buttonRef.current?.focus({ preventScroll: true });
                 onChange(option.value);
                 setOpen(false);
               }}
             >
-              {option.label}
+              <span className={styles.memberOptionCopy}>
+                <strong>{option.label}</strong>
+                {option.detail ? <small>{option.detail}</small> : null}
+              </span>
+              {option.value === value ? <span className={styles.memberOptionCheck} aria-hidden="true">✓</span> : null}
             </button>
           ))}
         </div>,
@@ -241,19 +278,31 @@ function AssetGroupMemberSelect({
 
   return (
     <div ref={rootRef} className={`${styles.memberSelect} ${open ? styles.memberSelectOpen : ''}`}>
-      <span className={styles.memberSelectLabel}>{label}</span>
+      <span id={`${menuId}-label`} className={styles.memberSelectLabel}>{label}</span>
       <button
         type="button"
+        ref={buttonRef}
         className={styles.memberSelectButton}
+        aria-labelledby={`${menuId}-label ${menuId}-value`}
+        aria-controls={open ? menuId : undefined}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            setOpen(true);
+          }
+        }}
         onClick={() => setOpen((current) => !current)}
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={disabled}
       >
-        <span>{selected?.label ?? 'Choose option'}</span>
-        <ChevronDownIcon className={styles.memberSelectChevron} />
+        <span id={`${menuId}-value`} className={styles.memberOptionCopy}>
+          <strong>{selected?.label}</strong>
+          {selected?.detail ? <small>{selected.detail}</small> : null}
+        </span>
+        <span className={styles.memberChevronBox}><ChevronDownIcon className={styles.memberSelectChevron} /></span>
       </button>
-      {menu}
+      {popup}
     </div>
   );
 }
@@ -353,10 +402,10 @@ type Props = {
   ) => void | Promise<void>;
 };
 
-const PRIMARY_MEMBER_VALUE_OPTIONS: ReportSelectOption[] = [
-  { value: 'primary', label: 'Primary asset: add to total' },
-  { value: 'included', label: 'Independent asset: add to total' },
-  { value: 'linked', label: 'Linked to primary: do not add again' },
+const PRIMARY_MEMBER_VALUE_OPTIONS: MemberValueOption[] = [
+  { value: 'primary', label: 'Primary asset', detail: 'Counts towards the umbrella total' },
+  { value: 'included', label: 'Independent asset', detail: 'Adds its own value to the total' },
+  { value: 'linked', label: 'Linked to primary', detail: 'Already counted in the primary asset’s value' },
 ];
 
 const GROUPED_MEMBER_VALUE_OPTIONS: ReportSelectOption[] = [
@@ -553,7 +602,7 @@ export default function AssetGroupManagerModal({
       ? PRIMARY_MEMBER_VALUE_OPTIONS
       : GROUPED_MEMBER_VALUE_OPTIONS;
 
-  function memberValueOptionsFor(assetId: string): ReportSelectOption[] {
+  function memberValueOptionsFor(assetId: string): MemberValueOption[] {
     if (group && hasPrimaryAsset && selectedAssetIds.length === 1 && assetId === primaryAssetId) {
       return memberValueOptions.filter((option) => option.value === 'primary' || option.value === REMOVE_MEMBER_OPTION.value);
     }

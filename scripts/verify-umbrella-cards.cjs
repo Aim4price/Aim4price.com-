@@ -90,6 +90,25 @@ async function check(browser, url) {
     assert.equal(await page.$eval('[aria-label="Edit Asset umbrella"]',e=>e.getAttribute('data-tooltip')),'Edit umbrella');
     await click('[aria-label="Edit Asset umbrella"]');
     await page.waitForFunction(()=>document.querySelector('#asset-group-title')?.textContent.includes('Edit umbrella'));
+    const nextStep = '[aria-labelledby="asset-group-title"] button[type="submit"]';
+    await click(nextStep);
+    await page.waitForSelector('#umbrella-step-values');
+    await click(nextStep);
+    const roleButton = '[data-asset-choice-list] button[aria-haspopup="listbox"]';
+    await click(roleButton);
+    await page.waitForFunction(() => document.activeElement?.getAttribute('aria-selected') === 'true');
+    const menuBounds = await page.$eval('[role="listbox"][aria-label="Role and value"]', menu => {
+      const rect = menu.getBoundingClientRect();
+      const list = document.querySelector('[data-asset-choice-list]').getBoundingClientRect();
+      return { top: rect.top, bottom: rect.bottom, height: rect.height, listTop: list.top, listBottom: list.bottom };
+    });
+    assert.ok(menuBounds.height > 0 && menuBounds.top >= menuBounds.listTop - 1 && menuBounds.bottom <= menuBounds.listBottom + 1,
+      'the role menu stays inside the asset list and clears the toolbar and footer');
+    await page.keyboard.press('End');
+    assert.equal(await page.evaluate(() => document.activeElement.textContent.trim()), 'Remove from umbrella');
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('[role="listbox"][aria-label="Role and value"]', { hidden: true });
+    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('aria-expanded')), 'false');
     await click('[aria-label="Close umbrella manager"]');
     const flagSelector = `[aria-label="${groups[0].isFlagged?'Unflag':'Flag'} Asset umbrella"]`;
     await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
