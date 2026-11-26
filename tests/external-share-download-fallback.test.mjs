@@ -6,7 +6,8 @@ const component = await readFile(new URL('../components/asset-register/AssetExte
 
 test('every prepared attachment has a download, including selections below the PDF threshold', () => {
   assert.match(component, /preparation\.status === 'ready'\s*\? preparation\.files\.map/);
-  assert.match(component, /downloadFiles\.map\([\s\S]*?href=\{url\} download=\{file\.name\}/);
+  assert.match(component, /downloadFiles\.map\([\s\S]*?href=\{availabilityUrl \? undefined : url\} download=\{file\.name\}/);
+  assert.match(component, /if \(!await checkAvailability\(\)\) return;\s*const link=document\.createElement\('a'\); link\.href=url; link\.download=file\.name; link\.click\(\)/);
   assert.doesNotMatch(component, /usePdf && pdfUrl/);
   assert.match(component, /downloads\.forEach\(\(\{url\}\) => URL\.revokeObjectURL\(url\)\)/);
 });
