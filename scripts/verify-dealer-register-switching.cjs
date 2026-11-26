@@ -46,9 +46,9 @@ export default function Fixture({searchParams}:{searchParams:{dealerView?:string
    for(const kind of ['dealer','client']){
     await page.waitForSelector('[aria-label="Create an umbrella with '+(kind==='dealer'?'Dealer Stock':'Client Farm')+' tractor"]');
     await page.click('[aria-label^="Create an umbrella with"]');
-    await page.click('input[placeholder="Example: Farm transport set"]',{clickCount:3});
+    await page.click('input[name="umbrellaName"]',{clickCount:3});
     await page.keyboard.press('Backspace');
-    await page.type('input[placeholder="Example: Farm transport set"]',kind+' umbrella');
+    await page.type('input[name="umbrellaName"]',kind+' umbrella');
     await click('Next');await click('Next');await click('Create umbrella');
     await page.waitForSelector('[aria-label="Edit '+kind+' umbrella"]');
     await page.click('[aria-label="Switch Asset Register"]');
