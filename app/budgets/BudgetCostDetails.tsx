@@ -13,6 +13,12 @@ export default function BudgetCostDetails({ budget, onRefresh, onAddRecurring }:
         <dd className={available < 0 ? styles.negative : undefined}>{money(included ? available : Math.abs(available))}</dd></div>
       <div><dt><BudgetDetailIcon kind="alert" />Alert at</dt><dd>{budget.warningPercent}%</dd></div>
     </dl>
+    {Boolean(budget.members?.length) && <section aria-label="Spending by asset">
+      <h3>Spending by asset</h3>
+      <dl className={styles.metrics}>{budget.members?.map(member =>
+        <div key={member.id}><dt>{member.title}</dt><dd>{money(member.spent)}</dd></div>
+      )}</dl>
+    </section>}
     <BudgetRecurringCosts budget={budget} onRefresh={onRefresh} onAdd={onAddRecurring} />
   </>;
 }

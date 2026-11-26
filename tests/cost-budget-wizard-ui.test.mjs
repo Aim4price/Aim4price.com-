@@ -138,12 +138,12 @@ test('limit validation happens before review and the review preserves every choi
 
 });
 
-test('new budgets offer only individual assets and show the amount per asset', () => {
+test('users can choose separate limits or one group budget', () => {
   assert.match(budgetModal, /Each gets its own spending limit/);
   assert.doesNotMatch(budgetModal, /Whole register|registerChoice|registers\.map|Choose umbrella/i);
   assert.match(budgetModal, /selectedBudgetAssets\.length > 1 \? 'Amount per asset'/);
   assert.match(budgetModal, /budgetDraft\.registerId \? 'Register'/);
-  assert.match(client, /assetIdsToSave: Array<string \| null> = editingBudgetId[\s\S]*?: budgetSelectedAssetIds;/);
+  assert.match(client, /assetIdsToSave: Array<string \| null> = groupBudget \? \[null\] : editingBudgetId[\s\S]*?: budgetSelectedAssetIds;/);
 });
 
 test('multi-asset creation saves one independently editable budget per selected asset', () => {

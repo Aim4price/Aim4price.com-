@@ -5,7 +5,7 @@ import { TeamAccessError } from './team-access-policy';
 import { lockTeamPermission, requireTeamAsset, auditTeam } from './team-access';
 export type WorkspaceWriteGuard = {skipReplayDebit?: boolean; before?: (client:PoolClient)=>Promise<void>; after?: (client:PoolClient)=>Promise<void>};
 /** Run inside the mutation transaction, before record locks. Revocation and scope changes serialize with writes. */
-export function teamWriteGuard(workspace:OwnerWorkspaceContext, permission:TeamPermission, target:{assetId?:string;storageId?:string;fuelSlipId?:string;invoiceId?:string;budgetId?:string;globalBudget?:boolean} = {}):WorkspaceWriteGuard {
+export function teamWriteGuard(workspace:OwnerWorkspaceContext, permission:TeamPermission, target:{assetId?:string;memberIds?:string[];storageId?:string;fuelSlipId?:string;invoiceId?:string;budgetId?:string;globalBudget?:boolean} = {}):WorkspaceWriteGuard {
   const scope = workspace.team;
   if (!scope && !workspace.meteredBusiness) return {};
   if (!scope) {
@@ -20,13 +20,16 @@ export function teamWriteGuard(workspace:OwnerWorkspaceContext, permission:TeamP
       const grant = await lockTeamPermission(client, scope, permission);
       const checkTank = (id:string) => {if (!grant.permissions.viewFuelStorage || grant.fuelStorageIds && !grant.fuelStorageIds.includes(id)) throw new TeamAccessError('Fuel tank unavailable.',404);};
       if (target.assetId) await requireTeamAsset({...scope,grant},target.assetId,client);
+      for (const id of target.memberIds ?? []) await requireTeamAsset({...scope,grant}, id, client);
       if (target.storageId) checkTank(target.storageId);
       if (target.globalBudget && grant.scope !== 'all') throw new TeamAccessError('Choose an accessible asset.',403);
       if (target.budgetId) {
-        const row = (await client.query('SELECT asset_register_item_id FROM asset_cost_budgets WHERE user_id=$1 AND id::text=$2 FOR UPDATE',[grant.ownerId,target.budgetId])).rows[0];
+        const row = (await client.query('SELECT asset_register_item_id, group_asset_ids FROM asset_cost_budgets WHERE user_id=$1 AND id::text=$2 FOR UPDATE',[grant.ownerId,target.budgetId])).rows[0];
         if (!row) throw new TeamAccessError('Budget unavailable.',404);
         if (row.asset_register_item_id) await requireTeamAsset({...scope,grant},String(row.asset_register_item_id),client);
-        else if (grant.scope !== 'all') throw new TeamAccessError('Budget unavailable.',404);
+        else if (row.group_asset_ids?.length) {
+          for (const id of row.group_asset_ids) await requireTeamAsset({...scope,grant}, id, client);
+        } else if (grant.scope !== 'all') throw new TeamAccessError('Budget unavailable.',404);
       }
       if (target.invoiceId) {
         const row = (await client.query('SELECT asset_register_item_id,source FROM asset_invoices WHERE user_id=$1 AND id::text=$2 FOR UPDATE',[grant.ownerId,target.invoiceId])).rows[0];

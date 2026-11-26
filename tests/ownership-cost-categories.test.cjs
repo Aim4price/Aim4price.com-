@@ -89,6 +89,20 @@ test('register and category budgets count incurred costs once and exclude pendin
     const netInsurance = await api.createCostBudget('owner', {...options,assetId:asset,categories:['insurance'],includeVat:false}, {});
     assert.equal(netInsurance.spent, 950);
 
+    const truck = '20000000-0000-4000-8000-000000000002';
+    await query('insert into asset_register_items values ($1,$2,$3,$4)', [truck,'owner','Truck',null]);
+    await query('insert into asset_invoices values ($1,$2,$3,$4,$5,$6,null,$7,now(),now())',
+      ['owner',truck,date,'repair',4000,'manual','owner']);
+    const fleet = {...options,groupName:'Delivery fleet',groupAssetIds:[asset,truck,asset]};
+    const combined = await api.createCostBudget('owner', fleet, {});
+    assert.equal(combined.assetTitle, 'Delivery fleet');
+    assert.equal(combined.spent, 10000);
+    assert.deepEqual(combined.members.map(member => member.spent), [6000,4000]);
+    assert.equal((await api.listCostBudgetsWithProgress('owner')).find(b => b.id === overall.id).spent, 6000);
+    assert.equal((await api.updateCostBudget('owner',combined.id,{...fleet,categories:['insurance']},{})).spent, 1000);
+    await assert.rejects(api.createCostBudget('other', fleet), /ASSET_NOT_FOUND/);
+    await assert.rejects(api.createCostBudget('owner', {...fleet,groupAssetIds:[asset,asset]}), /ASSET_INVALID/);
+
     // A register budget saved before the asset-only flow still counts eligible costs.
     const legacy = await query(`insert into asset_cost_budgets
       (user_id, register_id, period, amount, warning_percent, categories)
@@ -107,6 +121,7 @@ test('expected instalments respect the period, allocation and month end',()=>{
   const {expectedCommitmentAmount} = load('budget-expected',{});
   const budget={assetId:'tractor',categories:['insurance'],periodStart:'2026-02-01',periodEnd:'2026-04-01'};
   const item={status:'active',category:'insurance',startDate:'2026-01-31',frequency:'monthly',amount:1100,assets:[{assetId:'tractor',annualAllocation:7200},{assetId:'truck'}]};
+  assert.equal(expectedCommitmentAmount({...budget,assetId:null,groupAssetIds:['tractor','truck']},[item],new Map(),'2026-02-28'),2200);
   assert.equal(expectedCommitmentAmount(budget,[item],new Map(),'2026-02-28'),1200);
   assert.equal(expectedCommitmentAmount(budget,[item],new Map(),'2026-03-01'),600);
   assert.equal(expectedCommitmentAmount(budget,[{...item,category:'lease'}],new Map(),'2026-02-01'),0);

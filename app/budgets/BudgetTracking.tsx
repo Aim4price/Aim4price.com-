@@ -56,6 +56,8 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
   onAdd: () => void; onEdit: (id: string) => void; onDelete: (id: string) => void;
 }) {
   const desktop = useDesktopControls();
+  const budgetAssetIds = new Set(budgets.flatMap(budget => budget.assetId ? [budget.assetId] : budget.groupAssetIds ?? []));
+  const exportAssets = reportAssets.filter(asset => budgetAssetIds.has(asset.id));
   const [pageSize, setPageSize] = useState<ListPageSize>(6);
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
@@ -106,7 +108,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
     {loading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>{error}</p><button onClick={onRetry}>Try again</button></div> : !visible.length ? <div className={ledger.emptyState}>{budgets.length ? 'No budgets match these filters.' : 'No budgets yet. Add a budget to start tracking spending.'}</div> : null}
     {ready ? pagedBudgets.map(budget => <LedgerDetailsCard expanded={expandedId === budget.id} onToggle={() => setExpandedId((current) => current === budget.id ? null : budget.id)} id={`cost-budget-${budget.id}`} key={budget.id} className={`${ledger.invoiceRow} ${styles.card}`} data-status={budget.status}>
       <div className={styles.cardHeading}>
-        <div><h2 className={ledger.invoiceTitle}>{budget.assetTitle}</h2><p className={ledger.invoiceReference}>{budget.period === 'monthly' ? 'Monthly' : 'Annual'} · {budget.periodLabel} · {categorySummary(budget.categories)}</p></div>
+        <div><h2 className={ledger.invoiceTitle}>{budget.assetTitle}</h2><p className={ledger.invoiceReference}>{budget.groupAssetIds?.length ? `Group budget · ${budget.groupAssetIds.length} assets · ` : ''}{budget.period === 'monthly' ? 'Monthly' : 'Annual'} · {budget.periodLabel} · {categorySummary(budget.categories)}</p></div>
         <div className={styles.spentBlock}><strong className={ledger.invoicePrice}>{money(budget.spent)}</strong><span className={ledger.invoiceVatLabel}>Spent {budget.includeVat === false ? 'excl.' : 'incl.'} VAT</span></div>
       </div>
       <div className={styles.cardBody}>
@@ -146,7 +148,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
         </div>
       </Dialog>
     ) : null}
-    {desktop.dialog}{downloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Budget reports" allLabel="All budgets" assets={Array.from(new Map(budgets.filter(b=>b.assetId).map(b=>[b.assetId!,{...reportAssets.find(asset=>asset.id === b.assetId),id:b.assetId!,title:b.assetTitle}])).values())} lockedAssetId={scopeAssetId || undefined} budgetPeriods formatOptions={recurringReportOption}
+    {desktop.dialog}{downloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Budget reports" allLabel="All budgets" assets={exportAssets} lockedAssetId={scopeAssetId || undefined} budgetPeriods formatOptions={recurringReportOption}
       fields={[{key:'period',label:'Budget period',initial:'all',options:[{value:'all',label:'Current month and year'},{value:'monthly',label:'Current monthly budgets'},{value:'annual',label:'Current annual budgets'}]},{key:'status',label:'Budget status',initial:'all',options:[{value:'all',label:'All statuses'},{value:'attention',label:'Needs attention'},{value:'on_track',label:'Within budget'}]}]}
       onClose={()=>setDownloadOpen(false)} onDownload={async selection=>{
         const params=new URLSearchParams({format:selection.format === 'pdf' ? 'html' : 'xlsx',asset:selection.assetId,period:selection.fields.period,status:selection.fields.status});
