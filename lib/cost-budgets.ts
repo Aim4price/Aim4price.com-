@@ -12,6 +12,8 @@ export type CostBudgetAlertKind = 'warning' | 'over_budget';
 
 export type CostBudgetProgress = {
   expected?: number;
+  includeRecurringCosts?: boolean;
+  recurringCosts?: import('./budget-expected').BudgetRecurringCost[];
   id: string;
   userId: string;
   assetId: string | null;
@@ -77,6 +79,7 @@ type CostBudgetRow = {
   register_name: string | null;
   categories: string[];
   include_vat: boolean;
+  include_recurring_costs: boolean;
   include_fuel_slip_costs: boolean;
   revision: string | number;
   spent: string | number | null;
@@ -320,6 +323,12 @@ async function ensureCostBudgetTablesOnce(): Promise<void> {
     create index if not exists asset_invoices_budget_lookup_idx
       on public.asset_invoices (user_id, asset_register_item_id, invoice_date)
   `);
+  await db.query(`
+    create table if not exists public.asset_budget_recurring_preferences (
+      budget_id uuid primary key references public.asset_cost_budgets(id) on delete cascade,
+      include_recurring_costs boolean not null
+    )
+  `);
   await ensureCostBudgetHistory();
 }
 
@@ -415,6 +424,7 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
         budget.period,
         budget.amount,
         budget.warning_percent,
+        coalesce(preference.include_recurring_costs, true) as include_recurring_costs,
         budget.include_vat, budget.include_fuel_slip_costs, budget.categories, budget.register_id, register.business_name as register_name,
         budget.revision,
         coalesce(spend.spent, 0) as spent,
@@ -422,6 +432,7 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
         budget.created_at,
         budget.updated_at
       from public.asset_cost_budgets budget
+      left join public.asset_budget_recurring_preferences preference on preference.budget_id = budget.id
       left join public.asset_registers register on register.id = budget.register_id and register.user_id = budget.user_id
       left join public.asset_register_items asset
         on asset.id = budget.asset_register_item_id
@@ -492,6 +503,7 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
       warningAmount: Math.round(amount * warningPercent) / 100,
       registerId: row.register_id, categories: row.categories,
       includeVat: row.include_vat,
+      includeRecurringCosts: row.include_recurring_costs !== false,
       includeFuelSlipCosts: Boolean(row.include_fuel_slip_costs),
       revision: Math.max(1, Number(row.revision) || 1),
       periodKey: window.key,
@@ -680,6 +692,19 @@ export async function updateCostBudget(
     if (isUniqueViolation(error)) throw new Error('COST_BUDGET_DUPLICATE');
     throw error;
   }
+}
+
+export async function setBudgetRecurringPreference(userId: string, budget: CostBudgetProgress, included: boolean, guard?: WorkspaceWriteGuard) {
+  const result = await budgetWrite(
+    `insert into public.asset_budget_recurring_preferences (budget_id, include_recurring_costs)
+     select id, $3::boolean from public.asset_cost_budgets
+     where id = $1::uuid and user_id = $2 and asset_register_item_id is not distinct from $4::uuid
+       and register_id is not distinct from $5::uuid
+     on conflict (budget_id) do update set include_recurring_costs = excluded.include_recurring_costs
+     returning budget_id::text as id`,
+    [budget.id, userId, included, budget.assetId, budget.registerId], guard,
+  );
+  if (!result.rowCount) throw new Error('COST_BUDGET_NOT_FOUND');
 }
 
 export async function deleteCostBudget(userId: string, budgetIdInput: unknown, guard?: WorkspaceWriteGuard): Promise<boolean> {

@@ -53,7 +53,7 @@ export type RecurringCommitmentRecord = {
   startDate: string;
   endDate: string;
   renewalDate: string;
-  status: 'active' | 'ended' | 'cancelled';
+  status: 'active' | 'paused' | 'ended' | 'cancelled';
   sourceReference: string;
   note: string;
   annualAmount: number;
@@ -216,7 +216,7 @@ export async function listFinanceAgreements(ownerUserId: string): Promise<Financ
 export async function listRecurringCommitments(ownerUserId: string, assetIds?: Set<string> | null): Promise<RecurringCommitmentRecord[]> {
   const result = await getDb().query<{
     id: string; description: string; category: string; amount: string | number; frequency: CommitmentFrequency;
-    start_date: string; end_date: string | null; renewal_date: string | null; status: 'active' | 'ended' | 'cancelled';
+    start_date: string; end_date: string | null; renewal_date: string | null; status: 'active' | 'paused' | 'ended' | 'cancelled';
     source_reference: string | null; note: string | null;
   }>(
     `select id::text, description, category, amount, frequency, start_date::text, end_date::text,

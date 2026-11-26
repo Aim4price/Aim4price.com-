@@ -1,0 +1,18 @@
+.control {
+  display: flex; align-items: center; gap: .8rem; width: 100%; min-width: 0;
+  padding: 1rem 1.15rem; border: 1px solid var(--app-line,#c0d6ca);
+  border-radius: 1rem; background: var(--app-surface,#fff); color: var(--app-text,#123f32);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.control[aria-checked=true] { background: var(--app-surface-soft,#edf7f1); }
+.control:focus-visible { outline: 3px solid var(--app-accent,#157251); outline-offset: 2px; }
+.control:hover:enabled { border-color: var(--app-accent,#267958); }
+.control:disabled { cursor: default; }
+.copy { flex: 1; min-width: 0; display: grid; gap: .22rem; }
+.copy strong { font-size: 1.05rem; font-weight: 800; }
+.copy small { font-size: .87rem; line-height: 1.4; font-weight: 600; color: var(--app-muted,#536c60); }
+.state { font-size: .9rem; font-weight: 800; }
+.track { display: flex; flex: none; align-items: center; width: 2.9rem; height: 1.65rem; padding: .18rem; border-radius: 2rem; background: #66796f; }
+.track > span { width: 1.28rem; height: 1.28rem; border-radius: 100%; background: white; }
+.control[aria-checked=true] .track { background: #126547; justify-content: flex-end; }
+.control[aria-checked=mixed] .track { justify-content: center; }

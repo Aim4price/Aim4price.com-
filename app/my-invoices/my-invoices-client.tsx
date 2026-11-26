@@ -2940,7 +2940,8 @@ export default function MyInvoicesClient({
       const payload = await response.json() as RecurringCommitmentResponse;
       if (!response.ok || !payload.ok) throw new Error(payload.error || 'The recurring commitment could not be saved.');
       finishModal();
-      setNotice({ tone: 'success', message: 'Recurring commitment saved separately from incurred Cost Ledger expenses.' });
+      setNotice({ tone: 'success', message: 'Recurring cost saved.' });
+      if (budgetsPage) void reloadBudgets().catch(() => setBudgetLoadError('Refresh budgets to see the saved recurring cost.'));
     } catch (error) {
       setRecurringError(error instanceof Error ? error.message : 'The recurring commitment could not be saved.');
     } finally {
@@ -3434,6 +3435,8 @@ export default function MyInvoicesClient({
           reportAssets={assets}
           budgets={budgetLaunchAssetId ? costBudgets.filter((budget) => budget.assetId === budgetLaunchAssetId) : costBudgets} loading={budgetsLoading} error={budgetLoadError}
           onRetry={() => { setBudgetsLoading(true); setBudgetLoadError(''); void reloadBudgets().catch(error => setBudgetLoadError(error instanceof Error ? error.message : 'Budgets could not be loaded.')).finally(() => setBudgetsLoading(false)); }}
+          onRefresh={reloadBudgets}
+          onAddRecurring={assetId => { openAddInvoiceModal(assetId); chooseCaptureMethod('recurring'); }}
           onAdd={openCreateBudget}
           onEdit={id => { const budget = costBudgets.find(item => item.id === id); if (budget) openEditBudget(budget); }}
           onDelete={id => { const budget = costBudgets.find(item => item.id === id); if (budget) askToDeleteBudget(budget); }}

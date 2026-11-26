@@ -12,6 +12,11 @@ export async function GET(request: NextRequest) {
   if (!response.ok) return response;
   const data = await response.json() as { budgets: TrackedBudget[] };
   const params = request.nextUrl.searchParams;
+  const recurring = params.get('recurring');
+  if (recurring !== null && recurring !== 'true' && recurring !== 'false') {
+    return NextResponse.json({error:'Invalid recurring cost selection.'},{status:400});
+  }
+  const recurringOverride = recurring === null ? undefined : recurring === 'true';
   const format = params.get('format') || 'pdf';
   if (!['html','pdf','xlsx'].includes(format)) return NextResponse.json({ error: 'Unsupported report format.' }, { status: 400 });
   const budgets = filterTrackedBudgets(data.budgets, params.get('q') || '', { asset: params.get('asset') || 'all', period: params.get('period') || 'all', status: params.get('status') || 'all' });
@@ -22,9 +27,9 @@ export async function GET(request: NextRequest) {
   const generated = new Date().toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' });
   try {
     if (params.get('format') === 'xlsx') {
-      return new NextResponse(new Uint8Array(createXlsxWorkbook(buildBudgetWorkbook(budgets, generated))), { headers: { ...headers, 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': `attachment; filename="${filename}.xlsx"` } });
+      return new NextResponse(new Uint8Array(createXlsxWorkbook(buildBudgetWorkbook(budgets, generated, recurringOverride))), { headers: { ...headers, 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Content-Disposition': `attachment; filename="${filename}.xlsx"` } });
     }
-    const html = buildBudgetReportHtml(budgets, generated);
+    const html = buildBudgetReportHtml(budgets, generated, recurringOverride);
     if (format === 'html') return new NextResponse(html, { headers: { ...headers, 'Content-Type': 'text/html; charset=utf-8' } });
     const pdf = await renderReportHtmlToPdf(html, { baseUrl: request.nextUrl.origin });
     return new NextResponse(new Uint8Array(pdf), { headers: { ...headers, 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="${filename}.pdf"` } });

@@ -14,6 +14,7 @@ type Choice = { value: string; label: string };
 type Props = {
   title: string; allLabel: string;
   assets: Array<{ id: string; title: string; serialNumber?: string; meta?: string; selectedMethod?: string; categoryLabel?: string }>;
+  formatOptions?: (selection: ReportSelection) => ReactNode;
   costStep?: { className: string; content: ReactNode; canContinue: boolean };
   pdfOnly?: boolean; instantDownload?: boolean; compactTimeline?: boolean; skipTimeline?: boolean; years?: string[]; budgetPeriods?: boolean; lockedAssetId?: string;
   fields?: Array<{ key: string; label: string; initial: string; options: Choice[]; allAssetsOnly?: boolean }>;
@@ -30,7 +31,7 @@ function ScopeIcon({ kind = 'all' }: { kind?: string }) {
   </svg>;
 }
 
-export default function ReportDownloadFlow({ pdfOnly = false, costStep, title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, instantDownload = false, compactTimeline = false, skipTimeline = false, fields = [], scopes = [], onClose, onDownload }: Props) {
+export default function ReportDownloadFlow({ pdfOnly = false, costStep, formatOptions, title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, instantDownload = false, compactTimeline = false, skipTimeline = false, fields = [], scopes = [], onClose, onDownload }: Props) {
   const [step, setStep] = useState<'scope' | 'asset' | 'costs' | 'timeline' | 'format'>(lockedAssetId ? (costStep ? 'costs' : skipTimeline ? 'format' : 'timeline') : 'scope');
   const [selection, setSelection] = useState<ReportSelection>({ assetId: lockedAssetId || 'all', year: 'all', month: 'all', format: 'pdf', fields: Object.fromEntries(fields.map(field => [field.key, field.initial])) });
   const [search, setSearch] = useState('');
@@ -84,7 +85,7 @@ export default function ReportDownloadFlow({ pdfOnly = false, costStep, title, a
       if (event.shiftKey && (document.activeElement === first || document.activeElement === heading.current)) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }}>
-      <header data-download-header="true" data-asset-choice-header={step === 'asset' ? 'true' : undefined}><div><h2 id={titleId} ref={heading} tabIndex={-1}>{step === 'scope' ? title : step === 'asset' ? `Choose asset for ${title.replace(/ reports$/i, '').toLowerCase()}` : step === 'timeline' ? 'Choose report timeline' : selectedAsset?.title || title}</h2><p>{step === 'scope' ? 'Choose the records to include.' : step === 'asset' ? 'Choose a saved asset.' : step === 'format' && selectedAsset?.meta ? selectedAsset.meta : `${selectedAsset?.title || allLabel} · ${periodLabel}`}</p></div><button type="button" disabled={busy} onClick={costStep ? onClose : back} aria-label="Close download" data-modal-close="true"><span aria-hidden="true">×</span></button></header>
+      <header data-download-header="true" data-asset-choice-header={step === 'asset' ? 'true' : undefined}><div><h2 id={titleId} ref={heading} tabIndex={-1}>{step === 'scope' ? title : step === 'asset' ? `Choose asset for ${title.replace(/ reports$/i, '').toLowerCase()}` : step === 'timeline' ? budgetPeriods ? 'Budget report options' : 'Choose report timeline' : selectedAsset?.title || title}</h2><p>{step === 'scope' ? 'Choose the records to include.' : step === 'asset' ? 'Choose a saved asset.' : step === 'format' && selectedAsset?.meta ? selectedAsset.meta : `${selectedAsset?.title || allLabel} · ${periodLabel}`}</p></div><button type="button" disabled={busy} onClick={costStep ? onClose : back} aria-label="Close download" data-modal-close="true"><span aria-hidden="true">×</span></button></header>
       <div className={step === 'asset' ? picker.contents : styles.body} data-download-body={step !== 'asset' ? 'true' : undefined}>
         {step === 'scope' ? <div data-download-grid="true">
           <button type="button" data-download-option="true" onClick={() => { setSelection(s=>({...s,assetId:'all',fields:Object.fromEntries(fields.map(field=>[field.key,field.initial]))})); setStep(costStep ? 'costs' : 'timeline'); }}><span data-download-icon="true"><ScopeIcon /></span><span data-download-copy="true"><strong>{allLabel}</strong><small>All records in your chosen period.</small></span></button>
@@ -99,13 +100,14 @@ export default function ReportDownloadFlow({ pdfOnly = false, costStep, title, a
             <span data-asset-choice-copy="true"><strong>{asset.title}</strong>{asset.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}{asset.selectedMethod ? <AssetPickerDetail>{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</AssetPickerDetail> : null}<AssetSerialNumber value={asset.serialNumber} /></span>
             <span data-asset-choice-value="true"><AssetChooseIcon /></span>
           </button>)}{!assets.some(asset=>`${asset.title} ${asset.serialNumber || ''}`.toLowerCase().includes(search.trim().toLowerCase())) ? <div className={picker.empty}>No saved assets found.</div> : null}</div>
-        </> : step === 'costs' ? costStep?.content : step === 'timeline' ? <div className={`${styles.fields} ${compactTimeline || costStep ? styles.compactFields : ''}`}>
-          {budgetPeriods ? <p>Budgets show the current month and year. Historical budget snapshots are not available.</p> : <>
+        </> : step === 'costs' ? costStep?.content : step === 'timeline' ? <div className={`${styles.fields} ${budgetPeriods ? styles.budgetFields : ''} ${compactTimeline || costStep ? styles.compactFields : ''}`}>
+          {budgetPeriods ? null : <>
             <FilterQuestion menuClassName={styles.timelineMenu} label="Year" value={selection.year} options={[{value:'all',label:'All years'},...availableYears.map(year=>({value:year,label:year}))]} onChange={year=>setSelection(s=>({...s,year,month:'all'}))} />
             <FilterQuestion menuClassName={styles.timelineMenu} label="Month" disabledHint="Choose a year to select a month." value={selection.month} disabled={selection.year === 'all'} options={[{value:'all',label:'All months'},...Array.from({length:12},(_,i)=>({value:String(i+1),label:new Date(2000,i).toLocaleString('en-ZA',{month:'long'})}))]} onChange={month=>setSelection(s=>({...s,month}))} />
           </>}
-          {fields.filter(field=>!field.allAssetsOnly || selection.assetId === 'all').map(field=><FilterQuestion menuClassName={styles.timelineMenu} key={field.key} label={field.label} value={selection.fields[field.key]} options={field.options} onChange={value=>setSelection(s=>({...s,fields:{...s.fields,[field.key]:value}}))} />)}
+          {fields.filter(field=>!field.allAssetsOnly || selection.assetId === 'all').map(field=><FilterQuestion menuClassName={budgetPeriods ? `${styles.timelineMenu} ${styles.budgetMenu}` : styles.timelineMenu} key={field.key} label={field.label} value={selection.fields[field.key]} options={field.options} onChange={value=>setSelection(s=>({...s,fields:{...s.fields,[field.key]:value}}))} />)}
         </div> : <>
+          {formatOptions?.(selection)}
           <div className={styles.formatHeading}><strong>Choose export format</strong><span>{pdfOnly ? 'Download the printable PDF report.' : 'Choose PDF or Excel.'}</span></div>
           <div data-download-grid="true" aria-label="Report format">{(pdfOnly ? ['pdf'] as const : ['pdf','xlsx'] as const).map(format=><button key={format} type="button" disabled={busy} data-download-option="true" aria-pressed={selection.format === format} onClick={()=>instantDownload ? void submit(format) : setSelection(s=>({...s,format}))}><span data-download-icon="true"><img src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Printable asset report.' : 'Selected records in Excel.'}</small></span></button>)}</div>
         </>}
@@ -118,7 +120,7 @@ export default function ReportDownloadFlow({ pdfOnly = false, costStep, title, a
         {step === 'costs' && <button type="button" data-download-primary="true" disabled={!costStep?.canContinue}
           onClick={() => setStep('format')}>Next</button>}
         {step === 'format' && !instantDownload && <button type="button" disabled={busy} data-download-primary="true"
-          onClick={() => costStep ? setStep('timeline') : void submit(selection.format)}>{busy ? 'Preparing…' : 'Next'}</button>}
+          onClick={() => costStep ? setStep('timeline') : void submit(selection.format)}>{busy ? 'Preparing…' : budgetPeriods ? selection.format === 'pdf' ? 'Open PDF report' : 'Download Excel' : 'Next'}</button>}
         {step === 'timeline' && <button type="button" disabled={busy} data-download-primary="true"
           onClick={() => costStep ? void submit(selection.format) : setStep('format')}>
           {busy ? 'Preparing…' : !costStep ? 'Next' : selection.format === 'pdf' ? 'Open PDF report' : 'Download Excel'}

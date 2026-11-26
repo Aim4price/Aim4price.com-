@@ -2,6 +2,7 @@ import { teamBudgetResponse } from '../../../../../lib/team-budget-access';
 import { NextResponse } from 'next/server';
 import {
   deleteCostBudget,
+  setBudgetRecurringPreference,
   listCostBudgetsWithProgress,
   updateCostBudget,
   type CostBudgetInput,
@@ -101,7 +102,14 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   if (!current) return errorResponse('This budget could not be found.', 404);
 
   const body = await request.json().catch(() => null) as CostBudgetInput | null;
-  if (!body) return errorResponse('Invalid budget payload.', 400);
+  if (!body || typeof body !== 'object') return errorResponse('Invalid budget payload.', 400);
+  if ('includeRecurringCosts' in body) {
+    if (typeof body.includeRecurringCosts !== 'boolean') return errorResponse('Choose on or off for recurring costs.', 400);
+    try {
+      await setBudgetRecurringPreference(access.ownerUserId, current, body.includeRecurringCosts);
+      return NextResponse.json({ ok: true }, { headers: responseHeaders() });
+    } catch (error) { return budgetError(error); }
+  }
   if (!canAccessBudgetScope(access, body.assetId)) {
     return errorResponse('You do not have access to that budget scope.', 403);
   }

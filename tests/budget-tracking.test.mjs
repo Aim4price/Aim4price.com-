@@ -53,3 +53,21 @@ test('export propagates authorization errors and exports only authorized matchin
  allowed=true; assert.equal((await route.GET(request)).status,200); assert.equal(captured[0].rows.length,5);assert.equal(captured[0].rows[4][0],'All saved assets');
  request.nextUrl.searchParams.set('asset','unauthorized');assert.equal((await route.GET(request)).status,404);
 });
+
+test('budget downloads inherit each saved switch and can override it without changing spending or settings', () => {
+ const forecast = { expected: 300, recurringCosts:[{description:'Tracking <fee>',count:1,nextDue:'2026-09-28',expected:300}] };
+ const enabled = {...base,...forecast,includeRecurringCosts:true};
+ const disabled = {...base,...forecast,id:'two',includeRecurringCosts:false};
+ const budgets = [enabled,disabled];
+ const saved = reports.buildBudgetWorkbook(budgets,'Today');
+ assert.equal(saved[0].rows[4][13].value,300);
+ assert.equal(saved[0].rows[4][14].value,200);
+ assert.equal(saved[0].rows[5][13],null);
+ assert.equal(saved[1].rows.length,2);
+ assert.equal(reports.buildBudgetWorkbook(budgets,'Today',false).length,1);
+ assert.equal(reports.buildBudgetWorkbook(budgets,'Today',true)[1].rows.length,3);
+ assert.match(reports.buildBudgetReportHtml([disabled],'Today',true),/Tracking &lt;fee&gt;/);
+ assert.doesNotMatch(reports.buildBudgetReportHtml([enabled],'Today',false),/Tracking &lt;fee&gt;|Expected recurring costs/);
+ assert.equal(enabled.spent,500);
+ assert.equal(disabled.includeRecurringCosts,false);
+});

@@ -1,13 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
-import type { TrackedBudget } from '../../lib/budget-tracking';
+import { availableBudget, formatBudgetMoney as money, type TrackedBudget } from '../../lib/budget-tracking';
 import { allocatedBudgetCosts, budgetCostsUrl, type BudgetCost } from '../../lib/budget-cost-details';
 import { budgetCostAmount } from '../../lib/ownership-budget-tracker';
+import BudgetRecurringCosts from './BudgetRecurringCosts';
 import BudgetDetailIcon from '../../components/BudgetDetailIcon';
 import styles from './page.module.css';
-const money = (value: number) => `R ${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace(/,/g, ' ').replace('.', ',')}`;
 const date = (value: string | null) => value ? new Date(`${value.slice(0,10)}T12:00:00Z`).toLocaleDateString('en-ZA', {day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'}) : '';
-export default function BudgetCostDetails({ budget }: { budget: TrackedBudget }) {
+export default function BudgetCostDetails({ budget, onRefresh, onAddRecurring }: { budget: TrackedBudget; onRefresh: () => Promise<void>; onAddRecurring: () => void }) {
   const [costs, setCosts] = useState<BudgetCost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -28,13 +28,17 @@ export default function BudgetCostDetails({ budget }: { budget: TrackedBudget })
     void load();
     return () => controller.abort();
   }, [budget.id, budget.assetId, budget.periodKey, budget.period, budget.categories, budget.registerId, budget.includeFuelSlipCosts, budget.spent, attempt]);
+  const included = budget.includeRecurringCosts !== false;
+  const available = availableBudget(budget, included);
   return <>
     <dl className={styles.metrics}>
       <div><dt><BudgetDetailIcon kind="budget" />Budget</dt><dd>{money(budget.amount)}</dd></div>
-      <div><dt><BudgetDetailIcon kind="remaining" />{budget.overBy > 0 ? 'Over budget' : 'Remaining'}</dt><dd>{money(budget.overBy > 0 ? budget.overBy : budget.remaining)}</dd></div>
-      {budget.expected !== undefined && <div><dt>Expected commitments</dt><dd>{money(budget.expected)}</dd><small>Scheduled through period end. Shared commitments use saved allocations.</small></div>}
+      <div><dt><BudgetDetailIcon kind="remaining" />{included ? 'Available after recurring costs' : available < 0 ? 'Over budget' : 'Remaining'}</dt>
+        <dd className={available < 0 ? styles.negative : undefined}>{money(included ? available : Math.abs(available))}</dd></div>
       <div><dt><BudgetDetailIcon kind="alert" />Alert at</dt><dd>{budget.warningPercent}%</dd></div>
     </dl>
+    <BudgetRecurringCosts budget={budget} onRefresh={onRefresh} onAdd={onAddRecurring} />
+    <h3>Recorded costs</h3>
     <div className={styles.detailsMeta}>
       <span><BudgetDetailIcon kind="calendar" />{budget.periodLabel}</span>
       <span><BudgetDetailIcon kind="fuel" />Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span>

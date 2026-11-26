@@ -33,3 +33,10 @@
 .surface.surface.surface[data-compact-download="true"] [data-download-body]::-webkit-scrollbar { display: none; }
 .surface.surface.surface[data-compact-download="true"] [data-download-footer] { flex-shrink: 0; }
 @media (max-width: 540px) { html:not(:has([data-website-canvas])) .compactFields { gap: .7rem; padding: .8rem; } }
+
+.budgetFields { grid-template-columns: repeat(auto-fit, minmax(min(100%,16rem),1fr)); align-items: start; gap: 1rem; }
+.budgetFields > div { padding: .9rem; border: 1px solid var(--app-line,#ccded4); border-radius: 1rem; background: var(--app-surface,#fff); }
+.budgetFields > div > label { color: var(--app-text,#183f32); font-size: .95rem; letter-spacing: normal; text-transform: none; }
+.budgetFields button[role=combobox] { min-height: 3.3rem; border-color: var(--app-line,#aecbbd); border-radius: .8rem; background: var(--app-surface-soft,#eff7f2); }
+.budgetMenu [role=option] { min-height: 2.9rem; padding-inline: .9rem; }
+.budgetMenu [aria-selected=true] { font-weight: 800; }
