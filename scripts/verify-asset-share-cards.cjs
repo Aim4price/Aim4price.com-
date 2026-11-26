@@ -117,6 +117,36 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.notEqual(appearance.colours[0],appearance.colours[1],'Remove has the danger colour');
  assert.equal(appearance.colours[1],appearance.colours[2]);
  assert(appearance.chevron);
+ // A long register message must scroll within its editor while both share actions stay visible.
+ await page.setViewport({width: 1440, height: 650});
+ await page.evaluate(() => {
+   const Share = require('components/leads/SharedAssetExport').default;
+   const details = Array.from({length: 23}, (_, i) => `Asset ${i + 1}\nYear: 2022\nCondition: Good`).join('\n\n');
+   window.fixtureRoot.render(React.createElement(Share, {title: 'Combined asset register', details, photos: []}));
+ });
+ await click('Share');
+ await page.waitForSelector('textarea');
+ const layout = await page.evaluate(() => {
+   const message = document.querySelector('textarea');
+   const panel = message.closest('section[aria-label="Share outside Aim4price"]');
+   const body = panel.parentElement;
+   const actions = Array.from(panel.querySelectorAll('footer button'));
+   const whatsapp = actions.find(button => button.textContent === 'WhatsApp');
+   const footer = panel.querySelector('footer').getBoundingClientRect();
+   return {
+     bodyOverflow: body.scrollHeight - body.clientHeight,
+     messageOverflow: message.scrollHeight - message.clientHeight,
+     footerBelowAttachments: footer.top >= panel.querySelector('aside').getBoundingClientRect().bottom - 1,
+     actionsVisible: actions.length === 2 && actions.every(button => button.getBoundingClientRect().bottom <= innerHeight),
+     glyph: getComputedStyle(whatsapp.querySelector('svg')).fill,
+     label: getComputedStyle(whatsapp.querySelector('strong')).color,
+   };
+ });
+ assert(layout.bodyOverflow <= 1, 'The share dialog fits the viewport');
+ assert(layout.messageOverflow > 0, 'The full message can be read in the editor');
+ assert(layout.footerBelowAttachments && layout.actionsVisible, 'Both share actions fit below the attachments');
+ assert.equal(layout.glyph, 'rgb(8, 117, 67)');
+ assert.notEqual(layout.glyph, layout.label);
  console.log('PASS grouped asset identities, photo-to-asset mapping, multipage identity, editable outbound message, reset and preserved edits');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

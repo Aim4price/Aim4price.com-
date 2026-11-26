@@ -635,8 +635,9 @@
 }
 
 .whatsappButton .sendIcon {
-  border-color: var(--app-line, rgba(255, 255, 255, 0.48));
-  background: var(--app-surface-soft, rgba(255, 255, 255, 0.14));
+  color: #087543;
+  border-color: #99d9b3;
+  background: #dcf8e7;
 }
 
 .whatsappButton .sendIcon svg {
@@ -821,22 +822,59 @@
   white-space: normal;
 }
 
+.accountShareTheme:has(> .externalPanel) {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.accountShareTheme .externalPanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 0.85rem;
+}
+
 .accountShareTheme .shareLayout {
+  flex: 0 1 auto;
+  min-height: 11rem;
+  grid-template-rows: minmax(0, 1fr);
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: 1rem;
 }
 
 .accountShareTheme .messageCard,
 .accountShareTheme .attachmentsCard {
+  min-height: 0;
   padding: 1rem;
   border-radius: 1rem;
 }
 
+.accountShareTheme .attachmentsCard {
+  gap: 0.625rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.accountShareTheme .attachmentsCard > * {
+  flex-shrink: 0;
+}
+
 .accountShareTheme .messagePreview {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  padding: 0.8rem 1rem;
+  resize: none;
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 500;
-  line-height: 1.6;
+  line-height: 1.45;
+}
+
+.accountShareTheme .photoToggle,
+.accountShareTheme .addReportButton {
+  min-height: 4.25rem;
+  padding-block: 0.7rem;
 }
 
 .accountShareTheme .photoToggle > input {
@@ -848,16 +886,9 @@
 }
 
 .accountShareTheme .sendFooter {
-  position: sticky;
-  bottom: calc(-1 * var(--entry-padding));
-  z-index: 2;
-  margin: 0 calc(-1 * var(--entry-padding-right)) calc(-1 * var(--entry-padding)) calc(-1 * var(--entry-padding));
-  padding: 1rem var(--entry-padding-right) 1.6rem var(--entry-padding);
-  border: 0;
+  flex: none;
+  padding-top: 0.85rem;
   border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.11));
-  border-radius: 0;
-  background: var(--app-surface, rgba(255, 255, 255, 0.97));
-  box-shadow: 0 -8px 20px var(--app-shadow-colour, rgba(18, 45, 37, 0.035));
 }
 
 .accountShareTheme .sendButton {
@@ -879,6 +910,15 @@
 }
 
 @media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountShareTheme .shareLayout {
+    flex: none;
+    grid-template-rows: auto;
+  }
+
+  :global(:where(html:not(:has([data-website-canvas])))) .accountShareTheme .messagePreview {
+    height: 12rem;
+  }
+
   :global(:where(html:not(:has([data-website-canvas])))) .accountShareTheme .shareLayout,
   :global(:where(html:not(:has([data-website-canvas])))) .accountShareTheme .destinationGrid {
     grid-template-columns: 1fr;
@@ -900,18 +940,6 @@
 }
 .accountShareTheme .destinationArrow {
   font-size: 1.75rem;
-}
-
-/* Keep the standard single-asset composer within the desktop dialog. */
-.accountShareTheme .externalPanel {
-  gap: 0.85rem;
-}
-
-.accountShareTheme .messagePreview {
-  min-height: 0;
-  padding: 0.8rem 1rem;
-  font-size: 0.78rem;
-  line-height: 1.45;
 }
 
 textarea.messagePreview { display:block; width:100%; box-sizing:border-box; resize:vertical; font-family:inherit; color:inherit; }
