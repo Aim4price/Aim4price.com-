@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import ShareDisclosureDialog from '../../components/asset-register/ShareDisclosureDialog';
+import ContourCardSurface from '../../components/ContourCardSurface';
 import PageHelp from '../../components/PageHelp';
 import type { workspaceCards, WorkspaceRole } from '../../lib/workspace-navigation';
 import { useWorkspaceVisibility } from '../../lib/use-workspace-visibility';
@@ -21,7 +22,8 @@ function WorkspaceTile({card, role, free, screenshot}: {screenshot?:string; card
     if (screenshot && event.pointerType === 'mouse') { setRequested(true); setHovered(true); }
   }}
     onPointerLeave={() => setHovered(false)}>
-    {screenshot && requested && <span className={styles.preview} aria-hidden="true"
+    <ContourCardSurface />
+    {screenshot && requested && <span data-contour-preview className={styles.preview} aria-hidden="true"
       data-visible={loaded === screenshot && (hovered || focused)}>
       <img key={screenshot} alt="" src={'/workspace/screenshots/'+screenshot} onLoad={()=>setLoaded(screenshot)}/>
     </span>}

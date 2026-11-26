@@ -1,3 +1,4 @@
+import ContourCardSurface from '../../components/ContourCardSurface';
 import { PageHelpHeading } from '../../components/PageHelp';
 import Link from 'next/link';
 import AppHeader from '../../components/AppHeader';
@@ -26,9 +27,10 @@ export default function CostEntryChoices() {
                     <Link key={choice.href} href={choice.href}
                       className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`}
                       style={{ textDecoration: 'none' }} aria-label={`Open ${choice.title}`}>
+                      <ContourCardSurface />
                       <img src={choice.image} alt="" aria-hidden="true"
                         className={valuationStyles.sectorVideo} width={choice.width} height={choice.height} />
-                      <span className={valuationStyles.sectorVideoOverlay} aria-hidden="true" />
+                      <span data-contour-shade className={valuationStyles.sectorVideoOverlay} aria-hidden="true" />
                       <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
                         <span className={valuationStyles.sectorLabelWrap}>
                           <strong className={valuationStyles.sectorLabel}>{choice.title}</strong>
