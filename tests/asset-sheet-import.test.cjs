@@ -86,6 +86,8 @@ test('older sheet payloads keep their retry keys and saved custom columns', () =
 test('paperwork and condition mistakes are identified on their own columns', () => {
   const row = {...blankAsset(), title:'Trailer', insuredValue:'11500', insurance:'Not insured', condition:'Maybe'};
   assert.deepEqual(Object.keys(rowErrors(row,'excluded')).sort(), ['condition','insurance']);
+  assert.deepEqual(rowErrors({...blankAsset(), title:'Truck', finance:'Paid off', financeNote:'Settled in full'}, ''), {});
+  assert.ok(rowErrors({...blankAsset(), title:'Depot', category:'Property', registration:'CA123'}, '').license);
   assert.ok(rowErrors({...blankAsset(), title:'Stock', category:'Stock', replacement:'1500'},'excluded').replacement);
   assert.ok(rowErrors({...blankAsset(), title:'Trailer', replacement:'1500'},'').replacement);
 });

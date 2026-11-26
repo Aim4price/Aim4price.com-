@@ -22,7 +22,7 @@ export function conditionKey(input: string) {
     k === text || sheetConditions[k].toLowerCase() === text || (k === 'serious' && text === 'serious wear'));
 }
 export const paperworkChoices = {
-  finance: ['Financed', 'Not financed', 'Not sure', 'Not applicable'],
+  finance: ['Financed', 'Not financed', 'Paid off', 'Not sure', 'Not applicable'],
   insurance: ['Insured', 'Not insured', 'Not sure', 'Not applicable'],
   license: ['Licensed', 'Not licensed', 'Not sure', 'Not applicable'],
 } as const;
@@ -37,6 +37,7 @@ export function sheetStatus(row: AssetRow, field: StatusField) {
     if ((field === 'license' && row.registration) || (field === 'insurance' && row.insuredValue)) return 'yes';
     return 'unknown';
   }
+  if (field === 'finance' && ['paid off', 'paid', 'settled'].includes(text)) return 'paid';
   if (text === yes.toLowerCase() || text === 'yes') return 'yes';
   if (text === no.toLowerCase() || text === 'no') return 'no';
   if (['not applicable', 'n/a'].includes(text)) return 'not_applicable';
@@ -191,9 +192,12 @@ export function rowErrors(row: AssetRow, basis: Basis) {
   }
   if (row.replacement && sheetAssetKind(row.category) === 'stock') errors.replacement = 'Replacement price does not apply to stock.';
   if (row.insuredValue && sheetStatus(row, 'insurance') !== 'yes') errors.insurance = 'Choose Insured or clear the insured value.';
-  if (row.financeNote && sheetStatus(row, 'finance') !== 'yes') errors.finance = 'Choose Financed to include finance notes.';
+  const finance = sheetStatus(row, 'finance');
+  if (row.financeNote && finance !== 'yes' && finance !== 'paid') errors.finance = 'Choose Financed or Paid off to include finance notes.';
   if (row.insuranceNote && sheetStatus(row, 'insurance') !== 'yes') errors.insurance = 'Choose Insured to include insurance notes.';
   if (row.registration && sheetStatus(row, 'license') !== 'yes') errors.license = 'Choose Licensed or clear the registration number.';
+  if (sheetAssetKind(row.category) === 'property' && (row.registration || (row.license && sheetStatus(row, 'license') !== 'not_applicable')))
+    errors.license = 'Vehicle licensing does not apply to property. Clear the registration number and licence status.';
   for (const key of Object.keys(row) as Column[])
     if (row[key].length > 250)
       errors[key] = 'Use 250 characters or fewer.';
