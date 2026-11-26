@@ -4022,7 +4022,7 @@
   overflow: hidden;
 }
 
-.assetSelectionModal[data-asset-choice-modal] { height: auto; }
+.assetSelectionModal[data-asset-choice-modal] { height: min(49rem, calc(var(--website-visible-height, 100dvh) - 3rem)); }
 .assetSelectionModal[data-asset-choice-modal] .assetSelectionRow { grid-template-rows: auto; min-height: min-content; }
 
 .assetSelectionModal[data-asset-choice-modal] .assetSelectionList { grid-auto-rows: max-content; }
@@ -4322,9 +4322,54 @@
   :global(:where(html:not(:has([data-website-canvas])))) .documentTypeModal > header h2 { font-size: 1.5rem; }
 }
 
-/* Keep edit controls aligned and leave breathing room around the scrollable form. */
+/* Document detail fields and navigation. */
 .editDocumentModal .documentTypeTrigger { min-height: 3.25rem; padding: .75rem .9rem; border-radius: .8rem; }
-.accountDocumentModal.editDocumentModal .modalScroll { padding: 1.1rem var(--document-dialog-padding) 1.25rem !important; scrollbar-gutter: stable; }
+.accountDocumentModal.editDocumentModal .modalScroll { padding: 1.1rem var(--document-dialog-padding) 1.25rem !important; scrollbar-gutter: auto; }
 .accountDocumentModal.editDocumentModal .modalFooter { padding: 1rem var(--document-dialog-padding) 1.1rem !important; }
 .editDocumentModal .assetLinkSummary > div { min-width: 0; }
 .editDocumentModal .assetLinkSummary p { overflow-wrap: anywhere; }
+
+.editDocumentModal .currentFile > div {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .35rem .8rem;
+}
+.editDocumentModal .expiryFields,
+.editDocumentModal .notesField { grid-column: auto; }
+.editDocumentModal .notesField textarea { min-height: 3.5rem; height: 3.5rem; }
+
+.assetSelectionModal[data-asset-choice-modal] .assetSelectionBody .assetSelectionList[data-asset-choice-list] {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)) !important;
+  flex: 1 1 0 !important;
+  scrollbar-gutter: auto;
+}
+.assetPager {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .6rem;
+  padding: .4rem var(--picker-padding) .85rem;
+  font-weight: 700;
+  color: var(--app-text, #244d3e);
+}
+.assetPager span { margin-inline-end: auto; }
+.assetPager button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 2.75rem;
+  padding: .55rem 1rem;
+  border: 1px solid var(--app-line, #adccbf);
+  border-radius: .85rem;
+  background: var(--app-surface-soft, #eff7f2);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.assetPager button:focus-visible { outline: 2px solid var(--app-accent, #167055); outline-offset: 2px; }
+.assetPager button:hover:not(:disabled) { border-color: var(--app-accent, #167055); }
+.assetPager button:disabled { opacity: .45; cursor: default; }
+.assetPager svg { width: 1.1rem; height: 1.1rem; }

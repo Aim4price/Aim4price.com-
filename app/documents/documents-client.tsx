@@ -382,7 +382,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [filePickerDragging, setFilePickerDragging] = useState(false);
-  const [showAssetPicker, setShowAssetPicker] = useState(false);
+  const showAssetPicker = Boolean(modalMode && uploadStep === 3 && !(modalMode === 'upload' && initialAssetId));
+  const [assetPage, setAssetPage] = useState(1);
+  const [assetsPerPage, setAssetsPerPage] = useState(2);
+  const assetListRef = useRef<HTMLDivElement | null>(null);
   const [assetSearch, setAssetSearch] = useState('');
   const [documentTypeSearch, setDocumentTypeSearch] = useState('');
   const [showDocumentTypeOptions, setShowDocumentTypeOptions] = useState(false);
@@ -397,14 +400,12 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const summaryViewportRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
   const uploadWizardBodyRef = useRef<HTMLDivElement | null>(null);
-  const assetPickerModalRef = useRef<HTMLElement | null>(null);
+  const assetPickerModalRef = useRef<HTMLFormElement | null>(null);
   const filterModalRef = useRef<HTMLDivElement | null>(null);
   const deleteModalRef = useRef<HTMLElement | null>(null);
   const documentTypeModalRef = useRef<HTMLElement | null>(null);
   const pageContentRef = useRef<HTMLDivElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
-  const assetPickerReturnFocusRef = useRef<HTMLElement | null>(null);
-  const assetSelectionSnapshotRef = useRef<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const documentTypeInputRef = useRef<HTMLButtonElement | null>(null);
   const busyRef = useRef(false);
@@ -476,7 +477,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }, [showDocumentTypeOptions]);
 
   useEffect(() => {
-    if (!modalMode && !showFilters && !documentPendingDelete && !showAssetPicker) return;
+    if (!modalMode && !showFilters && !documentPendingDelete) return;
 
     const dialog = showDocumentTypeOptions
       ? documentTypeModalRef.current
@@ -495,11 +496,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busyRef.current) {
-        if (showAssetPicker) {
-          event.preventDefault();
-          closeAssetPickerModal(false);
-          return;
-        }
         if (modalMode && showDocumentTypeOptionsRef.current) {
           event.preventDefault();
           closeDocumentTypePicker();
@@ -588,10 +584,41 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     ].join(' ').toLowerCase().includes(needle));
   }, [assetSearch, assets]);
 
-  const selectedDraftAssets = useMemo(
-    () => assets.filter((asset) => draft.assetIds.includes(asset.id)),
-    [assets, draft.assetIds],
-  );
+  const assetPageCount = Math.max(1, Math.ceil(filteredAssets.length / assetsPerPage));
+  const currentAssetPage = Math.min(assetPage, assetPageCount);
+  const firstAsset = (currentAssetPage - 1) * assetsPerPage;
+  const visibleAssets = filteredAssets.slice(firstAsset, firstAsset + assetsPerPage);
+
+  useEffect(() => {
+    const list = assetListRef.current;
+    if (!showAssetPicker || !list) return;
+    const measure = () => {
+      const style = getComputedStyle(list);
+      const columns = style.gridTemplateColumns.split(' ').length;
+      const gap = parseFloat(style.rowGap) || 0;
+      const height = list.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      // Reserve room for a title, usage, category and serial number on each row.
+      const rows = Math.max(1, Math.min(3, Math.floor((height + gap) / (10 * rem + gap))));
+      setAssetsPerPage(columns * rows);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [showAssetPicker, assets.length]);
+
+  // Wrapped names and serial numbers can require more space than a typical asset.
+  useEffect(() => {
+    const list = assetListRef.current;
+    if (!showAssetPicker || !list || list.scrollHeight <= list.clientHeight + 1) return;
+    const columns = getComputedStyle(list).gridTemplateColumns.split(' ').length;
+    if (assetsPerPage <= columns) return;
+    const smallerPage = Math.max(columns, assetsPerPage - columns);
+    setAssetsPerPage(smallerPage);
+    setAssetPage(Math.floor(firstAsset / smallerPage) + 1);
+  }, [showAssetPicker, filteredAssets, assetsPerPage, firstAsset]);
+
   const allFilteredAssetsSelected = filteredAssets.length > 0
     && filteredAssets.every((asset) => draft.assetIds.includes(asset.id));
 
@@ -620,6 +647,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     ? { label: 'Confirm and upload', description: 'Your documents will be saved to this asset.' }
     : UPLOAD_STEPS[uploadStep - 1];
 
+  function documentActionLabel() {
+    if (uploadProgress) return `Uploading ${uploadProgress.current} of ${uploadProgress.total}…`;
+    if (busy) return 'Saving…';
+    if (uploadStep < 3) return 'Next';
+    if (modalMode === 'edit') return 'Save changes';
+    return selectedFiles.length > 1 ? `Upload ${selectedFiles.length} documents` : 'Upload document';
+  }
+
   function switchView(nextView: VaultView) {
     if (busyRef.current || loading) return;
     setView(nextView);
@@ -643,7 +678,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setSelectedFiles([]);
     setUploadProgress(null);
     setFilePickerDragging(false);
-    setShowAssetPicker(false);
+    setAssetPage(1);
     setAssetSearch('');
     setDocumentTypeSearch('');
     setShowDocumentTypeOptions(false);
@@ -669,7 +704,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setSelectedFiles([]);
     setUploadProgress(null);
     setFilePickerDragging(false);
-    setShowAssetPicker(false);
+    setAssetPage(1);
     setAssetSearch('');
     setDocumentTypeSearch(getAccountDocumentTypeLabel(document.documentType) ?? '');
     setShowDocumentTypeOptions(false);
@@ -812,31 +847,12 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     }));
   }
 
-  function openAssetPickerModal() {
-    if (busyRef.current) return;
-    assetPickerReturnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    assetSelectionSnapshotRef.current = [...draft.assetIds];
-    setAssetSearch('');
-    setShowAssetPicker(true);
-  }
-
-  function closeAssetPickerModal(keepSelection: boolean) {
-    if (busyRef.current) return;
-    if (!keepSelection) {
-      const previousAssetIds = [...assetSelectionSnapshotRef.current];
-      setDraft((current) => ({ ...current, assetIds: previousAssetIds }));
-    }
-    setAssetSearch('');
-    setShowAssetPicker(false);
-    window.requestAnimationFrame(() => assetPickerReturnFocusRef.current?.focus());
-  }
-
   function selectAllFilteredAssets() {
     if (busyRef.current || !filteredAssets.length) return;
-    const visibleAssetIds = filteredAssets.map((asset) => asset.id);
+    const matchingAssetIds = filteredAssets.map((asset) => asset.id);
     setDraft((current) => ({
       ...current,
-      assetIds: Array.from(new Set([...current.assetIds, ...visibleAssetIds])),
+      assetIds: Array.from(new Set([...current.assetIds, ...matchingAssetIds])),
     }));
   }
 
@@ -852,7 +868,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }
 
   function validateDocumentDetails(): boolean {
-    if (!draft.documentType) {
+    if (modalMode === 'upload' && !draft.documentType) {
       setModalNotice({ tone: 'error', message: 'Choose the document type before continuing.' });
       documentTypeInputRef.current?.focus();
       return false;
@@ -865,10 +881,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       setModalNotice({ tone: 'error', message: 'Describe the document in Notes when choosing Other document.' });
       return false;
     }
+    if (modalMode === 'edit' && !draft.title.trim()) {
+      setModalNotice({ tone: 'error', message: 'Add a clear document title.' });
+      return false;
+    }
     return true;
   }
 
-  function continueUploadFlow() {
+  function continueDocumentFlow() {
     setModalNotice(null);
     if (uploadStep === 1) {
       if (!selectedFiles.length) {
@@ -878,7 +898,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       setUploadStep(2);
       return;
     }
-    if (uploadStep === 2 && validateDocumentDetails()) setUploadStep(3);
+    if (uploadStep === 2 && validateDocumentDetails()) {
+      setAssetSearch('');
+      setAssetPage(1);
+      setUploadStep(3);
+    }
   }
 
   function returnToPreviousUploadStep() {
@@ -891,22 +915,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     event.preventDefault();
     if (!modalMode || busyRef.current) return;
 
-    if (modalMode === 'upload' && uploadStep < 3) {
-      continueUploadFlow();
+    if (uploadStep < 3) {
+      continueDocumentFlow();
       return;
     }
 
-    if (modalMode === 'upload' && !validateDocumentDetails()) return;
-    if (modalMode === 'edit' && !draft.category) {
-      setModalNotice({ tone: 'error', message: 'Choose the document type that best fits this document.' });
-      return;
-    }
-    if (modalMode === 'edit' && draft.documentType === 'other' && !draft.notes.trim()) {
-      setModalNotice({ tone: 'error', message: 'Describe the document in Notes when choosing Other document.' });
-      return;
-    }
-    if (modalMode === 'edit' && !draft.title.trim()) {
-      setModalNotice({ tone: 'error', message: 'Add a clear document title.' });
+    if (!validateDocumentDetails()) {
+      setUploadStep(2);
       return;
     }
     if (modalMode === 'upload' && !selectedFiles.length) {
@@ -1027,10 +1042,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   function closeModal() {
     if (busyRef.current) return;
-    if (showAssetPicker) {
-      closeAssetPickerModal(false);
-      return;
-    }
     setModalNotice(null);
     setShowDocumentTypeOptions(false);
     setModalMode(null);
@@ -1412,7 +1423,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
               <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
                 <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
-                <p>{modalMode === 'upload' ? uploadContext?.asset.title || 'Add files, details and links in three short steps.' : 'Update document details and linked assets.'}</p>
+                <p>{modalMode === 'upload' ? uploadContext?.asset.title || 'Add files, details and links in three short steps.' : 'Update the details, then choose the linked assets.'}</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
@@ -1494,11 +1505,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 ) : modalMode === 'edit' ? (
                   <div className={styles.currentFile}>
                     <Icon name="document" />
-                    <div><strong>{editingDocument?.fileName}</strong><span>{formatBytes(editingDocument?.byteSize ?? 0)} · Original file stays unchanged</span></div>
+                    <div><strong>{editingDocument?.fileName}</strong><span>{formatBytes(editingDocument?.byteSize ?? 0)}</span></div>
                   </div>
                 ) : null}
 
-                {modalMode === 'edit' || uploadStep === 2 ? <div className={styles.formGrid}>
+                {uploadStep === 2 ? <div className={styles.formGrid}>
                   {modalMode === 'edit' || selectedFiles.length <= 1 ? <label className={styles.field}>
                     <span>
                       Document title
@@ -1563,7 +1574,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   </label>
                 </div> : null}
 
-                {modalMode === 'edit' || uploadStep === 3 ? (modalMode === 'upload' && initialAssetId ? (
+                {modalMode === 'upload' && uploadStep === 3 && initialAssetId ? (
                   <section className={styles.lockedAssetLink} aria-labelledby="linked-asset-heading">
                     <span className={styles.lockedAssetIcon}><Icon name="link" /></span>
                     <div>
@@ -1573,29 +1584,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     </div>
                     <strong>Linked</strong>
                   </section>
-                ) : (
-                  <section className={styles.assetLinkSummary} aria-labelledby="linked-assets-heading">
-                    <span className={styles.assetLinkSummaryIcon} aria-hidden="true"><Icon name="link" /></span>
-                    <div>
-                      <h3 id="linked-assets-heading">
-                        {draft.assetIds.length
-                          ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset' : 'assets'} linked`
-                          : 'No assets linked'}
-                      </h3>
-                      <p>
-                        {draft.assetIds.length
-                          ? selectedDraftAssets.map((asset) => asset.title).join(' · ') || 'Linked assets'
-                          : selectedFiles.length > 1
-                            ? <>These documents will be saved in Documents.<br />You can link them to assets now or later.</>
-                            : <>This document will be saved in Documents.<br />You can link it to assets now or later.</>}
-                      </p>
-                    </div>
-                    <button type="button" onClick={openAssetPickerModal} disabled={busy}>
-                      {draft.assetIds.length ? 'Change assets' : 'Choose assets'}
-                      <AssetChooseIcon />
-                    </button>
-                  </section>
-                )) : null}
+                ) : null}
                 </fieldset>
                 </div>
               </div>
@@ -1615,16 +1604,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 <button type="submit" className={`${styles.uploadButton} ${modalMode === 'upload' ? wizardStyles.primaryAction : ''}`} disabled={busy}>
                   {busy
                     ? <span className={styles.buttonSpinner} />
-                    : <Icon name={modalMode === 'upload' && uploadStep < 3 ? 'chevron-right' : modalMode === 'upload' ? 'upload' : 'edit'} />}
-                  {uploadProgress
-                    ? `Uploading ${uploadProgress.current} of ${uploadProgress.total}…`
-                    : busy
-                      ? 'Saving…'
-                      : modalMode === 'upload'
-                        ? uploadStep < 3
-                          ? 'Continue'
-                          : selectedFiles.length > 1 ? `Upload ${selectedFiles.length} documents` : 'Upload document'
-                        : 'Save changes'}
+                    : <Icon name={uploadStep < 3 ? 'chevron-right' : modalMode === 'upload' ? 'upload' : 'edit'} />}
+                  {documentActionLabel()}
                 </button>
               </footer>
             </form>
@@ -1659,9 +1640,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       {showAssetPicker ? (
         <div
           className={`${styles.modalBackdrop} ${styles.assetPickerBackdrop}`} data-website-overlay
-          onMouseDown={(event) => { if (event.target === event.currentTarget) closeAssetPickerModal(false); }}
+          onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}
         >
-          <section
+          <form
+            onSubmit={submitDocument}
             ref={assetPickerModalRef}
             className={`${styles.assetSelectionModal} ${pickerStyles.modal}`}
             data-asset-choice-modal="true"
@@ -1673,35 +1655,38 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             <header className={styles.assetSelectionHeader} data-asset-choice-header="true">
               <div>
                 <h2 id="asset-picker-title">Choose assets</h2>
-                <p id="asset-picker-description">Select the saved assets these documents belong to.</p>
+                <p id="asset-picker-description">Select the saved assets these documents belong to, or leave them unlinked.</p>
               </div>
-              <button type="button" onClick={() => closeAssetPickerModal(false)} aria-label="Close asset chooser" data-modal-close="true"><span aria-hidden="true">×</span></button>
+              <button type="button" onClick={closeModal} disabled={busy} aria-label="Close asset chooser" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
 
             <div className={styles.assetSelectionBody} data-asset-choice-surface="true">
+              {modalNotice ? <div className={styles.modalNotice} role="alert">{modalNotice.message}</div> : null}
               <div className={styles.assetSelectionToolbar} data-asset-choice-toolbar="true">
                 <input
                   className={styles.assetSelectionSearch}
                   type="search"
                   value={assetSearch}
-                  onChange={(event) => setAssetSearch(event.target.value)}
+                  disabled={busy}
+                  onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }}
+                  onChange={(event) => { setAssetSearch(event.target.value); setAssetPage(1); }}
                   placeholder="Search assets..."
                   aria-label="Search assets"
                   data-modal-initial-focus="true"
                 />
                 <div className={styles.assetSelectionToolbarActions}>
-                  <button type="button" className={styles.cancelButton} onClick={selectAllFilteredAssets} disabled={!filteredAssets.length || allFilteredAssetsSelected}>
-                    Select all
+                  <button type="button" className={styles.cancelButton} onClick={selectAllFilteredAssets} disabled={busy || !filteredAssets.length || allFilteredAssetsSelected}>
+                    {assetSearch.trim() ? `Select all ${filteredAssets.length} matches` : `Select all ${assets.length}`}
                   </button>
-                  <button type="button" className={styles.cancelButton} onClick={clearSelectedAssets} disabled={!draft.assetIds.length}>
+                  <button type="button" className={styles.cancelButton} onClick={clearSelectedAssets} disabled={busy || !draft.assetIds.length}>
                     Clear
                   </button>
                 </div>
               </div>
 
               {showAssetPicker && assets.length ? (
-                <div className={styles.assetSelectionList} data-asset-choice-list="true">
-                  {filteredAssets.length ? filteredAssets.map((asset) => {
+                <div ref={assetListRef} className={styles.assetSelectionList} data-asset-choice-list="true">
+                  {visibleAssets.length ? visibleAssets.map((asset) => {
                     const checked = draft.assetIds.includes(asset.id);
                     return (
                       <label
@@ -1710,7 +1695,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                         data-asset-choice-row="true"
                         data-asset-choice-selected={checked ? 'true' : undefined}
                       >
-                        <input type="checkbox" checked={checked} onChange={() => toggleAsset(asset.id)} />
+                        <input type="checkbox" checked={checked} disabled={busy} onChange={() => toggleAsset(asset.id)} />
                         <span className={styles.assetSelectionCopy} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
                           <small data-asset-choice-meta="true">{asset.detail || asset.meta || 'No key details saved yet'}</small>
@@ -1730,22 +1715,35 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               ) : (
                 <div className={styles.assetSelectionEmpty}>No assets are available yet. You can still save these documents and link assets later.</div>
               )}
+              {assets.length > 0 && (
+                <nav className={styles.assetPager} aria-label="Asset pages">
+                  <span role="status">{filteredAssets.length ? `Page ${currentAssetPage} of ${assetPageCount}` : '0 results'}</span>
+                  <button type="button" disabled={busy || currentAssetPage === 1}
+                    onClick={() => setAssetPage(currentAssetPage - 1)} aria-label="Previous asset page">
+                    <Icon name="chevron-left" /> Previous
+                  </button>
+                  <button type="button" disabled={busy || currentAssetPage === assetPageCount}
+                    onClick={() => setAssetPage(currentAssetPage + 1)} aria-label="Next asset page">
+                    Next <Icon name="chevron-right" />
+                  </button>
+                </nav>
+              )}
             </div>
 
             <footer className={styles.assetSelectionFooter} data-asset-choice-footer="true">
-              <span className={styles.srOnly} role="status" aria-live="polite">
+              <span role="status" aria-live="polite">
                 {draft.assetIds.length
                   ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset selected' : 'assets selected'}`
                   : 'Account-level document'}
               </span>
-              <button type="button" className={styles.cancelButton} onClick={() => closeAssetPickerModal(false)}>Cancel</button>
-              <button type="button" className={styles.uploadButton} data-asset-choice-action="primary" onClick={() => closeAssetPickerModal(true)}>
-                {draft.assetIds.length
-                  ? `Done · ${draft.assetIds.length} selected`
-                  : 'Done · Account level'}
+              <button type="button" className={styles.cancelButton} disabled={busy} onClick={returnToPreviousUploadStep}>
+                <Icon name="chevron-left" /> Back
+              </button>
+              <button type="submit" className={styles.uploadButton} data-asset-choice-action="primary" disabled={busy}>
+                {documentActionLabel()}
               </button>
             </footer>
-          </section>
+          </form>
         </div>
       ) : null}
 

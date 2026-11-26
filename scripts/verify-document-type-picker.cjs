@@ -21,19 +21,30 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await require('@sparticuz/chromium').executablePath(),args:['--no-sandbox','--disable-gpu'],pipe:true,headless:true});
   const page=await browser.newPage(), errors=[], uploads=[];
   let failNextUpload=false;
+  const edits=[];
+  const assets=Array.from({length:23},(_,i)=>({
+    id:'tractor-'+(i+1), title:i===12 ? '2022 New Holland TT4.90 4WD Openstation with front loader and pallet forks' : 'Tractor '+(i+1), serialNumber:'SN-'+(i+1),
+    meta:'Year Model: 2022 · Usage: 3 200 hours · Condition: Good',
+    categoryLabel:'Agricultural',methodLabel:'Basic valuation'
+  }));
   page.on('pageerror',e=>errors.push(e.message));
   await page.setViewport({width:1440,height:900});
+  await page.evaluateOnNewDocument(()=>localStorage.setItem('aim4price.website-canvas.v2.intro','seen'));
   await page.setRequestInterception(true);
   page.on('request',async r=>{
    const u=new URL(r.url());if(!u.pathname.startsWith('/api/'))return r.continue();
    const user={id:'fixture',name:'Test Owner',email:'test@example.invalid',accountType:'owner'};
-   const doc={id:'fixture',title:'Saved title',category:'insurance',documentType:'insurance-policy',notes:'Keep these notes',expiryDate:null,fileName:'policy.pdf',contentType:'application/pdf',byteSize:100,assetLinks:[],createdAtIso:'2026-10-01',updatedAtIso:'2026-10-01',deletedAtIso:null};
+   const doc={id:'fixture',title:'Saved title',category:'insurance',documentType:'insurance-policy',notes:'Keep these notes',expiryDate:null,fileName:'policy.pdf',contentType:'application/pdf',byteSize:100,assetLinks:[assets[0]],createdAtIso:'2026-10-01',updatedAtIso:'2026-10-01',deletedAtIso:null};
    if(u.pathname==='/api/documents'&&r.method()==='POST') {
     uploads.push(await r.fetchPostData());
     if(failNextUpload){failNextUpload=false;return r.respond({status:500,contentType:'application/json',body:JSON.stringify({ok:false,error:'Fixture upload failure'})});}
     return r.respond({status:200,contentType:'application/json',body:JSON.stringify({ok:true,document:doc})});
    }
-   const data=u.pathname==='/api/me'?{ok:true,signedIn:true,user}:u.pathname==='/api/documents'?{ok:true,documents:[doc],assets:[]}:{ok:true,items:[],notifications:[],profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
+   if(u.pathname==='/api/documents/fixture' && r.method()==='PATCH') {
+    edits.push(JSON.parse(r.postData()));
+    return r.respond({status:200,contentType:'application/json',body:JSON.stringify({ok:true,document:doc})});
+   }
+   const data=u.pathname==='/api/me'?{ok:true,signedIn:true,user}:u.pathname==='/api/documents'?{ok:true,documents:[doc],assets}:{ok:true,items:[],notifications:[],profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
    r.respond({status:200,contentType:'application/json',body:JSON.stringify(data)});
   });
   async function click(text){await page.$$eval('button',(buttons,text)=>{const b=buttons.find(b=>b.textContent.trim()===text);if(!b)throw Error('Missing '+text);b.click();},text);}
@@ -52,12 +63,64 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await page.waitForSelector('#document-type-trigger');
   assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Licence disc/);
   assert.equal(await page.$eval('textarea',e=>e.value),'Keep these notes');
-  await page.click('[aria-label="Close dialog"]');
+  const row = '[data-asset-choice-row]';
+  const search = '[aria-label="Search assets"]';
+  const next = '[aria-label="Next asset page"]';
+  async function fits(selector) {
+    const geometry=await page.$eval(selector,el=>[el.scrollHeight-el.clientHeight,el.scrollWidth-el.clientWidth]);
+    assert(geometry.every(delta=>delta<=1),selector+' overflows: '+geometry);
+  }
+  for(const [width,height] of [[1440,900],[1920,870],[1366,650],[390,844]]) {
+    await page.setViewport({width,height});
+    await fits('[class*="editDocumentModal"] [class*="modalScroll"]');
+    await click('Next');
+    await page.waitForSelector(row);
+    assert.equal(await page.$eval(row+' input',el=>el.checked),true,'Existing link on first page at '+width);
+    await fits('[data-asset-choice-list]');
+    await page.click(next);
+    await page.waitForFunction(()=>document.querySelector('[aria-label="Asset pages"]').textContent.includes('Page 2 of'));
+    await fits('[data-asset-choice-list]');
+    await click('Back');
+    await page.waitForSelector('#document-type-trigger');
+  }
+  await page.setViewport({width:1440,height:900});
+  await click('Next');await page.waitForSelector(row);
+  await page.type(search,'SN-23');
+  await page.waitForFunction(()=>document.querySelectorAll('[data-asset-choice-row]').length===1);
+  await page.click(row);
+  await page.focus(search);
+  await page.keyboard.press('Enter');
+  assert.equal(edits.length,0);
+  await click('Back');await page.waitForSelector('#document-type-trigger');
+  assert.equal(await page.$eval('textarea',el=>el.value),'Keep these notes');
+  await click('Next');await page.waitForSelector(row);
+  await page.type(search,'unmatched');await page.waitForFunction(()=>document.body.textContent.includes('No assets match'));
+  await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+  assert.deepEqual(edits[0].assetIds.sort(),['tractor-1','tractor-23']);
+  assert.equal(edits[0].documentType,'licence-disc');
+  await click('Edit');await click('Next');await page.waitForSelector(row);
+  const visited=new Set();
+  do {
+    await fits('[data-asset-choice-list]');
+    for(const label of await page.$$eval(row+' [data-asset-choice-copy] > strong',els=>els.map(el=>el.textContent))) visited.add(label);
+    if(await page.$eval(next,el=>el.disabled)) break;
+    await page.click(next);
+  } while(visited.size<assets.length);
+  assert.equal(visited.size,assets.length);
+  await page.type(search,'SN-2');
+  await click('Select all 5 matches');
+  assert.match(await page.$eval('[data-asset-choice-footer]',el=>el.textContent),/6 assets selected/);
+  await click('Clear');
+  await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+  assert.deepEqual(edits[1].assetIds,[]);
   await click('Upload documents');await page.waitForSelector('input[type=file]');
   await fs.writeFile('/tmp/document-picker-fixture.txt','Local test document');
-  await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');await click('Continue');await page.waitForSelector('#document-type-trigger');
+  await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');await click('Next');await page.waitForSelector('#document-type-trigger');
   await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');await click('Insurance policy');
   await page.waitForSelector('#document-type-trigger');assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Insurance policy/);
+  await click('Next');await page.waitForSelector(search);
+  await click('Upload document');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+  assert.equal(uploads.length,1);
   // Asset cards use this same wizard, with a fixed link and no vault page underneath.
   for (const viewport of [{width:1440,height:900},{width:390,height:844}]) {
    uploads.length=0;failNextUpload=true;
@@ -65,18 +128,18 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    await page.goto('http://127.0.0.1:3049/document-type-validation/asset',{waitUntil:'networkidle0',timeout:120000});
    await page.waitForSelector('input[type=file]');
    assert.equal(await page.$('#document-vault-title'),null);
-   await click('Continue');await page.waitForFunction(()=>document.body.textContent.includes('Select at least one document'));
+   await click('Next');await page.waitForFunction(()=>document.body.textContent.includes('Select at least one document'));
    await fs.writeFile('/tmp/document-picker-second.txt','Second local document');
    await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt','/tmp/document-picker-second.txt');
-   await click('Continue');await page.waitForSelector('#document-type-trigger');
+   await click('Next');await page.waitForSelector('#document-type-trigger');
    await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');await click('Insurance policy');
    await page.waitForSelector('#document-type-trigger');
-   await click('Continue');await page.waitForSelector('#linked-asset-heading');
+   await click('Next');await page.waitForSelector('#linked-asset-heading');
    assert.match(await page.$eval('#linked-asset-heading',e=>e.textContent),/2022 New Holland/);
    assert(!await page.$$eval('button',buttons=>buttons.some(b=>b.textContent.includes('Choose assets')||b.textContent.includes('Change assets'))));
    await page.screenshot({path:'/tmp/asset-document-confirm-'+viewport.width+'.png'});
    await click('Back');await page.waitForSelector('#document-type-trigger');assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Insurance policy/);
-   await click('Continue');await page.waitForSelector('#linked-asset-heading');await click('Upload 2 documents');
+   await click('Next');await page.waitForSelector('#linked-asset-heading');await click('Upload 2 documents');
    await page.waitForFunction(()=>document.body.textContent.includes('1 file remains'));
    assert.equal(uploads.length,2);assert.equal(await page.$eval('[data-saved]',e=>e.textContent),'1 saved');
    await click('Upload document');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
@@ -89,7 +152,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    await click('Add document');await page.waitForSelector('input[type=file]');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
   }
   assert.deepEqual(errors,[]);
-  console.log('PASS vault and asset-card wizard, chooser, fixed links, partial retry, cumulative totals, Escape and desktop/mobile flow');
+  console.log('PASS paged document links, search, bulk selection, edit and upload, fixed links, partial retry, and desktop/mobile fit');
  } finally {if(browser)await browser.close();if(server){server.kill('SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}await fs.rm(fixture,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types/app/document-type-validation'),{recursive:true,force:true});}
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
