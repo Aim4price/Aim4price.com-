@@ -4221,14 +4221,18 @@ export default function MyInvoicesClient({
                   <section className={reviewStyles.panel} aria-labelledby="budget-modal-title">
                     <dl className={reviewStyles.grid}>
                       <div className={reviewStyles.asset}>
-                        <dt>{groupBudget ? groupName : budgetDraft.registerId ? 'Register' : selectedBudgetAssets.length === 1 ? 'Asset' : 'Assets'}</dt>
+                        <dt>{groupBudget ? 'Group budget' : budgetDraft.registerId ? 'Register' : selectedBudgetAssets.length === 1 ? 'Asset' : 'Assets'}</dt>
                         <dd>
-                          {selectedBudgetAssets.length
-                            ? selectedBudgetAssets.map((asset) => asset.title).join(', ')
+                          {groupBudget ? groupName : selectedBudgetAssets.length > 1 ? `${selectedBudgetAssets.length} individual budgets` : selectedBudgetAssets.length
+                            ? selectedBudgetAssets[0].title
                             : budgetDraft.registerId ? budgetRegisterName || 'Selected register'
                             : budgetDraft.assetId === 'all'
                               ? 'All saved assets'
                               : 'No assets selected'}
+                          {selectedBudgetAssets.length > 1 && <details className={reviewStyles.assetList}>
+                            <summary>View {selectedBudgetAssets.length} assets</summary>
+                            <ul>{selectedBudgetAssets.map(asset => <li key={asset.id}>{asset.title}</li>)}</ul>
+                          </details>}
                         </dd>
                       </div>
                       <div className={reviewStyles.period}>
@@ -4237,12 +4241,12 @@ export default function MyInvoicesClient({
                       </div>
                       <div className={reviewStyles.amount}>
                         <dt>{budgetDraft.period === 'monthly' ? 'Monthly budget' : 'Annual budget'}</dt>
-                        <dd>{formatMoney(budgetAmountValue)}{groupBudget ? ' for the group' : selectedBudgetAssets.length > 1 ? ' per asset' : ''} <small>{budgetDraft.includeVat ? 'Incl. VAT' : 'Excl. VAT'}</small></dd>
+                        <dd>{formatReviewMoney(budgetAmountValue)}<small>{groupBudget ? ' for the group' : selectedBudgetAssets.length > 1 ? ' per asset' : ''}{selectedBudgetAssets.length > 1 && ' · '}{budgetDraft.includeVat ? 'Incl. VAT' : 'Excl. VAT'}</small></dd>
                       </div>
                       <div className={reviewStyles.alert}>
                         <dt>Alert at</dt>
                         <dd>{budgetDraft.warningPercent}% of budget
-                          <small>{formatMoney(budgetAmountValue * budgetWarningValue / 100)} spent</small>
+                          <small>{formatReviewMoney(budgetAmountValue * budgetWarningValue / 100)} spent</small>
                         </dd>
                       </div>
                       <div className={reviewStyles.fuel}>
