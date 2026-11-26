@@ -2191,7 +2191,7 @@ export default function MyInvoicesClient({
 
   function confirmBudgetAssetPicker() {
     const selectedIds = budgetPickerAssetIds;
-    if (!selectedIds.length || (groupBudget && (selectedIds.length < 2 || !groupName.trim()))) return;
+    if (!selectedIds.length || (groupBudget && selectedIds.length < 2)) return;
     setBudgetSelectedAssetIds(selectedIds);
     setBudgetDraft((current) => ({
       ...current,
@@ -2262,6 +2262,10 @@ export default function MyInvoicesClient({
       return;
     }
     if (budgetWizardStep === 4) {
+      if (groupBudget && !groupName.trim()) {
+        setBudgetFormError('Enter a group name.');
+        return;
+      }
       if (!budgetLimitIsValid) {
         setBudgetFormError('Enter a budget amount and a warning level from 1% to 99%.');
         return;
@@ -3964,10 +3968,6 @@ export default function MyInvoicesClient({
                 <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetModal} aria-label="Close budget" data-modal-close="true"><span aria-hidden="true">×</span></button>
               </div>
               <div className={styles.modalDivider} />
-              {groupBudget && <div className={styles.pickerToolbar}>
-                <input aria-label="Group name" placeholder="Group name, e.g. Delivery fleet" maxLength={100}
-                  value={groupName} onChange={event => setGroupName(event.target.value)} />
-              </div>}
               <div
                 className={`${styles.pickerToolbar} ${styles.budgetAssetPickerToolbar}`}
                 data-asset-choice-toolbar="true"
@@ -4043,7 +4043,7 @@ export default function MyInvoicesClient({
                   className={styles.primaryButton}
                   data-asset-choice-action="primary"
                   onClick={confirmBudgetAssetPicker}
-                  disabled={!budgetPickerAssetIds.length || (groupBudget && (budgetPickerAssetIds.length < 2 || !groupName.trim()))}
+                  disabled={!budgetPickerAssetIds.length || (groupBudget && budgetPickerAssetIds.length < 2)}
                 >
                   Next
                 </button>
@@ -4112,7 +4112,7 @@ export default function MyInvoicesClient({
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-period-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-period-title" tabIndex={-1}>Choose the budget period</h3>
-                      <p>{groupBudget ? `One shared limit for ${groupName}.` : budgetRegisterName ? `One shared limit for ${budgetRegisterName}.`
+                      <p>{groupBudget ? `One shared limit for ${selectedBudgetAssets.length} assets.` : budgetRegisterName ? `One shared limit for ${budgetRegisterName}.`
                         : selectedBudgetAssets.length > 1 ? `Separate limits for ${selectedBudgetAssets.length} assets.`
                         : selectedBudgetAsset?.title || 'Applies to all saved assets.'}</p>
                     </div>
@@ -4174,6 +4174,11 @@ export default function MyInvoicesClient({
                       </label>
                     </div>
 
+                    {groupBudget && <label className={styles.budgetField}>
+                      <span>Group name</span>
+                      <input type="text" placeholder="e.g. Delivery fleet" required maxLength={100}
+                        value={groupName} onChange={event => setGroupName(event.target.value)} />
+                    </label>}
                     <div className={styles.budgetLimitGrid}>
                       <label className={styles.budgetField}>
                         <span>{groupBudget ? 'Group budget amount' : selectedBudgetAssets.length > 1 ? 'Amount per asset' : 'Budget amount'}</span>
