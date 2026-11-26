@@ -47,12 +47,15 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    const data=u.pathname==='/api/me'?{ok:true,signedIn:true,user}:u.pathname==='/api/documents'?{ok:true,documents:[doc],assets}:{ok:true,items:[],notifications:[],profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
    r.respond({status:200,contentType:'application/json',body:JSON.stringify(data)});
   });
-  async function click(text){await page.$$eval('button',(buttons,text)=>{const b=buttons.find(b=>b.textContent.trim()===text);if(!b)throw Error('Missing '+text);b.click();},text);}
+  async function click(text){await page.$$eval('button',(buttons,text)=>{const b=buttons.find(b=>b.textContent.trim()===text || b.getAttribute("aria-label")===text);if(!b)throw Error('Missing '+text);b.click();},text);}
   await page.goto('http://127.0.0.1:3049/document-type-validation',{waitUntil:'networkidle0',timeout:120000});
   await click('Edit');await page.waitForSelector('#document-type-trigger');
   await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');
   assert.equal(await page.$$eval('[role=dialog]',nodes=>nodes.length),1);
   await page.waitForFunction(()=>document.querySelector('[aria-label="Search document types"]')===document.activeElement);
+  await click('Next');
+  await page.waitForFunction(()=>document.querySelector('[data-download-footer]')?.textContent.includes('Page 2'));
+  await click('Previous');
   await page.type('[aria-label="Search document types"]','licence');
   await page.keyboard.press('Escape');await page.waitForSelector('#document-type-trigger');
   assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Insurance policy/);
@@ -116,7 +119,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await click('Upload documents');await page.waitForSelector('input[type=file]');
   await fs.writeFile('/tmp/document-picker-fixture.txt','Local test document');
   await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');await click('Next');await page.waitForSelector('#document-type-trigger');
-  await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');await click('Insurance policy');
+  await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');await page.type('[aria-label="Search document types"]','insurance');await click('Insurance policy');
   await page.waitForSelector('#document-type-trigger');assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Insurance policy/);
   await click('Next');await page.waitForSelector(search);
   await click('Upload document');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
@@ -132,7 +135,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    await fs.writeFile('/tmp/document-picker-second.txt','Second local document');
    await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt','/tmp/document-picker-second.txt');
    await click('Next');await page.waitForSelector('#document-type-trigger');
-   await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');await click('Insurance policy');
+   await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');await page.type('[aria-label="Search document types"]','insurance');await click('Insurance policy');
    await page.waitForSelector('#document-type-trigger');
    await click('Next');await page.waitForSelector('#linked-asset-heading');
    assert.match(await page.$eval('#linked-asset-heading',e=>e.textContent),/2022 New Holland/);
