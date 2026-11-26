@@ -32,10 +32,7 @@ type StatusField = keyof typeof paperworkChoices;
 export function sheetStatus(row: AssetRow, field: StatusField) {
   const text = row[field].trim().toLowerCase().replace('licenced', 'licensed');
   const [yes, no] = paperworkChoices[field];
-  if (!text) {
-    if ((field === 'license' && row.registration) || (field === 'insurance' && row.insuredValue)) return 'yes';
-    return 'unknown';
-  }
+  if (!text) return 'unknown';
   if (field === 'finance' && ['paid off', 'paid', 'settled'].includes(text)) return 'paid';
   if (text === yes.toLowerCase() || text === 'yes') return 'yes';
   if (text === no.toLowerCase() || text === 'no') return 'no';

@@ -86,6 +86,8 @@ test('older sheet payloads keep their retry keys and saved custom columns', () =
 test('paperwork and condition mistakes are identified on their own columns', () => {
   const row = {...blankAsset(), title:'Trailer', insuredValue:'11500', insurance:'Not insured', condition:'Maybe'};
   assert.deepEqual(Object.keys(rowErrors(row,'excluded')).sort(), ['condition','insurance']);
+  assert.ok(rowErrors({...blankAsset(), title:'Truck', registration:'CA123'}, '').license);
+  assert.ok(rowErrors({...blankAsset(), title:'Truck', insuredValue:'11500'}, 'excluded').insurance);
   assert.deepEqual(rowErrors({...blankAsset(), title:'Truck', finance:'Paid off', financeNote:'Settled in full'}, ''), {});
   assert.ok(rowErrors({...blankAsset(), title:'Depot', category:'Property', registration:'CA123'}, '').license);
   assert.ok(rowErrors({...blankAsset(), title:'Stock', category:'Stock', replacement:'1500'},'excluded').replacement);
@@ -144,7 +146,7 @@ test('preview and save preserve custom fields on each asset and retries skip sav
   assert.equal(assets.length,2);
 
   const truck = {...blankAsset(), make:'Isuzu', model:'FTR 850', category:'Truck', year:'2021', serial:'001204',
-    condition:'Requires attention', usage:'186000', unit:'km', value:'115000', replacement:'230000', registration:'CA123',
+    condition:'Requires attention', usage:'186000', unit:'km', value:'115000', replacement:'230000', registration:'CA123', license:'Licensed', insurance:'Insured',
     finance:'Financed', financeNote:'Vehicle finance', insuredValue:'172500', insuranceNote:'Fleet policy', note:'Delivery vehicle'};
   const body = {basis:'included', customColumns:[], rows:[truck]};
   const checked = await send('preview', undefined, body);
