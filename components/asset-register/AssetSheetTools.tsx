@@ -208,27 +208,6 @@ export default function AssetSheetTools({ tool: initialTool, register, rows, vis
       {(tool.kind === 'row' || tool.kind === 'bulk') && <button onClick={onClose}>Cancel</button>}
       {tool.kind === 'order' && <button className={styles.primary} onClick={onClose}>Done</button>}
       {tool.kind === 'add' && <button className={styles.primary} disabled={!choice || (choice === 'new' && !name.trim())} onClick={addColumn}>Next</button>}
-      {tool.kind === 'columns' && !action && <div className={css.columnTools}>
-        <button type="button" onClick={() => { setChoice(''); setError(''); setTool({ kind: 'add' }); }}>Add column</button>
-        <button type="button" disabled={visible.length < 2} onClick={() => setTool({ kind: 'order' })}>Reorder columns</button>
-      </div>}
-      {tool.kind === 'order' && <ol className={css.orderList}>{visible.map((key, index) =>
-        <li key={key}>
-          <strong>{columnLabel(key)}</strong>
-          {([-1, 1] as const).map(direction => {
-            const side = direction === -1 ? 'left' : 'right';
-            return <button key={side} type="button" disabled={index + direction < 0 || index + direction >= visible.length}
-              aria-label={'Move ' + columnLabel(key) + ' ' + side} onClick={event => {
-                const row = event.currentTarget.parentElement;
-                onMove(key, direction);
-                requestAnimationFrame(() => {
-                  const button = row?.querySelector<HTMLButtonElement>('button[aria-label$="' + side + '"]:enabled')
-                    ?? row?.querySelector<HTMLButtonElement>('button:enabled');
-                  button?.focus();
-                });
-              }}>Move {side}</button>;
-          })}
-        </li>)}</ol>}
       {tool.kind === 'columns' && (action ? <><button onClick={() => setAction(null)}>Back</button>
         <button className={styles.sheetDelete} disabled={action.kind === 'clear' && !affected} onClick={applyColumnAction}>
           {action.kind === 'clear' ? 'Clear values in sheet' : 'Delete column from sheet'}</button></> : <button className={styles.primary} onClick={onClose}>Done</button>)}

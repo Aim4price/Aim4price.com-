@@ -51,7 +51,7 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
   }, []);
   const titleWidth = widthOf('title');
   // A very wide fitted name or a narrow screen must still leave room to edit other cells.
-  const pinName = gridWidth - rowControlWidth - titleWidth >= 210;
+  const pinName = visible[0] === 'title' && gridWidth - rowControlWidth - titleWidth >= 210;
   const focusRow = useRef<number | null>(null);
   useLayoutEffect(() => {
     if (focusRow.current === null) return;

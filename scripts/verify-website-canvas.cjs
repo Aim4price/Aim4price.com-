@@ -541,6 +541,7 @@ async function check(browser, url) {
       buttons.find(b => b.textContent.trim() === name).click(), label);
   }
   await openColumnAction('Reorder columns');
+  assert.equal(await page.$$eval('dialog[open] [aria-label="Move Brand left"]', buttons => buttons.length), 1);
   await page.click('button[aria-label="Move Brand left"]');
   await page.click('dialog[open] footer button:last-child');
   assert.deepEqual(await page.$$eval('tr[data-row="38"] input[data-field]', cells => cells.slice(0,3).map(c => c.dataset.field)), ['title','make','category']);
