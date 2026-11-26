@@ -109,6 +109,22 @@ test('custom columns keep text and validate names and custom-only rows', () => {
   assert.ok(rowErrors({ ...row, title:'Pump', [key]:'x'.repeat(251) }, '')[key]);
 });
 
+test('mixed sheet VAT validates each populated amount and preserves equivalent retry keys', () => {
+  const { isSheetBasis, importBasisKey, sheetAmountExVat } = load('lib/asset-sheet.ts');
+  const row = {...blankAsset(), title:'Delivery truck', value:'115000', replacement:'235000.75'};
+  const mixed = {value:'included', replacement:'excluded', insuredValue:''};
+  assert.ok(isSheetBasis(mixed));
+  for (const invalid of [null, [], {value:'included'}, {...mixed, value:'gross'}, {...mixed, other:'excluded'}])
+    assert.equal(isSheetBasis(invalid), false);
+  assert.deepEqual(rowErrors(row, mixed), {});
+  assert.ok(rowErrors(row, {...mixed, replacement:''}).replacement);
+  assert.equal(sheetAmountExVat(row, 'value', mixed), 100000);
+  assert.equal(sheetAmountExVat(row, 'replacement', mixed), 235001);
+  assert.equal(sheetAmountExVat(row, 'insuredValue', mixed), null);
+  assert.equal(importBasisKey({...mixed, replacement:'included'},[row]), 'included');
+  assert.deepEqual(importBasisKey({...mixed, insuredValue:'included'},[row]), importBasisKey(mixed,[row]));
+});
+
 test('preview and save preserve custom fields on each asset and retries skip saved rows', async () => {
   const id = '3292cc39-60aa-4923-a6b2-d126154ef650';
   const assets = [];
@@ -170,4 +186,13 @@ test('preview and save preserve custom fields on each asset and retries skip sav
   assert.equal(saved.specsJson.insuranceNote, 'Fleet policy');
   assert.equal(saved.financeNote, 'Vehicle finance');
   assert.equal(saved.note, 'Delivery vehicle');
+  const trailer = {...truck, title:'Trailer', serial:'', condition:'Good'};
+  const mixed = {basis:{value:'excluded', replacement:'included', insuredValue:'excluded'}, customColumns:[], rows:[trailer]};
+  assert.equal((await send('preview', undefined, {...mixed,basis:{value:'included'}})).status,400);
+  const previewMixed = await send('preview', undefined, mixed);
+  assert.equal(previewMixed.status,200);
+  assert.equal((await send('save',previewMixed.data.token,{...mixed,basis:'included'})).status,409);
+  assert.deepEqual((await send('save',previewMixed.data.token,mixed)).data,{added:1,skipped:0});
+  assert.deepEqual([assets[3].value,assets[3].replacementPriceExVat,assets[3].insuredValueExVat],[115000,200000,172500]);
+  assert.deepEqual((await send('save',previewMixed.data.token,mixed)).data,{added:0,skipped:1});
 });

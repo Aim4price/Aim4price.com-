@@ -63,11 +63,11 @@ export function useSheetColumns(storageKey: string) {
 type HeaderProps = {
   label: string;
   hint?: string;
-  index: number;
-  count: number;
+  index?: number;
+  count?: number;
   width: number;
   getValues: () => string[];
-  onMove: (direction: number) => void;
+  onMove?: (direction: number) => void;
   onResize: (width: number, persist: boolean) => void;
 };
 
@@ -148,7 +148,7 @@ export default function SheetColumnHeader({ label, hint, index, count, width, ge
 
   return <div className={styles.header} data-compact={width < 132 || undefined}>
     <span className={styles.caption}><strong title={label}>{label}</strong>{hint && <small title={hint}>{hint}</small>}</span>
-    {count > 1 && <span className={styles.moves} data-column-moves>
+    {onMove && count !== undefined && count > 1 && <span className={styles.moves} data-column-moves>
       {[-1, 1].map(direction => {
         const side = direction < 0 ? "left" : "right";
         return <button key={side} type="button" title={`Move ${label} ${side}`} aria-label={`Move ${label} ${side}`}

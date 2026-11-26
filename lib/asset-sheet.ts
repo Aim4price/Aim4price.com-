@@ -103,6 +103,38 @@ export function importKeyRow(row: AssetRow) {
   return Object.fromEntries([...originalColumns, ...extras].map(k => [k, row[k as Column]]));
 }
 export type Basis = '' | 'included' | 'excluded';
+export type MoneyColumn = typeof moneyColumns[number];
+export type SheetBasis = Basis | Record<MoneyColumn, Basis>;
+const isBasis = (value: unknown): value is Basis => value === '' || value === 'included' || value === 'excluded';
+
+export function isSheetBasis(value: unknown): value is SheetBasis {
+  if (isBasis(value)) return true;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.keys(value).length === moneyColumns.length &&
+    moneyColumns.every(key => Object.hasOwn(value, key) && isBasis((value as Record<string, unknown>)[key]));
+}
+
+export function basisForColumn(basis: SheetBasis, field: MoneyColumn): Basis {
+  return typeof basis === 'string' ? basis : basis[field];
+}
+
+export function populatedMoneyColumns(rows: AssetRow[]) {
+  return moneyColumns.filter(field => rows.some(row => row[field].trim()));
+}
+
+// Equivalent VAT settings must identify the same import, including retries from the original sheet.
+export function importBasisKey(basis: SheetBasis, rows: AssetRow[]) {
+  if (typeof basis === 'string') return basis;
+  const used = populatedMoneyColumns(rows);
+  if (!used.length) return '';
+  const first = basis[used[0]];
+  return used.every(key => basis[key] === first) ? first : used.map(key => [key, basis[key]]);
+}
+
+export function sheetAmountExVat(row: AssetRow, field: MoneyColumn, basis: SheetBasis) {
+  return row[field] ? Math.round(pricingInputExVat(parseAmount(row[field]), basisForColumn(basis, field) === 'included')) : null;
+}
+export const missingSheetVat = 'Choose how VAT is shown for this amount.';
 export type Mapping = Column | '' | 'hours' | 'km' | 'percentage';
 const aliases: Record<string, Mapping> = {
   assettitle: 'title', modeldescription: 'model', usagevalue: 'usage',
@@ -163,7 +195,7 @@ export function parseAmount(raw: string) {
     return NaN;
   return Number(value);
 }
-export function rowErrors(row: AssetRow, basis: Basis) {
+export function rowErrors(row: AssetRow, basis: SheetBasis) {
   const errors: Partial<Record<Column, string>> = {};
   if (!assetTitle(row))
     errors.title = 'Enter an asset name or both brand and model.';
@@ -179,9 +211,10 @@ export function rowErrors(row: AssetRow, basis: Basis) {
   for (const field of moneyColumns) {
     if (!row[field]) continue;
     const amount = parseAmount(row[field]);
-    if (!Number.isFinite(amount) || pricingInputExVat(amount, basis === 'included') < 1 || amount > 2147483647)
+    const fieldBasis = basisForColumn(basis, field);
+    if (!Number.isFinite(amount) || pricingInputExVat(amount, fieldBasis === 'included') < 1 || amount > 2147483647)
       errors[field] = 'Enter a positive rand amount, e.g. 125000.50.';
-    else if (!basis) errors[field] = 'Choose whether sheet values include VAT.';
+    else if (!fieldBasis) errors[field] = missingSheetVat;
   }
   for (const field of Object.keys(paperworkChoices) as StatusField[]) {
     if (!sheetStatus(row, field)) errors[field] = 'Choose ' + paperworkChoices[field].join(', ') + '.';

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { columnLabel, isCustomColumn, customColumn, maxCustomColumns, hasAssetData, assetTitle, columns, type CustomColumn, type BuiltInColumn, type AssetRow, type Column } from '../../lib/asset-sheet';
+import css from './AssetSheetDialog.module.css';
 import type { AssetDraft } from './AssetSheetEditor';
 import SheetColumnCards from '../SheetColumnCards';
 import styles from '../../app/dealer/parts/parts.module.css';
@@ -11,7 +12,7 @@ import PartsChoice from '../PartsChoice';
 import Select from '../AssetModalSelect';
 import ShareModalCloseButton from './ShareModalCloseButton';
 
-export type AssetTool = { kind: 'add' | 'columns' | 'bulk' } | { kind: 'row'; index: number };
+export type AssetTool = { kind: 'columns' | 'bulk' } | { kind: 'row'; index: number };
 
 const fieldPresentation: Record<BuiltInColumn, { icon: string; hint: string }> = {
   title: { icon: 'description', hint: 'Name used in the register' },
@@ -45,11 +46,13 @@ type Props = {
   savedColumns: CustomColumn[];
   onChange: (draft: Partial<AssetDraft>) => void;
   onRows: (rows: AssetRow[], reveal?: Column) => void;
+  onMove: (field: Column, direction: number) => void;
   onRemove: (index: number) => void;
   onClose: () => void;
 };
 
-export default function AssetSheetTools({ tool, register, rows, visible, selected, custom, savedColumns, onChange, onRows, onRemove, onClose }: Props) {
+export default function AssetSheetTools({ tool: initialTool, register, rows, visible, selected, custom, savedColumns, onChange, onRows, onMove, onRemove, onClose }: Props) {
+  const [tool, setTool] = useState<AssetTool | { kind: 'add' | 'order' }>(initialTool);
   const dialog = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const allColumns = [...columns, ...custom];
@@ -76,13 +79,13 @@ export default function AssetSheetTools({ tool, register, rows, visible, selecte
       if (opener instanceof HTMLElement && opener.isConnected) opener.focus({ preventScroll: true });
     };
   }, []);
-  useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [step, remove, action, columnPage]);
+  useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [tool.kind, step, remove, action, columnPage]);
 
   const targets = scope === 'selected' ? selected : rows.flatMap((r, i) => hasAssetData(r) ? [i] : []);
   const nextValue = operation === 'clear' ? '' : value.trim();
   const changed = targets.filter(i => (rows[i][field] ?? '') !== nextValue && (operation !== 'fill' || !(rows[i][field] || '').trim()));
   const bulkSteps = ['Choose assets', 'Choose a column', 'Enter the change', 'Preview changes'];
-  const title = tool.kind === 'row' ? (remove ? 'Remove row ' : 'Edit row ') + (tool.index + 1) : { add: 'Add column', columns: 'Manage columns', bulk: 'Bulk edit' }[tool.kind];
+  const title = tool.kind === 'row' ? (remove ? 'Remove row ' : 'Edit row ') + (tool.index + 1) : { add: 'Add column', columns: 'Columns', order: 'Reorder columns', bulk: 'Bulk edit' }[tool.kind];
   function addColumn() {
     if (!choice) return;
     try {
@@ -145,6 +148,27 @@ export default function AssetSheetTools({ tool, register, rows, visible, selecte
           maxLength={60} value={name} placeholder="e.g. Insurance reference" onChange={e => { setName(e.target.value); setError(''); }} /></label></div>}
         {error && <p role="alert" className={styles.error}>{error}</p>}
       </>)}
+      {tool.kind === 'columns' && !action && <div className={css.columnTools}>
+        <button type="button" onClick={() => { setChoice(''); setError(''); setTool({ kind: 'add' }); }}>Add column</button>
+        <button type="button" disabled={visible.length < 2} onClick={() => setTool({ kind: 'order' })}>Reorder columns</button>
+      </div>}
+      {tool.kind === 'order' && <ol className={css.orderList}>{visible.map((key, index) =>
+        <li key={key}>
+          <strong>{columnLabel(key)}</strong>
+          {([-1, 1] as const).map(direction => {
+            const side = direction === -1 ? 'left' : 'right';
+            return <button key={side} type="button" disabled={index + direction < 0 || index + direction >= visible.length}
+              aria-label={'Move ' + columnLabel(key) + ' ' + side} onClick={event => {
+                const row = event.currentTarget.parentElement;
+                onMove(key, direction);
+                requestAnimationFrame(() => {
+                  const button = row?.querySelector<HTMLButtonElement>('button[aria-label$="' + side + '"]:enabled')
+                    ?? row?.querySelector<HTMLButtonElement>('button:enabled');
+                  button?.focus();
+                });
+              }}>Move {side}</button>;
+          })}
+        </li>)}</ol>}
       {tool.kind === 'columns' && (action ? <section className={styles.columnActionStage}>
         <div className={styles.columnActionHeading}><DetailIcon kind="delete" /><div><h3>{action.kind === 'clear' ? 'Clear values?' : 'Delete column?'}</h3><p>{columnLabel(action.key)}</p></div></div>
         {action.kind === 'clear' && <PartsChoice label="Clear values for" value={scope} onChange={setScope}
@@ -180,7 +204,9 @@ export default function AssetSheetTools({ tool, register, rows, visible, selecte
       </>}
     </div>
     <footer className={styles.sheetToolFooter}>
-      {tool.kind !== 'columns' && <button onClick={onClose}>Cancel</button>}
+      {(tool.kind === 'order' || tool.kind === 'add') && <button onClick={() => setTool({ kind: 'columns' })}>Back to columns</button>}
+      {(tool.kind === 'row' || tool.kind === 'bulk') && <button onClick={onClose}>Cancel</button>}
+      {tool.kind === 'order' && <button className={styles.primary} onClick={onClose}>Done</button>}
       {tool.kind === 'add' && <button className={styles.primary} disabled={!choice || (choice === 'new' && !name.trim())} onClick={addColumn}>Next</button>}
       {tool.kind === 'columns' && (action ? <><button onClick={() => setAction(null)}>Back</button>
         <button className={styles.sheetDelete} disabled={action.kind === 'clear' && !affected} onClick={applyColumnAction}>

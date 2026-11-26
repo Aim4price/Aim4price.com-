@@ -68,6 +68,12 @@ async function check(browser, url) {
   let signedIn=false;
   page.on('request', request=>{
     const target=new URL(request.url());
+    if (target.pathname === '/api/asset-register/import') {
+      const payload = JSON.parse(request.postData());
+      return request.respond({status:200, contentType:'application/json', body:JSON.stringify({
+        checks: payload.rows.map(() => ({skip:''})), token:'fixture-preview', metered:false, hosting:''
+      })});
+    }
     if(target.pathname.startsWith('/api/')) {
       const body = target.pathname==='/api/me' ? {ok:true,signedIn,user:signedIn?user:null} : target.pathname==='/api/account-profile' ? {ok:true,profile} : {ok:true,register:{id:'canvas-register',name:'Test farm',businessName:'Test farm'},items:[],assets:[],groups:[],registers:[{id:'canvas-register',name:'Test farm',businessName:'Test farm'}],notifications:[],listings:[],storages:[],recentEvents:[],recentFuelSlips:[],requests:[],budgets:[],scanPin:{enabled:false,hasPin:false,updatedAtIso:null},enabled:false,hasPin:false};
       return request.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
@@ -449,6 +455,17 @@ async function check(browser, url) {
   await page.waitForFunction(() => document.querySelector('#add-asset-choice-title')?.textContent === 'Add multiple assets');
   await page.click(assetDialog + ' [data-tone="green"]');
   await page.waitForSelector('input[aria-label="Asset name row 1"]');
+  await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Asset name row 1');
+  assert.ok(await page.$eval(assetDialog + ' footer button[class*="primary"]', b => b.disabled));
+  assert.match(await page.$eval(assetDialog + ' [role="status"]', node => node.textContent), /paste rows from Excel/);
+  assert.ok(await page.$eval(assetDialog + ' [data-sheet-scroll]', grid => {
+    const name = grid.querySelector('thead [data-name-column]');
+    const left = name.getBoundingClientRect().left;
+    grid.scrollLeft = 450;
+    const pinned = grid.scrollLeft > 300 && Math.abs(name.getBoundingClientRect().left - left) < 2;
+    grid.scrollLeft = 0;
+    return pinned;
+  }), 'Asset name stays visible while scrolling across the default sheet');
   await page.$eval('input[aria-label="Asset name row 1"]', input => {
     const data = new DataTransfer();
     data.setData('text/plain', Array.from({length:40}, (_, i) => 'Pump ' + (i + 1)).join('\n'));
@@ -486,7 +503,7 @@ async function check(browser, url) {
         return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest('button') === b;
       }), labels: buttons.map(b => b.textContent.trim())};
     });
-    assert.deepEqual(footer.labels, ['Previous','Next','Review assets']);
+    assert.deepEqual(footer.labels, ['Previous','Next','Review 40 assets']);
     assert.ok(footer.reachable && !footer.overlap, 'Every sheet footer action has its own hit target');
     await page.click(pager + (button === 'Next' ? ' button:last-child' : ' button:first-child'));
     await page.waitForSelector(`input[aria-label="Asset name row ${firstRow}"]`);
@@ -513,24 +530,33 @@ async function check(browser, url) {
     return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2) === input;
   });
   await page.setViewport({width:430,height:600});
-  await page.$$eval(assetDialog + ' [aria-label="Sheet tools"] button', buttons =>
-    buttons.find(button => button.textContent.trim() === 'Add column').click());
-  await page.waitForSelector('dialog[open] [data-detail="note"]');
-  await page.click('dialog[open] [data-detail="note"]');
-  await page.click('dialog[open] footer button:last-child');
-  await page.type('input[aria-label="Replacement price row 39"]', '115000');
-  const vat = assetDialog + ' button[aria-label="VAT on sheet values"]';
-  await page.click(vat);
-  const taxOption = '[role="listbox"][aria-label="VAT on sheet values"] [role="option"]';
-  await page.waitForSelector(taxOption, {visible:true});
-  await page.click(taxOption);
-  assert.match(await page.$eval(vat, button => button.textContent), /exclude VAT/);
   async function openSheetTool(label) {
     await page.$$eval(assetDialog + ' [aria-label="Sheet tools"] button', (buttons, name) =>
       buttons.find(b => b.textContent.trim() === name).click(), label);
     await page.waitForSelector('dialog[open]');
   }
-  await openSheetTool('Add column');
+  async function openColumnAction(label) {
+    await openSheetTool('Columns');
+    await page.$$eval('dialog[open] button', (buttons, name) =>
+      buttons.find(b => b.textContent.trim() === name).click(), label);
+  }
+  await openColumnAction('Reorder columns');
+  assert.equal(await page.$$eval('dialog[open] [aria-label="Move Brand left"]', buttons => buttons.length), 1);
+  await page.click('button[aria-label="Move Brand left"]');
+  await page.click('dialog[open] footer button:last-child');
+  assert.deepEqual(await page.$$eval('tr[data-row="38"] input[data-field]', cells => cells.slice(0,3).map(c => c.dataset.field)), ['title','make','category']);
+  await openColumnAction('Add column');
+  await page.waitForSelector('dialog[open] [data-detail="note"]');
+  await page.click('dialog[open] [data-detail="note"]');
+  await page.click('dialog[open] footer button:last-child');
+  await page.type('input[aria-label="Replacement price row 39"]', '115000');
+  const vat = assetDialog + ' [aria-label="VAT on sheet values"]';
+  assert.equal(await page.$(vat + ' button[aria-pressed="true"]'), null);
+  await page.click(vat + ' [data-vat-field="all"] button:last-child');
+  await page.type('input[aria-label="Current value row 39"]', '50000');
+  await page.click(vat + ' button[class*="vatMode"]');
+  await page.click(vat + ' [data-vat-field="value"] button:first-child');
+  await openColumnAction('Add column');
   await page.click('dialog[open] [data-detail="custom"]');
   await page.type('dialog[open] [aria-label="Custom field name"]', 'Insurance reference');
   await page.click('dialog[open] footer button:last-child');
@@ -538,7 +564,7 @@ async function check(browser, url) {
   await page.waitForSelector(customCell);
   await page.type(customCell, '000129');
   async function toggleReference() {
-    await openSheetTool('Manage columns');
+    await openSheetTool('Columns');
     const field = 'dialog[open] input[aria-label="Insurance reference"]';
     const next = 'dialog[open] [aria-label="Column pages"] button:last-child';
     while (!await page.$(field)) {
@@ -553,6 +579,18 @@ async function check(browser, url) {
   await toggleReference();
   await page.click('dialog[open] footer button:last-child');
   assert.equal(await page.$eval(customCell, cell => cell.value), '000129');
+  const badYear = 'input[aria-label="Year row 39"]';
+  await page.focus(badYear);
+  await page.keyboard.down('Control');
+  await page.keyboard.press('a');
+  await page.keyboard.up('Control');
+  await page.keyboard.press('Backspace');
+  await page.click(assetDialog + ' footer button[class*="primary"]');
+  await page.waitForSelector('[aria-label="Assets to add"]');
+  await page.click('[aria-label="Review pages"] button:last-child');
+  const reviewed = await page.$eval('[aria-label="Assets to add"] tbody tr:nth-child(19)', tr => tr.textContent.replace(/[^a-zA-Z0-9]/g,''));
+  assert.match(reviewed, /50000exclVAT/);
+  assert.match(reviewed, /115000inclVATR100000exclVATtosave/);
   await page.click('[aria-label="Close add asset options"]');
   // Set the intended 150% scenario directly; repeated steps depend on the
   // current automatic scale and no longer stop at the former 150% maximum.
