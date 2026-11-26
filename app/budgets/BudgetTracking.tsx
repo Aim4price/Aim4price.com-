@@ -49,7 +49,7 @@ function Dialog({ title, onClose, children, report = false, subtitle }: { subtit
   </div>;
 }
 export default function BudgetTracking({ budgets, loading, error, onRetry, onRefresh, onAddRecurring, onAdd, onEdit, onDelete, scopeAssetId = '', reportAssets = [] }: {
-  onRefresh: () => Promise<void>; onAddRecurring: (assetId: string) => void;
+  onRefresh: () => Promise<void>; onAddRecurring: (budget: TrackedBudget) => void;
   scopeAssetId?: string;
   reportAssets?: Array<{ id: string; title: string; serialNumber?: string; meta?: string }>;
   budgets: TrackedBudget[]; loading: boolean; error: string; onRetry: () => void;
@@ -123,7 +123,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
         </div>
       </div>
       {expandedId === budget.id ? <section id={`budget-details-${budget.id}`} className={ledger.invoiceDetails} aria-label={`Budget details for ${budget.assetTitle}`}>
-        <h3>Budget details</h3><BudgetCostDetails budget={budget} onRefresh={onRefresh} onAddRecurring={() => onAddRecurring(budget.assetId || '')} />
+        <h3>Budget details</h3><BudgetCostDetails budget={budget} onRefresh={onRefresh} onAddRecurring={() => onAddRecurring(budget)} />
       </section> : null}
     </LedgerDetailsCard>) : null}
     {ready && visible.length > 0 ? <ListPagination

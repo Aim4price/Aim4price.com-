@@ -20,8 +20,8 @@ test('recurring costs use the category, coverage, details, frequency, dates and 
   assert.doesNotMatch(recurringModal, /styles\.invoiceDropWizardProgress/);
   assert.match(recurringModal, /styles\.invoiceDropWizardPanel/);
   assert.match(recurringModal, /What should this cost cover\?/);
-  assert.match(recurringModal, /Commitment details/);
-  assert.match(recurringModal, /Review commitment/);
+  assert.match(recurringModal, /Recurring cost details/);
+  assert.match(recurringModal, /Review recurring cost/);
   assert.match(recurringModal, /onClick=\{continueRecurringWizard\}/);
   assert.match(recurringModal, /goBackRecurringWizard/);
 });

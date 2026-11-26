@@ -35,6 +35,7 @@ import ListPagination, { type ListPageSize } from '../../components/ListPaginati
 import pickerStyles from '../../components/AssetPicker.module.css';
 import { normalizeInternalReturnPath } from '../../lib/internal-return-path';
 import BudgetTracking from '../budgets/BudgetTracking';
+import type { TrackedBudget } from '../../lib/budget-tracking';
 import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
@@ -71,6 +72,7 @@ type OwnerStorageStatus = 'owner' | 'pending' | 'approved' | 'declined';
 
 export type AssetOption = {
   id: string;
+  registerId?: string | null;
   ownerUserId?: string;
   canAddCosts?: boolean;
   title: string;
@@ -1120,6 +1122,8 @@ export default function MyInvoicesClient({
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual', initialDealerDefaults.supplierName));
   const [manualCostWizardStep, setManualCostWizardStep] = useState<ManualCostWizardStep>(1);
   const [manualCostWizardError, setManualCostWizardError] = useState('');
+  const [recurringBudget, setRecurringBudget] = useState<TrackedBudget | null>(null);
+  const recurringBudgetTrigger = useRef<HTMLElement | null>(null);
   const [recurringDraft, setRecurringDraft] = useState<RecurringCommitmentDraft>(buildRecurringCommitmentDraft);
   const [recurringAssetIds, setRecurringAssetIds] = useState<string[]>([]);
   const [recurringPickerAssetIds, setRecurringPickerAssetIds] = useState<string[]>([]);
@@ -1478,16 +1482,25 @@ export default function MyInvoicesClient({
     return visibleAssets.filter((asset) => assetSearchText(asset).includes(query));
   }, [costEntryAssets, dealerMode, pickerOwnerId, pickerSearch]);
 
+  const recurringAssets = useMemo(() => {
+    if (!recurringBudget) return assets;
+    if (!recurringBudget.registerId) return budgetAssets;
+    return budgetAssets.filter(asset => asset.registerId === recurringBudget.registerId);
+  }, [recurringBudget, assets, budgetAssets]);
+  const budgetCategories = recurringBudget?.categories;
+  const categoryOptions = budgetCategories?.length && !budgetCategories.includes('all')
+    ? costCategories.filter(category => budgetCategories.includes(category.value))
+    : costCategories;
   const recurringSelectedAssets = useMemo(
-    () => assets.filter((asset) => recurringAssetIds.includes(asset.id)),
-    [assets, recurringAssetIds],
+    () => recurringAssets.filter(asset => recurringAssetIds.includes(asset.id)),
+    [recurringAssets, recurringAssetIds],
   );
 
   const filteredRecurringAssets = useMemo(() => {
     const query = recurringAssetSearch.trim().toLowerCase();
-    if (!query) return assets;
-    return assets.filter((asset) => assetSearchText(asset).includes(query));
-  }, [assets, recurringAssetSearch]);
+    if (!query) return recurringAssets;
+    return recurringAssets.filter(asset => assetSearchText(asset).includes(query));
+  }, [recurringAssets, recurringAssetSearch]);
   const allFilteredRecurringAssetsSelected = filteredRecurringAssets.length > 0
     && filteredRecurringAssets.every((asset) => recurringPickerAssetIds.includes(asset.id));
   const recurringAmountValue = Number(recurringDraft.amount.replace(/\s/g, '').replace(',', '.'));
@@ -1900,11 +1913,11 @@ export default function MyInvoicesClient({
   }, [budgetDeleteCandidate, budgetDeletingId]);
 
   useEffect(() => {
-    if (!recurringOpen || recurringAssetPickerOpen) return undefined;
+    if ((!recurringOpen && flow !== 'category') || recurringAssetPickerOpen) return undefined;
     const focusFrame = window.requestAnimationFrame(() => {
       recurringWizardBodyRef.current?.scrollTo({ top: 0, left: 0 });
       const scopeTarget = recurringScopeTriggerRef.current;
-      const target = recurringWizardStep === 1
+      const target = recurringOpen && recurringWizardStep === 1
         ? scopeTarget && !scopeTarget.disabled ? scopeTarget : recurringWizardStepHeadingRef.current
         : recurringWizardStepHeadingRef.current;
       target?.focus({ preventScroll: true });
@@ -1913,7 +1926,7 @@ export default function MyInvoicesClient({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape' && !isSaving) {
         event.preventDefault();
-        closeModal();
+        finishModal();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -1939,7 +1952,7 @@ export default function MyInvoicesClient({
       window.cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isSaving, recurringAssetPickerOpen, recurringOpen, recurringWizardStep]);
+  }, [flow, isSaving, recurringAssetPickerOpen, recurringOpen, recurringWizardStep]);
 
   useEffect(() => {
     if (!manualCostWizardOpen || usageMetricDropdownOpen) return undefined;
@@ -2438,11 +2451,11 @@ export default function MyInvoicesClient({
       else leaveManualCostWizard();
       return;
     }
-    if (flow === 'recurring') {
-      goBackRecurringWizard();
+    if (flow === 'category') {
+      if (recurringBudget) finishModal();
+      else setFlow('source-choice');
       return;
     }
-    if (flow === 'category') { setFlow('source-choice'); return; }
     if (flow === 'review') { setFlow('upload'); return; }
     if (flow === 'upload') { setFlow(assetLockedForFlow ? 'category' : 'asset-automatic'); return; }
     if (flow === 'asset-first') { finishModal(); return; }
@@ -2453,6 +2466,10 @@ export default function MyInvoicesClient({
   function finishModal() {
     sourceDraftsRef.current = {};
     recurringDraftStartedRef.current = false;
+    setRecurringBudget(null);
+    const budgetTrigger = recurringBudgetTrigger.current;
+    recurringBudgetTrigger.current = null;
+    if (budgetTrigger) window.requestAnimationFrame(() => budgetTrigger.focus({ preventScroll: true }));
     if (sharedFlow) { sharedFlow.onClose(); return; }
     const shouldReturn = quickLaunchActive && quickLaunchReturnTo;
     setFlow(null);
@@ -2791,6 +2808,21 @@ export default function MyInvoicesClient({
       : source === 'manual' ? 'asset-manual' : 'asset-automatic');
   }
 
+  function openBudgetRecurringCost(budget: TrackedBudget) {
+    if (!desktop.allow('addCosts')) return;
+    if (budget.assetId && !budgetAssets.some(asset => asset.id === budget.assetId && (!budget.registerId || asset.registerId === budget.registerId))) {
+      setNotice({ tone: 'error', message: 'This budget’s asset is no longer available. Refresh your budgets to try again.' });
+      return;
+    }
+    recurringBudgetTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    recurringDraftStartedRef.current = false;
+    setNotice(null);
+    setRecurringBudget(budget);
+    setSelectedAssetId(budget.assetId || '');
+    setAssetLockedForFlow(Boolean(budget.assetId));
+    chooseCaptureMethod('recurring');
+  }
+
   function startRecurringCommitment(category: string) {
     if (desktop.workspace) { desktop.unavailable(); return; }
     if (recurringDraftStartedRef.current) {
@@ -2799,7 +2831,7 @@ export default function MyInvoicesClient({
       return;
     }
     recurringDraftStartedRef.current = true;
-    const presetAssetIds = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
+    const presetAssetIds = selectedAssetId && recurringAssets.some((asset) => asset.id === selectedAssetId)
       ? [selectedAssetId]
       : [];
     setNotice(null);
@@ -2872,7 +2904,7 @@ export default function MyInvoicesClient({
     setRecurringError('');
     if (recurringWizardStep === 1) {
       if (!recurringAssetIds.length) {
-        setRecurringError(assets.length ? 'Choose at least one saved asset.' : 'Add an asset before creating a recurring cost.');
+        setRecurringError(recurringAssets.length ? 'Choose at least one saved asset.' : 'Add an asset before creating a recurring cost.');
         return;
       }
       setRecurringWizardStep(3);
@@ -2941,12 +2973,12 @@ export default function MyInvoicesClient({
         }),
       });
       const payload = await response.json() as RecurringCommitmentResponse;
-      if (!response.ok || !payload.ok) throw new Error(payload.error || 'The recurring commitment could not be saved.');
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'The recurring cost could not be saved.');
       finishModal();
       setNotice({ tone: 'success', message: 'Recurring cost saved.' });
       if (budgetsPage) void reloadBudgets().catch(() => setBudgetLoadError('Refresh budgets to see the saved recurring cost.'));
     } catch (error) {
-      setRecurringError(error instanceof Error ? error.message : 'The recurring commitment could not be saved.');
+      setRecurringError(error instanceof Error ? error.message : 'The recurring cost could not be saved.');
     } finally {
       setIsSaving(false);
     }
@@ -3439,7 +3471,7 @@ export default function MyInvoicesClient({
           budgets={budgetLaunchAssetId ? costBudgets.filter((budget) => budget.assetId === budgetLaunchAssetId) : costBudgets} loading={budgetsLoading} error={budgetLoadError}
           onRetry={() => { setBudgetsLoading(true); setBudgetLoadError(''); void reloadBudgets().catch(error => setBudgetLoadError(error instanceof Error ? error.message : 'Budgets could not be loaded.')).finally(() => setBudgetsLoading(false)); }}
           onRefresh={reloadBudgets}
-          onAddRecurring={assetId => { openAddInvoiceModal(assetId); chooseCaptureMethod('recurring'); }}
+          onAddRecurring={openBudgetRecurringCost}
           onAdd={openCreateBudget}
           onEdit={id => { const budget = costBudgets.find(item => item.id === id); if (budget) openEditBudget(budget); }}
           onDelete={id => { const budget = costBudgets.find(item => item.id === id); if (budget) askToDeleteBudget(budget); }}
@@ -4519,11 +4551,13 @@ export default function MyInvoicesClient({
         <div className={`${styles.modalBackdrop} ${downloadStyles.backdrop}`} data-website-overlay>
           <section className={`${downloadStyles.dialog} ${categoryStyles.dialog}`} data-download-dialog="true" role="dialog" aria-modal="true" aria-labelledby="cost-category-title">
             <header data-download-header="true">
-              <h2 id="cost-category-title">Choose a cost category</h2>
+              <div><h2 id="cost-category-title" ref={recurringWizardStepHeadingRef} tabIndex={-1}>Choose a cost category</h2>
+                {recurringBudget && <p>{recurringBudget.assetTitle}</p>}
+              </div>
               <button type="button" onClick={finishModal} aria-label="Close cost categories" data-modal-close="true">×</button>
             </header>
             <div className={categoryStyles.cards}>
-              {costCategories.map(category => (
+              {categoryOptions.map(category => (
                 <button key={category.value} type="button" className={categoryStyles.card} data-category={category.value} onClick={() => chooseCostCategory(category.value)}>
                   <span className={categoryStyles.icon} aria-hidden="true"><RecurringFieldIcon kind={category.icon} /></span>
                   <span className={categoryStyles.copy}>
@@ -4533,7 +4567,7 @@ export default function MyInvoicesClient({
                 </button>
               ))}
             </div>
-            <footer data-download-footer="true"><button type="button" onClick={closeModal}>Back</button></footer>
+            <footer data-download-footer="true"><button type="button" onClick={closeModal}>{recurringBudget ? 'Cancel' : 'Back'}</button></footer>
           </section>
         </div>
       ) : null}
@@ -4571,7 +4605,7 @@ export default function MyInvoicesClient({
                     <RecurringCommitmentIcon />
                   </span>
                   <span className={styles.choiceTitleBlock}>
-                    <strong>Add recurring commitment</strong>
+                    <strong>Add recurring cost</strong>
                     <small>Track future recurring asset costs.</small>
                   </span>
                   <span className={styles.costChoiceArrow} aria-hidden="true">
@@ -4696,14 +4730,14 @@ export default function MyInvoicesClient({
             >
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
                 <div className={wizardStyles.headerText}>
-                  <h2 className={recurringStyles.title} ref={recurringWizardStep > 1 ? recurringWizardStepHeadingRef : undefined} tabIndex={recurringWizardStep > 1 ? -1 : undefined} id="recurring-modal-title">{recurringWizardStep === 1 ? 'Add recurring commitment' : recurringWizardStep === 3 ? 'Commitment details' : recurringWizardStep === 4 ? 'How often?' : recurringWizardStep === 5 ? 'Commitment dates' : 'Review commitment'}</h2>
-                  <p>{recurringWizardStep === 1 ? 'Choose which assets this cost covers.'
+                  <h2 className={recurringStyles.title} ref={recurringWizardStep > 1 ? recurringWizardStepHeadingRef : undefined} tabIndex={recurringWizardStep > 1 ? -1 : undefined} id="recurring-modal-title">{recurringWizardStep === 1 ? 'Add recurring cost' : recurringWizardStep === 3 ? 'Recurring cost details' : recurringWizardStep === 4 ? 'How often?' : recurringWizardStep === 5 ? 'Payment dates' : 'Review recurring cost'}</h2>
+                  <p>{recurringBudget?.assetId ? `${recurringBudget.assetTitle} · ${recurringCategoryLabel}` : recurringWizardStep === 1 ? 'Choose which assets this cost covers.'
                     : recurringWizardStep === 3 ? 'Describe the cost and add the amount per payment.'
                     : recurringWizardStep === 4 ? 'Choose how often you pay this cost.'
                     : recurringWizardStep === 5 ? 'Set the start date and any end or renewal dates.'
                     : 'Check the details before saving.'}</p>
                 </div>
-                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close recurring cost" data-modal-close="true">
+                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} disabled={isSaving} aria-label="Close recurring cost" data-modal-close="true">
                   <span aria-hidden="true">×</span>
                 </button>
               </div>
@@ -4722,7 +4756,7 @@ export default function MyInvoicesClient({
                       type="button"
                       className={styles.budgetScopeTrigger}
                       onClick={openRecurringAssetPicker}
-                      disabled={isSaving || assetLockedForFlow || !assets.length}
+                      disabled={isSaving || assetLockedForFlow || !recurringAssets.length}
                       aria-haspopup="dialog"
                     >
                       <span className={styles.budgetScopeCopy}>
@@ -4733,7 +4767,7 @@ export default function MyInvoicesClient({
                             ? recurringSelectedAssets[0]?.title
                             : recurringSelectedAssets.length > 1
                               ? `${recurringSelectedAssets.length} assets selected`
-                              : assets.length
+                              : recurringAssets.length
                                 ? 'Select every asset covered by this recurring cost.'
                                 : 'Add an asset first.'}</small>
                       </span>
@@ -4751,7 +4785,7 @@ export default function MyInvoicesClient({
                           type="text"
                           value={recurringDraft.description}
                           onChange={(event) => setRecurringField('description', event.target.value)}
-                          placeholder="Describe this commitment"
+                          placeholder="e.g. Monthly insurance premium"
                           autoComplete="off"
                           required
                           disabled={isSaving}
@@ -4907,7 +4941,7 @@ export default function MyInvoicesClient({
                   </button>
                 ) : (
                   <button key="recurring-save" type="submit" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} disabled={isSaving}>
-                    {isSaving ? 'Saving...' : 'Save commitment'}
+                    {isSaving ? 'Saving...' : 'Save recurring cost'}
                   </button>
                 )}
               </div>
