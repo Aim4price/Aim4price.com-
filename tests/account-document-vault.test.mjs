@@ -104,7 +104,7 @@ test('specific document types use one shared searchable taxonomy and canonical b
 
   assert.match(documentTaxonomy, /value: 'service-record'[\s\S]*?category: 'other'/);
   assert.match(client, /ACCOUNT_DOCUMENT_TYPES/);
-  assert.match(client, /type="search"[\s\S]*?placeholder="Search document types..."/);
+  assert.match(client, /type="search"[\s\S]*?placeholder="Search types"/);
   assert.match(client, /aria-haspopup="dialog"/);
   assert.match(client, /ref=\{documentTypeModalRef\}[\s\S]*?aria-labelledby="document-type-title"/);
   assert.doesNotMatch(client, /onBlur=\{\(\) => window\.setTimeout\(\(\) => setShowDocumentTypeOptions/);
