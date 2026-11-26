@@ -22,6 +22,16 @@ const fieldPresentation: Record<BuiltInColumn, { icon: string; hint: string }> =
   serial: { icon: 'partNumber', hint: 'Serial or chassis number' },
   usage: { icon: 'gauge', hint: 'Current usage reading' },
   unit: { icon: 'ruler', hint: 'Hours, km or percent' },
+  condition: { icon: 'condition', hint: 'Overall condition of the asset' },
+  replacement: { icon: 'price', hint: 'Cost to replace the asset' },
+  registration: { icon: 'partNumber', hint: 'Number plate or registration' },
+  license: { icon: 'condition', hint: 'Whether the asset is licensed' },
+  finance: { icon: 'condition', hint: 'Whether the asset is financed' },
+  financeNote: { icon: 'notes', hint: 'Details about the finance agreement' },
+  insurance: { icon: 'condition', hint: 'Whether the asset is insured' },
+  insuredValue: { icon: 'price', hint: 'Amount covered by insurance' },
+  insuranceNote: { icon: 'notes', hint: 'Details about the insurance cover' },
+  note: { icon: 'notes', hint: 'Notes to keep with the asset' },
   value: { icon: 'price', hint: 'Current value in rand' },
 };
 
@@ -112,7 +122,7 @@ export default function AssetSheetTools({ tool, register, rows, visible, selecte
       <ShareModalCloseButton aria-label={'Close ' + title} onClick={onClose} /></header>
     <div className={styles.sheetToolBody} data-columns-body={tool.kind === 'columns' || undefined}>
       {tool.kind === 'add' && (!choice ? <>
-        <div className={styles.detailPickerChoices}>{columns.filter(k => k !== 'title' && (!visible.includes(k) || !['year', 'serial'].includes(k))).map(k =>
+        <div className={styles.detailPickerChoices}>{columns.filter(k => !visible.includes(k)).map(k =>
           <button key={k} type="button" data-detail={k} aria-label={columnLabel(k)} disabled={visible.includes(k)} onClick={() => setChoice(k)}>
             <DetailIcon kind={fieldPresentation[k].icon} /><span><strong>{columnLabel(k)}</strong><small>{fieldPresentation[k].hint}</small></span>
           </button>)}

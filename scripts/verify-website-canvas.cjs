@@ -454,6 +454,8 @@ async function check(browser, url) {
     data.setData('text/plain', Array.from({length:40}, (_, i) => 'Pump ' + (i + 1)).join('\n'));
     input.dispatchEvent(new ClipboardEvent('paste', {clipboardData:data, bubbles:true, cancelable:true}));
   });
+  const defaults = await page.$$eval(assetDialog + ' tr[data-row="0"] input[data-field]', cells => cells.map(c => c.dataset.field));
+  assert.deepEqual(defaults, ['title','category','make','model','year','serial','condition','usage','unit','value','replacement']);
   const pager = assetDialog + ' footer nav[aria-label="Sheet pages"]';
   await page.waitForSelector(pager);
   const selectAllRows = assetDialog + ' input[aria-label="Select all rows"]';
@@ -513,12 +515,13 @@ async function check(browser, url) {
   await page.setViewport({width:430,height:600});
   await page.$$eval(assetDialog + ' [aria-label="Sheet tools"] button', buttons =>
     buttons.find(button => button.textContent.trim() === 'Add column').click());
-  await page.waitForSelector('dialog[open] [data-detail="value"]');
-  await page.click('dialog[open] [data-detail="value"]');
+  await page.waitForSelector('dialog[open] [data-detail="note"]');
+  await page.click('dialog[open] [data-detail="note"]');
   await page.click('dialog[open] footer button:last-child');
-  const vat = assetDialog + ' button[aria-label="Current values in rand"]';
+  await page.type('input[aria-label="Replacement price row 39"]', '115000');
+  const vat = assetDialog + ' button[aria-label="VAT on sheet values"]';
   await page.click(vat);
-  const taxOption = '[role="listbox"][aria-label="Current values in rand"] [role="option"]';
+  const taxOption = '[role="listbox"][aria-label="VAT on sheet values"] [role="option"]';
   await page.waitForSelector(taxOption, {visible:true});
   await page.click(taxOption);
   assert.match(await page.$eval(vat, button => button.textContent), /exclude VAT/);
@@ -534,14 +537,20 @@ async function check(browser, url) {
   const customCell = 'input[aria-label="Insurance reference row 39"]';
   await page.waitForSelector(customCell);
   await page.type(customCell, '000129');
-  await openSheetTool('Manage columns');
-  await page.click('dialog[open] [aria-label="Column pages"] button:last-child');
-  await page.click('dialog[open] input[aria-label="Insurance reference"]');
+  async function toggleReference() {
+    await openSheetTool('Manage columns');
+    const field = 'dialog[open] input[aria-label="Insurance reference"]';
+    const next = 'dialog[open] [aria-label="Column pages"] button:last-child';
+    while (!await page.$(field)) {
+      assert.ok(await page.$eval(next, button => !button.disabled), 'Custom column is available in Manage columns');
+      await page.click(next);
+    }
+    await page.click(field);
+  }
+  await toggleReference();
   await page.click('dialog[open] footer button:last-child');
   assert.equal(await page.$(customCell), null);
-  await openSheetTool('Manage columns');
-  await page.click('dialog[open] [aria-label="Column pages"] button:last-child');
-  await page.click('dialog[open] input[aria-label="Insurance reference"]');
+  await toggleReference();
   await page.click('dialog[open] footer button:last-child');
   assert.equal(await page.$eval(customCell, cell => cell.value), '000129');
   await page.click('[aria-label="Close add asset options"]');

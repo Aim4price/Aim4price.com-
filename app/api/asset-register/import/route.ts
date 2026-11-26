@@ -4,18 +4,17 @@ import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 import { getAssetRegisterForUser } from '../../../../lib/asset-registers';
-import { withAssetInputTransaction, prepareAssetRegisterRevaluation, createManualAssetRegisterItem, listAssetRegisterItemsForRegisters, type AssetRegisterItemKind } from '../../../../lib/asset-register-db';
+import { withAssetInputTransaction, prepareAssetRegisterRevaluation, createManualAssetRegisterItem, listAssetRegisterItemsForRegisters } from '../../../../lib/asset-register-db';
 import { ensureCreditSchema, CreditLimitError } from '../../../../lib/business-credits';
 import { withDatabaseClient } from '../../../../lib/db';
 import { ensureAssetLifecycleSchema, recordManualAssetLifecycle } from '../../../../lib/asset-lifecycle';
-import { assetTitle, columnLabel, readSheetColumns, readSheetRow, maxAssets, parseAmount, rowErrors, usageUnit, type CustomColumn, type AssetRow } from '../../../../lib/asset-sheet';
+import { assetTitle, columnLabel, conditionKey, sheetAssetKind, sheetStatus, importKeyRow, readSheetColumns, readSheetRow, maxAssets, parseAmount, rowErrors, usageUnit, type CustomColumn, type AssetRow } from '../../../../lib/asset-sheet';
 import { getBillingAgreement } from '../../../../lib/billing';
 import { hostedRegisterBand, ownerHosting, rand } from '../../../../lib/hosting-pricing';
 import { pricingInputExVat } from '../../../../lib/pricing-vat';
 const fail = (error: string, status = 400) => NextResponse.json({ error }, { status });
 const uuid = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i;
 const serialKey = (s: string) => s.trim().toUpperCase();
-const kinds: Record<string, AssetRegisterItemKind> = { tractor: 'tractor', vehicle: 'vehicle', tools: 'tools', equipment: 'equipment', property: 'property', stock: 'stock' };
 export async function POST(req: NextRequest) {
   const session = await getServerSession({ requireActive: true, allowDealerApp: true, allowBusinessWorkspace: true });
   if (!session?.user?.id)
@@ -50,7 +49,7 @@ export async function POST(req: NextRequest) {
     return fail('Register unavailable.', 404);
   const metered = Boolean(workspace.context.meteredBusiness);
   // A repeat of the same sheet also matches rows that have no serial number.
-  const batch = createHash('sha256').update(JSON.stringify([body.basis, rows])).digest('hex');
+  const batch = createHash('sha256').update(JSON.stringify([body.basis, rows.map(importKeyRow)])).digest('hex');
   const agreement = access.accountType === 'dealer' && !metered && !register.isPrimary && access.profile?.accountSubtype !== 'equipment-middleman' ? await getBillingAgreement(owner) : null;
   async function inspect() {
     const existing = await listAssetRegisterItemsForRegisters(owner, [body.registerId]);
@@ -84,23 +83,31 @@ export async function POST(req: NextRequest) {
       const { checks, token } = await inspect();
       if (checks.some(c => !c.skip) && token !== body.token)
         throw Error('IMPORT_PREVIEW_CHANGED');
+      const exVat = (amount: string) => amount ? pricingInputExVat(parseAmount(amount), body.basis === 'included') : null;
       let added = 0;
       for (const [i, row] of rows.entries()) {
         if (checks[i].skip)
           continue;
         const unit = usageUnit(row.unit);
         const reading = row.usage ? parseAmount(row.usage) : null;
+        const insurance = sheetStatus(row, 'insurance');
+        const finance = sheetStatus(row, 'finance');
+        const license = sheetStatus(row, 'license');
         const asset = await createManualAssetRegisterItem(owner, {
-          registerId: register.id, kind: (Object.hasOwn(kinds, row.category.toLowerCase()) ? kinds[row.category.toLowerCase()] : 'manual'), title: assetTitle(row),
+          registerId: register.id, kind: sheetAssetKind(row.category), title: assetTitle(row),
           brandName: row.make, modelName: row.model, yearModel: row.year ? Number(row.year) : null,
           serialNumber: row.serial, hours: unit === 'percentage' ? null : reading,
           lifeWorkedPercent: unit === 'percentage' ? reading : null, usageMetric: unit === 'km' ? 'km' : 'hours',
-          value: row.value ? pricingInputExVat(parseAmount(row.value), body.basis === 'included') : 0,
+          value: exVat(row.value) ?? 0, replacementPriceExVat: exVat(row.replacement),
+          condition: conditionKey(row.condition) ?? null, note: row.note,
+          isInsured: insurance === 'yes', insuredValueExVat: exVat(row.insuredValue),
+          isFinanced: finance === 'yes', financeNote: row.financeNote,
+          isLicensed: license === 'yes', licenseRegistrationNumber: row.registration,
           specsJson: {
             ...(custom.length ? { assetSheetFields: custom.map(key => ({ name: columnLabel(key), value: row[key] })) } : {}),
             assetImportKey: checks[i].key, importedCategory: row.category, usageTypeConfirmed: Boolean(unit),
-            usageMode: unit === 'percentage' ? 'percent' : unit, insuranceStatus: 'unknown',
-            financeStatus: 'unknown', licenseStatus: 'unknown'
+            usageMode: unit === 'percentage' ? 'percent' : unit, insuranceStatus: insurance, insuranceNote: row.insuranceNote,
+            financeStatus: finance, licenseStatus: license
           },
         }, { client, register });
         await recordManualAssetLifecycle({ ownerUserId: owner, asset, newlyAcquired: false, actorName: session?.user?.name });

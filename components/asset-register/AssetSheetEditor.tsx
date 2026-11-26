@@ -1,7 +1,7 @@
 'use client';
 
 import { useLayoutEffect, useRef, useState, type ClipboardEvent } from 'react';
-import { columnLabel, isCustomColumn, hasAssetData, blankAsset, columns, maxAssets, type BuiltInColumn, type CustomColumn, rowErrors, type AssetRow, type Column, type Basis } from '../../lib/asset-sheet';
+import { columnLabel, isCustomColumn, hasAssetData, blankAsset, columns, moneyColumns, sheetChoices, maxAssets, type BuiltInColumn, type CustomColumn, rowErrors, type AssetRow, type Column, type Basis } from '../../lib/asset-sheet';
 import parts from '../../app/dealer/parts/parts.module.css';
 import { DetailIcon } from '../PartsDetailFields';
 import Select from '../AssetModalSelect';
@@ -12,7 +12,9 @@ import css from './AssetSheetDialog.module.css';
 export type AssetDraft = { rows: AssetRow[]; visible: Column[]; custom: CustomColumn[]; basis: Basis };
 const initialWidths: Record<BuiltInColumn, number> = {
   title: 340, make: 172, model: 180, category: 180, year: 112,
-  serial: 210, usage: 136, unit: 142, value: 172,
+  serial: 210, condition: 170, usage: 136, unit: 142, value: 172, replacement: 200,
+  registration: 200, license: 160, finance: 160, financeNote: 240,
+  insurance: 170, insuredValue: 170, insuranceNote: 240, note: 260,
 };
 const rowControlWidth = 132;
 
@@ -67,10 +69,13 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
       <button disabled={!populated && !selected.length} onClick={() => setTool({ kind: 'bulk' })}><DetailIcon kind="edit" />Bulk edit</button>
       <button disabled={!canUndo} onClick={() => { setSelected([]); onUndo(); }}><DetailIcon kind="undo" />Undo</button>
     </div>
-    {(visible.includes('value') || rows.some(r => r.value.trim())) &&
-      <Select label="Current values in rand" buttonLabel="Current values in rand" placeholder="Choose VAT basis" value={basis}
-        options={[{ value: 'excluded', label: 'Current values exclude VAT' }, { value: 'included', label: 'Current values include VAT' }]}
+    {rows.some(row => moneyColumns.some(k => row[k].trim())) &&
+      <Select label="VAT on sheet values" buttonLabel="VAT on sheet values" placeholder="Choose VAT basis" value={basis}
+        options={[{ value: 'excluded', label: 'Values exclude VAT' }, { value: 'included', label: 'Values include VAT' }]}
         onChange={v => onChange({ basis: v as Basis })} />}
+    {Object.entries(sheetChoices).map(([key, choices]) => <datalist key={key} id={'asset-sheet-options-' + key}>
+      {choices.map(label => <option key={label} value={label} />)}
+    </datalist>)}
     <div ref={grid} data-sheet-scroll className={css.gridScroll} role="region" aria-label="Assets spreadsheet" tabIndex={0}>
       <table className={`${parts.editorTable} ${css.assetGrid}`} style={{ width: tableWidth }}>
         <colgroup><col style={{ width: rowControlWidth }} />{visible.map(k => <col key={k} style={{ width: widthOf(k) }} />)}</colgroup>
@@ -83,7 +88,7 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
           </label>
         </th>
           {visible.map((k, position) => <th key={k} scope="col">
-            <SheetColumnHeader label={columnLabel(k)} hint={k === 'title' ? 'Or use make and model' : 'Optional'}
+            <SheetColumnHeader label={columnLabel(k)} hint={k === 'title' ? 'Or use brand and model' : 'Optional'}
               index={position} count={visible.length} width={widthOf(k)} getValues={() => rows.map(row => row[k] ?? '')}
               onMove={direction => layout.move(allColumns, visible, k, direction)}
               onResize={(width, persist) => layout.resize(k, width, persist)} />
@@ -101,7 +106,7 @@ export default function AssetSheetEditor({ draft: { rows, visible: fields, basis
                 onClick={() => setTool({ kind: 'row', index })}>Edit</button>
             </div></td>
             {visible.map(k => <td key={k}>
-              <input data-field={k} title={r[k] || undefined} aria-label={columnLabel(k) + ' row ' + (index + 1)} value={r[k] ?? ''} placeholder={k === 'unit' ? 'hours, km or %' : undefined}
+              <input data-field={k} list={!isCustomColumn(k) && sheetChoices[k] ? 'asset-sheet-options-' + k : undefined} title={r[k] || undefined} aria-label={columnLabel(k) + ' row ' + (index + 1)} value={r[k] ?? ''} placeholder={k === 'unit' ? 'hours, km or %' : undefined}
                 aria-invalid={!!errors[k]} aria-describedby={errors[k] ? 'asset-error-' + index + '-' + k : undefined}
                 onBlur={() => { editing.current = null; }} onPaste={e => { editing.current = null; onPaste(e, index, k, visible); }}
                 onChange={e => {

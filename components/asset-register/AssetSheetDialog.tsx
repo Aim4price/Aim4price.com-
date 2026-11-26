@@ -9,7 +9,7 @@ import Select from '../AssetModalSelect';
 import ShareModalCloseButton from './ShareModalCloseButton';
 import { MAX_PARTS_CSV_BYTES, readPartsCsv } from '../../lib/parts-network-csv';
 import { readPartsExcel } from '../../lib/parts-network-excel';
-import { assetColumns, assetTitle, columnLabel, customColumn, hasAssetData, isCustomColumn, blankAsset, columns, type CustomColumn, mapAssetRow, mapHeading, maxAssets, rowErrors, usageUnit, targetColumn, type Column, type Mapping } from '../../lib/asset-sheet';
+import { assetColumns, assetTitle, columnLabel, customColumn, hasAssetData, isCustomColumn, blankAsset, columns, coreColumns, moneyColumns, type CustomColumn, mapAssetRow, mapHeading, maxAssets, rowErrors, usageUnit, targetColumn, type Column, type Mapping } from '../../lib/asset-sheet';
 import parts from '../../app/dealer/parts/parts.module.css';
 import SpreadsheetUpload from '../SpreadsheetUpload';
 import uploadStyles from '../PartsImportForm.module.css';
@@ -36,7 +36,6 @@ const choices = {
     ['file', 'Import file', 'Upload CSV or Excel', 'amber', 'M12 16V3m-5 5 5-5 5 5M4 14v7h16v-7'],
   ],
 } as const;
-const startColumns: Column[] = ['title', 'year', 'serial'];
 type Match = Mapping | 'skip' | 'new';
 const mappingChoices = [
   { value: '', label: 'Choose a field' }, { value: 'skip', label: 'Skip column' }, ...columns.map(value => ({ value, label: assetColumns[value] })),
@@ -55,7 +54,7 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
   request: typeof fetch;
 }) {
   const [stage, setStage] = useState<Stage>(initialStage);
-  const [draft, setDraft] = useState<AssetDraft>(() => ({ rows: [blankAsset()], visible: startColumns, custom: [], basis: '' }));
+  const [draft, setDraft] = useState<AssetDraft>(() => ({ rows: [blankAsset()], visible: [...coreColumns], custom: [], basis: '' }));
   const { rows, visible, basis, custom } = draft;
   const allColumns = [...columns, ...custom];
   const [undo, setUndo] = useState<AssetDraft | null>(null);
@@ -92,7 +91,7 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
   const dialog = useLeadDialog(onClose, busy || transition.pending);
   useLayoutEffect(() => {
     if (!focusError) return;
-    const selector = focusError.vat ? 'button[aria-label="Current values in rand"]'
+    const selector = focusError.vat ? 'button[aria-label="VAT on sheet values"]'
       : `[data-row="${focusError.row}"] input[data-field="${CSS.escape(focusError.field)}"]`;
     const target = dialog.current?.querySelector<HTMLElement>(selector);
     target?.focus({ preventScroll: true });
@@ -134,13 +133,13 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
       const key = choice === 'new' ? customColumn(names[i] || '', mappedCustom) : choice === 'skip' ? '' : choice;
       if (key && isCustomColumn(key)) {
         const canonical = importCustom.find(k => k.toLowerCase() === key.toLowerCase()) ?? key;
-        if (choice !== 'new') customColumn(columnLabel(canonical), mappedCustom);
+        if (choice !== 'new') customColumn(columnLabel(canonical), mappedCustom, true);
         mappedCustom.push(canonical);
         matched.push(canonical);
       } else matched.push(key);
     } catch (cause) { mappingIssue ||= (cause as Error).message; matched.push(''); }
   }
-  if (!matched.includes('title') && !(matched.includes('make') && matched.includes('model'))) mappingIssue ||= 'Match Asset name, or both Make and Model.';
+  if (!matched.includes('title') && !(matched.includes('make') && matched.includes('model'))) mappingIssue ||= 'Match Asset name, or both Brand and Model.';
   function updateDraft(next: Partial<AssetDraft>, remember = true) {
     if (remember) setUndo(draft);
     setDraft(previous => ({ ...previous, ...next }));
@@ -261,7 +260,7 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
       const invalidFields = fields.filter(k => !visible.includes(k));
       if (invalidFields.length) setDraft({ ...draft, visible: [...visible, ...invalidFields] });
       setPage(Math.floor(invalid / size));
-      setFocusError({ row: invalid, field: fields[0], vat: fields[0] === 'value' && !basis });
+      setFocusError({ row: invalid, field: fields[0], vat: !basis && moneyColumns.some(key => key === fields[0]) && errors[fields[0]] === 'Choose whether sheet values include VAT.' });
       return setError('Check the highlighted cells in row ' + (invalid + 1) + '.');
     }
     if (!filled.length)
@@ -292,13 +291,9 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
   async function template() {
     setBusy(true);
     try {
-      const { Workbook } = await import('exceljs');
-      const wb = new Workbook();
-      const ws = wb.addWorksheet('Assets');
-      ws.addRow(columns.map(k => assetColumns[k]));
-      ws.columns.forEach(c => { c.width = 22; });
-      ws.getColumn(columns.indexOf('serial') + 1).numFmt = '@';
-      const url = URL.createObjectURL(new Blob([await wb.xlsx.writeBuffer()]));
+      const { buildAssetTemplate } = await import('../../lib/asset-sheet-template');
+      const buffer = await buildAssetTemplate().xlsx.writeBuffer();
+      const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
       const a = document.createElement('a');
       a.href = url;
       a.download = 'Aim4price-asset-template.xlsx';
@@ -350,7 +345,7 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
         {stage === 'multiple' && <div className={css.example}>
             <button type="button" aria-controls="asset-sheet-example" aria-expanded={example} onClick={() => setExample(!example)}>See an example</button>
           <div id="asset-sheet-example" hidden={!example} className={css.exampleContent}>
-            <p>Enter an asset name, or use both make and model.</p>
+            <p>Enter an asset name, or use both brand and model.</p>
             <table>
               <thead>
                 <tr>
@@ -366,9 +361,9 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
                   <td>—</td>
                 </tr>
                 <tr>
-                  <td>Massey Ferguson 4708</td>
+                  <td>Delivery truck</td>
                   <td>2018</td>
-                  <td>3 200 hours</td>
+                  <td>180 000 km</td>
                 </tr>
               </tbody>
             </table>
@@ -393,7 +388,7 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
               <div className={uploadStyles.columnName}><span className={uploadStyles.letter}>{columnLetter(i)}</span><strong>{header && sheet.rows[0][i] || 'Column ' + columnLetter(i)}</strong></div>
               {!headingsOnly && <div className={uploadStyles.samples}>{sourceRows.slice(0, 2).map((r, n) => <span key={n}>{r[i] || '—'}</span>)}</div>}
               <Select className={uploadStyles.columnSelect} label={'Match column ' + (i + 1)} buttonLabel={'Match column ' + (i + 1)} value={v}
-                options={[...mappingChoices, ...importCustom.map(k => ({value:k,label:columnLabel(k)}))].filter(o => !o.value || o.value === 'skip' || o.value === v || !mapping.includes(o.value as Match)).concat({ value: 'new', label: 'Custom field…' })}
+                options={[...mappingChoices, ...importCustom.map(k => ({value:k,label:mapHeading(columnLabel(k)) ? columnLabel(k) + ' (custom)' : columnLabel(k)}))].filter(o => !o.value || o.value === 'skip' || o.value === v || !mapping.includes(o.value as Match)).concat({ value: 'new', label: 'Custom field…' })}
                 onChange={next => { setMapping(mapping.map((m, j) => j === i ? next as Match : m)); setError(''); }} />
               {v === 'new' && <label className={css.customName}>Field name<input aria-label={`Custom field name for column ${columnLetter(i)}`} maxLength={60} value={names[i] || ''}
                 onChange={e => setNames(names.map((name, j) => j === i ? e.target.value : name))} /></label>}
