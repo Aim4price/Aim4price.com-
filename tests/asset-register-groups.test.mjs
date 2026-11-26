@@ -302,7 +302,7 @@ test('the Asset Register exposes create, manage, collapse, search, and clear umb
   assert.match(client, /Counted value/);
   assert.match(modal, /No primary asset/);
   assert.match(modal, /Choose a primary asset/);
-  assert.match(modal, /Every asset is added to the total by default/);
+  assert.match(modal, /Each asset has its own value/);
   assert.match(modal, /Primary asset: add to total/);
   assert.match(modal, /Linked to primary: do not add again/);
   assert.match(modal, /Do not add to umbrella total/);
@@ -358,7 +358,7 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
   assert.match(modal, /<strong>Manage umbrella<\/strong>/);
   assert.match(modal, /Name, structure and assets/);
   assert.match(modal, /Umbrella name/);
-  assert.match(modal, /Choose the umbrella structure/);
+  assert.match(modal, /How should the umbrella value be calculated/);
   assert.match(modal, /Choose assets/);
   assert.match(modal, /Download reports/);
   assert.match(modal, /Remove umbrella/);
@@ -396,8 +396,7 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
   assert.match(modal, /createPortal/);
   assert.match(modal, /type AssetGroupEditorStep = 1 \| 2 \| 3/);
   assert.doesNotMatch(modal, /AssetGroupEditorProgress|Umbrella setup progress/);
-  assert.match(modal, /!group && !isAssetPickerStep \? <p className=\{styles.intro\}/);
-  assert.match(modal, /Complete one short step at a time/);
+  assert.match(modal, /name="umbrellaName"/);
   assert.match(modal, /editorStep === 1/);
   assert.match(modal, /editorStep === 2/);
   assert.match(modal, /editorStep === 3/);

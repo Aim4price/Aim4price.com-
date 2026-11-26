@@ -372,7 +372,7 @@ const REMOVE_MEMBER_OPTION: ReportSelectOption = {
 
 function defaultGroupName(asset: AssetGroupModalAsset | null): string {
   const title = String(asset?.title ?? '').trim();
-  return title ? `${title} umbrella` : 'Asset umbrella';
+  return title ? `${title} umbrella` : '';
 }
 
 function money(value: number): string {
@@ -517,6 +517,8 @@ export default function AssetGroupManagerModal({
 
     const frame = window.requestAnimationFrame(() => {
       editorBodyRef.current?.scrollTo({ top: 0, left: 0 });
+      const selector = editorStep === 2 ? 'input[type="radio"]:checked' : editorStep === 3 ? 'input[type="search"]' : null;
+      if (selector) editorBodyRef.current?.querySelector<HTMLInputElement>(selector)?.focus({ preventScroll: true });
     });
 
     return () => window.cancelAnimationFrame(frame);
@@ -763,7 +765,7 @@ export default function AssetGroupManagerModal({
     ? `${group.members.length} grouped ${group.members.length === 1 ? 'asset' : 'assets'} · ${money(countedValue)} counted value`
     : '';
   const isAssetPickerStep = (view === 'create' || view === 'members') && editorStep === 3;
-  const modalTitle = isAssetPickerStep ? 'Choose assets for umbrella' : !group
+  const modalTitle = isAssetPickerStep ? 'Choose assets for your umbrella' : !group
     ? 'Create an umbrella'
     : view === 'reports'
       ? `${group.name} Reports`
@@ -773,9 +775,11 @@ export default function AssetGroupManagerModal({
           ? 'Edit umbrella'
           : 'Remove umbrella';
   const modalSubtitle = isAssetPickerStep
-    ? 'Select the saved assets to include in this umbrella.'
+    ? hasPrimaryAsset
+      ? 'Choose your assets. Under Role and value, mark any asset already covered by the primary asset as linked.'
+      : 'Select the assets to group and choose which values count towards the total.'
     : !group
-    ? 'Group related assets while keeping every record independent.'
+    ? 'Group related assets and keep a separate record for each one.'
     : view === 'menu' || view === 'reports'
       ? groupSummary
       : view === 'members'
@@ -991,8 +995,6 @@ export default function AssetGroupManagerModal({
               ref={editorBodyRef}
               className={styles.body}
             >
-              {!group && !isAssetPickerStep ? <p className={styles.intro}>Complete one short step at a time. Your umbrella is saved on the final step.</p> : null}
-
               <div className={styles.wizardBody}>
                 {editorStep === 1 ? (
                 <section className={`${styles.stepCard} ${styles.wizardPanel}`} aria-labelledby="umbrella-step-name">
@@ -1000,7 +1002,7 @@ export default function AssetGroupManagerModal({
                     <span className={styles.stepNumber}>1</span>
                     <div className={styles.stepCopy}>
                       <strong id="umbrella-step-name">Umbrella name</strong>
-                      <small>Use a short name that makes this group easy to recognise.</small>
+                      <small>Choose a name you’ll recognise in the Asset Register.</small>
                     </div>
                   </div>
                   <label className={styles.field}>
@@ -1008,7 +1010,8 @@ export default function AssetGroupManagerModal({
                     <input
                       value={name}
                       onChange={(event) => setName(event.target.value.slice(0, 80))}
-                      placeholder="Example: Farm transport set"
+                      name="umbrellaName"
+                      placeholder="e.g. Delivery fleet"
                       autoFocus
                       required
                     />
@@ -1021,8 +1024,7 @@ export default function AssetGroupManagerModal({
                   <div className={styles.stepHeader}>
                     <span className={styles.stepNumber}>2</span>
                     <div className={styles.stepCopy}>
-                      <strong id="umbrella-step-values">Choose the umbrella structure</strong>
-                      <small>Most umbrellas are simple groups. Choose a primary asset only when another asset's value is already included in it.</small>
+                      <strong id="umbrella-step-values">How should the umbrella value be calculated?</strong>
                     </div>
                   </div>
 
@@ -1032,14 +1034,14 @@ export default function AssetGroupManagerModal({
                       <input type="radio" name="asset-group-primary-mode" checked={!hasPrimaryAsset} onChange={() => handlePrimaryModeChange(false)} />
                       <span>
                         <strong>No primary asset</strong>
-                        <small>Use this for tractors or other assets grouped for convenience. Every asset is added to the total by default.</small>
+                        <small>Each asset has its own value, like a truck and a separately valued trailer.</small>
                       </span>
                     </label>
                     <label className={hasPrimaryAsset ? styles.choiceActive : styles.choice}>
                       <input type="radio" name="asset-group-primary-mode" checked={hasPrimaryAsset} onChange={() => handlePrimaryModeChange(true)} />
                       <span>
                         <strong>Choose a primary asset</strong>
-                        <small>Use this when the primary value already includes one or more linked assets. Choose the primary in Step 3.</small>
+                        <small>One asset’s value already covers another, like a truck valued with its fitted crane.</small>
                       </span>
                     </label>
                   </fieldset>
@@ -1059,7 +1061,7 @@ export default function AssetGroupManagerModal({
                         type="search"
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Search assets..."
+                        placeholder="Search by name, registration or serial number"
                       />
                     </label>
                     <div className={styles.assetPickerToolbarActions}>
@@ -1111,7 +1113,7 @@ export default function AssetGroupManagerModal({
                               <AssetPickerDetail>{assetSourceLine(asset, combinedMode)}</AssetPickerDetail>
                               <AssetSerialNumber value={asset.serialNumber} />
                               {movingFromAnotherGroup ? (
-                                <small className={styles.assetMoveNotice}>Currently in {existingGroup?.name} — select to move</small>
+                                <small className={styles.assetMoveNotice}>Currently in {existingGroup?.name}. {selected ? 'Will move here when saved.' : 'Select to move here.'}</small>
                               ) : null}
                             </span>
                             <span className={styles.assetValue} data-asset-choice-value="true">
@@ -1166,7 +1168,7 @@ export default function AssetGroupManagerModal({
                         </div>
                       );
                     }) : (
-                      <div className={styles.assetListEmpty}>No assets match your search.</div>
+                      <div className={styles.assetListEmpty}>{assets.length ? 'No assets match your search.' : 'Add an asset to your register to start an umbrella.'}</div>
                     )}
                   </div>
                 </section>
@@ -1183,17 +1185,17 @@ export default function AssetGroupManagerModal({
                   <small className={styles.pickerCountNote}>{countedAssetCount} asset {countedAssetCount === 1 ? 'value' : 'values'} included in the total</small>
                 </span>
               ) : null}
-              <button type="button" className={group ? accountStyles.ghostButton : styles.cancelButton} onClick={() => group ? setView('menu') : onClose()} disabled={busy}>
-                Cancel
-              </button>
               {editorStep > 1 ? (
-                <button type="button" className={group ? accountStyles.ghostButton : styles.cancelButton} onClick={() => setEditorStep((editorStep - 1) as AssetGroupEditorStep)} disabled={busy}>
+                <button type="button" className={accountStyles.ghostButton} onClick={() => setEditorStep((editorStep - 1) as AssetGroupEditorStep)} disabled={busy}>
                   Back
                 </button>
               ) : null}
+              <button type="button" className={accountStyles.ghostButton} onClick={() => group ? setView('menu') : onClose()} disabled={busy}>
+                Cancel
+              </button>
               <button
                 type="submit"
-                className={group ? accountStyles.primaryButton : styles.saveButton}
+                className={accountStyles.primaryButton}
                 disabled={busy || (editorStep === 1 && !name.trim()) || (editorStep === 3 && (selectedAssetIds.length < 1 || (hasPrimaryAsset && !primaryAssetId)))} data-download-primary="true" data-asset-choice-action="primary"
               >
                 {editorStep < 3 ? 'Next' : busy ? 'Saving…' : group ? 'Save changes' : 'Create umbrella'}
