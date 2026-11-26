@@ -12,7 +12,7 @@ const collaboration = read('lib/accounting-collaboration.ts');
 
 test('disposal keeps the duplicate warning but removes the normal orange disclaimer', () => {
   assert.doesNotMatch(ownerRegister, /The asset will leave active totals but remain available to Additions & Disposals reports/);
-  assert.match(ownerRegister, /This permanently removes the duplicate asset/);
+  assert.match(ownerRegister, /Deleting this asset removes it from shared links, dealer and business inboxes, and maintenance tracking\. Its final snapshot and deletion audit are retained/);
   assert.match(ownerRegister, /disposalDraft\.reason === 'mistake_duplicate'/);
 });
 
