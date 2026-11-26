@@ -122,7 +122,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
           <button className={`${ledger.secondaryButtonSmall} ${ledger.invoiceManageButton}`} data-budget-trigger={budget.id} onClick={() => setManageId(budget.id)}><Icon kind="manage" />Manage</button>
         </div>
       </div>
-      {expandedId === budget.id ? <section id={`budget-details-${budget.id}`} className={ledger.invoiceDetails} aria-label={`Costs allocated to ${budget.assetTitle}`}>
+      {expandedId === budget.id ? <section id={`budget-details-${budget.id}`} className={ledger.invoiceDetails} aria-label={`Budget details for ${budget.assetTitle}`}>
         <h3>Budget details</h3><BudgetCostDetails budget={budget} onRefresh={onRefresh} onAddRecurring={() => onAddRecurring(budget.assetId || '')} />
       </section> : null}
     </LedgerDetailsCard>) : null}

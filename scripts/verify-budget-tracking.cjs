@@ -6,7 +6,7 @@ const puppeteer = require('puppeteer-core');
 const root = path.resolve(__dirname,'..');
 const fixture = path.join(root,'app/budget-validation');
 const native = path.join(root,'app/owner-app/budget-validation');
-const base={id:'budget-one',assetId:'tractor',assetTitle:'New Holland TT4.90',period:'monthly',periodLabel:'September 2026',periodKey:'2026-09',periodStart:'2026-09-01',periodEnd:'2026-10-01',amount:50000,spent:10000,remaining:40000,overBy:0,percentUsed:20,warningPercent:80,includeFuelSlipCosts:false,status:'on_track',revision:1};
+const base={id:'budget-one',assetId:'tractor',assetTitle:'New Holland TT4.90',period:'monthly',periodLabel:'September 2026',periodKey:'2026-09',periodStart:'2026-09-01',periodEnd:'2026-10-01',amount:50000,spent:0,remaining:50000,overBy:0,percentUsed:0,warningPercent:80,includeFuelSlipCosts:false,status:'on_track',revision:1};
 let budgets=[base,{...base,id:'budget-two',assetId:'truck',assetTitle:'Toyota Hilux',spent:45000,remaining:5000,percentUsed:90,status:'warning'},{...base,id:'budget-three',assetId:null,assetTitle:'All saved assets',period:'annual',periodLabel:'2026',periodKey:'2026',spent:60000,remaining:0,overBy:10000,percentUsed:120,status:'over_budget'}];
 const assets=[{id:'tractor',title:'New Holland TT4.90',kind:'tractor',categoryLabel:'Tractor',yearModel:2022,usageReading:1276,usageMetric:'hours',condition:'Good',value:200000,serialNumber:'TEST-001',meta:''},{id:'truck',title:'Toyota Hilux',kind:'vehicle',categoryLabel:'Vehicle',yearModel:2020,usageReading:100000,usageMetric:'km',condition:'Good',value:200000,serialNumber:'TEST-002',meta:''}];
 async function main(){let server,browser;const created=[];try{
@@ -31,27 +31,45 @@ async function main(){let server,browser;const created=[];try{
  if(u.pathname==='/api/my-invoices') body={ok:true,assets,invoices:[{id:'invoice-one',assetId:'tractor',invoiceNumber:'INV-001',supplierName:'Workshop',invoiceDate:'2026-09-10',totalIncVat:10000,source:'manual',assetTitle:'New Holland TT4.90',blocks:[]},{id:'invoice-fuel',assetId:'tractor',invoiceNumber:'FUEL-001',supplierName:'Fuel depot',invoiceDate:'2026-09-11',totalIncVat:500,source:'fuel_slip',blocks:[]}]};
  return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
  }if(r.resourceType()==='media')return r.abort();r.continue();});
- const click=async text=>{assert.ok(await page.evaluate(t=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent.trim()===t&&!x.disabled);if(!b)return false;b.click();return true;},text),`Button ${text}`);};
+ const click=async text=>{assert.ok(await page.evaluate(t=>{const b=[...document.querySelectorAll('button')].find(x=>!x.disabled && x.getClientRects().length && (x.textContent.trim()===t || x.querySelector('strong')?.textContent.trim()===t));if(!b)return false;b.click();return true;},text),`Button ${text}`);};
  await page.setViewport({width:1440,height:1000});await page.goto('http://localhost:3031/budget-validation',{waitUntil:'networkidle0',timeout:120000});await page.waitForSelector('article[data-status]');
  assert.equal(await page.$$eval('article[data-status]',e=>e.length),3);
  await page.screenshot({path:'/tmp/budget-desktop.png',fullPage:true});
  await click('Alerts (2)');assert.equal(await page.$$eval('article[data-status]',e=>e.length),2);await click('Clear filters');
- await click('Filter');await page.waitForSelector('[role=combobox]');await page.click('[role=combobox]');await page.waitForSelector('[role=option]');await page.evaluate(()=>[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.includes('Toyota')).click());await click('Apply filters');assert.equal(await page.$$eval('article[data-status]',e=>e.length),1);await click('Clear filters');
+ await page.type('input[aria-label="Search budgets"]','Toyota');await page.waitForFunction(()=>document.querySelectorAll('article[data-status]').length===1);await click('Clear filters');
  await click('Manage');await page.waitForSelector('[role=dialog]');await click('Edit budget & alerts');await page.waitForFunction(()=>document.querySelector('[role=dialog]')?.textContent.includes('budget'));await page.keyboard.press('Escape');
  await click('Manage');await page.waitForSelector('[role=dialog]');await click('Delete budget');await page.waitForSelector('[role=alertdialog]');await page.keyboard.press('Escape');assert.equal(await page.$('[role=alertdialog]'),null);
  await click('Add Budget');await page.waitForSelector('[role=dialog]');await page.keyboard.press('Escape');
- await click('Download');await page.waitForSelector('[role=dialog]');assert.match(await page.$eval('[role=dialog]',e=>e.textContent),/PDF report.*Excel workbook/);await click('PDF report');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));assert.ok(requests.some(u=>u.includes('/budgets/report?')&&u.includes('format=pdf')));
- await click('View details');await page.waitForSelector('[aria-label="Allocated costs"]');
- assert.match(await page.$eval('[aria-label="Allocated costs"]',e=>e.textContent),/Workshop/);
- assert.doesNotMatch(await page.$eval('[aria-label="Allocated costs"]',e=>e.textContent),/Fuel depot/);
- assert.ok(requests.some(u=>u.includes('assetId=tractor')&&u.includes('year=2026')&&u.includes('month=9')));
- assert.match(page.url(),/budget-validation$/);
- await page.screenshot({path:'/tmp/budget-expanded.png',fullPage:true});
- await click('Hide details');assert.equal(await page.$('[aria-label="Allocated costs"]'),null);
+ await click('Download');await click('All budgets');await click('Next');
+ assert.match(await page.$eval('[role=dialog]',e=>e.textContent),/PDF report.*XLSX workbook/);
+ await click('PDF report');await click('Open PDF report');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+ assert.ok(requests.some(u=>u.includes('/budgets/report?')&&u.includes('format=html')));
+
+ const checkDetails = async id => {
+   const details = '#budget-details-' + id;
+   const trigger = 'button[aria-controls="budget-details-' + id + '"]';
+   const start = requests.length;
+   await page.click(trigger);
+   await page.waitForSelector(details + ' [role="switch"]');
+   const panel = await page.$eval(details, section => ({
+     label: section.lastElementChild.getAttribute('aria-label'),
+     text: section.innerText,
+   }));
+   assert.equal(panel.label, 'Recurring costs');
+   assert.match(panel.text, /Expected this period/);
+   assert.match(panel.text, /Manage recurring costs/);
+   assert.doesNotMatch(panel.text, /Recorded costs|No costs allocated|Workshop|Fuel depot/);
+   assert.ok(!requests.slice(start).some(u=>u.split('?')[0]==='/api/my-invoices'), 'Expanding a budget should not fetch ledger rows');
+   await page.click(trigger);
+   await page.waitForSelector(details, {hidden:true});
+ };
+ await checkDetails('budget-one');
+ await checkDetails('budget-two');
  await page.setViewport({width:430,height:932});await page.goto('http://localhost:3031/owner-app/budget-validation',{waitUntil:'networkidle0'});await page.waitForSelector('article[data-status]');await page.screenshot({path:'/tmp/budget-mobile.png',fullPage:true});
+ await checkDetails('budget-one');
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No mobile horizontal overflow');
  assert.deepEqual(errors,[]);
- console.log('PASS: desktop/mobile cards, alerts, asset filter, add/edit modal launch, export choices and inline allocated costs');
+ console.log('PASS: desktop/mobile cards, alerts, asset filter, add/edit modal launch, export choices and budget details ending at the recurring-costs panel');
  }finally{for(const dir of created){await fs.rm(dir,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types',path.relative(root,dir)),{recursive:true,force:true});}if(browser)await browser.close();if(server)server.kill();}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
