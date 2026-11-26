@@ -37,7 +37,7 @@ test('normal and share report completion use the same canonical HTML artifact', 
   assert.match(client, /async function handleExportPdf[\s\S]*?const reportHtml = buildAssetRegisterSummaryReportHtml\(reportPayload\)[\s\S]*?html: reportHtml[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?writeCanonicalReportHtml\(reportWindow,[\s\S]*?reportHtml\)/);
   assert.match(client, /if \(!reportAssets\.length\) \{[\s\S]*?No assets match the/);
   assert.match(client, /async function handleDownloadAssetGroupPdf[\s\S]*?await handleExportPdf\([\s\S]*?groupAssets[\s\S]*?group\.name/);
-  assert.match(client, /async function handleDownloadAssetGroupXlsx[\s\S]*?group\.id,[\s\S]*?'xlsx',[\s\S]*?groupAssets\.map\(\(asset\) => asset\.id\)[\s\S]*?url: reportUrl,[\s\S]*?fetch\(reportUrl/);
+  assert.match(client, /async function handleDownloadAssetGroupXlsx[\s\S]*?group\.id,[\s\S]*?'xlsx',[\s\S]*?groupAssets\.map\(\(asset\) => asset\.id\)[\s\S]*?url: reportUrl,[\s\S]*?ownerFetch\(reportUrl/);
   assert.match(client, /const reportUrl = buildAssetPdfReportUrl\(asset, 'fuel', filters, 'pdf'\)[\s\S]*?url: reportUrl/);
   assert.match(client, /const reportUrl = buildAssetOwnershipReportUrl\(asset, filters, format\)[\s\S]*?url: reportUrl/);
   assert.match(client, /async function handleDownloadAssetGroupReport[\s\S]*?const reportUrl =[\s\S]*?url: reportUrl,[\s\S]*?const printableReportUrl =[\s\S]*?'html'[\s\S]*?openCanonicalReportUrl\(printableReportUrl/);

@@ -126,7 +126,7 @@ test('inside choices remain compact while the simplified outside layout has bala
   assert.match(componentStyles, /\.messagePreview::\-webkit-scrollbar-thumb/);
   assert.match(componentStyles, /\.sendFooter \{[\s\S]*?padding-top: 1\.125rem/);
   assert.doesNotMatch(componentStyles.match(/^\.sendFooter \{([^}]+)\}/m)?.[1] ?? '', /position: sticky/);
-  assert.match(componentStyles, /\.accountShareTheme \.sendFooter \{[^}]*position: sticky/);
+  assert.match(componentStyles, /\.accountShareTheme \.sendFooter \{[^}]*flex: none/);
   assert.match(componentStyles, /\.sendButtons \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?gap: 0\.75rem/);
   assert.match(componentStyles, /@media \(max-width: 620px\)[\s\S]*?\.sendButtons \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(componentStyles, /\.sendButton \{[\s\S]*?min-height: 3\.75rem/);
