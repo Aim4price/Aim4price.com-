@@ -1,4 +1,5 @@
 'use client';
+import ContourCardSurface from './ContourCardSurface';
 import { PageHelpHeading } from './PageHelp';
 
 import { useDealerAppRoot } from '../lib/use-dealer-app-root';
@@ -604,7 +605,7 @@ export default function AdStudioClient({ initialMode = 'home', dealerAppMode = f
                   </div>
                   <nav className={`${valuationStyles.sectorLargeGrid} ${entryStyles.entryGrid}`} aria-label="Advert Studio options">
                     <button type="button" className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`} onClick={() => setStudioMode('style')}>
-                      <span className={valuationStyles.sectorVideoOverlay} aria-hidden="true" />
+                      <ContourCardSurface />
                       <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
                         <span className={valuationStyles.sectorLabelWrap}>
                           <strong className={valuationStyles.sectorLabel}>Advert Template</strong>
@@ -613,7 +614,7 @@ export default function AdStudioClient({ initialMode = 'home', dealerAppMode = f
                       </span>
                     </button>
                     <button type="button" className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`} onClick={() => { setCreatorStarted(true); setStudioMode('creator'); }}>
-                      <span className={valuationStyles.sectorVideoOverlay} aria-hidden="true" />
+                      <ContourCardSurface />
                       <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
                         <span className={valuationStyles.sectorLabelWrap}>
                           <strong className={valuationStyles.sectorLabel}>Create Advert</strong>

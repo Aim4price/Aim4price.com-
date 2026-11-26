@@ -23,7 +23,7 @@ test('Owner and Dealer continue to share one valuation client with app-only pres
 
 test('app sector choices are static green cards and progress numbers are centered circles', () => {
   assert.match(client, /compactAppMode \? styles\.sectorBigCardApp : ''/);
-  assert.match(client, /\{!compactAppMode \? \([\s\S]*?<video/);
+  assert.match(client, /\{!compactAppMode && sectorPreviewMode !== 'still' \? \(\s*<>\s*<video/);
   assert.match(client, /!compactAppMode && !shouldAutoPlaySectorVideos/);
   assert.match(valuationStyles, /\.appValuation \.sectorBigCardApp[^\{]*\{[\s\S]*?place-items: center;[\s\S]*?background: #1d5742;/);
   assert.match(appStyles, /button\[class\*='sectorBigCardApp'\][^\{]*\{[\s\S]*?place-items: center !important;[\s\S]*?background: #1d5742 !important;/);

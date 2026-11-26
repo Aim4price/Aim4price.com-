@@ -1,4 +1,5 @@
 'use client';
+import ContourCardSurface from '../../components/ContourCardSurface';
 import { PageHelpHeading } from '../../components/PageHelp';
 
 import { replacementSliderRange } from '../../lib/replacement-slider';
@@ -2094,23 +2095,30 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const genericModelPrefilledSpecKeysRef = useRef<Set<string>>(new Set());
   const requiredQuestionsCompletedRef = useRef(false);
   const completionToastTimerRef = useRef<number | null>(null);
-  const [shouldAutoPlaySectorVideos, setShouldAutoPlaySectorVideos] = useState(false);
+  const [sectorPreviewMode, setSectorPreviewMode] = useState<'manual' | 'auto' | 'still'>('manual');
+  const shouldAutoPlaySectorVideos = sectorPreviewMode === 'auto';
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined;
 
     const mediaQuery = window.matchMedia('(hover: none), (pointer: coarse), (max-width: 720px)');
-    const updateAutoPlayState = () => setShouldAutoPlaySectorVideos(mediaQuery.matches);
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updatePreviewMode = () => setSectorPreviewMode(
+      reducedMotion.matches ? 'still' : mediaQuery.matches ? 'auto' : 'manual'
+    );
+    updatePreviewMode();
 
-    updateAutoPlayState();
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', updateAutoPlayState);
-      return () => mediaQuery.removeEventListener('change', updateAutoPlayState);
+    const queries = [mediaQuery, reducedMotion];
+    for (const query of queries) {
+      if (query.addEventListener) query.addEventListener('change', updatePreviewMode);
+      else query.addListener(updatePreviewMode);
     }
-
-    mediaQuery.addListener(updateAutoPlayState);
-    return () => mediaQuery.removeListener(updateAutoPlayState);
+    return () => {
+      for (const query of queries) {
+        if (query.removeEventListener) query.removeEventListener('change', updatePreviewMode);
+        else query.removeListener(updatePreviewMode);
+      }
+    };
   }, []);
 
   const selectedFamily = useMemo(
@@ -6101,7 +6109,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   }}
                   aria-label={isAvailable ? `Choose ${sector.label}` : `${sector.label} coming soon`}
                 >
-                  {!compactAppMode ? (
+                  <ContourCardSurface />
+                  {!compactAppMode && sectorPreviewMode !== 'still' ? (
                     <>
                       <video
                         className={`${styles.sectorVideo} ${shouldAutoPlaySectorVideos ? styles.sectorVideoMobileActive : ''}`}
@@ -6115,7 +6124,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         <source src={sector.videoSrc} type="video/mp4" />
                       </video>
 
-                      <span className={styles.sectorVideoOverlay} />
+                      <span data-contour-shade className={styles.sectorVideoOverlay} aria-hidden="true" />
                     </>
                   ) : null}
 
