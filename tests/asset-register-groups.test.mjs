@@ -303,8 +303,8 @@ test('the Asset Register exposes create, manage, collapse, search, and clear umb
   assert.match(modal, /No primary asset/);
   assert.match(modal, /Choose a primary asset/);
   assert.match(modal, /Each asset has its own value/);
-  assert.match(modal, /Primary asset: add to total/);
-  assert.match(modal, /Linked to primary: do not add again/);
+  assert.match(modal, /label: 'Primary asset', detail: 'Counts towards the umbrella total'/);
+  assert.match(modal, /label: 'Linked to primary', detail: 'Already counted in the primary asset’s value'/);
   assert.match(modal, /Do not add to umbrella total/);
   assert.doesNotMatch(modal, /label="Relationship"|RELATIONSHIP_OPTIONS|assetGroupRelationshipLabel/);
   assert.match(modal, /without deleting their records|grouped asset records[\s\S]*?will remain unchanged/);
