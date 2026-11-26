@@ -51,10 +51,12 @@ async function main(){let server,browser;const created=[];try{
  assert.equal(await page.$('[data-asset-choice-list]'),null);
  await click('Next');await page.waitForSelector('[data-asset-choice-list]');
  await click('Back');await click('Multiple assets');await click('Next');
- await page.type('input[aria-label="Group name"]','Delivery fleet');
+ assert.equal(await page.$$eval('[role=dialog] input', inputs=>inputs.length),1);
  await click('Select all shown (2)');await click('Next');await click('Next');
- assert.match(await page.$eval('[role=dialog]', e=>e.textContent), /One shared limit for Delivery fleet/);
+ assert.match(await page.$eval('[role=dialog]', e=>e.textContent), /One shared limit for 2 assets/);
  await click('Next');await page.type('input[placeholder="50 000.00"]','50000');await click('Next');
+ assert.match(await page.$eval('[role=dialog]',e=>e.textContent),/Enter a group name/);
+ await page.type('input[placeholder="e.g. Delivery fleet"]','Delivery fleet');await click('Next');
  assert.match(await page.$eval('[role=dialog]', e=>e.textContent), /for the group/);
  await click('Save budget');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
  const group=budgets.find(b=>b.groupName==='Delivery fleet');
