@@ -43,6 +43,20 @@ import AssetSerialNumber from '../../components/AssetSerialNumber';
 type DocumentCategory = AccountDocumentCategory;
 type DocumentType = AccountDocumentType;
 
+const shortTypeLabels: Partial<Record<DocumentType, string>> = {
+  'registration-certificate': 'NaTIS registration',
+  'roadworthy-certificate': 'Roadworthy / CoF',
+  'insurance-schedule': 'Policy schedule',
+  'insurance-claim': 'Insurance claim',
+  'invoice-proof-of-purchase': 'Proof of purchase',
+  'ownership-certificate': 'Ownership proof',
+  'service-record': 'Service record',
+  'contract-agreement': 'Contract',
+  'company-registration': 'Company registration',
+  'accounting-record': 'Accounting record',
+  'other': 'Other',
+};
+
 const documentIcons: Record<DocumentCategory, string> = {
   business: 'storage', insurance: 'insurance', finance: 'finance', licence: 'licence',
   'tax-accounting': 'amount', ownership: 'rental', contract: 'lease', warranty: 'extended_warranty', other: 'other',
@@ -634,6 +648,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     const needle = documentTypeSearch.trim().toLowerCase();
     if (!needle) return ACCOUNT_DOCUMENT_TYPES;
     return ACCOUNT_DOCUMENT_TYPES.filter((option) => [
+      shortTypeLabels[option.value] ?? option.label,
       option.label,
       option.value,
       ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category],
@@ -1642,20 +1657,21 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         <div className={`${styles.modalBackdrop} ${downloadStyles.backdrop}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeDocumentTypePicker(); }}>
           <section ref={documentTypeModalRef} className={`${downloadStyles.dialog} ${categoryStyles.dialog}`} data-download-dialog="true" role="dialog" aria-modal="true" aria-labelledby="document-type-title">
             <header data-download-header="true">
-              <h2 id="document-type-title">Choose document type</h2>
+              <h2 id="document-type-title">Document type</h2>
               <button type="button" onClick={closeDocumentTypePicker} aria-label="Close document type chooser" data-modal-close="true">×</button>
             </header>
-            <input className={styles.documentTypeSearch} type="search" value={documentTypeSearch} onChange={(event) => { setDocumentTypeSearch(event.target.value); setTypePage(0); }} placeholder="Search document types..." aria-label="Search document types" data-modal-initial-focus="true" />
+            <input className={styles.documentTypeSearch} type="search" value={documentTypeSearch} onChange={(event) => { setDocumentTypeSearch(event.target.value); setTypePage(0); }} placeholder="Search types" aria-label="Search document types" data-modal-initial-focus="true" />
             <div className={categoryStyles.cards} data-document-types>
               {filteredDocumentTypes.slice(firstType, firstType + typesPerPage).map((option) => {
                 const icon = option.value === 'service-record' ? 'service_plan' : documentIcons[option.category];
-                return <button key={option.value} type="button" className={`${categoryStyles.card} ${styles.documentTile}`} data-category={icon} aria-label={option.label} aria-pressed={draft.documentType === option.value} onClick={() => selectDocumentType(option.value)}>
+                const label = shortTypeLabels[option.value] ?? option.label;
+                return <button key={option.value} type="button" className={`${categoryStyles.card} ${styles.documentTile}`} data-category={icon} title={option.label} aria-pressed={draft.documentType === option.value} onClick={() => selectDocumentType(option.value)}>
                   <span className={categoryStyles.icon}><CategoryIcon kind={icon} /></span>
-                  <span className={categoryStyles.copy}><strong>{option.label}</strong><small>{ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category]}</small></span>
+                  <span className={categoryStyles.copy}><strong>{label}</strong></span>
                 </button>;
               })}
             </div>
-            {!filteredDocumentTypes.length && <p role="status">No document types match that search.</p>}
+            {!filteredDocumentTypes.length && <p role="status">No matches.</p>}
             <footer data-download-footer="true">
               {typePages > 1 && <>
                 <span aria-live="polite">Page {currentTypePage + 1} of {typePages}</span>

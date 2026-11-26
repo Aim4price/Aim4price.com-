@@ -53,8 +53,16 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');
   assert.equal(await page.$$eval('[role=dialog]',nodes=>nodes.length),1);
   await page.waitForFunction(()=>document.querySelector('[aria-label="Search document types"]')===document.activeElement);
+  async function checkTypeLabelFit() {
+   const clipped=await page.$$eval('[data-document-types] strong',labels=>labels.filter(label=>
+    label.scrollWidth > label.clientWidth+1 || label.offsetHeight > parseFloat(getComputedStyle(label).lineHeight)+1
+   ).map(label=>label.textContent));
+   assert.deepEqual(clipped,[]);
+  }
+  await checkTypeLabelFit();
   await click('Next');
   await page.waitForFunction(()=>document.querySelector('[data-download-footer]')?.textContent.includes('Page 2'));
+  await checkTypeLabelFit();
   await click('Previous');
   await page.type('[aria-label="Search document types"]','licence');
   await page.keyboard.press('Escape');await page.waitForSelector('#document-type-trigger');
