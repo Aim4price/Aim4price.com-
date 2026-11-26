@@ -107,6 +107,8 @@
 .recurringPanel { min-width: 0; margin: 1rem 0 0; padding: .8rem; border: 1px solid var(--app-line,#c6dcd0); border-radius: 1.25rem; background: var(--app-surface,#fff); }
 .recurringBar, .recurringList li, .editCost { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1.25rem; }
 .recurringBar { justify-content: space-between; padding: .8rem .35rem .1rem; }
+.recurringActions { display: flex; flex-wrap: wrap; align-items: stretch; gap: .6rem; }
+.recurringActions > button { min-height: 2.75rem; }
 .recurringBar > span { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; color: var(--app-muted,#536c60); font-size: .92rem; font-weight: 700; }
 .recurringBar strong { color: var(--app-text,#123f32); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
 .manageCosts, .costControls button, .resetChoice {

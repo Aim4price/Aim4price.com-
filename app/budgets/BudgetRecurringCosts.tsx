@@ -6,6 +6,7 @@ import RecurringCostsSwitch from '../../components/RecurringCostsSwitch';
 import type { BudgetRecurringCost } from '../../lib/budget-expected';
 import { formatBudgetMoney, type TrackedBudget } from '../../lib/budget-tracking';
 import styles from './page.module.css';
+import ledgerStyles from '../my-invoices/page.module.css';
 
 const frequencies = {monthly:'Monthly', quarterly:'Quarterly', six_monthly:'Every six months', annual:'Annual'};
 const dateLabel = (date: string) => new Date(date + 'T12:00:00Z').toLocaleDateString('en-ZA',{day:'numeric',month:'short',timeZone:'UTC'});
@@ -66,7 +67,10 @@ export default function BudgetRecurringCosts({budget, onRefresh, onAdd}: {
       onChange={value => void save('/api/my-invoices/budgets/' + budget.id, {includeRecurringCosts:value})} />
     <div className={styles.recurringBar}>
       <span>{included ? 'Expected this period' : 'Included in this budget'} <strong>{formatBudgetMoney(included ? budget.expected ?? 0 : 0)}</strong></span>
-      <button className={styles.manageCosts} type="button" aria-expanded={manage} aria-controls={listId} disabled={busy} onClick={() => setManage(!manage)}>{manage ? 'Done' : 'Manage recurring costs'}</button>
+      <div className={styles.recurringActions}>
+        {costs.length > 0 && <button className={styles.manageCosts} type="button" aria-expanded={manage} aria-controls={listId} disabled={busy} onClick={() => setManage(!manage)}>{manage ? 'Done' : 'Manage recurring costs'}</button>}
+        {!desktop.workspace && <button type="button" className={ledgerStyles.primaryButton} disabled={busy} onClick={onAdd}>Add recurring cost</button>}
+      </div>
     </div>
     <div id={listId}>
       {visible.length > 0 && <ul className={styles.recurringList}>{visible.map(cost => <li key={cost.id}>
@@ -76,7 +80,6 @@ export default function BudgetRecurringCosts({budget, onRefresh, onAdd}: {
         {manage && desktop.can('editCosts') && <CostEditor key={String(cost.editableAmount) + String(cost.paused)} cost={cost} busy={busy}
           onSave={(amount, paused) => save('/api/recurring-commitments/' + cost.id,{amount,paused,previousAmount:cost.editableAmount,previousPaused:cost.paused})} />}
       </li>)}</ul>}
-      {manage && !desktop.workspace && <button type="button" className={styles.manageCosts} disabled={busy} onClick={onAdd}>Add recurring cost</button>}
     </div>
     {included && due.some(cost => cost.allocationNeeded) && <p className={styles.detailsNote}>Available funds exclude unallocated shares.</p>}
     {error && <p role="alert" className={styles.negative}>{error}</p>}

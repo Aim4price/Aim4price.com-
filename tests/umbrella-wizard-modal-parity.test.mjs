@@ -214,7 +214,7 @@ test("Aim4price capture is the full-width final choice in Add asset cost", () =>
     '<div className={styles.modalFooter}>',
   );
   const manualIndex = costChoices.indexOf("Enter cost manually");
-  const recurringIndex = costChoices.indexOf("Add recurring commitment");
+  const recurringIndex = costChoices.indexOf("Add recurring cost");
   const captureIndex = costChoices.indexOf("Automatic upload");
 
   assert.ok(
