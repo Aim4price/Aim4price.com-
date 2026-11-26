@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, type Ref } from 'react';
-import { costCategories } from '../lib/cost-categories';
+import { allCostCategoriesSelected, costCategories, toggleCostCategory } from '../lib/cost-categories';
 import RecurringFieldIcon from '../app/my-invoices/RecurringFieldIcon';
 import styles from '../app/my-invoices/cost-categories.module.css';
 
@@ -10,7 +10,6 @@ type Props = {
   onChange: (categories: string[]) => void;
   question?: string;
   headingRef?: Ref<HTMLHeadingElement>;
-  emptyMeansAll?: boolean;
   fuelSlips?: {
     included: boolean;
     onChange: (included: boolean) => void;
@@ -20,29 +19,17 @@ type Props = {
 };
 
 export default function OwnershipReportCategories({
-  selected, onChange, fuelSlips, headingRef, emptyMeansAll = false,
+  selected, onChange, fuelSlips, headingRef,
   question = 'Which costs should this report include?',
 }: Props) {
   const headingId = useId();
-  const all = emptyMeansAll ? selected.length === 0 : selected.includes('all');
-
-  function chooseAll() {
-    if (emptyMeansAll || (all && fuelSlips)) onChange([]);
-    else onChange(['all']);
-  }
-
-  function toggle(value: string) {
-    const next = all ? [value] : selected.includes(value)
-      ? selected.filter(category => category !== value)
-      : [...selected, value];
-    onChange(!emptyMeansAll && next.length === costCategories.length ? ['all'] : next);
-  }
+  const all = allCostCategoriesSelected(selected);
 
   return <section aria-labelledby={headingId} className={styles.reportCategories}>
     <div className={styles.reportToolbar}>
       <h3 id={headingId} ref={headingRef} tabIndex={headingRef ? -1 : undefined}>{question}</h3>
       <div className={styles.reportToggles}>
-        <button type="button" aria-pressed={all} onClick={chooseAll}>
+        <button type="button" aria-pressed={all} onClick={() => onChange(all ? [] : ['all'])}>
           {all && <span aria-hidden="true">✓ </span>}All costs
         </button>
         {fuelSlips && <button type="button" aria-pressed={fuelSlips.included}
@@ -54,9 +41,9 @@ export default function OwnershipReportCategories({
     </div>
     <div className={styles.cards}>
       {costCategories.map(category => {
-        const chosen = selected.includes(category.value);
+        const chosen = all || selected.includes(category.value);
         return <button type="button" key={category.value} className={styles.card}
-          data-category={category.value} aria-pressed={chosen} onClick={() => toggle(category.value)}>
+          data-category={category.value} aria-pressed={chosen} onClick={() => onChange(toggleCostCategory(selected, category.value))}>
           <span className={chosen ? styles.selectionCheck : styles.icon} aria-hidden="true">
             {chosen ? '✓' : <RecurringFieldIcon kind={category.icon} />}
           </span>

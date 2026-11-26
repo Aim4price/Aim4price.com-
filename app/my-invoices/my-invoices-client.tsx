@@ -384,7 +384,7 @@ function buildEmptyCostBudgetDraft(assetId = ''): CostBudgetDraft {
     period: 'monthly',
     amount: '',
     warningPercent: '80',
-    registerId: '', categories: [],
+    registerId: '', categories: ['all'],
     includeVat: true,
     includeFuelSlipCosts: true,
   };
@@ -1510,7 +1510,9 @@ export default function MyInvoicesClient({
     [budgetAssets, budgetSelectedAssetIds],
   );
   const budgetRegisterName = budgetRegisters.find(register => register.value === budgetDraft.registerId)?.label;
-  const budgetCountsFuel = !budgetDraft.categories.length || budgetDraft.categories.includes('fuel');
+  // Budgets store all costs as an empty array. In the picker, an empty array means nothing is selected.
+  const budgetCategoryFilter = budgetDraft.categories.includes('all') ? [] : budgetDraft.categories;
+  const budgetCountsFuel = budgetDraft.categories.includes('all') || budgetDraft.categories.includes('fuel');
   const budgetAmountValue = Number(budgetDraft.amount.replace(/\s/g, '').replace(',', '.'));
   const budgetWarningValue = Number(budgetDraft.warningPercent);
   const budgetLimitIsValid = Number.isFinite(budgetAmountValue)
@@ -1525,7 +1527,7 @@ export default function MyInvoicesClient({
     return budgetAssets.filter((asset) => assetSearchText(asset).includes(query));
   }, [budgetAssetSearch, budgetAssets]);
 
-  const selectedBudgetCategories = budgetDraft.categories.join(',');
+  const selectedBudgetCategories = budgetCategoryFilter.join(',');
   const budgetUnavailableAssetIdsByPeriod = useMemo<Record<BudgetPeriod, Set<string>>>(() => {
     const unavailable: Record<BudgetPeriod, Set<string>> = {
       monthly: new Set<string>(),
@@ -2154,7 +2156,7 @@ export default function MyInvoicesClient({
       period: budget.period,
       amount: formatInvoiceMoneyInput(formatMoneyWithCents(budget.amount)),
       warningPercent: String(budget.warningPercent),
-      registerId: budget.registerId || '', categories: budget.categories ?? [],
+      registerId: budget.registerId || '', categories: budget.categories?.length ? budget.categories : ['all'],
       includeVat: budget.includeVat !== false,
       includeFuelSlipCosts: budget.includeFuelSlipCosts,
     });
@@ -2216,6 +2218,7 @@ export default function MyInvoicesClient({
   function continueBudgetWizard() {
     setBudgetFormError('');
     if (budgetWizardStep === 2) {
+      if (!budgetDraft.categories.length) return;
       setBudgetWizardStep(3);
       return;
     }
@@ -2280,7 +2283,7 @@ export default function MyInvoicesClient({
               period: budgetDraft.period,
               amount: budgetDraft.amount,
               warningPercent: Number(budgetDraft.warningPercent),
-              registerId: budgetDraft.registerId || null, categories: budgetDraft.categories,
+              registerId: budgetDraft.registerId || null, categories: budgetCategoryFilter,
               includeVat: budgetDraft.includeVat,
               includeFuelSlipCosts: budgetDraft.includeFuelSlipCosts,
             }),
@@ -4020,7 +4023,6 @@ export default function MyInvoicesClient({
                     question="Which costs should count towards this budget?"
                     headingRef={budgetWizardStepHeadingRef}
                     selected={budgetDraft.categories}
-                    emptyMeansAll
                     onChange={categories => {
                       setBudgetFormError('');
                       setBudgetDraft(current => ({ ...current, categories: [...categories].sort() }));
@@ -4201,7 +4203,7 @@ export default function MyInvoicesClient({
                   {budgetWizardStep === (editingBudgetId ? 2 : 1) ? 'Cancel' : 'Back'}
                 </button>
                 {budgetWizardStep < 5 ? (
-                  <button key="budget-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueBudgetWizard} disabled={budgetSaving}>
+                  <button key="budget-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueBudgetWizard} disabled={budgetSaving || (budgetWizardStep === 2 && !budgetDraft.categories.length)}>
                     Next
                   </button>
                 ) : (
