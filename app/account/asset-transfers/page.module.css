@@ -8,7 +8,7 @@
 }
 
 .shell {
-  width: min(1220px, calc(100% - 2rem));
+  width: var(--website-page-width, min(1220px, calc(100% - 2rem)));
   margin: 0 auto;
   padding: 1rem 0 4rem;
   display: grid;

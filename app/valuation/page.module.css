@@ -9966,6 +9966,13 @@
   width: min(100%, 1088px);
 }
 
+/* The outer card and its sector choices share the website container's edges and padding. */
+:global([data-website-canvas]) .container > .wizardShell,
+:global([data-website-canvas]) .sectorStart > .sectorIntro,
+:global([data-website-canvas]) .sectorStart > .sectorLargeGrid {
+  width: 100%;
+}
+
 .sectorWizardCard {
   border-radius: 1.85rem;
 }

@@ -3199,6 +3199,15 @@
   background: transparent;
 }
 
+:global([data-website-canvas]) .marketplaceShell {
+  width: var(--website-page-width);
+  margin-inline: auto;
+}
+
+:global([data-website-canvas]) .showroomShell {
+  padding-inline: 0;
+}
+
 .showroomEmptyShell {
   grid-template-columns: minmax(0, 1fr);
   width: min(100%, 1100px);

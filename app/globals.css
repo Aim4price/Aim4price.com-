@@ -482,6 +482,10 @@ body > [data-dropdown-overlay-portal='true'],
   z-index: 2147483647 !important;
 }
 [data-website-canvas] {
+  /* Shared Assets and the visible owner-register cards sit inside the header controls. */
+  --shell-max: calc(1320px - 3.4rem);
+  --website-page-width: min(calc(100% - 2 * var(--shell-gutter)), var(--shell-max));
+  --shell-width: var(--website-page-width);
   --layout-section-gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.4), 1.35rem);
   --layout-card-gap: clamp(0.7rem, calc(var(--website-design-vw) * 1.1), 1rem);
 }

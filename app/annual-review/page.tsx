@@ -9,5 +9,5 @@ export default async function AnnualReviewPage() {
   const { session } = await requireActivePageAccess();
   const access = await getAssetRegisterAccountAccess(session);
   if (access?.accountType !== 'dealer') redirect('/workspace');
-  return <><AppHeader active="workspace"/><main style={{ maxWidth: 1200, margin: '0 auto', padding: '2rem 1rem' }}><AnnualReviewClient live /></main></>;
+  return <><AppHeader active="workspace"/><main style={{ width: 'var(--website-page-width, min(100% - 2rem, 1200px))', margin: '0 auto', paddingBlock: '2rem' }}><AnnualReviewClient live /></main></>;
 }

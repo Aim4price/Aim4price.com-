@@ -10,6 +10,14 @@ import AccountClient from '../../app/account/account-client';
 import MarketplaceClient from '../../app/marketplace/marketplace-client';
 import FuelClient from '../../app/fuel/fuel-client';
 import dynamic from 'next/dynamic';
+import { workspaceCards } from '../../lib/workspace-navigation';
+import workspaceStyles from '../../app/workspace/workspace.module.css';
+
+const SharedAssets = dynamic(() => import('../../app/leads/leads-client'));
+const WorkspaceGrid = dynamic(() => import('../../app/workspace/workspace-grid'));
+const ValueAsset = dynamic(() => import('../../app/valuation/valuation-client'));
+const CostChoices = dynamic(() => import('../../app/my-invoices/cost-entry-choices'));
+const AdvertStudio = dynamic(() => import('../../components/AdStudioClient'));
 
 const CostLedger = dynamic(() => import('../../app/my-invoices/my-invoices-client'));
 
@@ -18,6 +26,14 @@ export default function CanvasValidationPage() {
   const anchor = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(true);
   const [value, setValue] = useState('one');
+  if (page === 'shared-assets') return <SharedAssets dealerWorkspaceMode />;
+  if (page === 'workspace') return <><AppHeader active="workspace" /><main data-workspace-page>
+    <div className={workspaceStyles.shell}><WorkspaceGrid role="owner" userId="canvas-fixture"
+      freeBusiness={false} cards={workspaceCards('owner', false, '/leads')} /></div>
+  </main></>;
+  if (page === 'value-asset') return <ValueAsset />;
+  if (page === 'cost-choices') return <CostChoices />;
+  if (page === 'advert-studio') return <main><AppHeader active="ad-studio" /><AdvertStudio /></main>;
   if (page === 'register') return <AssetRegisterClient />;
   if (page === 'account') return <AccountClient />;
   if (page === 'marketplace') return <MarketplaceClient initialFilters={{brand:'',model:'',drive:'',type:''}} isSignedIn accountType="owner" initialListings={[]} />;

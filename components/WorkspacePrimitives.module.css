@@ -31,8 +31,8 @@
    1.7rem panel inset on each side, staying inside the header's 1280px span.
    Native dealer app layouts retain their own responsive shell rules. */
 :global(:where([data-website-canvas])) .shell {
-  width: min(calc(100% - 3rem), calc(1320px - 3.4rem)) !important;
-  max-width: calc(1320px - 3.4rem);
+  width: var(--website-page-width) !important;
+  max-width: var(--shell-max);
 }
 
 .titlePanel {
