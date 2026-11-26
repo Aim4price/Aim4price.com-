@@ -211,7 +211,13 @@
   padding: 0;
   background: var(--app-surface-soft, #edf5f1);
 }
-.dialog .assetGrid tr[data-selected] td { background: var(--app-surface-selected, #e4f2eb); }
+.assetGrid tr[data-selected] {
+  --typing-field-surface: color-mix(in srgb, var(--app-surface-soft, #edf5f1) 86%, var(--app-accent, #17654c));
+}
+.dialog .assetGrid tbody tr[data-selected] td { background: var(--typing-field-surface); }
+.dialog .assetGrid tbody tr[data-selected] td:first-child {
+  box-shadow: inset 3px 0 var(--app-accent, #17654c);
+}
 .dialog .assetGrid td input:not([type='checkbox']) {
   background: transparent;
   border-radius: 0;
@@ -220,14 +226,49 @@
   color: inherit;
   font-weight: 650;
 }
-.dialog .assetGrid input[type='checkbox'] {
-  width: 20px;
-  height: 20px;
-  min-height: 20px;
-  padding: 0;
-  margin: 0;
-  vertical-align: middle;
-  accent-color: var(--app-primary, #17654c);
+.rowControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  min-height: 48px;
+}
+.assetGrid label.rowSelect {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding-inline: 3px;
+  border-radius: 7px;
+  color: var(--app-text, #173e32);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.rowSelect:hover { background: var(--app-success-soft, #deede5); }
+.assetGrid .rowSelect input { flex: none; }
+.dialog .assetGrid .rowSelect input:indeterminate {
+  border-color: var(--app-primary, #17654c);
+  background: linear-gradient(white, white) center / 10px 2px no-repeat var(--app-primary, #17654c);
+}
+.assetGrid button.editRow {
+  min-width: 44px;
+  min-height: 36px;
+  padding: 0 8px;
+  border: 1px solid var(--app-line, #bcd2c6);
+  border-radius: 9px;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #173e32);
+  font-size: 14px;
+  font-weight: 700;
+}
+@media (pointer: coarse) {
+  .assetGrid label.rowSelect, .assetGrid button.editRow { min-height: 44px; }
+}
+@media (forced-colors: active) {
+  .dialog .assetGrid .rowSelect input[type='checkbox'] { appearance: auto; }
 }
 .dialog .assetGrid td > small { white-space: normal; }
 .reviewTable {

@@ -72,7 +72,7 @@ export default function AssetSheetTools({ tool, register, rows, visible, selecte
   const nextValue = operation === 'clear' ? '' : value.trim();
   const changed = targets.filter(i => (rows[i][field] ?? '') !== nextValue && (operation !== 'fill' || !(rows[i][field] || '').trim()));
   const bulkSteps = ['Choose assets', 'Choose a column', 'Enter the change', 'Preview changes'];
-  const title = tool.kind === 'row' ? (remove ? 'Remove row' : 'Edit asset row') : { add: 'Add column', columns: 'Manage columns', bulk: 'Bulk edit' }[tool.kind];
+  const title = tool.kind === 'row' ? (remove ? 'Remove row ' : 'Edit row ') + (tool.index + 1) : { add: 'Add column', columns: 'Manage columns', bulk: 'Bulk edit' }[tool.kind];
   function addColumn() {
     if (!choice) return;
     try {
