@@ -37,6 +37,13 @@ test('register and category budgets count incurred costs once and exclude pendin
     }
     const options={period:'annual',amount:60000,warningPercent:80};
     const overall = await api.createCostBudget('owner', {...options, assetId: asset}, {});
+    assert.equal(overall.includeRecurringCosts, true);
+    await api.setBudgetRecurringPreference('owner', overall, false);
+    const [afterToggle] = await api.listCostBudgetsWithProgress('owner');
+    assert.equal(afterToggle.includeRecurringCosts, false);
+    assert.equal(afterToggle.revision, overall.revision);
+    assert.equal(afterToggle.spent, overall.spent);
+    await assert.rejects(api.setBudgetRecurringPreference('other', overall, true), /NOT_FOUND/);
     const repairs = {...options, assetId: asset, categories: ['service', 'repair']};
     const service = await api.createCostBudget('owner', repairs, {});
     assert.equal(overall.includeVat, true);
@@ -86,4 +93,19 @@ test('expected instalments respect the period, allocation and month end',()=>{
   assert.equal(expectedCommitmentAmount(budget,[item],new Map(),'2026-02-28'),1200);
   assert.equal(expectedCommitmentAmount(budget,[item],new Map(),'2026-03-01'),600);
   assert.equal(expectedCommitmentAmount(budget,[{...item,category:'lease'}],new Map(),'2026-02-01'),0);
+});
+
+test('paused and unallocated shared costs are visible without inflating available funds', () => {
+  const {budgetRecurringCosts} = load('budget-expected',{});
+  const budget = {assetId:'a',periodStart:'2026-11-01',periodEnd:'2026-12-01'};
+  const registers = new Map([['a','r']]);
+  const schedule = {id:'insurance',description:'Cover',status:'paused',frequency:'monthly',startDate:'2026-01-30',amount:2000,assets:[{assetId:'a'}]};
+  const [paused] = budgetRecurringCosts(budget,[schedule],registers,'2026-11-26');
+  assert.equal(paused.expected,0);
+  assert.equal(paused.editableAmount,2000);
+  const [shared] = budgetRecurringCosts(budget,[{...schedule,status:'active',assets:[{assetId:'a'},{assetId:'b'}]}],registers,'2026-11-26');
+  assert.equal(shared.editableAmount,null);
+  assert.equal(shared.allocationNeeded,true);
+  assert.equal(shared.expected,0);
+  assert.equal(shared.nextDue,'2026-11-30');
 });

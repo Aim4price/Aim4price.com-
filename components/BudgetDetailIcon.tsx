@@ -1,8 +1,9 @@
 import styles from './BudgetDetailIcon.module.css';
 
-type DetailIconKind = 'budget' | 'remaining' | 'alert' | 'calendar' | 'fuel' | 'receipt' | 'asset';
+type DetailIconKind = 'budget' | 'remaining' | 'alert' | 'calendar' | 'fuel' | 'receipt' | 'asset' | 'recurring';
 const detailPaths: Record<DetailIconKind, string> = {
   budget: 'M20 8V6a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h14v10H6a3 3 0 0 1-3-3V7M20 12h-5v4h5M17 14h.01',
+  recurring: 'M3 10a9 9 0 0 1 15-5l2 2M20 3v4h-4M21 14a9 9 0 0 1-15 5l-2-2M4 21v-4h4',
   remaining: 'M21 11.1V12a9 9 0 1 1-5.3-8.2M21 4l-9 9-3-3',
   alert: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4',
   calendar: 'M8 3v4M16 3v4M3 10h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2M7 14h3M14 14h3M7 17h3',

@@ -26,6 +26,7 @@ export function teamWorkspacePermission(path: string, method: string): TeamPermi
   if (/^\/api\/fuel\/slips\/[^/]+$/.test(path)) return method === 'PATCH' ? 'editFuel' : method === 'DELETE' ? 'voidFuel' : null;
   if (/^\/api\/fuel\/storage\/[^/]+$/.test(path)) return ['PATCH', 'DELETE'].includes(method) ? 'manageFuelStorage' : null;
   if (/^\/api\/my-invoices\/documents\/[^/]+\/download$/.test(path)) return method === 'GET' ? 'viewCostDocuments' : null;
+  if (/^\/api\/recurring-commitments\/[^/]+$/.test(path)) return method === 'PATCH' ? 'editCosts' : null;
   if (path === '/api/my-invoices/budgets/report') return method === 'GET' ? 'exportCosts' : null;
   if (path === '/api/my-invoices/budgets') return method === 'GET' ? 'viewBudgets' : method === 'POST' ? 'manageBudgets' : null;
   if (/^\/api\/my-invoices\/budgets\/[^/]+$/.test(path)) return ['PATCH','DELETE'].includes(method) ? 'manageBudgets' : null;

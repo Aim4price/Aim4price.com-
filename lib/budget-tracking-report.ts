@@ -1,10 +1,22 @@
 import { categorySummary } from './cost-categories';
-import { budgetStatusLabel, type TrackedBudget } from './budget-tracking';
+import { availableBudget, budgetStatusLabel, type TrackedBudget } from './budget-tracking';
 import { REPORT_THEME_CSS } from './report-theme';
 import type { XlsxSheet } from './simple-xlsx';
 const escape = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 const money = (value: number) => `R ${value.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-export function buildBudgetReportHtml(budgets: TrackedBudget[], generated: string) {
+function includeForecast(budget: TrackedBudget, override?: boolean) {
+  return budget.expected !== undefined && (override ?? budget.includeRecurringCosts ?? true);
+}
+function scheduledCosts(budget: TrackedBudget) {
+  return (budget.recurringCosts ?? []).filter(cost => !cost.paused && cost.count > 0);
+}
+function recurringSection(budget: TrackedBudget, override?: boolean) {
+  if (!includeForecast(budget, override)) return '';
+  const lines = scheduledCosts(budget).map(cost => `<li>${escape(cost.description)} · ${escape(cost.nextDue)} · ${cost.count} ${cost.count === 1 ? 'payment' : 'payments'} · ${cost.allocationNeeded ? 'Allocation needed' : money(cost.expected)}</li>`);
+  return `<section><h3>Expected recurring costs</h3><p>${money(budget.expected ?? 0)} scheduled · ${money(availableBudget(budget, true))} available after recurring costs</p>
+    ${lines.length ? '<ul>' + lines.join('') + '</ul>' : '<p>No recurring costs scheduled for ' + escape(budget.periodLabel) + '.</p>'}</section>`;
+}
+export function buildBudgetReportHtml(budgets: TrackedBudget[], generated: string, recurringOverride?: boolean) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Budget Tracking Report</title><style>
   @page { size: A4; margin: 12mm; } * { box-sizing: border-box; } body { margin: 0; font: 13px/1.5 Arial,sans-serif; }
   main { background: white; padding: 24px; } header { border-bottom: 2px solid #197454; margin-bottom: 22px; padding-bottom: 18px; } h1 { font-size: 27px; margin: 6px 0; } h2 { font-size: 18px; margin: 0; } p { margin: 8px 0; color: #60756d; }
@@ -12,15 +24,27 @@ export function buildBudgetReportHtml(budgets: TrackedBudget[], generated: strin
   .track { height: 9px; background: #e6eeea; border-radius: 8px; overflow: hidden; } .fill { height: 100%; background: #197454; } .warning { background: #a76b12; } .over_budget { background: #b44242; }
   footer { font-size: 11px; color: #60756d; } ${REPORT_THEME_CSS}
   </style></head><body><main class="reportPage"><header><strong>Aim4price</strong><h1>Budget Tracking Report</h1><p>${budgets.length} ${budgets.length === 1 ? 'budget' : 'budgets'} · Generated ${escape(generated)}</p></header>
-  ${budgets.map(b => `<article><h2>${escape(b.assetTitle)}</h2><p>${b.period === 'monthly' ? 'Monthly' : 'Annual'} · ${escape(b.periodLabel)} · ${b.includeVat === false ? 'Excl.' : 'Incl.'} VAT · ${escape(categorySummary(b.categories))} · ${escape(budgetStatusLabel(b))}</p><dl><div><dt>Spent</dt><dd>${money(b.spent)}</dd></div><div><dt>Budget</dt><dd>${money(b.amount)}</dd></div><div><dt>${b.overBy > 0 ? 'Over budget' : 'Remaining'}</dt><dd>${money(b.overBy > 0 ? b.overBy : b.remaining)}</dd></div></dl><div class="track"><div class="fill ${escape(b.status)}" style="width:${Math.max(0,Math.min(100,b.percentUsed))}%"></div></div><p>${b.percentUsed}% used · Alert at ${b.warningPercent}% · Fuel ${b.includeFuelSlipCosts ? 'included' : 'excluded'}</p></article>`).join('')}
+  ${budgets.map(b => `<article><h2>${escape(b.assetTitle)}</h2><p>${b.period === 'monthly' ? 'Monthly' : 'Annual'} · ${escape(b.periodLabel)} · ${b.includeVat === false ? 'Excl.' : 'Incl.'} VAT · ${escape(categorySummary(b.categories))} · ${escape(budgetStatusLabel(b))}</p><dl><div><dt>Recorded spending</dt><dd>${money(b.spent)}</dd></div><div><dt>Budget</dt><dd>${money(b.amount)}</dd></div><div><dt>${b.overBy > 0 ? 'Over budget' : 'Remaining'}</dt><dd>${money(b.overBy > 0 ? b.overBy : b.remaining)}</dd></div></dl><div class="track"><div class="fill ${escape(b.status)}" style="width:${Math.max(0,Math.min(100,b.percentUsed))}%"></div></div><p>${b.percentUsed}% used · Alert at ${b.warningPercent}% · Fuel ${b.includeFuelSlipCosts ? 'included' : 'excluded'}</p>${recurringSection(b, recurringOverride)}</article>`).join('')}
   <footer>Current budget periods. Actual spending comes from Cost Ledger records dated within each period. Budgets may overlap; their totals should not be added together.</footer></main></body></html>`;
 }
-export function buildBudgetWorkbook(budgets: TrackedBudget[], generated: string): XlsxSheet[] {
-  return [{ name: 'Budgets', orientation: 'landscape', freezeRow: 4, columns: [42,16,24,20,20,20,20,18,18,18,26,26,18], rows: [
+export function buildBudgetWorkbook(budgets: TrackedBudget[], generated: string, recurringOverride?: boolean): XlsxSheet[] {
+  const included = budgets.filter(budget => includeForecast(budget, recurringOverride));
+  const withForecast = included.length > 0;
+  const sheets: XlsxSheet[] = [{ name: 'Budgets', orientation: 'landscape', freezeRow: 4, columns: [42,16,24,20,20,20,20,18,18,18,26,26,18,...(withForecast ? [24,30] : [])], rows: [
     [{ value: 'Budget Tracking Report', style: 'title' }],
     [{ value: `Generated ${generated} · Current budget periods`, style: 'subtitle' }],
     [{ value: 'Budgets may overlap. Do not add their totals together.', style: 'note' }],
-    ['Asset scope','Period','Current period','Budget','Spent','Remaining','Over budget','Used','Alert at','Fuel included','Status','Categories','VAT basis'].map(value => ({ value, style: 'tableHeader' })),
-    ...budgets.map(b => [b.assetTitle,b.period,b.periodLabel,...[b.amount,b.spent,b.remaining,b.overBy].map(value => ({ value, style: 'currency' as const })),{ value: b.percentUsed / 100, style: 'percent' as const },{ value: b.warningPercent / 100, style: 'percent' as const },b.includeFuelSlipCosts,budgetStatusLabel(b),categorySummary(b.categories),b.includeVat === false ? 'Excl. VAT' : 'Incl. VAT']),
+    ['Asset scope','Period','Current period','Budget','Recorded spending','Remaining','Over budget','Used','Alert at','Fuel included','Status','Categories','VAT basis',...(withForecast ? ['Expected recurring costs','Available after recurring costs'] : [])].map(value => ({ value, style: 'tableHeader' })),
+    ...budgets.map(b => [b.assetTitle,b.period,b.periodLabel,...[b.amount,b.spent,b.remaining,b.overBy].map(value => ({ value, style: 'currency' as const })),{ value: b.percentUsed / 100, style: 'percent' as const },{ value: b.warningPercent / 100, style: 'percent' as const },b.includeFuelSlipCosts,budgetStatusLabel(b),categorySummary(b.categories),b.includeVat === false ? 'Excl. VAT' : 'Incl. VAT',
+      ...(withForecast ? includeForecast(b, recurringOverride) ? [b.expected ?? 0, availableBudget(b, true)].map(value => ({value,style:'currency' as const})) : [null,null] : [])]),
   ] }];
+  if (withForecast) sheets.push({
+    name: 'Recurring costs', orientation: 'landscape', freezeRow: 1, columns: [36,22,40,18,14,24,25],
+    rows: [
+      ['Budget','Period','Recurring cost','Next due','Payments','Expected amount','Allocation'].map(value => ({value,style:'tableHeader'})),
+      ...included.flatMap(budget => scheduledCosts(budget).map(cost => [budget.assetTitle,budget.periodLabel,cost.description,cost.nextDue,cost.count,
+        {value:cost.expected,style:'currency' as const},cost.allocationNeeded ? 'Allocation needed' : ''])),
+    ],
+  });
+  return sheets;
 }

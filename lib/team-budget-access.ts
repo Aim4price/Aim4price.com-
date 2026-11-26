@@ -3,7 +3,7 @@ import { listAssetRegisters } from './asset-registers';
 import { NextResponse } from 'next/server';
 import { getDesktopScope } from './desktop-workspace';
 import { resolveOwnerWorkspaceContext, getWorkspaceAssetIds, assertWorkspaceAssetAccess } from './owner-workspace-access';
-import { listCostBudgetsWithProgress, createCostBudget, updateCostBudget, deleteCostBudget, type CostBudgetInput } from './cost-budgets';
+import { listCostBudgetsWithProgress, createCostBudget, updateCostBudget, setBudgetRecurringPreference, deleteCostBudget, type CostBudgetInput } from './cost-budgets';
 import { listMyInvoiceAssets } from './my-invoices';
 import { teamWriteGuard } from './team-write-guard';
 /** Return null for ordinary owner/app callers; preserve their existing access logic. */
@@ -28,6 +28,12 @@ export async function teamBudgetResponse(request: Request, budgetId?: string): P
       return NextResponse.json({ok:true});
     }
     const body = await request.json() as CostBudgetInput;
+    if (budgetId && 'includeRecurringCosts' in body) {
+      if (typeof body.includeRecurringCosts !== 'boolean') return NextResponse.json({ok:false,error:'Choose on or off for recurring costs.'},{status:400});
+      const budget = budgets.find(b => b.id === budgetId)!;
+      await setBudgetRecurringPreference(workspace.ownerUserId, budget, body.includeRecurringCosts, teamWriteGuard(workspace,'manageBudgets',{budgetId}));
+      return NextResponse.json({ok:true});
+    }
     if (body.assetId && body.assetId !== 'all') await assertWorkspaceAssetAccess(workspace,body.assetId);
     else if (scope.grant.scope !== 'all') return NextResponse.json({ok:false,error:'Choose an accessible asset.'},{status:403});
     const assetId = body.assetId && body.assetId !== 'all' ? String(body.assetId) : undefined;

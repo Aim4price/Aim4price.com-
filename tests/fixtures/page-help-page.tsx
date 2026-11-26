@@ -37,7 +37,7 @@ export default function PageHelpFixture() {
   if (topic === 'adCreator' || topic === 'adTemplate') title = <div className={register.businessRegisterTitleCard}><PageHelpHeading topic={topic}><h1>{pageHelp[topic].title}</h1></PageHelpHeading><WorkspaceViewSwitch label="Switch advert view" onClick={()=>{}} /></div>;
   if (topic === 'sharedEnquiries') return <main><AppHeader active="none"/><SharedAccountHero count={0}/></main>;
   if (topic === 'showroom') title = <WorkspaceTitlePanel title="MY ADVERT SHOWROOM" helpTopic={topic} />;
-  if (topic === 'budgets') title = <BudgetTracking budgets={[]} loading={false} error="" onRetry={()=>{}} onAdd={()=>{}} onEdit={()=>{}} onDelete={()=>{}} />;
+  if (topic === 'budgets') title = <BudgetTracking onRefresh={async()=>{}} onAddRecurring={()=>{}} budgets={[]} loading={false} error="" onRetry={()=>{}} onAdd={()=>{}} onEdit={()=>{}} onDelete={()=>{}} />;
   if (topic === 'invoiceDrop') return <main><AppHeader active="none"/><InvoiceDropClient /></main>;
   return <main><AppHeader active="asset-register"/><div style={{padding:'3rem', minHeight:'120vh'}}>{title}<button style={{marginTop:32}}>Unrelated page action</button></div></main>;
 }
