@@ -25,3 +25,9 @@
 @media (max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .deleteAction.deleteAction.deleteAction { width: 100%; }
 }
+
+.assetList { margin-top: .45rem; font-size: .93rem; }
+.assetList summary { width: fit-content; padding-block: .3rem; color: var(--app-accent, #176449); cursor: pointer; font-weight: 650; }
+.assetList ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: .45rem 1.25rem; margin: .6rem 0 0; padding-inline-start: 1.2rem; font-size: .9rem; font-weight: 550; }
+.amount small { display: block; margin-top: .3rem; font-size: .86rem; font-weight: 600; }
+.grid .fuel { flex-wrap: wrap; gap: .5rem .8rem; }

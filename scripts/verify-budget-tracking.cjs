@@ -24,7 +24,7 @@ async function main(){let server,browser;const created=[];try{
  if(u.pathname==='/api/my-invoices/budgets/report')return r.respond({status:200,contentType:'application/pdf',body:pdfBytes});
  const user={id:'fixture',name:'Test Owner',email:'fixture@example.invalid',accountType:'owner'};
  let body={ok:true,assets,items:[],invoices:[],requests:[],notifications:[],groups:[],registers:[],budgets};
- if(u.pathname==='/api/my-invoices/budgets' && r.method()==='POST'){const input=JSON.parse(r.postData());budgets.push({...base,...input,id:'new-budget',assetTitle:'New budget'});body={ok:true,budgets,assets};}
+ if(u.pathname==='/api/my-invoices/budgets' && r.method()==='POST'){const input=JSON.parse(r.postData());budgets.push({...base,...input,id:'new-budget',assetTitle:input.groupName || 'New budget',members:input.groupAssetIds?.map(id=>({id,title:assets.find(asset=>asset.id===id).title,spent:id==='truck'?5:0}))});body={ok:true,budgets,assets};}
  if(u.pathname.startsWith('/api/my-invoices/budgets/') && r.method()==='DELETE'){budgets=budgets.filter(b=>b.id!==u.pathname.split('/').pop());body={ok:true};}
  if(u.pathname==='/api/recurring-commitments' && r.method()==='POST'){
    const input=JSON.parse(r.postData());savedCosts.push(input);
@@ -58,10 +58,24 @@ async function main(){let server,browser;const created=[];try{
  assert.match(await page.$eval('[role=dialog]',e=>e.textContent),/Enter a group name/);
  await page.type('input[placeholder="e.g. Delivery fleet"]','Delivery fleet');await click('Next');
  assert.match(await page.$eval('[role=dialog]', e=>e.textContent), /for the group/);
+ const assetSummary='[role=dialog] details summary';
+ assert.equal(await page.$eval(assetSummary,e=>e.textContent),'View 2 assets');
+ assert.equal(await page.$eval('[role=dialog] details',e=>e.open),false);
+ await page.click(assetSummary);
+ assert.equal(await page.$$eval('[role=dialog] details li',items=>items.length),2);
+ await page.click(assetSummary);
  await click('Save budget');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
  const group=budgets.find(b=>b.groupName==='Delivery fleet');
  assert.deepEqual(group.groupAssetIds,['tractor','truck']);assert.equal(group.assetId,null);
  assert.equal(budgets.length,4);
+ await page.click('button[aria-controls="budget-details-new-budget"]');
+ const breakdown='#budget-details-new-budget section[aria-label="Spending by asset"]';
+ await page.waitForSelector(breakdown);
+ assert.match(await page.$eval(breakdown,e=>e.innerText),/Toyota Hilux/);
+ assert.doesNotMatch(await page.$eval(breakdown,e=>e.innerText),/New Holland/);
+ await page.click(breakdown+' summary');
+ assert.match(await page.$eval(breakdown,e=>e.innerText),/New Holland/);
+ await page.click('button[aria-controls="budget-details-new-budget"]');
  await click('Download');await click('All budgets');await click('Next');
  assert.match(await page.$eval('[role=dialog]',e=>e.textContent),/PDF report.*XLSX workbook/);
  await click('PDF report');await click('Open PDF report');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));

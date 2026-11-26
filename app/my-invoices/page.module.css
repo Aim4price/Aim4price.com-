@@ -7492,3 +7492,5 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
   line-height: 1.5;
   gap: .75rem;
 }
+
+.budgetLimitHeading + .budgetField > input { box-sizing: border-box; padding-inline: 1rem; }

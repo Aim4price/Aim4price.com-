@@ -63,7 +63,7 @@
 }
 
 .spentBlock { display: grid; gap: .25rem; justify-items: end; flex-shrink: 0; }
-.progressBlock { min-width: 0; max-width: 48rem; align-self: center; }
+.progressBlock { min-width: 0; align-self: center; }
 .detailsNote { margin: .75rem 0 1rem; color: var(--app-muted, #697d8b); font-size: .85rem; }
 @media(max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .spentBlock { justify-items: start; }
@@ -90,7 +90,8 @@
 .dialog.manageDialog header p { overflow-wrap: anywhere; }
 
 /* Search fills the toolbar now that budgets no longer expose a filter menu. */
-.page .searchToolbar { grid-template-columns: minmax(0, 1fr); }
+.page > section[aria-label="Budget actions"] { gap: .85rem; margin-bottom: .8rem; }
+.page .searchToolbar { grid-template-columns: minmax(0, 1fr); margin-bottom: 1.1rem; }
 
 
 /* Consistent icon alignment and a quieter, structured budget summary. */
@@ -130,3 +131,15 @@
 .recurringPanel .negative, .metrics .negative { color: var(--app-danger,#a83333); }
 .reportSwitch { margin-bottom: 1rem; }
 .resetChoice { margin-top: .45rem; }
+
+.memberSection { margin-block: 1.2rem; }
+.memberSection h3 { margin: 0 0 .65rem; }
+.memberSection details, .memberRows { border: 1px solid var(--app-line, #d9e7df); border-radius: .85rem; background: var(--app-surface, #fff); }
+.memberSection summary { cursor: pointer; }
+.memberSection summary { padding: .75rem 1rem; color: var(--app-text, #123f32); font-weight: 650; }
+.memberRows { margin: 0 0 .5rem; padding: 0 1rem; }
+.memberRows > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-block: .65rem; }
+.memberRows > div + div { border-top: 1px solid var(--app-line, #d9e7df); }
+.memberRows dt { min-width: 0; overflow-wrap: anywhere; }
+.memberRows dd { margin: 0; white-space: nowrap; font-weight: 750; font-variant-numeric: tabular-nums; }
+.memberSection details .memberRows { margin: 0; border: 0; background: transparent; }
