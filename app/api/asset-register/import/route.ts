@@ -8,10 +8,9 @@ import { withAssetInputTransaction, prepareAssetRegisterRevaluation, createManua
 import { ensureCreditSchema, CreditLimitError } from '../../../../lib/business-credits';
 import { withDatabaseClient } from '../../../../lib/db';
 import { ensureAssetLifecycleSchema, recordManualAssetLifecycle } from '../../../../lib/asset-lifecycle';
-import { assetTitle, columnLabel, conditionKey, sheetAssetKind, sheetStatus, importKeyRow, readSheetColumns, readSheetRow, maxAssets, parseAmount, rowErrors, usageUnit, type CustomColumn, type AssetRow } from '../../../../lib/asset-sheet';
+import { assetTitle, columnLabel, conditionKey, sheetAssetKind, sheetStatus, importKeyRow, importBasisKey, isSheetBasis, sheetAmountExVat, readSheetColumns, readSheetRow, maxAssets, parseAmount, rowErrors, usageUnit, type CustomColumn, type AssetRow } from '../../../../lib/asset-sheet';
 import { getBillingAgreement } from '../../../../lib/billing';
 import { hostedRegisterBand, ownerHosting, rand } from '../../../../lib/hosting-pricing';
-import { pricingInputExVat } from '../../../../lib/pricing-vat';
 const fail = (error: string, status = 400) => NextResponse.json({ error }, { status });
 const uuid = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i;
 const serialKey = (s: string) => s.trim().toUpperCase();
@@ -28,16 +27,17 @@ export async function POST(req: NextRequest) {
   const owner = workspace.context.ownerUserId;
   const body = await req.json().catch(() => null);
   if (!body || !uuid.test(String(body.registerId)) || !['preview', 'save'].includes(body.action) ||
-    !['', 'included', 'excluded'].includes(body.basis) || !Array.isArray(body.rows) ||
+    !isSheetBasis(body.basis) || !Array.isArray(body.rows) ||
     body.rows.length < 1 || body.rows.length > maxAssets)
     return fail('Choose a register and review the sheet.');
+  const basis = body.basis;
   const rows: AssetRow[] = [];
   let custom: CustomColumn[];
   try {
     custom = readSheetColumns(body.customColumns);
     for (const raw of body.rows) {
       const row = readSheetRow(raw, custom);
-      const error = Object.values(rowErrors(row, body.basis))[0];
+      const error = Object.values(rowErrors(row, basis))[0];
       if (error) throw Error(error);
       rows.push(row);
     }
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     return fail('Register unavailable.', 404);
   const metered = Boolean(workspace.context.meteredBusiness);
   // A repeat of the same sheet also matches rows that have no serial number.
-  const batch = createHash('sha256').update(JSON.stringify([body.basis, rows.map(importKeyRow)])).digest('hex');
+  const batch = createHash('sha256').update(JSON.stringify([importBasisKey(basis, rows), rows.map(importKeyRow)])).digest('hex');
   const agreement = access.accountType === 'dealer' && !metered && !register.isPrimary && access.profile?.accountSubtype !== 'equipment-middleman' ? await getBillingAgreement(owner) : null;
   async function inspect() {
     const existing = await listAssetRegisterItemsForRegisters(owner, [body.registerId]);
@@ -83,7 +83,6 @@ export async function POST(req: NextRequest) {
       const { checks, token } = await inspect();
       if (checks.some(c => !c.skip) && token !== body.token)
         throw Error('IMPORT_PREVIEW_CHANGED');
-      const exVat = (amount: string) => amount ? pricingInputExVat(parseAmount(amount), body.basis === 'included') : null;
       let added = 0;
       for (const [i, row] of rows.entries()) {
         if (checks[i].skip)
@@ -98,9 +97,9 @@ export async function POST(req: NextRequest) {
           brandName: row.make, modelName: row.model, yearModel: row.year ? Number(row.year) : null,
           serialNumber: row.serial, hours: unit === 'percentage' ? null : reading,
           lifeWorkedPercent: unit === 'percentage' ? reading : null, usageMetric: unit === 'km' ? 'km' : 'hours',
-          value: exVat(row.value) ?? 0, replacementPriceExVat: exVat(row.replacement),
+          value: sheetAmountExVat(row, 'value', basis) ?? 0, replacementPriceExVat: sheetAmountExVat(row, 'replacement', basis),
           condition: conditionKey(row.condition) ?? null, note: row.note,
-          isInsured: insurance === 'yes', insuredValueExVat: exVat(row.insuredValue),
+          isInsured: insurance === 'yes', insuredValueExVat: sheetAmountExVat(row, 'insuredValue', basis),
           isFinanced: finance === 'yes', financeNote: row.financeNote,
           isLicensed: license === 'yes', licenseRegistrationNumber: row.registration,
           specsJson: {

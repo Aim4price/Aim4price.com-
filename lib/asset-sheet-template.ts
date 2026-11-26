@@ -71,7 +71,7 @@ export function buildAssetTemplate() {
   band(assetTemplateGuideTitle, green);
   instruction('Where to start', 'Enter one asset per row on the Assets tab. Give it a name, or enter both Brand and Model.');
   instruction('What to fill in', 'Fill in the details you know. Leave unknown values blank. Paperwork and notes are optional.');
-  instruction('Values in rand', 'Use the same VAT basis for current, replacement and insured values. Choose inclusive or exclusive when you review the sheet.');
+  instruction('Values in rand', 'Choose Incl. VAT or Excl. VAT in Aim4price. If your columns use different VAT settings, choose Set VAT per column.');
   instruction('Usage', 'Pair each reading with hours, km or %. For a percentage, enter a whole number from 0 to 100.');
   instruction('When you are ready', 'Upload the workbook or paste the rows with their headings. Review up to ' + maxAssets + ' assets per upload.');
   guide.addRow([]);

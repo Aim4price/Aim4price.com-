@@ -9,7 +9,7 @@ import Select from '../AssetModalSelect';
 import ShareModalCloseButton from './ShareModalCloseButton';
 import { MAX_PARTS_CSV_BYTES, readPartsCsv } from '../../lib/parts-network-csv';
 import { readPartsExcel } from '../../lib/parts-network-excel';
-import { assetColumns, assetTitle, columnLabel, customColumn, hasAssetData, isCustomColumn, blankAsset, columns, coreColumns, moneyColumns, type CustomColumn, mapAssetRow, mapHeading, maxAssets, rowErrors, usageUnit, targetColumn, type Column, type Mapping } from '../../lib/asset-sheet';
+import { assetColumns, assetTitle, columnLabel, customColumn, hasAssetData, isCustomColumn, blankAsset, columns, coreColumns, moneyColumns, basisForColumn, sheetAmountExVat, parseAmount, missingSheetVat, type CustomColumn, mapAssetRow, mapHeading, maxAssets, rowErrors, usageUnit, targetColumn, type Column, type Mapping } from '../../lib/asset-sheet';
 import parts from '../../app/dealer/parts/parts.module.css';
 import SpreadsheetUpload from '../SpreadsheetUpload';
 import uploadStyles from '../PartsImportForm.module.css';
@@ -22,6 +22,7 @@ type Sheet = {
   name: string;
   rows: string[][];
 };
+const sheetRand = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const choices = {
   choose: [
     ['one', 'Add 1 asset', 'Value a single asset', 'blue', 'M12 5v14M5 12h14'],
@@ -79,6 +80,7 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
   const [pasteMode, setPasteMode] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const filled = rows.filter(hasAssetData);
+  const reviewAmounts = moneyColumns.filter(field => field === 'value' || filled.some(row => row[field].trim()));
   const ready = checks.filter(c => !c.skip).length;
   const sheet = sheets[sheetIndex];
   const sourceRows = sheet?.rows.slice(Number(header)) ?? [];
@@ -91,19 +93,24 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
   const dialog = useLeadDialog(onClose, busy || transition.pending);
   useLayoutEffect(() => {
     if (!focusError) return;
-    const selector = focusError.vat ? 'button[aria-label="VAT on sheet values"]'
+    const selector = focusError.vat ? `[data-vat-field="${typeof basis === 'string' ? 'all' : focusError.field}"] button`
       : `[data-row="${focusError.row}"] input[data-field="${CSS.escape(focusError.field)}"]`;
     const target = dialog.current?.querySelector<HTMLElement>(selector);
     target?.focus({ preventScroll: true });
     target?.scrollIntoView({ block: 'center', inline: 'center' });
     setFocusError(null);
-  }, [focusError, dialog]);
+  }, [focusError, basis, dialog]);
   const heading = useRef<HTMLHeadingElement>(null);
   const previousStage = useRef(stage);
   useLayoutEffect(() => {
+    if (stage === 'edit') {
+      const frame = requestAnimationFrame(() => dialog.current?.querySelector<HTMLInputElement>('input[data-field="title"]')?.focus());
+      previousStage.current = stage;
+      return () => cancelAnimationFrame(frame);
+    }
     if (previousStage.current !== stage) heading.current?.focus({ preventScroll: true });
     previousStage.current = stage;
-  }, [stage]);
+  }, [stage, dialog]);
   const [history, setHistory] = useState<Stage[]>([]);
   function change(next: Stage) {
     if (stage !== next) setHistory(previous => [...previous, stage]);
@@ -260,7 +267,7 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
       const invalidFields = fields.filter(k => !visible.includes(k));
       if (invalidFields.length) setDraft({ ...draft, visible: [...visible, ...invalidFields] });
       setPage(Math.floor(invalid / size));
-      setFocusError({ row: invalid, field: fields[0], vat: !basis && moneyColumns.some(key => key === fields[0]) && errors[fields[0]] === 'Choose whether sheet values include VAT.' });
+      setFocusError({ row: invalid, field: fields[0], vat: errors[fields[0]] === missingSheetVat });
       return setError('Check the highlighted cells in row ' + (invalid + 1) + '.');
     }
     if (!filled.length)
@@ -410,7 +417,7 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
                 <tr>
                   <th>Asset name</th>
                   <th>Serial / VIN</th>
-                  <th>Current value</th>
+                  {reviewAmounts.map(field => <th key={field}>{assetColumns[field]}</th>)}
                   {custom.map(k => <th key={k}>{columnLabel(k)}</th>)}
                   <th>Status</th>
                 </tr>
@@ -418,7 +425,17 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
               <tbody>{filled.slice(currentPage * size, (currentPage + 1) * size).map((r, j) => <tr key={j}>
                 <td>{assetTitle(r)}</td>
                 <td>{r.serial || '—'}</td>
-                <td>{r.value ? 'R ' + r.value + (basis === 'included' ? ' incl. VAT' : ' excl. VAT') : 'Awaiting valuation'}</td>
+                {reviewAmounts.map(field => {
+                  const saved = sheetAmountExVat(r, field, basis);
+                  if (saved === null) return <td key={field}>{field === 'value' ? 'Awaiting valuation' : '—'}</td>;
+                  const included = basisForColumn(basis, field) === 'included';
+                  return <td key={field}>
+                    {sheetRand.format(parseAmount(r[field]))} {included ? 'incl. VAT' : 'excl. VAT'}
+                    {(included || saved !== parseAmount(r[field])) && <small className={css.savedValue}>
+                      {sheetRand.format(saved)} excl. VAT to save
+                    </small>}
+                  </td>;
+                })}
                 {custom.map(k => <td key={k}>{r[k] || '—'}</td>)}
                 <td>{checks[currentPage * size + j]?.skip || 'Ready'}</td>
               </tr>)}</tbody>
@@ -437,7 +454,7 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
         <div className={css.sheetActions}>
           {sheetReturnLabel && <button type="button" disabled={busy || transition.pending} onClick={event => transition.start(event.currentTarget, sheetReturnLabel, back)}>{sheetReturnLabel}</button>}
           {stage === 'edit'
-            ? <button type="button" className={parts.primary} disabled={busy || transition.pending} onClick={() => void submit()}>{busy ? 'Reviewing assets…' : 'Review assets'}</button>
+            ? <button type="button" className={parts.primary} disabled={busy || transition.pending || !filled.length} onClick={() => void submit()}>{busy ? 'Reviewing assets…' : filled.length ? 'Review ' + filled.length + (filled.length === 1 ? ' asset' : ' assets') : 'Review assets'}</button>
             : <button type="button" className={parts.primary} disabled={busy || transition.pending || !ready} onClick={() => void submit(true)}>{busy ? 'Adding assets…' : 'Add ' + ready + ' asset' + (ready === 1 ? '' : 's')}</button>}
         </div>
       </footer> : <footer className={parts.entryFooter}>
