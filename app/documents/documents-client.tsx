@@ -2,6 +2,9 @@
 import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
 import { createPortal } from '../../components/WebsitePortal';
+import categoryStyles from '../my-invoices/cost-categories.module.css';
+import downloadStyles from '../../components/ReportDownload.module.css';
+import CategoryIcon from '../my-invoices/RecurringFieldIcon';
 import AssetChooseIcon from '../../components/AssetChooseIcon';
 import AssetPickerDetail from '../../components/AssetPickerDetail';
 
@@ -39,6 +42,11 @@ import AssetSerialNumber from '../../components/AssetSerialNumber';
 
 type DocumentCategory = AccountDocumentCategory;
 type DocumentType = AccountDocumentType;
+
+const documentIcons: Record<DocumentCategory, string> = {
+  business: 'storage', insurance: 'insurance', finance: 'finance', licence: 'licence',
+  'tax-accounting': 'amount', ownership: 'rental', contract: 'lease', warranty: 'extended_warranty', other: 'other',
+};
 
 type AssetLink = {
   id: string;
@@ -632,6 +640,23 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       ...option.keywords,
     ].some((value) => value.toLowerCase().includes(needle)));
   }, [documentTypeSearch]);
+
+  const [typePage, setTypePage] = useState(0);
+  const [typesPerPage, setTypesPerPage] = useState(12);
+  useEffect(() => {
+    const dialog = documentTypeModalRef.current;
+    if (!showDocumentTypeOptions || !dialog) return;
+    const grid = dialog.querySelector<HTMLElement>('[data-document-types]');
+    if (!grid) return;
+    const resize = () => setTypesPerPage(getComputedStyle(grid).gridTemplateColumns.split(' ').length * 3);
+    const observer = new ResizeObserver(resize);
+    observer.observe(grid);
+    resize();
+    return () => observer.disconnect();
+  }, [showDocumentTypeOptions]);
+  const typePages = Math.ceil(filteredDocumentTypes.length / typesPerPage);
+  const currentTypePage = Math.max(0, Math.min(typePage, typePages - 1));
+  const firstType = currentTypePage * typesPerPage;
 
   const selectedFilesBytes = useMemo(
     () => selectedFiles.reduce((total, file) => total + file.size, 0),
@@ -1529,7 +1554,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                       type="button"
                       aria-haspopup="dialog"
                       aria-invalid={!draft.documentType && modalNotice?.tone === 'error'}
-                      onClick={() => { setDocumentTypeSearch(''); setShowDocumentTypeOptions(true); }}
+                      onClick={() => { setDocumentTypeSearch(''); setTypePage(0); setShowDocumentTypeOptions(true); }}
                     >
                       <span>{getAccountDocumentTypeLabel(draft.documentType) || 'Choose document type'}</span>
                       <AssetChooseIcon />
@@ -1614,25 +1639,31 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       ) : null}
 
       {modalMode && showDocumentTypeOptions ? (
-        <div className={`${styles.modalBackdrop} ${styles.accountDocumentBackdrop}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeDocumentTypePicker(); }}>
-          <section ref={documentTypeModalRef} className={styles.documentTypeModal} role="dialog" aria-modal="true" aria-labelledby="document-type-title">
-            <header className={styles.modalHeader}>
-              <div><h2 id="document-type-title">Choose document type</h2><p>Select the type that best describes your document.</p></div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeDocumentTypePicker} aria-label="Close document type chooser" data-modal-close="true"><span aria-hidden="true">×</span></button>
+        <div className={`${styles.modalBackdrop} ${downloadStyles.backdrop}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeDocumentTypePicker(); }}>
+          <section ref={documentTypeModalRef} className={`${downloadStyles.dialog} ${categoryStyles.dialog}`} data-download-dialog="true" role="dialog" aria-modal="true" aria-labelledby="document-type-title">
+            <header data-download-header="true">
+              <h2 id="document-type-title">Choose document type</h2>
+              <button type="button" onClick={closeDocumentTypePicker} aria-label="Close document type chooser" data-modal-close="true">×</button>
             </header>
-            <input className={styles.documentTypeSearch} type="search" value={documentTypeSearch} onChange={(event) => setDocumentTypeSearch(event.target.value)} placeholder="Search document types..." aria-label="Search document types" data-modal-initial-focus="true" />
-            <div className={styles.documentTypeList}>
-              {Object.entries(ACCOUNT_DOCUMENT_CATEGORY_LABELS).map(([category, label]) => {
-                const options = filteredDocumentTypes.filter((option) => option.category === category);
-                return options.length ? <section key={category} aria-label={label}>
-                  <h3>{label}</h3>
-                  {options.map((option) => <button key={option.value} type="button" className={styles.documentTypeRow} aria-pressed={draft.documentType === option.value} onClick={() => selectDocumentType(option.value)}>
-                    <span>{option.label}</span><AssetChooseIcon selected={draft.documentType === option.value} />
-                  </button>)}
-                </section> : null;
+            <input className={styles.documentTypeSearch} type="search" value={documentTypeSearch} onChange={(event) => { setDocumentTypeSearch(event.target.value); setTypePage(0); }} placeholder="Search document types..." aria-label="Search document types" data-modal-initial-focus="true" />
+            <div className={categoryStyles.cards} data-document-types>
+              {filteredDocumentTypes.slice(firstType, firstType + typesPerPage).map((option) => {
+                const icon = option.value === 'service-record' ? 'service_plan' : documentIcons[option.category];
+                return <button key={option.value} type="button" className={`${categoryStyles.card} ${styles.documentTile}`} data-category={icon} aria-label={option.label} aria-pressed={draft.documentType === option.value} onClick={() => selectDocumentType(option.value)}>
+                  <span className={categoryStyles.icon}><CategoryIcon kind={icon} /></span>
+                  <span className={categoryStyles.copy}><strong>{option.label}</strong><small>{ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category]}</small></span>
+                </button>;
               })}
-              {!filteredDocumentTypes.length ? <p role="status">No document types match that search.</p> : null}
             </div>
+            {!filteredDocumentTypes.length && <p role="status">No document types match that search.</p>}
+            <footer data-download-footer="true">
+              {typePages > 1 && <>
+                <span aria-live="polite">Page {currentTypePage + 1} of {typePages}</span>
+                <button type="button" disabled={!currentTypePage} onClick={() => setTypePage(currentTypePage - 1)}>Previous</button>
+                <button type="button" disabled={currentTypePage + 1 >= typePages} onClick={() => setTypePage(currentTypePage + 1)}>Next</button>
+              </>}
+              <button type="button" onClick={closeDocumentTypePicker}>Back</button>
+            </footer>
           </section>
         </div>
       ) : null}
