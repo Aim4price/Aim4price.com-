@@ -11,7 +11,7 @@ import {
   type AccountDocumentType,
 } from './account-document-taxonomy';
 import {
-  listAssetRegisterItems,
+  listAssetRegisterItemsForRegisters,
   type AssetRegisterItem,
 } from './asset-register-db';
 import { getDb } from './db';
@@ -210,7 +210,6 @@ function normalizeAssetIds(value: unknown): string[] {
   for (const entry of values) {
     const assetId = cleanText(entry, 120);
     if (assetId) unique.add(assetId);
-    if (unique.size >= 100) break;
   }
 
   return [...unique];
@@ -443,14 +442,10 @@ async function replaceAssetLinks(
 }
 
 export async function listAccountDocumentAssetOptions(userId: string): Promise<AccountDocumentAssetOption[]> {
-  let assets: AssetRegisterItem[];
-
-  try {
-    assets = await listAssetRegisterItems(userId);
-  } catch (error) {
-    if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') return [];
-    throw error;
-  }
+  const registers = await getDb().query<{ id: string }>(
+    'select id from asset_registers where user_id = $1 order by id', [userId],
+  );
+  const assets = await listAssetRegisterItemsForRegisters(userId, registers.rows.map(register => register.id));
 
   return assets.map((asset) => ({
     id: asset.id,

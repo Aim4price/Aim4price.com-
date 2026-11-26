@@ -303,14 +303,9 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
 });
 
 test('Document Vault refinements use guided modal flows instead of pills and browser prompts', () => {
-  assert.match(client, /type UploadStep = 1 \| 2 \| 3/);
-  assert.match(client, /label: 'Upload document'/);
-  assert.match(client, /label: 'Document details'/);
-  assert.match(client, /label: 'Link to assets'/);
-  assert.doesNotMatch(client, /aria-label="Upload progress"/);
-  assert.match(client, /if \(uploadStep < 3\) \{\s*continueDocumentFlow\(\)/);
-  assert.match(client, /uploadStep === 1[\s\S]*?setUploadStep\(2\)/);
-  assert.match(client, /uploadStep === 2 && validateDocumentDetails\(\)/);
+  assert.match(client, /type DocumentSlide = 'assets' \| 'files' \| 'details'/);
+  assert.match(client, /if \(!finalSlide\) \{\s*continueDocumentFlow\(\)/);
+  assert.match(client, /uploadStep === 'files'[\s\S]*?setUploadStep\('details'\)/);
 
   assert.match(client, /<FilterFlow title="Filter documents" dialogRef=\{filterModalRef\}/);
   assert.match(client, /onClose=\{\(\) => setShowFilters\(false\)\}/);
@@ -333,7 +328,7 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /className=\{styles\.documentFacts\}/);
   assert.match(client, /className=\{styles\.linkedAssetNames\}/);
 
-  assert.match(client, /uploadStep === 3 && !\(modalMode === 'upload' && initialAssetId\)/);
+  assert.match(client, /uploadStep === 'assets' && !\(modalMode === 'upload' && initialAssetId\)/);
   assert.match(client, /className=\{`\$\{styles\.assetSelectionModal\} \$\{pickerStyles\.modal\}`\}/);
   assert.match(client, /className=\{styles\.assetSelectionHeader\}/);
   assert.match(client, /<input\s+className=\{styles\.assetSelectionSearch\}\s+type="search"/);
@@ -350,8 +345,8 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /AssetSerialNumber value=\{asset\.serialNumber\}/);
   assert.match(client, /checked \? 'Selected' : 'Select'/);
   assert.match(documentStore, /listAssetRegisterItems/);
-  assert.match(documentStore, /assets = await listAssetRegisterItems\(userId\)/);
-  assert.match(documentStore, /error\.message === 'ASSET_REGISTER_NOT_FOUND'/);
+  assert.match(documentStore, /listAssetRegisterItemsForRegisters\(userId, registers.rows.map/);
+  assert.match(documentStore, /from asset_registers where user_id = \$1/);
   assert.match(documentStore, /buildAssetPickerDetail\(asset\)/);
   assert.match(documentStore, /asset\.equipmentFamilyLabel/);
   assert.match(documentStore, /asset\.lifeWorkedPercent/);
@@ -370,17 +365,15 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
 
 test('upload document notes stay contained inside the details panel', () => {
   const panelStart = client.indexOf('styles.uploadWizardPanel');
-  const headingStart = client.indexOf('wizardStyles.panelHeading', panelStart);
-  const fieldsStart = client.indexOf('<fieldset', headingStart);
+  const fieldsStart = client.indexOf('<fieldset', panelStart);
   const fieldsEnd = client.indexOf('</fieldset>', fieldsStart);
   const panelEnd = client.indexOf('</div>', fieldsEnd);
 
-  assert.ok(panelStart >= 0 && panelStart < headingStart, 'the upload panel should own its heading');
-  assert.ok(headingStart < fieldsStart && fieldsStart < fieldsEnd, 'the fieldset should follow the panel heading');
+  assert.ok(panelStart >= 0 && panelStart < fieldsStart && fieldsStart < fieldsEnd, 'the panel should contain the fields');
   assert.ok(fieldsEnd < panelEnd, 'the panel should contain the complete fieldset');
   assert.doesNotMatch(client, /<fieldset[^>]*wizardStyles\.panel/);
   assert.match(client, /className=\{`\$\{styles\.field\} \$\{styles\.notesField\}`\}/);
-  assert.match(client, /<textarea[\s\S]*?value=\{draft\.notes\}[\s\S]*?rows=\{4\}/);
+  assert.match(client, /<textarea[\s\S]*?value=\{draft\.notes\}[\s\S]*?rows=\{2\}/);
   assert.match(styles, /\.uploadWizardPanel\s*\{[^}]*height:\s*auto;[^}]*grid-auto-rows:\s*max-content;[^}]*overflow:\s*visible/);
   assert.match(styles, /\.uploadWizardFields\s*\{[^}]*min-height:\s*0;[^}]*height:\s*auto;[^}]*display:\s*block;[^}]*overflow:\s*visible/);
   assert.match(styles, /\.uploadWizardFields \.formGrid\s*\{[^}]*min-height:\s*0;[^}]*margin:\s*0/);

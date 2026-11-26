@@ -78,7 +78,7 @@ test("all five wizards retain shared structure with their approved close control
       assert.doesNotMatch(wizard, /wizardStyles\.progress/);
       assert.doesNotMatch(wizard, /Your cost record is saved on the final step/);
     } else {
-      assert.match(wizard, /uploadStep === 1/);
+      assert.match(wizard, /uploadStep === 'files'/);
     }
     assert.match(wizard, /wizardStyles\.panel/);
     assert.match(wizard, /wizardStyles\.footer/);
