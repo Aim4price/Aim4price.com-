@@ -24,7 +24,7 @@ const closeEnd = source.indexOf('  function continueBudgetWizard()', closeStart)
 const closeCode = ts.transpileModule(source.slice(closeStart,closeEnd), {compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
 function dismissBudget({step=1,editing=false,launched=true,saving=false}={}) {
   const calls=[];
-  const values={budgetSaving:saving,budgetWizardStep:step,editingBudgetId:editing?'budget':null,
+  const values={groupBudget:false,budgetSaving:saving,budgetWizardStep:step,editingBudgetId:editing?'budget':null,
     goBackBudgetWizard:()=>calls.push('previous-step'),assetBudgetLaunchActive:{current:launched},
     budgetLaunchReturnTo:'/asset-register?assetId=a&mapAction=manage',window:{location:{assign:path=>calls.push(path)}},
     buildEmptyCostBudgetDraft:()=>({})};

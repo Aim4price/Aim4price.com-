@@ -7492,3 +7492,11 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
   line-height: 1.5;
   gap: .75rem;
 }
+
+.pickerToolbar.budgetTypeChoices {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.budgetTypeChoices input {
+  grid-column: 1 / -1;
+}

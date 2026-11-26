@@ -37,14 +37,15 @@ async function getBudgetAccess(): Promise<OwnerAppAccess | NextResponse> {
   return access;
 }
 
-function canAccessBudgetScope(access: OwnerAppAccess, assetId: unknown): boolean {
+function canAccessBudgetScope(access: OwnerAppAccess, assetId: unknown, groupAssetIds?: unknown): boolean {
+  if (Array.isArray(groupAssetIds) && groupAssetIds.length) return groupAssetIds.every(id => ownerAppCanAccessAsset(access, id));
   const normalizedAssetId = String(assetId ?? '').trim();
   if (!normalizedAssetId || normalizedAssetId === 'all') return access.assetScope === 'all';
   return ownerAppCanAccessAsset(access, normalizedAssetId);
 }
 
 function visibleBudget(access: OwnerAppAccess, budget: CostBudgetProgress): boolean {
-  return canAccessBudgetScope(access, budget.assetId);
+  return canAccessBudgetScope(access, budget.assetId, budget.groupAssetIds);
 }
 
 function budgetError(error: unknown): NextResponse {
@@ -110,7 +111,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       return NextResponse.json({ ok: true }, { headers: responseHeaders() });
     } catch (error) { return budgetError(error); }
   }
-  if (!canAccessBudgetScope(access, body.assetId)) {
+  if (!canAccessBudgetScope(access, body.assetId, body.groupAssetIds)) {
     return errorResponse('You do not have access to that budget scope.', 403);
   }
 

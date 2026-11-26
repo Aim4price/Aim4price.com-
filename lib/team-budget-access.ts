@@ -16,7 +16,7 @@ export async function teamBudgetResponse(request: Request, budgetId?: string): P
   if (!scope.grant.permissions.viewBudgets) return NextResponse.json({ok:false,error:'Budget access is not enabled.'},{status:403});
   try {
     const ids = (await getWorkspaceAssetIds(workspace))!;
-    const budgets = (await listCostBudgetsWithProgress(workspace.ownerUserId, {recordAlerts:false})).filter(budget => budget.assetId ? ids.has(budget.assetId) : scope.grant.scope === 'all');
+    const budgets = (await listCostBudgetsWithProgress(workspace.ownerUserId, {recordAlerts:false})).filter(budget => budget.groupAssetIds?.length ? budget.groupAssetIds.every(id => ids.has(id)) : budget.assetId ? ids.has(budget.assetId) : scope.grant.scope === 'all');
     if (request.method === 'GET') {
       const assets = (await listMyInvoiceAssets(workspace.ownerUserId)).filter(asset => ids.has(asset.id)).map(asset => ({...asset,value:scope.grant.permissions.viewValues ? asset.value : 0}));
       const registers = scope.grant.scope === 'all' ? (await listAssetRegisters(workspace.ownerUserId)).map(register => ({value:register.id,label:register.businessName})) : [];
@@ -34,10 +34,13 @@ export async function teamBudgetResponse(request: Request, budgetId?: string): P
       await setBudgetRecurringPreference(workspace.ownerUserId, budget, body.includeRecurringCosts, teamWriteGuard(workspace,'manageBudgets',{budgetId}));
       return NextResponse.json({ok:true});
     }
-    if (body.assetId && body.assetId !== 'all') await assertWorkspaceAssetAccess(workspace,body.assetId);
+    const memberIds = Array.isArray(body.groupAssetIds) ? body.groupAssetIds.map(String) : [];
+    if (memberIds.length) {
+      if (memberIds.some(id => !ids.has(id))) return NextResponse.json({ok:false,error:'Choose accessible assets.'},{status:403});
+    } else if (body.assetId && body.assetId !== 'all') await assertWorkspaceAssetAccess(workspace,body.assetId);
     else if (scope.grant.scope !== 'all') return NextResponse.json({ok:false,error:'Choose an accessible asset.'},{status:403});
     const assetId = body.assetId && body.assetId !== 'all' ? String(body.assetId) : undefined;
-    const guard = teamWriteGuard(workspace,'manageBudgets',{budgetId,assetId,globalBudget:!assetId});
+    const guard = teamWriteGuard(workspace,'manageBudgets',{budgetId,assetId,memberIds,globalBudget:!assetId && !memberIds.length});
     const budget = budgetId ? await updateCostBudget(workspace.ownerUserId,budgetId,body,guard) : await createCostBudget(workspace.ownerUserId,body,guard);
     return NextResponse.json({ok:true,budget});
   } catch { return NextResponse.json({ok:false,error:'The budget could not be saved. Check the asset, amount and period.'},{status:400}); }

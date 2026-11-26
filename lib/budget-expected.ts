@@ -22,6 +22,7 @@ export function budgetRecurringCosts(budget: CostBudgetProgress, commitments: Re
     if (!['active', 'paused'].includes(item.status) || !item.startDate || (item.endDate && item.endDate < today)) continue;
     if (budget.categories?.length && !budget.categories.includes(item.category)) continue;
     const scoped = item.assets.filter(asset => (!budget.assetId || asset.assetId === budget.assetId)
+      && (!budget.groupAssetIds?.length || budget.groupAssetIds.includes(asset.assetId))
       && (!budget.registerId || registers.get(asset.assetId) === budget.registerId));
     if (!scoped.length) continue;
     const months = intervalMonths[item.frequency];

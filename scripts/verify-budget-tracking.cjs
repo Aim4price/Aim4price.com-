@@ -47,6 +47,17 @@ async function main(){let server,browser;const created=[];try{
  await click('Manage');await page.waitForSelector('[role=dialog]');await click('Edit budget & alerts');await page.waitForFunction(()=>document.querySelector('[role=dialog]')?.textContent.includes('budget'));await page.keyboard.press('Escape');
  await click('Manage');await page.waitForSelector('[role=dialog]');await click('Delete budget');await page.waitForSelector('[role=alertdialog]');await page.keyboard.press('Escape');assert.equal(await page.$('[role=alertdialog]'),null);
  await click('Add Budget');await page.waitForSelector('[role=dialog]');await page.keyboard.press('Escape');
+ await click('Add Budget');
+ await click('Group of assets');
+ await page.type('input[aria-label="Group name"]','Delivery fleet');
+ await click('Select all shown (2)');await click('Next');await click('Next');
+ assert.match(await page.$eval('[role=dialog]', e=>e.textContent), /One shared limit for Delivery fleet/);
+ await click('Next');await page.type('input[placeholder="50 000.00"]','50000');await click('Next');
+ assert.match(await page.$eval('[role=dialog]', e=>e.textContent), /for the group/);
+ await click('Save budget');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+ const group=budgets.find(b=>b.groupName==='Delivery fleet');
+ assert.deepEqual(group.groupAssetIds,['tractor','truck']);assert.equal(group.assetId,null);
+ assert.equal(budgets.length,4);
  await click('Download');await click('All budgets');await click('Next');
  assert.match(await page.$eval('[role=dialog]',e=>e.textContent),/PDF report.*XLSX workbook/);
  await click('PDF report');await click('Open PDF report');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));

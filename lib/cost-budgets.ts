@@ -11,6 +11,8 @@ export type CostBudgetStatusName = 'on_track' | 'warning' | 'over_budget';
 export type CostBudgetAlertKind = 'warning' | 'over_budget';
 
 export type CostBudgetProgress = {
+  groupAssetIds?: string[];
+  members?: {id: string; title: string; spent: number}[];
   expected?: number;
   includeRecurringCosts?: boolean;
   recurringCosts?: import('./budget-expected').BudgetRecurringCost[];
@@ -42,6 +44,8 @@ export type CostBudgetProgress = {
 };
 
 export type CostBudgetInput = {
+  groupAssetIds?: unknown;
+  groupName?: unknown;
   assetId?: unknown;
   period?: unknown;
   amount?: unknown;
@@ -68,6 +72,9 @@ export type CostBudgetAlertEvent = {
 };
 
 type CostBudgetRow = {
+  group_asset_ids: string[];
+  group_name: string | null;
+  members: CostBudgetProgress['members'];
   id: string;
   user_id: string;
   asset_register_item_id: string | null;
@@ -89,6 +96,7 @@ type CostBudgetRow = {
 };
 
 type CostBudgetAlertRow = {
+  group_name: string | null;
   id: string;
   budget_id: string;
   budget_revision: string | number;
@@ -186,6 +194,11 @@ function normalizeInput(input: CostBudgetInput) {
 
   const registerId = asText(input.registerId) || null;
   if (registerId && (assetId || !UUID_PATTERN.test(registerId))) throw new Error('COST_BUDGET_ASSET_INVALID');
+  const groupAssetIds = input.groupAssetIds ?? [];
+  if (!Array.isArray(groupAssetIds) || !groupAssetIds.every(id => typeof id === 'string' && UUID_PATTERN.test(id))) throw new Error('COST_BUDGET_ASSET_INVALID');
+  const members = [...new Set<string>(groupAssetIds.map(id => id.toLowerCase()))].sort();
+  const groupName = asText(input.groupName);
+  if (members.length && (members.length < 2 || assetId || registerId || !groupName || groupName.length > 100)) throw new Error('COST_BUDGET_ASSET_INVALID');
   const amount = asMoney(input.amount);
   if (amount === null || amount < 1 || amount > MAX_BUDGET_AMOUNT) {
     throw new Error('COST_BUDGET_AMOUNT_INVALID');
@@ -198,6 +211,7 @@ function normalizeInput(input: CostBudgetInput) {
 
   return {
     assetId,
+    groupAssetIds: members, groupName: members.length ? groupName : null,
     categories, registerId,
     period: normalizePeriod(input.period),
     amount,
@@ -276,8 +290,11 @@ async function ensureCostBudgetTablesOnce(): Promise<void> {
     alter table public.asset_cost_budgets add column if not exists register_id uuid references public.asset_registers(id) on delete cascade;
     alter table public.asset_cost_budgets add column if not exists include_vat boolean not null default true;
     alter table public.asset_cost_budgets add column if not exists categories text[] not null default '{}';
-    create unique index if not exists asset_cost_budgets_all_categories_uidx on public.asset_cost_budgets
-      (user_id, period, categories) where asset_register_item_id is null and register_id is null;
+    alter table public.asset_cost_budgets add column if not exists group_asset_ids uuid[] not null default '{}';
+    alter table public.asset_cost_budgets add column if not exists group_name text;
+    create unique index if not exists asset_cost_budgets_scoped_categories_uidx on public.asset_cost_budgets
+      (user_id, period, categories, coalesce(lower(group_name), '')) where asset_register_item_id is null and register_id is null;
+    drop index if exists public.asset_cost_budgets_all_categories_uidx;
     create unique index if not exists asset_cost_budgets_register_categories_uidx on public.asset_cost_budgets
       (user_id, register_id, period, categories) where register_id is not null;
     create unique index if not exists asset_cost_budgets_asset_categories_uidx on public.asset_cost_budgets
@@ -425,6 +442,10 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
         budget.amount,
         budget.warning_percent,
         coalesce(preference.include_recurring_costs, true) as include_recurring_costs,
+        budget.group_name, budget.group_asset_ids,
+        (select jsonb_agg(jsonb_build_object('id', member.id, 'title', member.title,
+            'spent', coalesce((spend.by_asset ->> member.id::text)::numeric, 0)) order by member.title, member.id)
+          from public.asset_register_items member where member.user_id = budget.user_id and member.id = any(budget.group_asset_ids)) as members,
         budget.include_vat, budget.include_fuel_slip_costs, budget.categories, budget.register_id, register.business_name as register_name,
         budget.revision,
         coalesce(spend.spent, 0) as spent,
@@ -438,13 +459,16 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
         on asset.id = budget.asset_register_item_id
        and asset.user_id = budget.user_id
       left join lateral (
-        select
+        select sum(lines.spent) as spent, max(lines.last_cost_at) as last_cost_at,
+          jsonb_object_agg(lines.asset_id, lines.spent) filter (where lines.asset_id is not null and cardinality(budget.group_asset_ids) > 0) as by_asset
+        from (select invoice.asset_register_item_id as asset_id,
           coalesce(sum(case when budget.include_vat then invoice.total_inc_vat
             else coalesce(invoice.subtotal_ex_vat, invoice.total_inc_vat - coalesce(invoice.vat_amount, 0))
           end), 0) as spent,
           max(coalesce(invoice.updated_at, invoice.created_at)) as last_cost_at
         from public.asset_invoices invoice
         where invoice.user_id = budget.user_id
+          and (cardinality(budget.group_asset_ids) = 0 or invoice.asset_register_item_id = any(budget.group_asset_ids))
           and (budget.register_id is null or exists (
             select 1 from public.asset_register_items member where member.id = invoice.asset_register_item_id
               and member.user_id = budget.user_id and member.register_id = budget.register_id
@@ -466,6 +490,7 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
             invoice.created_by_dealer_user_id is null
             or invoice.owner_storage_status in ('owner', 'approved')
           )
+        group by invoice.asset_register_item_id) lines
       ) spend on true
       where budget.user_id = $1
       order by
@@ -496,7 +521,8 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
       id: row.id,
       userId: row.user_id,
       assetId: row.asset_register_item_id,
-      assetTitle: row.asset_register_item_id ? asText(row.asset_title) || 'Saved asset' : row.register_name || 'All saved assets',
+      assetTitle: row.group_name || (row.asset_register_item_id ? asText(row.asset_title) || 'Saved asset' : row.register_name || 'All saved assets'),
+      groupAssetIds: row.group_asset_ids, members: row.members ?? [],
       period,
       amount,
       warningPercent,
@@ -539,7 +565,7 @@ export async function listCurrentCostBudgetAlertEvents(userId: string): Promise<
       select
         alert.id::text,
         alert.budget_id::text,
-        alert.budget_revision,
+        alert.budget_revision, budget.group_name,
         budget.asset_register_item_id::text,
         coalesce(nullif(trim(asset.title), ''), 'Saved asset') as asset_title,
         budget.period,
@@ -573,7 +599,7 @@ export async function listCurrentCostBudgetAlertEvents(userId: string): Promise<
       budgetId: row.budget_id,
       budgetRevision: Math.max(1, Number(row.budget_revision) || 1),
       assetId: row.asset_register_item_id,
-      assetTitle: row.asset_register_item_id ? asText(row.asset_title) || 'Saved asset' : 'All saved assets',
+      assetTitle: row.group_name || (row.asset_register_item_id ? asText(row.asset_title) || 'Saved asset' : 'All saved assets'),
       period: row.period === 'annual' ? 'annual' : 'monthly',
       periodKey: row.period_key,
       alertKind,
@@ -607,11 +633,18 @@ async function budgetWrite(sql: string, values: unknown[], guard?: WorkspaceWrit
   } finally { client.release(); }
 }
 
+async function verifyGroupMembers(userId: string, ids: string[]) {
+  if (!ids.length) return;
+  const members = await getDb().query('select id from public.asset_register_items where user_id = $1 and id = any($2::uuid[])', [userId, ids]);
+  if (members.rowCount !== ids.length) throw new Error('COST_BUDGET_ASSET_NOT_FOUND');
+}
+
 export async function createCostBudget(userId: string, input: CostBudgetInput, guard?: WorkspaceWriteGuard): Promise<CostBudgetProgress> {
   const budget = normalizeInput(input);
-  if (!budget.assetId) throw new Error('COST_BUDGET_ASSET_INVALID');
+  if (!budget.assetId && !budget.groupAssetIds.length) throw new Error('COST_BUDGET_ASSET_INVALID');
   await ensureCostBudgetTables();
   await verifyBudgetAsset(userId, budget.assetId, budget.registerId);
+  await verifyGroupMembers(userId, budget.groupAssetIds);
 
   try {
     const result = await budgetWrite(
@@ -622,14 +655,14 @@ export async function createCostBudget(userId: string, input: CostBudgetInput, g
           period,
           amount,
           warning_percent,
-          include_fuel_slip_costs, categories, register_id, include_vat,
+          include_fuel_slip_costs, categories, register_id, include_vat, group_asset_ids, group_name,
           revision,
           created_at,
           updated_at
-        ) values ($1, $2::uuid, $3, $4, $5, $6, $7::text[], $8::uuid, $9, 1, now(), now())
+        ) values ($1, $2::uuid, $3, $4, $5, $6, $7::text[], $8::uuid, $9, $10::uuid[], $11, 1, now(), now())
         returning id::text
       `,
-      [userId, budget.assetId, budget.period, budget.amount, budget.warningPercent, budget.includeFuelSlipCosts, budget.categories, budget.registerId, budget.includeVat],
+      [userId, budget.assetId, budget.period, budget.amount, budget.warningPercent, budget.includeFuelSlipCosts, budget.categories, budget.registerId, budget.includeVat, budget.groupAssetIds, budget.groupName],
       guard, userId,
     );
     const id = result.rows[0]?.id;
@@ -652,6 +685,7 @@ export async function updateCostBudget(
   const budgetId = normalizeBudgetId(budgetIdInput);
   const budget = normalizeInput(input);
   await verifyBudgetAsset(userId, budget.assetId, budget.registerId);
+  await verifyGroupMembers(userId, budget.groupAssetIds);
 
   try {
     const result = await budgetWrite(
@@ -663,11 +697,13 @@ export async function updateCostBudget(
           amount = $5,
           warning_percent = $6,
           include_fuel_slip_costs = $7, categories = $8::text[], register_id = $9::uuid,
+          group_asset_ids = $11::uuid[], group_name = $12,
           include_vat = coalesce($10::boolean, include_vat),
           revision = revision + 1,
           updated_at = now()
         where id = $1::uuid
           and user_id = $2
+          and (cardinality(group_asset_ids) > 0) = (cardinality($11::uuid[]) > 0)
           and ($3::uuid is not null or
                (asset_register_item_id is null and register_id is not distinct from $9::uuid))
         returning id::text
@@ -680,7 +716,7 @@ export async function updateCostBudget(
         budget.amount,
         budget.warningPercent,
         budget.includeFuelSlipCosts, budget.categories, budget.registerId,
-        input.includeVat === undefined ? null : budget.includeVat,
+        input.includeVat === undefined ? null : budget.includeVat, budget.groupAssetIds, budget.groupName,
       ],
       guard, userId,
     );
