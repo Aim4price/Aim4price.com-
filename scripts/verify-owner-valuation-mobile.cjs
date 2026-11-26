@@ -104,6 +104,7 @@ await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.inner
 await page.click('#final-save-register-trigger');await page.waitForSelector('input[aria-label="Search asset registers"]');await shot('register-picker');
 await page.type('input[aria-label="Search asset registers"]','Farm register 11');
 await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.innerText.includes('Farm register 11')).click());await click('Continue');
+await page.waitForSelector('#final-save-register-name',{visible:true});
 assert.equal(await page.$eval('#final-save-register-name',e=>e.textContent),'Farm register 11');
 await click('Save asset');await page.waitForFunction(()=>document.body.innerText.includes('Save failed. Please try again.'));
 assert.equal(saves[0].registerId,'register-11');await shot('save-error');
