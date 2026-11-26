@@ -19,7 +19,7 @@ const budgetModal = client.slice(modalStart, modalEnd);
 
 test('spending budget uses a guided five-step flow with a dedicated period step', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal should be present');
-  assert.match(client, /type BudgetWizardStep = 1 \| 2 \| 3 \| 4 \| 5/);
+  assert.match(client, /type BudgetWizardStep = 0 \| 1 \| 2 \| 3 \| 4 \| 5/);
   assert.match(client, /const \[budgetWizardStep, setBudgetWizardStep\]/);
   assert.doesNotMatch(budgetModal, /styles\.invoiceDropWizardProgress/);
   assert.match(budgetModal, /styles\.invoiceDropCodeModal/);
