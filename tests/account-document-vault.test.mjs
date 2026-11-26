@@ -308,7 +308,7 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /label: 'Document details'/);
   assert.match(client, /label: 'Link to assets'/);
   assert.doesNotMatch(client, /aria-label="Upload progress"/);
-  assert.match(client, /modalMode === 'upload' && uploadStep < 3/);
+  assert.match(client, /if \(uploadStep < 3\) \{\s*continueDocumentFlow\(\)/);
   assert.match(client, /uploadStep === 1[\s\S]*?setUploadStep\(2\)/);
   assert.match(client, /uploadStep === 2 && validateDocumentDetails\(\)/);
 
@@ -333,17 +333,18 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /className=\{styles\.documentFacts\}/);
   assert.match(client, /className=\{styles\.linkedAssetNames\}/);
 
-  assert.match(client, /className=\{styles\.assetLinkSummary\}/);
+  assert.match(client, /uploadStep === 3 && !\(modalMode === 'upload' && initialAssetId\)/);
   assert.match(client, /className=\{`\$\{styles\.assetSelectionModal\} \$\{pickerStyles\.modal\}`\}/);
   assert.match(client, /className=\{styles\.assetSelectionHeader\}/);
   assert.match(client, /<input\s+className=\{styles\.assetSelectionSearch\}\s+type="search"/);
   assert.match(client, /placeholder="Search assets\.\.\."/);
   assert.match(client, /<p id="asset-picker-description">Select the saved assets/);
-  assert.match(client, />\s*Select all\s*</);
+  assert.match(client, /Select all \$\{filteredAssets.length\} matches/);
   assert.match(client, />\s*Clear\s*</);
-  assert.match(client, /assetSelectionSnapshotRef\.current = \[\.\.\.draft\.assetIds\]/);
-  assert.match(client, /closeAssetPickerModal\(false\)/);
-  assert.match(client, /closeAssetPickerModal\(true\)/);
+  assert.match(client, /filteredAssets\.slice\(firstAsset, firstAsset \+ assetsPerPage\)/);
+  assert.match(client, /aria-label="Previous asset page"/);
+  assert.match(client, /aria-label="Next asset page"/);
+  assert.match(client, /onClick=\{returnToPreviousUploadStep\}/);
   assert.match(client, /asset\.detail \|\| asset\.meta \|\| 'No key details saved yet'/);
   assert.match(client, /\[asset\.categoryLabel, asset\.methodLabel\]\.filter\(Boolean\)\.join\(' · '\)/);
   assert.match(client, /AssetSerialNumber value=\{asset\.serialNumber\}/);
