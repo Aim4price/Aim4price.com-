@@ -1,3 +1,5 @@
+import { templateGuideTitle } from './asset-sheet';
+
 /** Read locally in the browser. Formulas are never evaluated or fetched. */
 export async function readPartsExcel(
   buffer: ArrayBuffer,
@@ -16,6 +18,7 @@ export async function readPartsExcel(
   }
   return workbook.worksheets
     .filter((sheet) => sheet.state === "visible")
+    .filter((sheet) => purpose !== "assets" || sheet.name !== "Guide" || sheet.getCell("A1").value !== templateGuideTitle)
     .map((sheet) => {
       if (sheet.rowCount > 20001 || sheet.columnCount > 100)
         throw new Error(`Use at most 20,000 ${purpose} and 100 columns per sheet.`);

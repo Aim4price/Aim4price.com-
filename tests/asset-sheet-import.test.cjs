@@ -15,7 +15,9 @@ test('a name is sufficient, and compatible make and model columns can supply it'
 });
 
 test('values require a stated VAT basis and unrelated monetary headings stay unmapped', () => {
-  for (const label of ['Book value', 'Insured value', 'Replacement cost', 'Value']) assert.equal(mapHeading(label), '');
+  for (const label of ['Book value', 'Value']) assert.equal(mapHeading(label), '');
+  assert.equal(mapHeading('Insured value'), 'insuredValue');
+  assert.equal(mapHeading('Replacement cost'), 'replacement');
   const row = {...blankAsset(), title: 'Tractor', value: 'R 115 000'};
   assert.ok(rowErrors(row,'').value);
   assert.deepEqual(rowErrors(row,'included'), {});
@@ -40,6 +42,52 @@ test('Excel preserves zero-padded serials and translates percentage-formatted re
   assert.equal(asset.serial,'000123');
   assert.equal(asset.unit,'percentage');
   assert.equal(asset.usage,'35');
+});
+
+test('the Excel template opens on blank asset rows, offers the sheet defaults and keeps examples out of imports', async () => {
+  const { buildAssetTemplate } = load('lib/asset-sheet-template.ts');
+  const { coreColumns, columns, assetColumns } = load('lib/asset-sheet.ts');
+  const template = buildAssetTemplate();
+  const buffer = await template.xlsx.writeBuffer();
+  const empty = await readPartsExcel(buffer, 'assets');
+  assert.deepEqual(empty.map(s => s.name), ['Assets']);
+  assert.deepEqual(empty[0].rows, [columns.map(k => assetColumns[k])]);
+  assert.deepEqual(empty[0].rows[0].slice(0, 11).map(mapHeading), coreColumns);
+
+  const wb = new Workbook();
+  await wb.xlsx.load(buffer);
+  const assets = wb.worksheets[0];
+  assert.equal(assets.name, 'Assets');
+  assert.equal(assets.views[0].state, 'frozen');
+  assert.equal(assets.getCell('F2').numFmt, '@');
+  assert.match(assets.getCell('G2').dataValidation.formulae[0], /Good/);
+  assets.getCell('A2').value = 'Delivery truck';
+  assets.getCell('F2').value = '001234';
+  assets.getCell('G2').value = 'Good';
+  assets.getCell('K2').value = 115000;
+  wb.addWorksheet('Other assets').addRow(['Asset name']);
+  const imported = await readPartsExcel(await wb.xlsx.writeBuffer(), 'assets');
+  assert.deepEqual(imported.map(s => s.name), ['Assets', 'Other assets']);
+  const row = mapAssetRow(imported[0].rows[1], imported[0].rows[0].map(mapHeading));
+  assert.equal(row.serial, '001234');
+  assert.equal(row.condition, 'Good');
+  assert.equal(row.replacement, '115000');
+  assert.deepEqual(rowErrors(row, 'included'), {});
+});
+
+test('older sheet payloads keep their retry keys and saved custom columns', () => {
+  const { importKeyRow, readSheetRow, readSheetColumns } = load('lib/asset-sheet.ts');
+  const old = { title:'Pump', make:'', model:'', category:'', year:'', serial:'', usage:'', unit:'', value:'', 'custom:Condition':'Refurbished' };
+  const normalized = readSheetRow(old, readSheetColumns(['custom:Condition']));
+  assert.equal(JSON.stringify(importKeyRow(normalized)), JSON.stringify(old));
+  assert.notEqual(JSON.stringify(importKeyRow({...normalized, replacement:'100'})), JSON.stringify(old));
+});
+
+test('paperwork and condition mistakes are identified on their own columns', () => {
+  const row = {...blankAsset(), title:'Trailer', insuredValue:'11500', insurance:'Not insured', condition:'Maybe'};
+  assert.deepEqual(Object.keys(rowErrors(row,'excluded')).sort(), ['condition','insurance']);
+  assert.ok(rowErrors({...blankAsset(), title:'Stock', category:'Stock', replacement:'1500'},'excluded').replacement);
+  assert.ok(rowErrors({...blankAsset(), title:'Trailer', replacement:'1500'},'').replacement);
 });
 
 test('custom columns keep text and validate names and custom-only rows', () => {
@@ -92,4 +140,30 @@ test('preview and save preserve custom fields on each asset and retries skip sav
   assert.deepEqual(savedSheetDetails(assets[1].specsJson).map(d=>d.value),['','']);
   assert.deepEqual((await send('save',preview.data.token)).data,{added:0,skipped:2});
   assert.equal(assets.length,2);
+
+  const truck = {...blankAsset(), make:'Isuzu', model:'FTR 850', category:'Truck', year:'2021', serial:'001204',
+    condition:'Requires attention', usage:'186000', unit:'km', value:'115000', replacement:'230000', registration:'CA123',
+    finance:'Financed', financeNote:'Vehicle finance', insuredValue:'172500', insuranceNote:'Fleet policy', note:'Delivery vehicle'};
+  const body = {basis:'included', customColumns:[], rows:[truck]};
+  const checked = await send('preview', undefined, body);
+  assert.equal(checked.status, 200);
+  assert.deepEqual((await send('save', checked.data.token, body)).data, {added:1, skipped:0});
+  const saved = assets[2];
+  assert.equal(saved.kind, 'vehicle');
+  assert.equal(saved.title, 'Isuzu FTR 850');
+  assert.equal(saved.condition, 'serious');
+  assert.equal(saved.yearModel, 2021);
+  assert.equal(saved.serialNumber, '001204');
+  assert.equal(saved.usageMetric, 'km');
+  assert.equal(saved.hours, 186000);
+  assert.equal(saved.value, 100000);
+  assert.equal(saved.replacementPriceExVat, 200000);
+  assert.equal(saved.insuredValueExVat, 150000);
+  assert.equal(saved.isInsured, true);
+  assert.equal(saved.isFinanced, true);
+  assert.equal(saved.isLicensed, true);
+  assert.equal(saved.licenseRegistrationNumber, 'CA123');
+  assert.equal(saved.specsJson.insuranceNote, 'Fleet policy');
+  assert.equal(saved.financeNote, 'Vehicle finance');
+  assert.equal(saved.note, 'Delivery vehicle');
 });
