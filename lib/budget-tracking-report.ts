@@ -24,7 +24,7 @@ export function buildBudgetReportHtml(budgets: TrackedBudget[], generated: strin
   .track { height: 9px; background: #e6eeea; border-radius: 8px; overflow: hidden; } .fill { height: 100%; background: #197454; } .warning { background: #a76b12; } .over_budget { background: #b44242; }
   footer { font-size: 11px; color: #60756d; } ${REPORT_THEME_CSS}
   </style></head><body><main class="reportPage"><header><strong>Aim4price</strong><h1>Budget Tracking Report</h1><p>${budgets.length} ${budgets.length === 1 ? 'budget' : 'budgets'} · Generated ${escape(generated)}</p></header>
-  ${budgets.map(b => `<article><h2>${escape(b.assetTitle)}</h2><p>${b.period === 'monthly' ? 'Monthly' : 'Annual'} · ${escape(b.periodLabel)} · ${b.includeVat === false ? 'Excl.' : 'Incl.'} VAT · ${escape(categorySummary(b.categories))} · ${escape(budgetStatusLabel(b))}</p><dl><div><dt>Recorded spending</dt><dd>${money(b.spent)}</dd></div><div><dt>Budget</dt><dd>${money(b.amount)}</dd></div><div><dt>${b.overBy > 0 ? 'Over budget' : 'Remaining'}</dt><dd>${money(b.overBy > 0 ? b.overBy : b.remaining)}</dd></div></dl><div class="track"><div class="fill ${escape(b.status)}" style="width:${Math.max(0,Math.min(100,b.percentUsed))}%"></div></div><p>${escape(budgetUsageLabel(b.percentUsed))} · Alert at ${b.warningPercent}% · Fuel ${b.includeFuelSlipCosts ? 'included' : 'excluded'}</p>${recurringSection(b, recurringOverride)}</article>`).join('')}
+  ${budgets.map(b => `<article><h2>${escape(b.assetTitle)}</h2><p>${b.period === 'monthly' ? 'Monthly' : 'Annual'} · ${escape(b.periodLabel)} · ${b.includeVat === false ? 'Excl.' : 'Incl.'} VAT · ${escape(categorySummary(b.categories))} · ${escape(budgetStatusLabel(b))}</p><dl><div><dt>Recorded spending</dt><dd>${money(b.spent)}</dd></div><div><dt>Budget</dt><dd>${money(b.amount)}</dd></div><div><dt>${b.overBy > 0 ? 'Over budget' : 'Remaining'}</dt><dd>${money(b.overBy > 0 ? b.overBy : b.remaining)}</dd></div></dl><div class="track"><div class="fill ${escape(b.status)}" style="width:${Math.max(0,Math.min(100,b.percentUsed))}%"></div></div><p>${escape(budgetUsageLabel(b.percentUsed))} · Alert at ${b.warningPercent}% · Fuel ${b.includeFuelSlipCosts ? 'included' : 'excluded'}</p>${b.members?.length ? '<section><h3>Group assets</h3><ul>' + b.members.map(member => `<li>${escape(member.title)} · ${money(member.spent)}</li>`).join('') + '</ul></section>' : ''}${recurringSection(b, recurringOverride)}</article>`).join('')}
   <footer>Current budget periods. Actual spending comes from Cost Ledger records dated within each period. Budgets may overlap; their totals should not be added together.</footer></main></body></html>`;
 }
 export function buildBudgetWorkbook(budgets: TrackedBudget[], generated: string, recurringOverride?: boolean): XlsxSheet[] {
@@ -38,6 +38,16 @@ export function buildBudgetWorkbook(budgets: TrackedBudget[], generated: string,
     ...budgets.map(b => [b.assetTitle,b.period,b.periodLabel,...[b.amount,b.spent,b.remaining,b.overBy].map(value => ({ value, style: 'currency' as const })),{ value: b.percentUsed / 100, style: 'percent' as const },{ value: b.warningPercent / 100, style: 'percent' as const },b.includeFuelSlipCosts,budgetStatusLabel(b),categorySummary(b.categories),b.includeVat === false ? 'Excl. VAT' : 'Incl. VAT',
       ...(withForecast ? includeForecast(b, recurringOverride) ? [b.expected ?? 0, availableBudget(b, true)].map(value => ({value,style:'currency' as const})) : [null,null] : [])]),
   ] }];
+  const memberRows = budgets.flatMap(budget => (budget.members ?? []).map(member => [
+    budget.assetTitle, budget.periodLabel, member.title, {value: member.spent, style: 'currency' as const},
+  ]));
+  if (memberRows.length) sheets.push({
+    name: 'Group assets', orientation: 'landscape', freezeRow: 1, columns: [36,22,42,22],
+    rows: [
+      ['Budget','Period','Asset','Recorded spending'].map(value => ({value,style:'tableHeader'})),
+      ...memberRows,
+    ],
+  });
   if (withForecast) sheets.push({
     name: 'Recurring costs', orientation: 'landscape', freezeRow: 1, columns: [36,22,40,18,14,24,25],
     rows: [
