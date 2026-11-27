@@ -45,7 +45,7 @@ export default function OwnershipReportCategories({
         const chosen = all || selected.includes(category.value);
         return <button type="button" key={category.value} className={styles.card}
           data-category={category.value} aria-pressed={chosen} onClick={() => onChange(toggleCostCategory(selected, category.value))}>
-          <span className={chosen && !categoryColours ? styles.selectionCheck : styles.icon} aria-hidden="true">
+          <span className={chosen ? styles.selectionCheck : styles.icon} aria-hidden="true">
             {chosen ? '✓' : <RecurringFieldIcon kind={category.icon} />}
           </span>
           <span className={styles.copy}>

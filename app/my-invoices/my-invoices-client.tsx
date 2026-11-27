@@ -1,6 +1,6 @@
 'use client';
 import { IconBase, ChevronDownIcon, ManageCostIcon, LinkedAssetIcon, ReportFileIcon } from './LedgerIcons';
-import { costCategories, categorySummary, appendReportCategories } from '../../lib/cost-categories';
+import { costCategories, costCategory, categorySummary, appendReportCategories } from '../../lib/cost-categories';
 import categoryStyles from './cost-categories.module.css';
 import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
@@ -63,7 +63,7 @@ import costDetailStyles from '../../components/CostDetailIcon.module.css';
 import accountStyles from '../account/page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
 
-type FlowMode = 'category' | 'asset-first' | 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'recurring' | null;
+type FlowMode = 'category' | 'form-category' | 'asset-first' | 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'recurring' | null;
 const CostLedgerFuelEditor = dynamic(() => import('../fuel/fuel-client'), { ssr: false });
 
 type InvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
@@ -1361,6 +1361,9 @@ export default function MyInvoicesClient({
     if (!recurringBudget.registerId) return budgetAssets;
     return budgetAssets.filter(asset => asset.registerId === recurringBudget.registerId);
   }, [recurringBudget, assets, budgetAssets]);
+  const currentCategory = costCategory(selectedCategory);
+  const changingCategory = flow === 'form-category';
+  const categoryPickerOpen = flow === 'category' || changingCategory;
   const budgetCategories = recurringBudget?.categories;
   const categoryOptions = budgetCategories?.length && !budgetCategories.includes('all')
     ? costCategories.filter(category => budgetCategories.includes(category.value))
@@ -1581,7 +1584,7 @@ export default function MyInvoicesClient({
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
 
-  const modalOpen = Boolean(fuelCostInvoiceId) || flow === 'category' || sourceChoiceOpen
+  const modalOpen = Boolean(fuelCostInvoiceId) || categoryPickerOpen || sourceChoiceOpen
     || assetPickerOpen
     || flow === 'upload'
     || formOpen
@@ -1789,7 +1792,7 @@ export default function MyInvoicesClient({
   }, [budgetDeleteCandidate, budgetDeletingId]);
 
   useEffect(() => {
-    if ((!recurringOpen && flow !== 'category') || recurringAssetPickerOpen) return undefined;
+    if ((!recurringOpen && !categoryPickerOpen) || recurringAssetPickerOpen) return undefined;
     const focusFrame = window.requestAnimationFrame(() => {
       recurringWizardBodyRef.current?.scrollTo({ top: 0, left: 0 });
       const scopeTarget = recurringScopeTriggerRef.current;
@@ -1802,7 +1805,8 @@ export default function MyInvoicesClient({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape' && !isSaving) {
         event.preventDefault();
-        finishModal();
+        if (changingCategory) returnToCostForm();
+        else finishModal();
         return;
       }
       if (event.key !== 'Tab') return;
@@ -2443,8 +2447,13 @@ export default function MyInvoicesClient({
     setFlow('category');
   }
 
+  function returnToCostForm() {
+    setFlow(draft.source === 'automatic' ? 'review' : 'manual-form');
+  }
+
   function chooseCostCategory(category: string) {
     setSelectedCategory(category);
+    if (changingCategory) { returnToCostForm(); return; }
     if (captureMethod === 'recurring') startRecurringCommitment(category);
     else startFlow(captureMethod);
   }
@@ -3977,19 +3986,21 @@ export default function MyInvoicesClient({
         </div>
       ) : null}
 
-      {flow === 'category' ? (
+      {categoryPickerOpen ? (
         <div className={`${styles.modalBackdrop} ${downloadStyles.backdrop}`} data-website-overlay>
           <section className={`${downloadStyles.dialog} ${categoryStyles.dialog}`} data-download-dialog="true" role="dialog" aria-modal="true" aria-labelledby="cost-category-title">
             <header data-download-header="true">
               <div><h2 id="cost-category-title" ref={recurringWizardStepHeadingRef} tabIndex={-1}>Choose a cost category</h2>
                 {recurringBudget && <p>{recurringBudget.assetTitle}</p>}
               </div>
-              <button type="button" onClick={finishModal} aria-label="Close cost categories" data-modal-close="true">×</button>
+              <button type="button" onClick={changingCategory ? returnToCostForm : finishModal} aria-label="Close cost categories" data-modal-close="true">×</button>
             </header>
             <div className={categoryStyles.cards}>
-              {categoryOptions.map(category => (
-                <button key={category.value} type="button" className={categoryStyles.card} data-category={category.value} onClick={() => chooseCostCategory(category.value)}>
-                  <span className={categoryStyles.icon} aria-hidden="true"><RecurringFieldIcon kind={category.icon} /></span>
+              {(changingCategory ? costCategories : categoryOptions).map(category => (
+                <button key={category.value} type="button" className={categoryStyles.card} data-category={category.value} aria-pressed={changingCategory ? category.value === selectedCategory : undefined} onClick={() => chooseCostCategory(category.value)}>
+                  <span className={changingCategory && category.value === selectedCategory ? categoryStyles.selectionCheck : categoryStyles.icon} aria-hidden="true">
+                    {changingCategory && category.value === selectedCategory ? '✓' : <RecurringFieldIcon kind={category.icon} />}
+                  </span>
                   <span className={categoryStyles.copy}>
                     <strong>{'shortLabel' in category ? category.shortLabel : category.label}</strong>
                     <small>{category.subtitle}</small>
@@ -3997,7 +4008,7 @@ export default function MyInvoicesClient({
                 </button>
               ))}
             </div>
-            <footer data-download-footer="true"><button type="button" onClick={closeModal}>{recurringBudget ? 'Cancel' : 'Back'}</button></footer>
+            <footer data-download-footer="true"><button type="button" onClick={changingCategory ? returnToCostForm : closeModal}>{recurringBudget ? 'Cancel' : 'Back'}</button></footer>
           </section>
         </div>
       ) : null}
@@ -4742,7 +4753,15 @@ export default function MyInvoicesClient({
 
                 {!manualCostWizardOpen || manualCostWizardStep === 2 ? (
                   <>
-                    <FilterQuestion label="Cost category" value={selectedCategory} options={[...costCategories]} onChange={setSelectedCategory} />
+                    <button type="button" className={categoryStyles.card} data-category={selectedCategory}
+                      aria-haspopup="dialog" aria-label={`Change cost category: ${categorySummary([selectedCategory])}`}
+                      onClick={() => setFlow('form-category')}>
+                      <span className={categoryStyles.icon} aria-hidden="true"><RecurringFieldIcon kind={currentCategory?.icon ?? 'other'} /></span>
+                      <span className={categoryStyles.copy}>
+                        <strong>{categorySummary([selectedCategory])}</strong>
+                        <small>Change category</small>
+                      </span>
+                    </button>
                     <div className={styles.textAreaGrid}>
                   {(selectedCategory === 'service' || selectedCategory === 'repair' || Boolean(draft.maintenanceWorkDone || draft.repairWorkDone || draft.partsSupplied)) && <>
                   <label>
