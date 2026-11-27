@@ -1283,6 +1283,7 @@ export default function MyInvoicesClient({
     if (budgetsPage || !canReviewCaptureRequests) return;
     let active = true;
     loadAllocations().then(rows => {
+      if (!Array.isArray(rows)) throw new Error('Missing allocation list');
       if (active) { setPendingApprovals(rows); setAllocationStatus(''); }
     }).catch(() => { if (active) setAllocationStatus('Could not load imported costs.'); });
     return () => { active = false; };
@@ -3203,7 +3204,8 @@ export default function MyInvoicesClient({
             onChanged={async message => {
               setNotice({tone:'success', message});
               const [rows, data] = await Promise.all([loadAllocations(), fetchInvoiceData(activeFilters)]);
-              setPendingApprovals(rows);
+              if (Array.isArray(rows)) setPendingApprovals(rows);
+              else setAllocationStatus('Could not load imported costs.');
               applyInvoiceData(data);
               if (canManageBudgets) dispatchCostLedgerUpdated();
             }}
