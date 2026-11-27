@@ -59,6 +59,12 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    ).map(label=>label.textContent));
    assert.deepEqual(clipped,[]);
   }
+  const footerLayout=await page.$eval('[data-download-footer]',el=>{
+   const back=el.querySelector('button'),count=el.querySelector('[aria-live]');
+   return {left:back.getBoundingClientRect().left-el.getBoundingClientRect().left,weight:Number(getComputedStyle(count).fontWeight)};
+  });
+  assert(Math.abs(footerLayout.left)<2);
+  assert(footerLayout.weight>=700);
   await checkTypeLabelFit();
   await click('Next');
   await page.waitForFunction(()=>document.querySelector('[data-download-footer]')?.textContent.includes('Page 2'));
@@ -120,7 +126,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    await click('Insurance policy');
    await page.waitForSelector('input[type=file]');
   }
-  await click('Upload documents');await page.waitForSelector(search);
+  await click('Upload documents');await click('Related to an asset');await page.waitForSelector(search);
   await page.type(search,'SN-23');await page.click(row);
   await page.click('[data-asset-choice-action="primary"]');await chooseInsurance();
   await fs.writeFile('/tmp/document-picker-fixture.txt','Local test document');
@@ -128,6 +134,14 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await click('Next');await page.waitForSelector('[data-upload-slide="details"]');
   await click('Upload document');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
   assert.equal(uploads.length,1);assert.match(uploads[0],/tractor-23/);
+  await click('Upload documents');await click('Related to an asset');await page.waitForSelector(row);
+  await page.click(row);await click('Back');await click('General document');
+  await page.waitForSelector('#document-type-title');await click('Back');await click('General document');
+  await chooseInsurance();
+  await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');
+  await click('Next');await click('Upload document');
+  await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+  assert.equal(uploads.length,2);assert.match(uploads[1],/name="assetIds"\r\n\r\n\[\]/);
   // Asset cards use this same wizard, with a fixed link and no vault page underneath.
   for (const viewport of [{width:1440,height:900},{width:390,height:844}]) {
    uploads.length=0;failNextUpload=true;
