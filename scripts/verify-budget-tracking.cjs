@@ -49,6 +49,18 @@ async function main(){let server,browser;const created=[];try{
  await page.setViewport({width:1440,height:1000});await page.goto('http://localhost:3031/budget-validation',{waitUntil:'networkidle0',timeout:120000});await page.waitForSelector('article[data-status]');
  assert.equal(await page.$$eval('article[data-status]',e=>e.length),3);
  await page.screenshot({path:'/tmp/budget-desktop.png',fullPage:true});
+ await click('Filter');
+ await click('Toyota Hilux');
+ await page.click('[role="combobox"]');await page.click('[role="option"][id$="-1"]');
+ await click('Next');await page.click('[role="combobox"]');await page.click('[role="option"][id$="-3"]');await click('Apply filters');
+ assert.equal(await page.$$eval('article[data-status]',cards=>cards.length),1);
+ assert.match(await page.$eval('article[data-status]',e=>e.innerText),/Toyota Hilux/);
+ const filterButton='button[aria-haspopup="dialog"][data-tooltip^="Filter budgets"]';
+ assert.equal(await page.$eval(filterButton+' strong',e=>e.textContent),'3');
+ await page.click(filterButton);await click('All assets');await page.keyboard.press('Escape');
+ assert.equal(await page.$eval(filterButton+' strong',e=>e.textContent),'3');
+ await page.click(filterButton);await click('All assets');await page.click('[role="dialog"] button[class*="clear"]');
+ assert.equal(await page.$$eval('article[data-status]',cards=>cards.length),3);
  await click('Alerts (2)');assert.equal(await page.$$eval('article[data-status]',e=>e.length),2);await click('Clear filters');
  await page.type('input[aria-label="Search budgets"]','Toyota');await page.waitForFunction(()=>document.querySelectorAll('article[data-status]').length===1);await click('Clear filters');
  await page.click('[data-budget-trigger="budget-one"]');
