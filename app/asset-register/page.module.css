@@ -26440,9 +26440,10 @@ button.documentOpenLink {
 }
 
 .assetInsuranceClassificationIntro p {
+  font-weight: 650;
   margin: 0;
   max-width: 60rem;
-  color: var(--app-muted, #5c7168);
+  color: var(--app-text, #29483e);
   font-size: 0.84rem;
   line-height: 1.45;
 }

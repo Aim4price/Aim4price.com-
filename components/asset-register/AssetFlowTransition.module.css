@@ -51,3 +51,17 @@
   background: color-mix(in srgb, white 88%, var(--icon-colour)) !important;
   border-color: color-mix(in srgb, white 65%, var(--icon-colour)) !important;
 }
+
+/* Fit all eight types in the register wizard before its footer or viewport edge. */
+.typeGrid.typeGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)) !important;
+  gap: .65rem !important;
+}
+.typeGrid button[data-asset-kind] {
+  grid-template-columns: 2.3rem minmax(0, 1fr) !important;
+  min-height: 4.5rem !important;
+  padding: .7rem !important;
+  gap: .55rem !important;
+}
+.typeGrid [data-asset-kind] > span:first-child { width: 2.3rem !important; height: 2.3rem !important; }
+.typeGrid [data-asset-kind] small { white-space: nowrap; color: var(--app-text, #29483e) !important; }
