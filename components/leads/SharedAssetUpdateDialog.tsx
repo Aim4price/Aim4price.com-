@@ -9,7 +9,8 @@ import AssetActionIcon from '../asset-register/AssetActionIcon';
 import SharedAssetValueDialog from './SharedAssetValueDialog';
 import SharedAssetVatField from './SharedAssetVatField';
 import SharedAssetPaperwork from './SharedAssetPaperwork';
-import AssetDocumentUploadModal from '../documents/AssetDocumentUploadModal';
+import dynamic from 'next/dynamic';
+const DocumentUpload = dynamic(() => import('../../app/documents/documents-client').then(module => module.AssetDocumentUploadFlow));
 import styles from '../../app/asset-register/page.module.css';
 import account from '../../app/account/page.module.css';
 import refinements from '../../app/asset-register/asset-update-refinements.module.css';
@@ -39,7 +40,7 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
  useEffect(()=>{const controller=new AbortController();fetch(endpoint+'/details',{cache:'no-store',signal:controller.signal}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Could not load this asset.');setAsset(d.asset);if(!d.asset||!d.permissions)throw Error('Could not load asset details.');setPermissions(d.permissions);const next=draftFor(d.asset);baseline.current=next;setDraft(next);setSerial(d.asset.serialNumber||'');setReplacement(String(d.asset.replacementPriceExVat??''));setStatus('Saved automatically');}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return()=>controller.abort();},[endpoint,valueRefresh]);
  useEffect(()=>{if(!asset||!initialField||section!=='details')return;const target=(dialog.current?.querySelector<HTMLElement>(`[data-asset-detail-edit-target="${initialField}"] input`) || dialog.current?.querySelector<HTMLElement>(`[data-asset-detail-edit-target="${initialField}"] button`));target?.focus();target?.scrollIntoView({block:'nearest'});},[asset,initialField,section,dialog]);
  async function loadDocuments(){const r=await fetch(endpoint+'/documents',{cache:'no-store'}),d=await r.json();if(!r.ok)throw Error(d.error);setDocuments(d.documents);}
- useEffect(()=>{if(section==='documents'&&permissions.addDocuments)void loadDocuments().catch(e=>setError(e.message));},[section,permissions.addDocuments,endpoint]);
+ useEffect(()=>{if(section==='documents'&&permissions.updateDetails)void loadDocuments().catch(e=>setError(e.message));},[section,permissions.updateDetails,endpoint]);
  // Only the granted details are autosaved. Serial and price retain their existing approval flow.
  async function saveDetails(next:Draft) {
   if(!baseline.current||saving.current)return;
@@ -78,7 +79,7 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
  const useCompactDialog = isPaperworkEditor || section === 'documents';
  const shell=`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${account.modalTheme} ${styles.assetUpdateModal} ${section==='menu'?styles.assetUpdateMenuModal:''} ${local.shell} ${useCompactDialog ? refinements.pagedDialog : ''}`;
  const canDetails=Object.values(permissions).some(Boolean);
- const cards=[{key:'details',label:'Details',copy:'Edit asset details and usage.',icon:'details',allowed:canDetails},{key:'paperwork',label:'Paperwork',copy:'Manage asset paperwork.',icon:'documents',allowed:permissions.updateDetails},{key:'documents',label:'Documents',copy:'Manage documents and photos.',icon:'addPhotos',allowed:permissions.addDocuments||permissions.addPhotos}] as const;
+ const cards=[{key:'details',label:'Details',copy:'Edit asset details and usage.',icon:'details',allowed:canDetails},{key:'paperwork',label:'Paperwork',copy:'Manage asset paperwork.',icon:'documents',allowed:permissions.updateDetails},{key:'documents',label:'Documents',copy:'Manage documents and photos.',icon:'addPhotos',allowed:permissions.updateDetails||permissions.addDocuments||permissions.addPhotos}] as const;
  return <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
   <div className={styles.modalBackdrop} data-website-overlay onClick={()=>{if(!changed)close();}}/>
   <section ref={dialog} tabIndex={-1} className={shell} role="dialog" aria-modal="true" aria-label={section==='menu'?'Update asset':title}>
@@ -132,6 +133,6 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
    </div>
    <footer className={`${styles.assetUpdateFooter} ${local.footer}`}><span className={styles.assetUpdateSaveText} role="status">{section==='paperwork'?'Click Done to save paperwork changes.':section==='details'&&correctionNotice?correctionNotice:section==='details'&&asset&&Number(replacement)!==Number(asset.replacementPriceExVat??0)?'Replacement price not sent':section==='details'&&asset&&serial!==(asset.serialNumber||'')?'Serial number not saved':status}</span>{error&&changed&&draft&&<button className={styles.secondaryButton} disabled={busy} onClick={()=>void saveDetails(draft)}>Retry save</button>}{isPaperworkEditor ? <div ref={setPaperworkFooter} /> : <button type="button" className={section==='menu'?styles.secondaryButton:styles.primaryButton} disabled={busy||changed||paperDirty} onClick={close}>{section==='menu'?'Exit':'Done'}</button>}</footer>
   </section>
-  {upload&&asset&&<AssetDocumentUploadModal accountDesign excludeInvoices assetId={asset.id} assetTitle={title} uploadEndpoint={endpoint+'/documents'} onClose={()=>setUpload(false)} onUploaded={async(_,outcome)=>{await loadDocuments();saved();if(outcome.complete)setUpload(false);}}/>}
+  {upload&&asset&&<DocumentUpload assetId={asset.id} assetTitle={title} endpoint={endpoint+'/documents'} onClose={()=>setUpload(false)} onUploaded={async(_,outcome)=>{if(permissions.updateDetails)await loadDocuments();saved();if(outcome.complete)setUpload(false);}}/>}
  </div>;
 }

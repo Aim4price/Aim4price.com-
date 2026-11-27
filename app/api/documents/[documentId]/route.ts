@@ -19,7 +19,7 @@ type RouteContext = {
 };
 
 async function requireAssetRegisterUser() {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowDealerApp: true, allowBusinessWorkspace: true });
   if (!session?.user?.id) {
     return {
       ok: false as const,
@@ -31,7 +31,7 @@ async function requireAssetRegisterUser() {
     return {
       ok: false as const,
       response: NextResponse.json(
-        { ok: false, error: 'The Document Vault is available to Owner accounts and authorised Dealer inventory staff.' },
+        { ok: false, error: 'Your account does not have Document Vault access.' },
         { status: 403 },
       ),
     };

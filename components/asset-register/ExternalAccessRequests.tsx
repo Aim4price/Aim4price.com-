@@ -31,6 +31,7 @@ export default function ExternalAccessRequests({token}: {token:string}) {
   if(!p.updateDetails&&p.condition)updates.push(['condition','Update condition']);
   if(p.serialNumber)updates.push(['serialNumber',p.directUpdates?'Update serial number':'Suggest a serial number change']);
   if(p.replacementPrice)updates.push(['replacementPrice',p.directUpdates?'Update replacement price':'Suggest a replacement price change']);
+  if(p.addDocuments)updates.push(['addDocuments','Add documents']);
   if(p.addPhotos)updates.push(['addPhotos','Add photos']);
   if(p.addCosts)updates.push(['addCosts','Add costs and supporting documents']);
   if(p.addMaintenance)updates.push(['addMaintenance','Record completed maintenance']);

@@ -2,7 +2,9 @@ import { DesktopWorkspaceProvider } from '../../components/DesktopWorkspace';
 import { getDesktopScope, desktopWorkspace } from '../../lib/desktop-workspace';
 import { redirect } from 'next/navigation';
 import { getAccountProfile } from '../../lib/account-profile';
-import { requireActivePageAccess } from '../../lib/account-access';
+import { getServerSession } from '../../lib/auth-session';
+import { getAssetRegisterAccountAccess } from '../../lib/asset-register-account-access';
+import { workspaceRole } from '../../lib/workspace-navigation';
 import { normalizeInternalReturnPath, readSingleSearchParam } from '../../lib/internal-return-path';
 import DocumentsClient from './documents-client';
 
@@ -20,19 +22,15 @@ type DocumentsPageProps = {
 export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
   const desktop = await getDesktopScope(searchParams?.desktopMembershipId);
   if (desktop) return <DesktopWorkspaceProvider workspace={desktopWorkspace(desktop)}><DocumentsClient initialAssetId={readSingleSearchParam(searchParams?.assetId)} /></DesktopWorkspaceProvider>;
-  const { session } = await requireActivePageAccess();
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
-
-  if (profile.accountType !== 'owner') {
-    redirect('/account');
-  }
+  const session = await getServerSession({ allowBusinessWorkspace: true });
+  if (!session?.user) redirect('/auth?returnTo=%2Fdocuments#login');
+  if (!await getAssetRegisterAccountAccess(session)) redirect('/account');
+  const profile = await getAccountProfile(session.user);
+  const role = workspaceRole(profile.accountType, profile.accountSubtype);
+  if (role !== 'owner' && role !== 'business') redirect('/account');
 
   const initialAssetId = readSingleSearchParam(searchParams?.assetId).slice(0, 120);
   const initialReturnTo = normalizeInternalReturnPath(searchParams?.returnTo);
 
-  return <DocumentsClient initialAssetId={initialAssetId} initialReturnTo={initialReturnTo} />;
+  return <DocumentsClient initialAssetId={initialAssetId} businessVault={role === 'business'} initialReturnTo={initialReturnTo} />;
 }

@@ -37,12 +37,12 @@ const [
   readFile(new URL('../lib/account-deletion.ts', import.meta.url), 'utf8'),
 ]);
 
-test('Document Vault page stays owner-only while asset document APIs support authorised Dealer inventory staff', () => {
-  assert.match(page, /requireActivePageAccess\(\)/);
-  assert.match(page, /profile\.accountType !== 'owner'/);
+test('Document Vault admits Owner and Business workspaces and preserves inventory staff checks', () => {
+  assert.match(page, /getAssetRegisterAccountAccess\(session\)/);
+  assert.match(page, /role !== 'owner' && role !== 'business'/);
 
   for (const route of [collectionRoute, itemRoute, downloadRoute]) {
-    assert.match(route, /getServerSession\(\{ allowDealerApp: true \}\)/);
+    assert.match(route, /getServerSession\(\{ allowDealerApp: true, allowBusinessWorkspace: true \}\)/);
     assert.match(route, /getAssetRegisterAccountAccess\(session\)/);
   }
 });
@@ -223,7 +223,7 @@ test('Documents immediately precedes Account in owner navigation and remains in 
 
   assert.match(header, /\| 'documents'/);
   assert.match(header, /case 'documents':/);
-  assert.match(header, /href: '\/documents', label: 'Documents', accountTypes: \['owner'\]/);
+  assert.match(header, /href: '\/documents', label: 'Documents', accountTypes: \['owner','dealer','business'\]/);
   assert.match(ownerNavigation, /key: 'documents', href: '\/documents', label: 'Documents' \},\s*\{ key: 'account', href: '\/account', label: 'Account' \}/);
   assert.doesNotMatch(accountMenus, /href: '\/', label: 'Home'/);
   assert.doesNotMatch(footer, /href: '\/documents', label: 'Documents'/);
@@ -328,7 +328,7 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /className=\{styles\.assetSelectionHeader\}/);
   assert.match(client, /<input\s+className=\{styles\.assetSelectionSearch\}\s+type="search"/);
   assert.match(client, /placeholder="Search assets\.\.\."/);
-  assert.match(client, /<p id="asset-picker-description">Select the saved assets/);
+  assert.match(client, /<p id="asset-picker-description">.*Select the saved assets/);
   assert.match(client, /Select all \$\{filteredAssets.length\} matches/);
   assert.match(client, />\s*Clear\s*</);
   assert.match(client, /filteredAssets\.map/);

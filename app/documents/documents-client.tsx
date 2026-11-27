@@ -116,7 +116,7 @@ type VaultResponse = {
 type VaultView = 'documents' | 'recycle-bin';
 type ModalMode = 'upload' | 'edit' | 'filter';
 type VaultFilter = { assetIds: string[]; documentType: DocumentType | null };
-type DocumentSlide = 'assets' | 'files' | 'details' | 'scope';
+type DocumentSlide = 'assets' | 'files' | 'details' | 'scope' | 'destination' | 'clients';
 type Notice = { tone: 'success' | 'error'; message: string };
 type SummaryNavigation = { hasOverflow: boolean; atStart: boolean; atEnd: boolean };
 type IconName =
@@ -351,16 +351,20 @@ async function readVaultResponse(response: Response, fallback: string): Promise<
   }
 }
 
+type ClientAsset = { id: string; title: string; client: string; endpoint: string };
+
 type AssetUploadContext = {
+  endpoint?: string;
   asset: AssetLink;
   onClose: () => void;
   onUploaded: (documents: VaultDocument[], outcome: { complete: boolean; totalUploaded: number }) => void | Promise<void>;
 };
 
 /** The vault wizard, opened in place from an asset card with its link fixed. */
-export function AssetDocumentUploadFlow({ assetId, assetTitle, onClose, onUploaded }: {
+export function AssetDocumentUploadFlow({ assetId, assetTitle, endpoint, onClose, onUploaded }: {
   assetId: string;
   assetTitle: string;
+  endpoint?: string;
   onClose: AssetUploadContext['onClose'];
   onUploaded: AssetUploadContext['onUploaded'];
 }) {
@@ -371,20 +375,24 @@ export function AssetDocumentUploadFlow({ assetId, assetTitle, onClose, onUpload
     return () => trigger?.focus({ preventScroll: true });
   }, []);
   if (!mounted) return null;
-  return <DocumentsClient initialAssetId={assetId} uploadContext={{ asset: { id: assetId, title: assetTitle, meta: '' }, onClose, onUploaded }} />;
+  return <DocumentsClient initialAssetId={assetId} uploadContext={{ asset: { id: assetId, title: assetTitle, meta: '' }, endpoint, onClose, onUploaded }} />;
 }
 
 type DocumentsClientProps = {
+  businessVault?: boolean;
   initialAssetId?: string;
   initialReturnTo?: string;
   uploadContext?: AssetUploadContext;
 };
 
-export default function DocumentsClient({ initialAssetId = '', initialReturnTo = '', uploadContext }: DocumentsClientProps) {
+export default function DocumentsClient({ businessVault = false, initialAssetId = '', initialReturnTo = '', uploadContext }: DocumentsClientProps) {
   const desktop = useDesktopControls();
   const [documents, setDocuments] = useState<VaultDocument[]>([]);
   const [summary, setSummary] = useState<VaultSummary>(EMPTY_SUMMARY);
   const [assets, setAssets] = useState<AssetLink[]>([]);
+  const [clientAsset, setClientAsset] = useState<ClientAsset | null>(null);
+  const [clientOptions, setClientOptions] = useState<ClientAsset[]>([]);
+  const [clientLoading, setClientLoading] = useState(false);
   const [openDocumentId, setOpenDocumentId] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<AssetLink | null>(uploadContext?.asset ?? null);
   const [view, setView] = useState<VaultView>('documents');
@@ -409,7 +417,25 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [assetSearch, setAssetSearch] = useState('');
   const [documentTypeSearch, setDocumentTypeSearch] = useState('');
   const [showDocumentTypeOptions, setShowDocumentTypeOptions] = useState(false);
-  const showAssetPicker = Boolean(modalMode && !showDocumentTypeOptions && uploadStep === 'assets' && !(modalMode === 'upload' && initialAssetId));
+  const choosingClient = modalMode === 'upload' && uploadStep === 'clients';
+  const showAssetPicker = choosingClient && !showDocumentTypeOptions || Boolean(modalMode && !showDocumentTypeOptions && uploadStep === 'assets' && !(modalMode === 'upload' && initialAssetId));
+  useEffect(() => {
+    if (!choosingClient) return;
+    const controller = new AbortController();
+    setClientLoading(true);
+    setClientOptions([]);
+    fetch('/api/documents/client-assets', { cache: 'no-store', signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error('Could not load client assets.');
+        const data = await response.json();
+        if (!controller.signal.aborted) setClientOptions(data.assets);
+      })
+      .catch(() => { if (!controller.signal.aborted) setModalNotice({ tone: 'error', message: 'Could not load client assets. Go back and try again.' }); })
+      .finally(() => { if (!controller.signal.aborted) setClientLoading(false); });
+    return () => controller.abort();
+  }, [choosingClient]);
+  const visibleClients = clientOptions.filter(asset => (asset.client + ' ' + asset.title).toLowerCase().includes(assetSearch.trim().toLowerCase()));
+  const clientEndpoint = modalMode === 'upload' ? uploadContext?.endpoint ?? clientAsset?.endpoint : undefined;
   const [summaryNavigation, setSummaryNavigation] = useState<SummaryNavigation>({
     hasOverflow: false,
     atStart: true,
@@ -618,11 +644,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [typeGroup, setTypeGroup] = useState<DocumentCategory | null>(null);
   const typeScope = draft.assetIds.length ? 'asset' : 'general';
   const firstAssetId = draft.assetIds[0];
-  const contextAsset = selectedAsset?.id === firstAssetId ? selectedAsset
-    : assets.find(asset => asset.id === firstAssetId) ?? editingDocument?.assetLinks.find(asset => asset.id === firstAssetId);
+  const contextAsset = clientAsset ?? (selectedAsset?.id === firstAssetId ? selectedAsset
+    : assets.find(asset => asset.id === firstAssetId) ?? editingDocument?.assetLinks.find(asset => asset.id === firstAssetId));
   const assetSubheader = contextAsset && (
     <p className={styles.assetSubheader}>
-      <strong>{contextAsset.title}</strong>
+      <strong>{clientAsset && `${clientAsset.client} · `}{contextAsset.title}</strong>
       {draft.assetIds.length > 1 && ` · +${draft.assetIds.length - 1} more`}
     </p>
   );
@@ -634,6 +660,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const retainedEditType = modalMode === 'edit' && Boolean(editingDocument?.assetLinks.length) === Boolean(draft.assetIds.length)
     ? editingDocument?.documentType : null;
   const filteredDocumentTypes = ACCOUNT_DOCUMENT_TYPES.filter(option => {
+    if (clientEndpoint && option.value === 'invoice-proof-of-purchase') return false;
     const currentEditType = option.value === retainedEditType;
     if (!currentEditType && option.scope !== 'both' && option.scope !== typeScope) return false;
     if (typeGroup && option.category !== typeGroup) return false;
@@ -682,6 +709,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     if (!desktop.allow('uploadDocuments')) return;
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setEditingDocument(null);
+    setClientAsset(null);
     uploadKeys.current.clear();
     totalUploadedRef.current = 0;
     setDocumentExpires(false);
@@ -697,7 +725,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setDocumentTypeSearch('');
     setShowDocumentTypeOptions(false);
     setModalNotice(null);
-    setUploadStep(initialAssetId || desktop.workspace ? 'assets' : 'scope');
+    setUploadStep(initialAssetId || desktop.workspace ? 'assets' : businessVault ? 'destination' : 'scope');
     setTypeGroup(null);
     setModalMode('upload');
     setNotice(null);
@@ -706,6 +734,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   function openEditModal(document: VaultDocument) {
     if (desktop.workspace) { desktop.unavailable(); return; }
     returnFocusRef.current = window.document.activeElement instanceof HTMLElement ? window.document.activeElement : null;
+    setClientAsset(null);
     setEditingDocument(document);
     setDocumentExpires(Boolean(document.expiryDate));
     setDraft({
@@ -734,6 +763,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     if (busyRef.current || loading || loadFailed || !hasDocumentsInView) return;
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setEditingDocument(null);
+    setClientAsset(null);
     setDraft({ ...createEmptyDraft(), assetIds: filter?.assetIds ?? [], documentType: filter?.documentType ?? '' });
     setAssetSearch('');
     setDocumentTypeSearch('');
@@ -949,8 +979,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setModalNotice(null);
     if (uploadStep === 'details') setUploadStep(modalMode === 'edit' ? 'scope' : 'files');
     else if (uploadStep === 'files') {
-      setUploadStep(draft.assetIds.length ? 'assets' : 'scope');
+      setUploadStep(clientAsset ? 'clients' : draft.assetIds.length ? 'assets' : 'scope');
       setShowDocumentTypeOptions(true);
+    } else if (uploadStep === 'clients' || (businessVault && uploadStep === 'scope')) {
+      setClientAsset(null);
+      updateDraft('assetIds', []);
+      setAssetSearch('');
+      setUploadStep('destination');
     } else if (modalMode !== 'upload' || (!initialAssetId && !desktop.workspace)) setUploadStep('scope');
     else closeModal();
   }
@@ -1005,11 +1040,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             formData.set('notes', draft.notes.trim());
             formData.set('expiryDate', draft.expiryDate);
             formData.set('assetIds', JSON.stringify(uploadContext ? [uploadContext.asset.id] : draft.assetIds));
-            const response = await desktop.request('/api/documents', { method: 'POST', body: formData });
+            const response = await desktop.request(clientEndpoint ?? '/api/documents', { method: 'POST', body: formData });
             const data = await readVaultResponse(response, `${file.name} could not be saved.`);
             if (!response.ok || !data.ok) throw new Error(data.error || `${file.name} could not be saved.`);
             uploadedCount += 1;
-            if (data.document) uploadedDocuments.push(data.document);
+            if (data.document && !clientEndpoint) uploadedDocuments.push(data.document);
           } catch (error) {
             failures.push({
               file,
@@ -1057,7 +1092,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         if (refreshSucceeded) {
           setNotice({
             tone: 'success',
-            message: `${uploadedCount} ${uploadedCount === 1 ? 'document' : 'documents'} added to your vault.`,
+            message: clientAsset ? `Saved to ${clientAsset.client} · ${clientAsset.title}.` : `${uploadedCount} ${uploadedCount === 1 ? 'document' : 'documents'} added to your vault.`,
           });
         }
       } else {
@@ -1482,7 +1517,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <section ref={modalRef} className={`${styles.modal} ${styles.accountDocumentModal} ${accountStyles.modalTheme} ${wizardStyles.dialog}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
-                <h2 id="document-modal-title">{uploadStep === 'scope' ? (modalMode === 'filter' ? 'Filter documents' : modalMode === 'edit' ? 'Edit document' : 'Upload document') : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
+                <h2 id="document-modal-title">{uploadStep === 'destination' ? 'Upload document' : uploadStep === 'scope' ? (modalMode === 'filter' ? 'Filter documents' : modalMode === 'edit' ? 'Edit document' : 'Upload document') : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
                 {(uploadStep === 'files' || uploadStep === 'details' || (uploadStep === 'scope' && modalMode === 'edit')) && assetSubheader}
                 {modalMode === 'edit' && uploadStep === 'scope' && !draft.assetIds.length && <p>General document</p>}
               </div>
@@ -1501,6 +1536,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
                 <div className={`${styles.uploadWizardPanel} ${wizardStyles.panel}`}>
                 <fieldset className={`${styles.modalFields} ${styles.uploadWizardFields}`} disabled={busy}>
+                {uploadStep === 'destination' && <div className={styles.scopeChoices}>
+                  <button type="button" className={categoryStyles.card} onClick={() => setUploadStep('scope')}>
+                    <span className={categoryStyles.icon}><Icon name="folder" /></span><strong>My business</strong>
+                  </button>
+                  <button type="button" className={categoryStyles.card} data-category="licence" onClick={() => { setAssetSearch(''); setUploadStep('clients'); }}>
+                    <span className={categoryStyles.icon}><Icon name="link" /></span><strong>Client asset</strong>
+                  </button>
+                </div>}
                 {uploadStep === 'scope' && <div className={styles.scopeChoices}>
                   <button type="button" className={categoryStyles.card} data-category="licence" onClick={() => setUploadStep('assets')}>
                     <span className={categoryStyles.icon}><Icon name="link" /></span><strong>{modalMode !== 'edit' ? 'Related to an asset' : draft.assetIds.length ? 'Change asset' : 'Link to an asset'}</strong>
@@ -1658,7 +1701,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   }}>Turn filter off</button>
                 </footer>
               )}
-              {(uploadStep !== 'scope' || modalMode === 'edit') && <footer className={`${styles.modalFooter} ${wizardStyles.footer}`}>
+              {businessVault && modalMode === 'upload' && uploadStep === 'scope' && <footer className={styles.modalFooter}>
+                <button type="button" className={styles.cancelButton} onClick={returnToPreviousUploadStep}>Back</button>
+              </footer>}
+              {uploadStep !== 'destination' && (uploadStep !== 'scope' || modalMode === 'edit') && <footer className={`${styles.modalFooter} ${wizardStyles.footer}`}>
                 <span className={styles.srOnly} role="status" aria-live="polite">
                   {uploadProgress ? `Uploading document ${uploadProgress.current} of ${uploadProgress.total}.` : ''}
                 </span>
@@ -1746,8 +1792,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           >
             <header className={styles.assetSelectionHeader} data-asset-choice-header="true">
               <div>
-                <h2 id="asset-picker-title">Choose assets</h2>
-                <p id="asset-picker-description">Select the saved assets these documents belong to.</p>
+                <h2 id="asset-picker-title">{choosingClient ? 'Choose client asset' : 'Choose assets'}</h2>
+                <p id="asset-picker-description">{choosingClient ? 'Choose where to save the document.' : 'Select the saved assets these documents belong to.'}</p>
               </div>
               <button type="button" onClick={closeModal} disabled={busy} aria-label="Close asset chooser" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
@@ -1766,17 +1812,29 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   aria-label="Search assets"
                   data-modal-initial-focus="true"
                 />
-                <div className={styles.assetSelectionToolbarActions}>
+                {!choosingClient && <div className={styles.assetSelectionToolbarActions}>
                   <button type="button" className={styles.cancelButton} onClick={selectAllFilteredAssets} disabled={busy || !filteredAssets.length || allFilteredAssetsSelected}>
                     {assetSearch.trim() ? `Select all ${filteredAssets.length} matches` : `Select all ${assets.length}`}
                   </button>
                   <button type="button" className={styles.cancelButton} onClick={clearSelectedAssets} disabled={busy || !draft.assetIds.length}>
                     Clear
                   </button>
-                </div>
+                </div>}
               </div>
 
-              {showAssetPicker && assets.length ? (
+              {choosingClient ? <div className={styles.assetSelectionList} data-asset-choice-list="true">
+                {visibleClients.map(option => <button type="button" key={option.endpoint} className={styles.assetSelectionRow} data-asset-choice-row="true" onClick={() => {
+                  setClientAsset(option);
+                  updateDraft('assetIds', [option.id]);
+                  setTypeGroup(null);
+                  setDocumentTypeSearch('');
+                  setShowDocumentTypeOptions(true);
+                }}>
+                  <span className={styles.assetSelectionCopy}><strong>{option.title}</strong><small>{option.client}</small></span>
+                  <AssetChooseIcon selected={false} />
+                </button>)}
+                {!visibleClients.length && <p className={styles.assetSelectionEmpty}>{clientLoading ? 'Loading client assets…' : assetSearch ? 'No matching assets.' : 'No client has granted document upload access.'}</p>}
+              </div> : showAssetPicker && assets.length ? (
                 <div className={styles.assetSelectionList} data-asset-choice-list="true">
                   {filteredAssets.length ? filteredAssets.map((asset) => {
                     const checked = draft.assetIds.includes(asset.id);
@@ -1809,16 +1867,16 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
             <footer className={styles.assetSelectionFooter} data-asset-choice-footer="true">
               <span role="status" aria-live="polite">
-                {draft.assetIds.length
+                {choosingClient ? '' : draft.assetIds.length
                   ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset selected' : 'assets selected'}`
                   : 'Account-level document'}
               </span>
               <button type="button" className={styles.cancelButton} disabled={busy} onClick={returnToPreviousUploadStep}>
                 {modalMode === 'upload' && desktop.workspace ? 'Cancel' : <><Icon name="chevron-left" /> Back</>}
               </button>
-              <button type="submit" className={styles.uploadButton} data-asset-choice-action="primary" disabled={busy}>
+              {!choosingClient && <button type="submit" className={styles.uploadButton} data-asset-choice-action="primary" disabled={busy}>
                 {documentActionLabel()}
-              </button>
+              </button>}
             </footer>
           </form>
         </div>

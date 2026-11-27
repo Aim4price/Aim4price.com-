@@ -38,7 +38,7 @@ test('each personal workspace has four ordered header links and role-specific ca
 test('both Business tiers keep the same inventory with their own inbox and personal tools', () => {
   const free = nav.workspaceCards('business',true,nav.receivedAssetsHref('business','free'));
   const paid = nav.workspaceCards('business',false,nav.receivedAssetsHref('dealer','desktop'));
-  assert.deepEqual(paid.map(card=>card.key), ['shared','value','marketplace','discovery','register','registers','parts','tracking','businessCosts','showroom','template','advert']);
+  assert.deepEqual(paid.map(card=>card.key), ['shared','value','marketplace','discovery','register','registers','parts','tracking','businessCosts','documents','showroom','template','advert']);
   assert.deepEqual(free.map(card=>card.key),paid.map(card=>card.key));
   assert.equal(free.find(card=>card.key==='shared').href,'/business');
   assert.equal(paid.find(card=>card.key==='shared').href,'/leads');

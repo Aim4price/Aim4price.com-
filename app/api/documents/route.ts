@@ -37,20 +37,21 @@ async function requireAssetRegisterUser(request: Request) {
     if (!resolved.ok) return resolved;
     return {ok:true as const,userId:team.grant.ownerId,team,workspace:resolved.context};
   }
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowDealerApp: true, allowBusinessWorkspace: true });
   if (!session?.user?.id) return { ok: false as const, response: unauthorized() };
 
-  if (!await getAssetRegisterAccountAccess(session)) {
+  const registerAccess = await getAssetRegisterAccountAccess(session);
+  if (!registerAccess) {
     return {
       ok: false as const,
       response: NextResponse.json(
-        { ok: false, error: 'The Document Vault is available to Owner accounts and authorised Dealer inventory staff.' },
+        { ok: false, error: 'Your account does not have Document Vault access.' },
         { status: 403 },
       ),
     };
   }
 
-  return { ok: true as const, userId: session.user.id, team:undefined, workspace:undefined };
+  return { ok: true as const, userId: session.user.id, metered: registerAccess.profile.meteredBusiness, team:undefined, workspace:undefined };
 }
 
 function isFile(value: FormDataEntryValue | null): value is File {
@@ -71,6 +72,7 @@ function parseAssetIds(value: FormDataEntryValue | null): string[] {
 function errorResponse(error: unknown, fallback: string) {
   const message = error instanceof Error ? error.message : '';
 
+  if (message === 'Your monthly Business credits have been used.') return NextResponse.json({ ok:false,error:message },{ status:402 });
   if (message === 'DOCUMENT_ASSET_NOT_FOUND') {
     return NextResponse.json({ ok: false, error: 'One of the selected assets could not be found.' }, { status: 404 });
   }
@@ -213,6 +215,8 @@ export async function POST(request: NextRequest) {
     }, owner.team ? {
       before: async client => { for (const id of [...assetIds].sort()) await lockTeamScope(client,owner.team!,id,'uploadDocuments'); },
       after: async (client,documentId) => { await auditTeam(client,owner.team!.actor,owner.team!.grant,'Document uploaded',assetIds[0],{documentId}); },
+    } : owner.metered ? {
+      after: async (client,id) => { await (await import('../../../lib/business-credits')).spendBusinessCredit(client,owner.userId,'Uploaded a document','vault-upload:'+id); },
     } : undefined);
     savedUploadId = '';
     if (owner.team) return NextResponse.json({ok:true,message:'Document uploaded. Its viewing access is controlled by the account holder.'},{status:201});
