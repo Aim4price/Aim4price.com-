@@ -400,9 +400,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [filePickerDragging, setFilePickerDragging] = useState(false);
-  const [assetPage, setAssetPage] = useState(1);
-  const [assetsPerPage, setAssetsPerPage] = useState(2);
-  const assetListRef = useRef<HTMLDivElement | null>(null);
   const [assetSearch, setAssetSearch] = useState('');
   const [documentTypeSearch, setDocumentTypeSearch] = useState('');
   const [showDocumentTypeOptions, setShowDocumentTypeOptions] = useState(false);
@@ -602,41 +599,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     ].join(' ').toLowerCase().includes(needle));
   }, [assetSearch, assets]);
 
-  const assetPageCount = Math.max(1, Math.ceil(filteredAssets.length / assetsPerPage));
-  const currentAssetPage = Math.min(assetPage, assetPageCount);
-  const firstAsset = (currentAssetPage - 1) * assetsPerPage;
-  const visibleAssets = filteredAssets.slice(firstAsset, firstAsset + assetsPerPage);
-
-  useEffect(() => {
-    const list = assetListRef.current;
-    if (!showAssetPicker || !list) return;
-    const measure = () => {
-      const style = getComputedStyle(list);
-      const columns = style.gridTemplateColumns.split(' ').length;
-      const gap = parseFloat(style.rowGap) || 0;
-      const height = list.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-      // Reserve room for a title, usage, category and serial number on each row.
-      const rows = Math.max(1, Math.min(3, Math.floor((height + gap) / (10 * rem + gap))));
-      setAssetsPerPage(columns * rows);
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(list);
-    return () => observer.disconnect();
-  }, [showAssetPicker, assets.length]);
-
-  // Wrapped names and serial numbers can require more space than a typical asset.
-  useEffect(() => {
-    const list = assetListRef.current;
-    if (!showAssetPicker || !list || list.scrollHeight <= list.clientHeight + 1) return;
-    const columns = getComputedStyle(list).gridTemplateColumns.split(' ').length;
-    if (assetsPerPage <= columns) return;
-    const smallerPage = Math.max(columns, assetsPerPage - columns);
-    setAssetsPerPage(smallerPage);
-    setAssetPage(Math.floor(firstAsset / smallerPage) + 1);
-  }, [showAssetPicker, filteredAssets, assetsPerPage, firstAsset]);
-
   const allFilteredAssetsSelected = filteredAssets.length > 0
     && filteredAssets.every((asset) => draft.assetIds.includes(asset.id));
 
@@ -714,7 +676,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setFilePage(0);
     setUploadProgress(null);
     setFilePickerDragging(false);
-    setAssetPage(1);
     setAssetSearch('');
     setDocumentTypeSearch('');
     setShowDocumentTypeOptions(false);
@@ -742,7 +703,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setFilePage(0);
     setUploadProgress(null);
     setFilePickerDragging(false);
-    setAssetPage(1);
     setAssetSearch('');
     setDocumentTypeSearch(getAccountDocumentTypeLabel(document.documentType) ?? '');
     setShowDocumentTypeOptions(false);
@@ -948,7 +908,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       setUploadStep('details');
     } else if (validateDocumentDetails()) {
       setAssetSearch('');
-      setAssetPage(1);
       setUploadStep('assets');
     }
   }
@@ -1721,7 +1680,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   value={assetSearch}
                   disabled={busy}
                   onKeyDown={(event) => { if (event.key === 'Enter') event.preventDefault(); }}
-                  onChange={(event) => { setAssetSearch(event.target.value); setAssetPage(1); }}
+                  onChange={(event) => setAssetSearch(event.target.value)}
                   placeholder="Search assets..."
                   aria-label="Search assets"
                   data-modal-initial-focus="true"
@@ -1737,8 +1696,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               </div>
 
               {showAssetPicker && assets.length ? (
-                <div ref={assetListRef} className={styles.assetSelectionList} data-asset-choice-list="true">
-                  {visibleAssets.length ? visibleAssets.map((asset) => {
+                <div className={styles.assetSelectionList} data-asset-choice-list="true">
+                  {filteredAssets.length ? filteredAssets.map((asset) => {
                     const checked = draft.assetIds.includes(asset.id);
                     return (
                       <label
@@ -1755,10 +1714,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                           <AssetSerialNumber value={asset.serialNumber} />
                         </span>
                         <span className={styles.assetSelectionValue} data-asset-choice-value="true">
-                          <span className={`${pickerStyles.select} ${pickerStyles.multi}`}>
-                            <i aria-hidden="true">{checked ? '✓' : ''}</i>
-                            <strong>{checked ? 'Selected' : 'Select'}</strong>
-                          </span>
+                          <AssetChooseIcon selected={checked} />
                         </span>
                       </label>
                     );
@@ -1767,19 +1723,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               ) : (
                 <div className={styles.assetSelectionEmpty}>No assets are available yet. You can still save these documents and link assets later.</div>
               )}
-              {assets.length > 0 && (
-                <nav className={styles.assetPager} aria-label="Asset pages">
-                  <span role="status">{filteredAssets.length ? `Page ${currentAssetPage} of ${assetPageCount}` : '0 results'}</span>
-                  <button type="button" disabled={busy || currentAssetPage === 1}
-                    onClick={() => setAssetPage(currentAssetPage - 1)} aria-label="Previous asset page">
-                    <Icon name="chevron-left" /> Previous
-                  </button>
-                  <button type="button" disabled={busy || currentAssetPage === assetPageCount}
-                    onClick={() => setAssetPage(currentAssetPage + 1)} aria-label="Next asset page">
-                    Next <Icon name="chevron-right" />
-                  </button>
-                </nav>
-              )}
+
             </div>
 
             <footer className={styles.assetSelectionFooter} data-asset-choice-footer="true">

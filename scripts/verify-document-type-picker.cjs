@@ -76,7 +76,6 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   assert.equal(await page.$eval('textarea',e=>e.value),'Keep these notes');
   const row = '[data-asset-choice-row]';
   const search = '[aria-label="Search assets"]';
-  const next = '[aria-label="Next asset page"]';
   async function fits(selector) {
     const geometry=await page.$eval(selector,el=>[el.scrollHeight-el.clientHeight,el.scrollWidth-el.clientWidth]);
     assert(geometry.every(delta=>delta<=1),selector+' overflows: '+geometry);
@@ -87,10 +86,9 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
     await click('Next');
     await page.waitForSelector(row);
     assert.equal(await page.$eval(row+' input',el=>el.checked),true,'Existing link on first page at '+width);
-    await fits('[data-asset-choice-list]');
-    await page.click(next);
-    await page.waitForFunction(()=>document.querySelector('[aria-label="Asset pages"]').textContent.includes('Page 2 of'));
-    await fits('[data-asset-choice-list]');
+    assert.equal(await page.$$eval(row,els=>els.length),assets.length);
+    assert.equal(await page.$('[aria-label="Asset pages"]'),null);
+    assert(await page.$eval('[data-asset-choice-list]',el=>{el.scrollTop=el.scrollHeight;return el.scrollTop>0;}), 'Asset list scrolls at '+width);
     await click('Back');
     await page.waitForSelector('#document-type-trigger');
   }
@@ -110,14 +108,6 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   assert.deepEqual(edits[0].assetIds.sort(),['tractor-1','tractor-23']);
   assert.equal(edits[0].documentType,'licence-disc');
   await click('Edit');await click('Next');await page.waitForSelector(row);
-  const visited=new Set();
-  do {
-    await fits('[data-asset-choice-list]');
-    for(const label of await page.$$eval(row+' [data-asset-choice-copy] > strong',els=>els.map(el=>el.textContent))) visited.add(label);
-    if(await page.$eval(next,el=>el.disabled)) break;
-    await page.click(next);
-  } while(visited.size<assets.length);
-  assert.equal(visited.size,assets.length);
   await page.type(search,'SN-2');
   await click('Select all 5 matches');
   assert.match(await page.$eval('[data-asset-choice-footer]',el=>el.textContent),/6 assets selected/);
@@ -165,7 +155,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    await click('Add document');await page.waitForSelector('#linked-asset-heading');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
   }
   assert.deepEqual(errors,[]);
-  console.log('PASS paged document links, search, bulk selection, edit and upload, fixed links, partial retry, and desktop/mobile fit');
+  console.log('PASS scrollable document asset list, search, bulk selection, edit and upload, fixed links, partial retry, and desktop/mobile fit');
  } finally {if(browser)await browser.close();if(server){server.kill('SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}await fs.rm(fixture,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types/app/document-type-validation'),{recursive:true,force:true});}
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
