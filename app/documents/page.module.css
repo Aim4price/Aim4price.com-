@@ -4292,3 +4292,40 @@
   gap: .85rem;
 }
 .typeBack { margin-inline-end: auto; }
+
+.assetSubheader { margin: .35rem 0 0; color: var(--app-text, #20483c); font-weight: 600; overflow-wrap: anywhere; }
+.assetSubheader strong { font-weight: 800; }
+
+.modalForm[data-upload-slide='details'] .expiryFields {
+  padding: .65rem .9rem;
+  border: 1px solid var(--app-border, #c4d9ce);
+  border-radius: .85rem;
+  background: var(--app-surface-soft, #f3f8f5);
+}
+.modalForm[data-upload-slide='details'] .expiryToggle { justify-content: space-between; flex-direction: row-reverse; font-weight: 700; }
+.modalForm[data-upload-slide='details'] .expiryToggle input {
+  appearance: none;
+  box-sizing: border-box;
+  width: 2.45rem;
+  height: 1.5rem;
+  padding: 0;
+  border: 1px solid #738a81;
+  border-radius: 2rem;
+  background: radial-gradient(circle at .72rem center, white .47rem, transparent .51rem) #738a81;
+  cursor: pointer;
+}
+.modalForm[data-upload-slide='details'] .expiryToggle input:checked {
+  border-color: #17563f;
+  background: radial-gradient(circle at calc(100% - .72rem) center, white .47rem, transparent .51rem) #17563f;
+}
+.modalForm[data-upload-slide='details'] .notesField textarea {
+  box-sizing: border-box;
+  height: 4.25rem;
+  line-height: 1.4;
+  overflow-y: auto;
+  scrollbar-gutter: auto;
+  resize: none;
+}
+@media (forced-colors: active) {
+  .modalForm[data-upload-slide='details'] .expiryToggle input { appearance: auto; }
+}
