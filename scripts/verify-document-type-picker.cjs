@@ -54,7 +54,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   const search = '[aria-label="Search assets"]';
   await click('Edit');await click('Next');await page.waitForSelector('textarea');
   assert.match(await page.$eval('[role=dialog] header',el=>el.textContent),/Tractor 1/);
-  await click('Insurance policy · Change type');await click('Back');await page.waitForSelector('textarea');
+  await click('Change document type, currently Insurance policy');await click('Back');await page.waitForSelector('textarea');
   await click('Back');await click('Change asset');await page.waitForSelector(row);
   assert.equal(await page.$eval(row+' input',el=>el.checked),true);
   for(const [width,height] of [[1440,900],[1920,870],[1366,650],[390,844]]) {

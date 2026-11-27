@@ -620,6 +620,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       {draft.assetIds.length > 1 && ` · +${draft.assetIds.length - 1} more`}
     </p>
   );
+  const editTypeLabel = draft.documentType
+    ? shortTypeLabels[draft.documentType] ?? getAccountDocumentTypeLabel(draft.documentType)
+    : 'Unclassified';
+  const editTypeIcon = draft.documentType === 'service-record' ? 'service_plan' : documentIcons[draft.category || 'other'];
   const typeQuery = documentTypeSearch.trim().toLowerCase();
   const retainedEditType = modalMode === 'edit' && Boolean(editingDocument?.assetLinks.length) === Boolean(draft.assetIds.length)
     ? editingDocument?.documentType : null;
@@ -1534,11 +1538,22 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 ) : null}
 
                 {modalMode === 'edit' && uploadStep === 'details' && (
-                  <button type="button" className={styles.editTypeAction} onClick={() => {
-                    setDocumentTypeSearch('');
-                    setTypeGroup(null);
-                    setShowDocumentTypeOptions(true);
-                  }}>{getAccountDocumentTypeLabel(draft.documentType) || 'Unclassified'} · Change type</button>
+                  <button
+                    type="button"
+                    className={`${categoryStyles.card} ${styles.editTypeAction}`}
+                    data-category={editTypeIcon}
+                    aria-haspopup="dialog"
+                    aria-label={`Change document type, currently ${editTypeLabel}`}
+                    onClick={() => {
+                      setDocumentTypeSearch('');
+                      setTypeGroup(null);
+                      setShowDocumentTypeOptions(true);
+                    }}
+                  >
+                    <span className={categoryStyles.icon} aria-hidden="true"><CategoryIcon kind={editTypeIcon} /></span>
+                    <span className={categoryStyles.copy}><small>Document type</small><strong>{editTypeLabel}</strong></span>
+                    <span className={styles.changeTypeLabel}><Icon name="edit" /> Change</span>
+                  </button>
                 )}
                 {uploadStep === 'details' ? <div className={styles.formGrid}>
                   {modalMode === 'edit' || selectedFiles.length <= 1 ? <label className={styles.field}>
