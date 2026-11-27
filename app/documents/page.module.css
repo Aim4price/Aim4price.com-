@@ -4257,6 +4257,7 @@
 [data-document-types]:has(.documentTile) {
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 17.75rem), 1fr));
 }
+.scopeChoices button[aria-pressed='true'],
 .documentTile[aria-pressed='true'] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
 
 /* Document detail fields and navigation. */

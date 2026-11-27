@@ -22,6 +22,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   const page=await browser.newPage(), errors=[], uploads=[];
   let failNextUpload=false;
   const edits=[];
+  let legacyDocument=false;
   const assets=Array.from({length:23},(_,i)=>({
     id:'tractor-'+(i+1), title:i===12 ? '2022 New Holland TT4.90 4WD Openstation with front loader and pallet forks' : 'Tractor '+(i+1), serialNumber:'SN-'+(i+1),
     meta:'Year Model: 2022 · Usage: 3 200 hours · Condition: Good',
@@ -34,7 +35,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   page.on('request',async r=>{
    const u=new URL(r.url());if(!u.pathname.startsWith('/api/'))return r.continue();
    const user={id:'fixture',name:'Test Owner',email:'test@example.invalid',accountType:'owner'};
-   const doc={id:'fixture',title:'Saved title',category:'insurance',documentType:'insurance-policy',notes:'Keep these notes',expiryDate:null,fileName:'policy.pdf',contentType:'application/pdf',byteSize:100,assetLinks:[assets[0]],createdAtIso:'2026-10-01',updatedAtIso:'2026-10-01',deletedAtIso:null};
+   const doc={id:'fixture',title:'Saved title',category:'insurance',documentType:legacyDocument ? null : 'insurance-policy',notes:'Keep these notes',expiryDate:'2027-01-30',fileName:'policy.pdf',contentType:'application/pdf',byteSize:100,assetLinks:[assets[0]],createdAtIso:'2026-10-01',updatedAtIso:'2026-10-01',deletedAtIso:null};
    if(u.pathname==='/api/documents'&&r.method()==='POST') {
     uploads.push(await r.fetchPostData());
     if(failNextUpload){failNextUpload=false;return r.respond({status:500,contentType:'application/json',body:JSON.stringify({ok:false,error:'Fixture upload failure'})});}
@@ -49,8 +50,19 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   });
   async function click(text){await page.$$eval('button',(buttons,text)=>{const b=buttons.find(b=>b.textContent.trim()===text || b.getAttribute("aria-label")===text);if(!b)throw Error('Missing '+text);b.click();},text);}
   await page.goto('http://127.0.0.1:3049/document-type-validation',{waitUntil:'networkidle0',timeout:120000});
-  await click('Edit');await page.waitForSelector('#document-type-trigger');
-  await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');
+  const row = '[data-asset-choice-row]';
+  const search = '[aria-label="Search assets"]';
+  await click('Edit');await click('Related to an asset');await page.waitForSelector(row);
+  assert.equal(await page.$eval(row+' input',el=>el.checked),true);
+  for(const [width,height] of [[1440,900],[1920,870],[1366,650],[390,844]]) {
+    await page.setViewport({width,height});
+    assert.equal(await page.$$eval(row,els=>els.length),assets.length);
+    assert.equal(await page.$('[aria-label="Asset pages"]'),null);
+    assert(await page.$eval('[data-asset-choice-list]',el=>{el.scrollTop=el.scrollHeight;return el.scrollTop>0;}));
+  }
+  await page.setViewport({width:1440,height:900});
+  await page.type(search,'SN-23');await page.click(row);
+  await page.click('[data-asset-choice-action="primary"]');await page.waitForSelector('#document-type-title');
   assert.equal(await page.$$eval('[role=dialog]',nodes=>nodes.length),1);
   await page.waitForFunction(()=>document.querySelector('[aria-label="Search document types"]')===document.activeElement);
   async function checkTypeLabelFit() {
@@ -65,56 +77,41 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   assert.deepEqual(await page.$$eval('[data-document-types] strong',ls=>ls.map(l=>l.textContent)),['Policy','Schedule','Claim']);
   await click('Back');
   assert.equal(await page.$$eval('[data-document-types] strong',ls=>ls.some(l=>l.textContent==='Company registration')),false);
-  await page.type('[aria-label="Search document types"]','licence');
-  await page.keyboard.press('Escape');await page.waitForSelector('#document-type-trigger');
-  assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Insurance policy/);
-  // Closing restores focus on the next animation frame, after the parent remounts.
-  await page.waitForFunction(()=>document.querySelector('#document-type-trigger')===document.activeElement);
-  await page.click('#document-type-trigger');await page.waitForSelector('#document-type-title');
+  await page.keyboard.press('Escape');await page.waitForSelector(row);
+  await page.click('[data-asset-choice-action="primary"]');await page.waitForSelector('#document-type-title');
   await page.type('[aria-label="Search document types"]','licence');await click('Licence disc');
-  await page.waitForSelector('#document-type-trigger');
-  assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Licence disc/);
-  assert.equal(await page.$eval('textarea',e=>e.value),'Keep these notes');
-  const row = '[data-asset-choice-row]';
-  const search = '[aria-label="Search assets"]';
+  await page.waitForSelector('[data-upload-slide="files"]');
+  assert.match(await page.$eval('[role=dialog]',el=>el.textContent),/policy.pdf/);
+  assert.equal(await page.$('input[type=file]'),null);
+  await click('Next');await page.waitForSelector('textarea');
+  assert.equal(await page.$eval('textarea',el=>el.value),'Keep these notes');
+  assert.equal(await page.$eval('input[maxlength="180"]',el=>el.value),'Saved title');
+  assert(await page.$('#document-expiry-date'));
+  for(const [width,height] of [[1440,900],[1920,870],[1366,650],[390,844]]) {
+    await page.setViewport({width,height});
+    await fits('[data-upload-slide="details"] [class*="modalScroll"]');
+  }
+  await page.setViewport({width:1440,height:900});
+  await click('Back');await click('Next');
+  assert.equal(edits.length,0);
+  await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+  assert.deepEqual(edits[0].assetIds.sort(),['tractor-1','tractor-23']);
+  assert.equal(edits[0].documentType,'licence-disc');
+  assert.equal(edits[0].expiryDate,'2027-01-30');
+  await click('Edit');await click('General document');await click('Company registration');
+  await click('Next');await click('Save changes');
+  await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+  assert.deepEqual(edits[1].assetIds,[]);
+  legacyDocument=true;
+  await page.reload({waitUntil:'networkidle0'});
+  await click('Edit');await click('General document');await click('Keep unclassified');
+  await click('Next');await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+  assert.equal(edits[2].documentType,'');
+  legacyDocument=false;
   async function fits(selector) {
     const geometry=await page.$eval(selector,el=>[el.scrollHeight-el.clientHeight,el.scrollWidth-el.clientWidth]);
     assert(geometry.every(delta=>delta<=1),selector+' overflows: '+geometry);
   }
-  for(const [width,height] of [[1440,900],[1920,870],[1366,650],[390,844]]) {
-    await page.setViewport({width,height});
-    await fits('[class*="editDocumentModal"] [class*="modalScroll"]');
-    await click('Next');
-    await page.waitForSelector(row);
-    assert.equal(await page.$eval(row+' input',el=>el.checked),true,'Existing link on first page at '+width);
-    assert.equal(await page.$$eval(row,els=>els.length),assets.length);
-    assert.equal(await page.$('[aria-label="Asset pages"]'),null);
-    assert(await page.$eval('[data-asset-choice-list]',el=>{el.scrollTop=el.scrollHeight;return el.scrollTop>0;}), 'Asset list scrolls at '+width);
-    await click('Back');
-    await page.waitForSelector('#document-type-trigger');
-  }
-  await page.setViewport({width:1440,height:900});
-  await click('Next');await page.waitForSelector(row);
-  await page.type(search,'SN-23');
-  await page.waitForFunction(()=>document.querySelectorAll('[data-asset-choice-row]').length===1);
-  await page.click(row);
-  await page.focus(search);
-  await page.keyboard.press('Enter');
-  assert.equal(edits.length,0);
-  await click('Back');await page.waitForSelector('#document-type-trigger');
-  assert.equal(await page.$eval('textarea',el=>el.value),'Keep these notes');
-  await click('Next');await page.waitForSelector(row);
-  await page.type(search,'unmatched');await page.waitForFunction(()=>document.body.textContent.includes('No assets match'));
-  await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
-  assert.deepEqual(edits[0].assetIds.sort(),['tractor-1','tractor-23']);
-  assert.equal(edits[0].documentType,'licence-disc');
-  await click('Edit');await click('Next');await page.waitForSelector(row);
-  await page.type(search,'SN-2');
-  await click('Select all 5 matches');
-  assert.match(await page.$eval('[data-asset-choice-footer]',el=>el.textContent),/6 assets selected/);
-  await click('Clear');
-  await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
-  assert.deepEqual(edits[1].assetIds,[]);
   async function chooseInsurance() {
    await page.waitForSelector('#document-type-title');
    await page.type('[aria-label="Search document types"]','insurance');
