@@ -7495,3 +7495,18 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
 }
 
 .budgetLimitHeading + .budgetField > input { box-sizing: border-box; padding-inline: 1rem; }
+
+.filterControls { display: flex; align-items: stretch; flex-wrap: wrap; gap: .5rem; }
+.filterControls > button { flex: 1 1 auto; }
+.clearAppliedFilters {
+  min-height: 2.75rem;
+  padding: .55rem 1rem;
+  border: 1px solid var(--app-info-line, #91bbf1);
+  border-radius: 1rem;
+  background: var(--app-info-soft, #edf4fa);
+  color: var(--app-text, #173b30);
+  font: inherit;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
