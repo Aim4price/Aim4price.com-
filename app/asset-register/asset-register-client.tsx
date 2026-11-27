@@ -6383,7 +6383,8 @@ export default function AssetRegisterClient({
   const [addAssetTargetRegisterId, setAddAssetTargetRegisterId] = useState('');
   const [addAssetEntry, setAddAssetEntry] = useState<AssetSheetEntry>('choose');
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
-  const [isAcquisitionChoiceOpen, setIsAcquisitionChoiceOpen] = useState(false);
+  const [acquisitionStep, setAcquisitionStep] = useState<'choice' | 'details' | null>(null);
+  const isAcquisitionChoiceOpen = acquisitionStep !== null;
   const [newAssetAcquisitionDraft, setNewAssetAcquisitionDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
   const assetFlow = useAssetFlowTransition();
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
@@ -8744,7 +8745,7 @@ export default function AssetRegisterClient({
       }
 
       if (isAcquisitionChoiceOpen) {
-        setIsAcquisitionChoiceOpen(false);
+        setAcquisitionStep(null);
         return;
       }
 
@@ -9803,7 +9804,7 @@ export default function AssetRegisterClient({
   function openManualEntryFromChoice() {
     closeAddAssetChoiceModal();
     setNewAssetAcquisitionDraft(createAcquisitionDraft());
-    setIsAcquisitionChoiceOpen(true);
+    setAcquisitionStep('choice');
   }
 
   function continueManualEntryFromAcquisitionChoice() {
@@ -9811,7 +9812,7 @@ export default function AssetRegisterClient({
       setNotice({ tone: 'error', message: 'Choose whether this is a newly acquired asset.' });
       return;
     }
-    setIsAcquisitionChoiceOpen(false);
+    setAcquisitionStep(null);
     openCreateModal();
   }
 
@@ -18200,40 +18201,19 @@ export default function AssetRegisterClient({
 
       {isAcquisitionChoiceOpen ? (
         <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsAcquisitionChoiceOpen(false)} />
+          <div className={styles.modalBackdrop} data-website-overlay onClick={() => setAcquisitionStep(null)} />
           <div className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.newAcquisitionChoiceModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
             <div className={`${styles.modalHeader} ${styles.newAcquisitionChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="new-acquisition-title">Newly acquired asset?</h3>
-                <p>Adding to <strong>{addAssetTargetRegisterName}</strong>. Choose how this asset entered the register.</p>
+                <h3 id="new-acquisition-title">{acquisitionStep === 'details' ? 'Acquisition details' : 'Newly acquired asset?'}</h3>
+                <p>Adding to <strong>{addAssetTargetRegisterName}</strong>.{acquisitionStep === 'choice' && ' Choose how this asset entered the register.'}</p>
               </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setIsAcquisitionChoiceOpen(false)} aria-label="Close acquisition question" data-modal-close="true">
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setAcquisitionStep(null)} aria-label="Close acquisition question" data-modal-close="true">
                 ×
               </button>
             </div>
             <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody} ${styles.newAcquisitionChoiceBody}`}>
-              <div className={`${styles.addAssetChoiceGrid} ${styles.newAcquisitionChoiceGrid}`}>
-                <button
-                  type="button"
-                  className={`${styles.addAssetChoiceButton} ${styles.newAcquisitionChoiceOption} ${newAssetAcquisitionDraft.newlyAcquired === true ? styles.addAssetChoiceButtonPrimary : ''}`}
-                  onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: true }))}
-                  aria-pressed={newAssetAcquisitionDraft.newlyAcquired === true}
-                >
-                  <span className={styles.newAcquisitionChoiceIndicator} aria-hidden="true" />
-                  <strong>Newly acquired</strong>
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.addAssetChoiceButton} ${styles.newAcquisitionChoiceOption} ${newAssetAcquisitionDraft.newlyAcquired === false ? styles.addAssetChoiceButtonPrimary : ''}`}
-                  onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: false }))}
-                  aria-pressed={newAssetAcquisitionDraft.newlyAcquired === false}
-                >
-                  <span className={styles.newAcquisitionChoiceIndicator} aria-hidden="true" />
-                  <strong>Existing asset</strong>
-                </button>
-              </div>
-
-              {newAssetAcquisitionDraft.newlyAcquired === true ? (
+              {acquisitionStep === 'details' ? (
                 <div className={styles.assetLifecycleFields}>
                   <label className={accountStyles.modalField}>
                     <span>Acquisition date</span>
@@ -18248,11 +18228,40 @@ export default function AssetRegisterClient({
                     <textarea value={newAssetAcquisitionDraft.note} onChange={(event) => setNewAssetAcquisitionDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Purchase reference or source note" />
                   </label>
                 </div>
-              ) : null}
+              ) : (
+                <div className={`${styles.addAssetChoiceGrid} ${styles.newAcquisitionChoiceGrid}`}>
+                  <button
+                    type="button"
+                    className={`${styles.addAssetChoiceButton} ${styles.newAcquisitionChoiceOption} ${newAssetAcquisitionDraft.newlyAcquired === true ? styles.addAssetChoiceButtonPrimary : ''}`}
+                    onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: true }))}
+                    aria-pressed={newAssetAcquisitionDraft.newlyAcquired === true}
+                  >
+                    <span className={styles.newAcquisitionChoiceIndicator} aria-hidden="true" />
+                    <strong>Newly acquired</strong>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.addAssetChoiceButton} ${styles.newAcquisitionChoiceOption} ${newAssetAcquisitionDraft.newlyAcquired === false ? styles.addAssetChoiceButtonPrimary : ''}`}
+                    onClick={() => setNewAssetAcquisitionDraft((current) => ({ ...current, newlyAcquired: false }))}
+                    aria-pressed={newAssetAcquisitionDraft.newlyAcquired === false}
+                  >
+                    <span className={styles.newAcquisitionChoiceIndicator} aria-hidden="true" />
+                    <strong>Existing asset</strong>
+                  </button>
+                </div>
+              )}
             </div>
             <div className={`${styles.assetSettingsActions} ${styles.newAcquisitionChoiceActions}`}>
-              <button type="button" className={accountStyles.ghostButton} onClick={() => setIsAcquisitionChoiceOpen(false)}>Cancel</button>
-              <button type="button" className={accountStyles.primaryButton} onClick={event => assetFlow.start(event.currentTarget, 'Choose asset type', continueManualEntryFromAcquisitionChoice)} disabled={newAssetAcquisitionDraft.newlyAcquired === null}>Continue</button>
+              <button type="button" className={accountStyles.ghostButton} onClick={() => setAcquisitionStep(acquisitionStep === 'details' ? 'choice' : null)}>
+                {acquisitionStep === 'details' ? 'Back' : 'Cancel'}
+              </button>
+              <button type="button" className={accountStyles.primaryButton} onClick={event => {
+                if (acquisitionStep === 'choice' && newAssetAcquisitionDraft.newlyAcquired) {
+                  setAcquisitionStep('details');
+                } else {
+                  assetFlow.start(event.currentTarget, 'Choose asset type', continueManualEntryFromAcquisitionChoice);
+                }
+              }} disabled={newAssetAcquisitionDraft.newlyAcquired === null || (acquisitionStep === 'details' && !newAssetAcquisitionDraft.acquisitionDate)}>Continue</button>
             </div>
           </div>
         </div>
