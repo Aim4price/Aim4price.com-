@@ -34,7 +34,7 @@
 .search::placeholder { color: color-mix(in srgb, var(--app-text, #14392f) 78%, var(--app-surface, #fff)); opacity: 1; font-weight: 500; }
 .search:focus-visible { outline: none; border-color: var(--app-accent, #147052); box-shadow: 0 0 0 4px color-mix(in srgb, var(--app-accent, #147052) 12%, transparent); }
 
-.options { display: flex; flex-direction: column; gap: .72rem; min-height: 0; max-height: 20rem; overflow-y: auto; overscroll-behavior: contain; padding: .25rem .35rem .5rem; border: 0; scrollbar-width: thin; scrollbar-color: #a8bbb2 transparent; }
+.options { display: flex; flex-direction: column; gap: .72rem; min-height: 0; max-height: 20rem; overflow-y: auto; overscroll-behavior: contain; padding: 1.25rem; margin: -1rem -.9rem -.75rem; border: 0; scrollbar-width: thin; scrollbar-color: #a8bbb2 transparent; }
 .options::-webkit-scrollbar { width: 7px; }
 .options::-webkit-scrollbar-thumb { background: #a8bbb2; border-radius: 6px; }
 .option { display: grid; grid-template-columns: minmax(0, 1fr) auto; flex-shrink: 0; align-items: center; width: 100%; gap: .9rem; min-height: 4.65rem; padding: .92rem 1rem; text-align: left; color: var(--app-text, #17362c); border: 1.5px solid var(--app-info-line, #cadae6); border-radius: 1.15rem; background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #f8fbfd)); box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(31, 51, 71, .035)); transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease; }
@@ -69,12 +69,11 @@
 .addRegisterBody .searchWrap { margin-bottom: 1rem; }
 .addRegisterBody .options {
   gap: .85rem;
-  padding: .25rem 0 .5rem;
 }
 
 /* A separate, rounded scroll lane keeps the register cards clear of the thumb. */
 .addRegisterBody .options {
-  padding: .3rem .8rem .65rem .25rem;
+  padding-inline-end: 1.7rem;
   scrollbar-gutter: stable;
   scrollbar-width: auto;
   scrollbar-color: #759b8c var(--app-surface-soft, #edf3f0);
@@ -95,7 +94,7 @@
 .addRegisterBody button:disabled { opacity: .5; cursor: not-allowed; }
 
 .registerDialog { width: min(var(--website-dialog-reference-width, 100%), 64rem); }
-.registerDialog .options { max-height: none; padding: .25rem .5rem .5rem .25rem; }
+.registerDialog .options { max-height: none; }
 .registerDialog .pickerBody { min-height: 0; }
 .addRegisterBody > .footer { margin-top: 1rem; border-radius: 0 0 1rem 1rem; }
 

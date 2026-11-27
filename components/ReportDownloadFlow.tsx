@@ -77,7 +77,7 @@ export default function ReportDownloadFlow({ pdfOnly = false, costStep, formatOp
   }
 
   return <div className={`${styles.overlay} ${report.backdrop}`} data-website-overlay onClick={event => { if (event.target === event.currentTarget) back(); }}>
-    <div ref={dialog} className={`${styles.surface} ${step === 'asset' ? picker.modal : report.dialog} ${step === 'costs' ? costStep?.className : ''}`} data-cost-picker={step === 'costs' || undefined} data-compact-download={compactTimeline ? "true" : undefined} data-download-dialog={step !== 'asset' ? 'true' : undefined} data-asset-choice-modal={step === 'asset' ? 'true' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} onKeyDown={event => {
+    <div ref={dialog} className={`${styles.surface} ${step === 'asset' ? picker.modal : report.dialog} ${step === 'costs' ? costStep?.className : ''}`} data-cost-picker={step === 'costs' || undefined} data-compact-download={compactTimeline && step === 'timeline' ? "true" : undefined} data-download-dialog={step !== 'asset' ? 'true' : undefined} data-asset-choice-modal={step === 'asset' ? 'true' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} onKeyDown={event => {
       if (event.key === 'Escape') { event.stopPropagation(); if (!busy) back(); }
       if (event.key !== 'Tab') return;
       const items = Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]') || []).filter(item => item.getClientRects().length);
