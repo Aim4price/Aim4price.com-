@@ -4369,3 +4369,33 @@
 }
 .changeTypeLabel svg { width: 1rem; height: 1rem; }
 .editTypeAction:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+.categoryGroup > summary { cursor: pointer; list-style: none; }
+.categoryGroup > summary::-webkit-details-marker { display: none; }
+.categoryHeader .categoryCount { margin-inline-start: auto; }
+.disclosureAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  flex: none;
+  padding: .65rem 1rem;
+  border: 1px solid var(--app-border, #93b7d5);
+  border-radius: .85rem;
+  background: var(--app-surface-soft, #eef5fa);
+  color: var(--app-text, #173e53);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+.disclosureAction svg { width: 1.2rem; height: 1.2rem; padding: .12rem; border: 1px solid currentColor; border-radius: 50%; }
+.disclosureAction[aria-expanded='true'] svg,
+.categoryGroup[open] > summary .disclosureAction svg { transform: rotate(180deg); }
+.categoryGroup:not([open]) > summary .whenOpen,
+.categoryGroup[open] > summary .whenClosed,
+.documentDetails[hidden] { display: none; }
+.documentDetails { display: grid; gap: 1rem; min-width: 0; }
+.documentFacts strong[data-tone='danger'] { color: var(--app-danger, #aa3530); }
+.documentFacts strong[data-tone='warning'] { color: var(--app-warning, #8e580f); }
+.documentTitleRow { position: relative; }
+.documentTitleRow .disclosureAction::after { position: absolute; inset: 0; content: ''; }

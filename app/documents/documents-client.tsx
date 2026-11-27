@@ -313,8 +313,8 @@ function documentExpiryState(expiryDate: string | null): { label: string; tone: 
   const days = Math.ceil((expiry.getTime() - today.getTime()) / 86_400_000);
 
   if (days < 0) return { label: `Expired ${formatDate(expiryDate)}`, tone: 'danger' };
-  if (days === 0) return { label: 'Expires today', tone: 'danger' };
-  if (days <= 60) return { label: `Expires in ${days} day${days === 1 ? '' : 's'}`, tone: 'warning' };
+  if (days === 0) return { label: `${formatDate(expiryDate)} · Expires today`, tone: 'danger' };
+  if (days <= 60) return { label: `${formatDate(expiryDate)} · Expires in ${days} day${days === 1 ? '' : 's'}`, tone: 'warning' };
   return { label: `Expires ${formatDate(expiryDate)}`, tone: 'safe' };
 }
 
@@ -386,6 +386,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [documents, setDocuments] = useState<VaultDocument[]>([]);
   const [summary, setSummary] = useState<VaultSummary>(EMPTY_SUMMARY);
   const [assets, setAssets] = useState<AssetLink[]>([]);
+  const [openDocumentId, setOpenDocumentId] = useState<string | null>(null);
   const [selectedAsset, setSelectedAsset] = useState<AssetLink | null>(uploadContext?.asset ?? null);
   const [view, setView] = useState<VaultView>('documents');
   const [search, setSearch] = useState('');
@@ -1144,6 +1145,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }
 
   function renderDocumentCard(document: VaultDocument) {
+    const isOpen = openDocumentId === document.id;
     const expiry = documentExpiryState(document.expiryDate);
     const downloadUrl = desktop.url(`/api/documents/${encodeURIComponent(document.id)}/download`);
     const isDeleted = view === 'recycle-bin';
@@ -1160,12 +1162,16 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               <h3>{document.title}</h3>
               <p>{getAccountDocumentTypeLabel(document.documentType) ?? categoryLabel(document.category)}</p>
             </div>
-            <div className={styles.documentStatus} data-tone={isDeleted ? 'warning' : expiry.tone}>
-              <Icon name={isDeleted ? 'trash' : 'calendar'} />
-              <span>{isDeleted ? `${recycleDaysLeft(document.deletedAtIso)} days left in Recycle Bin` : expiry.label}</span>
-            </div>
+            <button type="button" className={styles.disclosureAction} aria-expanded={isOpen}
+              aria-label={`${isOpen ? 'Close' : 'Open'} ${document.title}`}
+              aria-controls={`document-details-${document.id}`}
+              onClick={() => setOpenDocumentId(isOpen ? null : document.id)}>
+              <Icon name="chevron-down" /> {isOpen ? 'Close' : 'Open'}
+            </button>
           </div>
 
+        </div>
+        <div id={`document-details-${document.id}`} hidden={!isOpen} className={styles.documentDetails}>
           <div className={styles.documentFacts}>
             <div>
               <span>File name</span>
@@ -1179,6 +1185,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               <span>Date added</span>
               <strong>{formatDate(document.createdAtIso)}</strong>
             </div>
+            <div>
+              <span>Expiry date</span>
+              <strong data-tone={expiry.tone}>{expiry.label}</strong>
+            </div>
+            {isDeleted && <div><span>Recycle Bin</span><strong>{recycleDaysLeft(document.deletedAtIso)} days left</strong></div>}
           </div>
 
           {document.notes ? <div className={styles.documentNoteSection}>
@@ -1194,34 +1205,34 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 : 'Account-level document'}
             </span>
           </div>
-        </div>
 
-        <div className={styles.documentActions} data-recycle-actions={isDeleted ? 'true' : undefined}>
-          <DocumentFileLink href={downloadUrl} target="_blank" rel="noreferrer" className={`${styles.actionButton} ${styles.previewButton}`}>
-            <Icon name="eye" /> Preview
-          </DocumentFileLink>
-          <DocumentFileLink href={`${downloadUrl}${downloadUrl.includes("?") ? "&" : "?"}download=1`} className={`${styles.actionButton} ${styles.downloadButton}`} download>
-            <Icon name="download" /> Download
-          </DocumentFileLink>
-          {isDeleted ? (
-            <>
-              <button type="button" className={styles.restoreButton} disabled={busy} onClick={() => void restoreDocument(document)}>
-                <Icon name="restore" /> Restore
-              </button>
-              <button type="button" className={styles.trashButton} disabled={busy} onClick={() => requestDocumentDelete(document)} aria-label={`Permanently delete ${document.title}`}>
-                <Icon name="trash" /> Delete
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className={`${styles.actionButton} ${styles.editButton}`} disabled={busy} onClick={() => openEditModal(document)}>
-                <Icon name="edit" /> Edit
-              </button>
-              <button type="button" className={styles.trashButton} disabled={busy} onClick={() => requestDocumentDelete(document)} aria-label={`Delete ${document.title}`}>
-                <Icon name="trash" /> Delete
-              </button>
-            </>
-          )}
+          <div className={styles.documentActions} data-recycle-actions={isDeleted ? 'true' : undefined}>
+            <DocumentFileLink href={downloadUrl} target="_blank" rel="noreferrer" className={`${styles.actionButton} ${styles.previewButton}`}>
+              <Icon name="eye" /> Preview
+            </DocumentFileLink>
+            <DocumentFileLink href={`${downloadUrl}${downloadUrl.includes("?") ? "&" : "?"}download=1`} className={`${styles.actionButton} ${styles.downloadButton}`} download>
+              <Icon name="download" /> Download
+            </DocumentFileLink>
+            {isDeleted ? (
+              <>
+                <button type="button" className={styles.restoreButton} disabled={busy} onClick={() => void restoreDocument(document)}>
+                  <Icon name="restore" /> Restore
+                </button>
+                <button type="button" className={styles.trashButton} disabled={busy} onClick={() => requestDocumentDelete(document)} aria-label={`Permanently delete ${document.title}`}>
+                  <Icon name="trash" /> Delete
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className={`${styles.actionButton} ${styles.editButton}`} disabled={busy} onClick={() => openEditModal(document)}>
+                  <Icon name="edit" /> Edit
+                </button>
+                <button type="button" className={styles.trashButton} disabled={busy} onClick={() => requestDocumentDelete(document)} aria-label={`Delete ${document.title}`}>
+                  <Icon name="trash" /> Delete
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </article>
     );
@@ -1398,20 +1409,24 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           </section>
         ) : groupedDocuments.length ? (
           <div className={styles.categoryGroups}>
-            {groupedDocuments.map((group) => (
-              <section key={group.value} className={styles.categoryGroup} aria-labelledby={`category-${group.value}`}>
-                <header className={styles.categoryHeader}>
+            {groupedDocuments.map((group) => group.documents.length === 1 ? renderDocumentCard(group.documents[0]) : (
+              <details key={group.value} className={styles.categoryGroup} aria-labelledby={`category-${group.value}`}>
+                <summary className={styles.categoryHeader}>
                   <div className={styles.categoryHeadingGroup}>
                     <div className={styles.categoryIcon}><Icon name="folder" /></div>
                     <div>
                       <h2 id={`category-${group.value}`}>{group.label}</h2>
-                      <p>{categoryDescription(group.value)}</p>
+                      <p className={styles.whenClosed}>{group.documents[0].title} + {group.documents.length - 1} more</p>
+                      <p className={styles.whenOpen}>{categoryDescription(group.value)}</p>
                     </div>
                   </div>
-                  <strong className={styles.categoryCount}>{group.documents.length} {group.documents.length === 1 ? 'document' : 'documents'}</strong>
-                </header>
+                  <strong className={styles.categoryCount}>{group.documents.length} documents</strong>
+                  <span className={styles.disclosureAction}><Icon name="chevron-down" />
+                    <span className={styles.whenClosed}>Open</span><span className={styles.whenOpen}>Close</span>
+                  </span>
+                </summary>
                 <div className={styles.documentList}>{group.documents.map(renderDocumentCard)}</div>
-              </section>
+              </details>
             ))}
           </div>
         ) : (

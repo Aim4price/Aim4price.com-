@@ -45,13 +45,32 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
     edits.push(JSON.parse(r.postData()));
     return r.respond({status:200,contentType:'application/json',body:JSON.stringify({ok:true,document:doc})});
    }
-   const data=u.pathname==='/api/me'?{ok:true,signedIn:true,user}:u.pathname==='/api/documents'?{ok:true,documents:[doc],assets}:{ok:true,items:[],notifications:[],profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
+   const data=u.pathname==='/api/me'?{ok:true,signedIn:true,user}:u.pathname==='/api/documents'?{ok:true,documents:[doc,{...doc,id:"second",title:"Second policy"},{...doc,id:"standalone",category:"other",documentType:"other",title:"Standalone"}],assets}:{ok:true,items:[],notifications:[],profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
    r.respond({status:200,contentType:'application/json',body:JSON.stringify(data)});
   });
   async function click(text){await page.$$eval('button',(buttons,text)=>{const b=buttons.find(b=>b.textContent.trim()===text || b.getAttribute("aria-label")===text);if(!b)throw Error('Missing '+text);b.click();},text);}
   await page.goto('http://127.0.0.1:3049/document-type-validation',{waitUntil:'networkidle0',timeout:120000});
   const row = '[data-asset-choice-row]';
   const search = '[aria-label="Search assets"]';
+  async function openPolicyGroup() {
+    const group=await page.waitForSelector('details:has([aria-label="Open Saved title"]) > summary');
+    await group.click();
+    await click('Open Saved title');
+  }
+  const single = await page.waitForSelector('[aria-label="Open Standalone"]');
+  assert.equal(await single.evaluate(el=>el.closest('details')===null),true);
+  await openPolicyGroup();
+  const groupHeader = await page.$('details > summary');
+  await groupHeader.focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await groupHeader.evaluate(el=>el.parentElement.open),false);
+  await page.keyboard.press('Enter');
+  assert.equal(await groupHeader.evaluate(el=>el.parentElement.open),true);
+  const facts = await page.$eval('#document-details-fixture',panel=>panel.innerText);
+  assert.match(facts,/Date added[\s\S]*Expiry date[\s\S]*2027/);
+  await click('Close Saved title');
+  assert.equal(await page.$eval('#document-details-fixture',el=>el.hidden),true);
+  await click('Open Saved title');
   await click('Edit');await click('Next');await page.waitForSelector('textarea');
   assert.match(await page.$eval('[role=dialog] header',el=>el.textContent),/Tractor 1/);
   await click('Change document type, currently Insurance policy');await click('Back');await page.waitForSelector('textarea');
@@ -106,6 +125,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   assert.deepEqual(edits[1].assetIds,[]);
   legacyDocument=true;
   await page.reload({waitUntil:'networkidle0'});
+  await openPolicyGroup();
   await click('Edit');await click('Change to general document');await click('Keep unclassified');
   await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
   assert.equal(edits[2].documentType,'');
