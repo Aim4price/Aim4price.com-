@@ -64,21 +64,6 @@ test('capture retraction is owner-only, finance-gated, channel-limited and asset
   assert.match(statusView, /options\.canRetract && !isTerminal/);
 });
 
-test('Invoice Drop code mutations require finance permission and direct codes remain asset-scoped', async () => {
-  const route = await read('app/api/invoice-drop-codes/[assetId]/route.ts');
-
-  assert.match(route, /requireFinanceMutation\?: boolean/);
-  assert.match(route, /ownerAppCan\(ownerAppAccess, 'manage_finance'\)/);
-  assert.match(route, /ownerAppCanAccessAsset\(access\.ownerAppAccess, assetId\)/);
-  assert.match(route, /if \(assetId === 'all'\)[\s\S]*?scope: 'all', assetId: null/);
-  assert.match(route, /scope: 'asset', assetId/);
-  assert.match(route, /requireOwnerAccess\(request, \{ requireFinanceMutation: true \}\)/);
-  assert.equal(
-    (route.match(/requireOwnerAccess\(request, \{ requireFinanceMutation: true \}\)/g) || []).length,
-    2,
-  );
-});
-
 test('failed authenticated intake removes unlinked uploads in both database and bucket-only modes', async () => {
   const [invoiceRoute, fuelRoute, dealerInvoiceRoute, uploads] = await Promise.all([
     read('app/api/capture-requests/invoice/route.ts'),

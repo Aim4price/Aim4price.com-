@@ -32,11 +32,6 @@ const budgetWizard = slice(
   "{budgetModalOpen ?",
   "{budgetDeleteCandidate ?",
 );
-const dropCodeWizard = slice(
-  invoices,
-  "{invoiceDropCodeOpen && !invoiceDropAssetPickerOpen ?",
-  "{invoiceDropCodeOpen && invoiceDropAssetPickerOpen ?",
-);
 const recurringWizard = slice(invoices, "{recurringOpen ?", "{filterOpen ?");
 const manualCostWizard = slice(
   invoices,
@@ -49,7 +44,7 @@ const uploadWizard = slice(
   "{showAssetPicker ?",
 );
 
-test("all five wizards retain shared structure with their approved close controls", () => {
+test("all four wizards retain shared structure with their approved close controls", () => {
   assert.match(
     invoices,
     /import wizardStyles from '\.\.\/\.\.\/components\/AimWizardModal\.module\.css'/,
@@ -61,7 +56,6 @@ test("all five wizards retain shared structure with their approved close control
 
   for (const wizard of [
     budgetWizard,
-    dropCodeWizard,
     recurringWizard,
     manualCostWizard,
     uploadWizard,
@@ -157,7 +151,6 @@ test("every wizard restores the top spacing when its step changes", () => {
     "budgetWizardBodyRef",
     "recurringWizardBodyRef",
     "manualCostWizardBodyRef",
-    "invoiceDropWizardBodyRef",
   ]) {
     assert.match(invoices, new RegExp(`${bodyRef}\\.current\\?\\.scrollTo`));
   }

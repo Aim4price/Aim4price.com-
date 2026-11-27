@@ -426,27 +426,6 @@ export const tutorials: Tutorial[] = [
   },
   {
     "category": "costs",
-    "id": "invoice-drop",
-    "title": "Supplier invoices",
-    "description": "Get paperwork to the right asset without sharing your whole account.",
-    "where": "Drop invoice",
-    "steps": [
-      "Identify the asset using the information requested.",
-      "Attach the invoice and check the destination.",
-      "Submit it for verification and capture."
-    ],
-    "example": "Ask a mechanic to submit a repair invoice directly so it can be checked and captured without giving them access to your account.",
-    "note": "Sending a document does not give the sender access to asset records.",
-    "audience": "Owner",
-    "href": "/drop-invoice",
-    "action": "Drop an invoice",
-    "keywords": "supplier mechanic paperwork Let a supplier drop an invoice",
-    "question": "Can my supplier send an invoice directly?",
-    "guideTitle": "Receive a supplier invoice",
-    "videoOutcome": "Bring supplier paperwork into the capture process."
-  },
-  {
-    "category": "costs",
     "id": "budgets",
     "title": "Budgets",
     "description": "Give planned spending a place alongside actual recorded costs.",

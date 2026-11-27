@@ -64,7 +64,7 @@ test("queue prioritises deadline work and includes useful operational filters", 
   assert.match(client, /Awaiting owner/);
   assert.match(client, /Completed today/);
   assert.match(client, /Reference or asset/);
-  assert.match(client, /Public drop/);
+  assert.doesNotMatch(client, /<option value="public_drop"/);
   assert.match(styles, /\.kpiGrid/);
   assert.match(styles, /\.kpiSelected/);
   assert.match(styles, /\.queueTableWrap/);
@@ -139,7 +139,7 @@ test("admin draft exposes every invoice and fuel field needed by canonical final
 
 test("matching uses an admin-scoped customer and destination search instead of raw IDs", () => {
   assert.match(client, /Find customer and destination/);
-  assert.match(client, /Search customer, asset, serial or Invoice Drop code/);
+  assert.match(client, /Search customer, asset or serial/);
   assert.match(client, /selectMatchTarget/);
   assert.doesNotMatch(client, />Owner user ID</);
   assert.match(targetRoute, /searchAdminCaptureTargets/);

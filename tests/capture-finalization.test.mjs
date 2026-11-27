@@ -31,11 +31,10 @@ test('audited direct completion records an explicit owner-approval override', as
   const finalizationEnd = finalizer.indexOf('export async function approveCaptureRequestForOwner', finalizationStart);
   const finalization = finalizer.slice(finalizationStart, finalizationEnd);
   const completionStart = captureStore.indexOf('export async function completeCaptureRequest');
-  const completionEnd = captureStore.indexOf('function readInvoiceDropCodeSecret', completionStart);
-  const completion = captureStore.slice(completionStart, completionEnd);
+  const completion = captureStore.slice(completionStart);
 
   assert.ok(finalizationStart >= 0 && finalizationEnd > finalizationStart);
-  assert.ok(completionStart >= 0 && completionEnd > completionStart);
+  assert.ok(completionStart >= 0);
   assert.match(adminRoute, /"complete_direct"/);
   assert.match(adminRoute, /\["request_information", "mark_duplicate", "reject", "complete_direct", "delete"\]\.includes\(action\) && !note/);
   assert.match(adminRoute, /action === "complete_direct"[\s\S]*?existing\.submissionChannel !== "dealer_upload"[\s\S]*?existing\.submissionChannel !== "public_drop"/);

@@ -113,7 +113,7 @@ export default async function PrivacyPolicyPage() {
               <p>
                 This policy covers our website, Aim4price Manager, Dealer and Middleman
                 experiences, estimates, Asset Registers, Document Vault, budgets, costs, fuel,
-                maintenance, reports, Advert Studio, showrooms, Invoice Drop, Discovery and Marketplace,
+                maintenance, reports, Advert Studio, showrooms, Discovery and Marketplace,
                 and professional workspaces where enabled. It also applies to people whose
                 information is supplied by an account holder or a public contributor.
               </p>
@@ -154,18 +154,14 @@ export default async function PrivacyPolicyPage() {
               <p>
                 We receive information from you; account owners and their authorised staff, Dealers
                 and Manager users; professional collaborators; uploaded documents and photos;
-                public Invoice Drop contributors; and your use of the platform. Catalogue research,
+                past public invoice contributors; and your use of the platform. Catalogue research,
                 public business listings and user-supplied market information may also inform the
                 service. A public business listing does not mean the business is an Aim4price
                 subscriber or has authorised marketing.
               </p>
               <p>
-                Invoice Drop can collect sender contact details, the destination code, files,
-                allocation instructions and technical abuse-prevention information from a person
-                without an account. The intended owner and authorised Aim4price capture staff may
-                receive that submission. Do not include unrelated personal information. An upload
-                code permits the intended submission; it does not grant access to the owner's entire
-                register.
+                Historical supplier submissions may include sender contact details, asset references,
+                files and allocation instructions received before public invoice uploads closed.
               </p>
               <p>
                 If you supply information about another person, you must have a lawful basis, give

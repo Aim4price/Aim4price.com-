@@ -220,16 +220,6 @@ export const pageHelp = {
     ],
     start: "Open your showroom to check what buyers see, or create your first advert.",
   },
-  invoiceDrop: {
-    title: "Drop Invoice",
-    purpose: "Let someone send an invoice for a specific asset without getting access to the owner’s records.",
-    actions: [
-      "Select Add invoice and identify the asset using the available code or serial/VIN option.",
-      "Attach one invoice as a PDF or photos of the same invoice, then enter your contact details.",
-      "Review and send it for verification and routing to the right asset.",
-    ],
-    start: "Have the invoice and asset reference ready before selecting Add invoice.",
-  },
   recentAdverts: {
     title: "Recently Advertised",
     purpose: "Make recently advertised equipment easy to find so you can follow up while the offer is relevant.",
@@ -285,7 +275,6 @@ export const pageHelp = {
     purpose: "Show what your equipment costs to run and keep each expense tied to its supporting record.",
     actions: [
       "Use Add Cost to enter an expense or upload an invoice.",
-      "Use Invoice Drop to give someone a way to send an invoice for an asset.",
       "Search and filter past expenses, or download the records you need.",
     ],
     start: "Select Add Cost and check the asset, date and amount before saving.",

@@ -4,7 +4,7 @@ Each account receives 10 Cost Ledger invoice submissions and 10 Fuel Ledger slip
 
 Manual ledger entry and manual attachments do not use these allowances. Verified Aim4price Admin sessions, including Admin support sessions inside customer accounts, bypass the allowance and are attributed to the actual Admin in capture audit events. Customer staff with an account “admin” role do not receive this bypass. Existing Admin work-time recording remains in place.
 
-The creation transaction serializes allowance consumption per account and ledger using a PostgreSQL advisory lock. Failed creation rolls back usage; failed file attachment releases it. Retraction does not reset usage. Dealer and accountant submissions count against the destination account. Public Invoice Drop submissions with a resolved owner use that owner's Cost allowance; unmatched public submissions remain in the existing Admin matching queue because no account can yet be charged.
+The creation transaction serializes allowance consumption per account and ledger using a PostgreSQL advisory lock. Failed creation rolls back usage; failed file attachment releases it. Retraction does not reset usage. Dealer and accountant submissions count against the destination account.
 
 On reaching the limit, the upload flow displays the standard Aim4price assistance modal. An account/actor/ledger/day record distinguishes the modal being shown from the customer actually requesting help. Requesting assistance does not authorize paid work or unlock uploads. The original 24-hour capture wording is unchanged. The modal refreshes its allowance at the South African midnight boundary.
 

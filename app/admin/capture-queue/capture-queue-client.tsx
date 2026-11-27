@@ -241,7 +241,7 @@ const CHANNEL_LABELS: Record<CaptureChannel, string> = {
   owner_upload: "Owner upload",
   accountant_upload: "Accountant upload",
   dealer_upload: "Dealer upload",
-  public_drop: "Public drop",
+  public_drop: "Legacy submission",
 };
 
 function cleanText(value: unknown): string {
@@ -1103,7 +1103,6 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
               <option value="owner_upload">Owner uploads</option>
               <option value="accountant_upload">Accountant uploads</option>
               <option value="dealer_upload">Dealer uploads</option>
-              <option value="public_drop">Public drops</option>
             </AdminSelect>
           </label>
           {hasActiveFilters ? (
@@ -1333,7 +1332,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
                         onChange={(event) => setMatchSearch(event.target.value)}
                         placeholder={detail.requestType === "fuel_slip"
                           ? "Search customer, asset, tank, serial or code"
-                          : "Search customer, asset, serial or Invoice Drop code"}
+                          : "Search customer, asset or serial"}
                         autoComplete="off"
                       />
                     </label>

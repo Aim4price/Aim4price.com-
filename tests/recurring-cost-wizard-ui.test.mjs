@@ -36,7 +36,7 @@ test('coverage reuses the complete saved-asset picker with safe draft selection'
   assert.match(recurringModal, /confirmRecurringAssetPicker/);
   assert.match(recurringModal, /data-asset-choice-selected=\{isSelected \? 'true' : undefined\}/);
   assert.match(recurringModal, /aria-pressed=\{isSelected\}/);
-  assert.match(client, /if \(!query\) return assets/);
+  assert.match(client, /if \(!query\) return recurringAssets/);
   assert.doesNotMatch(recurringModal, /<select[^>]*multiple/);
 });
 

@@ -1,5 +1,5 @@
 import { ensureCaptureAllowanceSchema, reserveCaptureAllowance } from './capture-allowance';
-import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { resolveAssetUsage } from './asset-usage';
 import { getDb } from './db';
@@ -97,7 +97,6 @@ export type CreateCaptureRequestInput = {
   ownerUserId?: string | null;
   assetId?: string | null;
   fuelStorageId?: string | null;
-  invoiceDropCodeId?: string | null;
   sender?: CaptureSenderInput | null;
   assetReference?: string | null;
   requesterNote?: string | null;
@@ -246,52 +245,6 @@ export type CaptureQueueCounts = {
   completedToday: number;
 };
 
-export type IssuedInvoiceDropCode = {
-  id: string;
-  ownerUserId: string;
-  assetId: string | null;
-  scope: 'all' | 'asset';
-  code: string;
-  lastFour: string;
-  createdAtIso: string;
-};
-
-export type ResolvedInvoiceDropCode = {
-  dropCodeId: string;
-  ownerUserId: string;
-  assetId: string | null;
-  scope: 'all' | 'asset';
-};
-
-export type ResolvedAssetSerialOrVin = {
-  ownerUserId: string;
-  ownerDisplayName: string;
-  assetId: string;
-  assetDisplayName: string;
-  serialOrVin: string;
-};
-
-export type InvoiceDropAssetSearchMatch = ResolvedAssetSerialOrVin & {
-  modelName: string;
-  categoryLabel: string;
-  yearModel: string;
-  usageReading: number | null;
-  usageMetric: 'hours' | 'km';
-  serialSuffix: string;
-};
-
-export type InvoiceDropAssetSearchResult = {
-  scope: 'all' | 'asset';
-  match: InvoiceDropAssetSearchMatch | null;
-  ambiguous: boolean;
-};
-
-export type ActiveInvoiceDropCode = Omit<IssuedInvoiceDropCode, 'code'>;
-
-export type RevealedInvoiceDropCode = ActiveInvoiceDropCode & {
-  code: string | null;
-};
-
 type Queryable = {
   query<T extends QueryResultRow = QueryResultRow>(
     text: string,
@@ -355,14 +308,6 @@ type CaptureFileRow = QueryResultRow & {
   security_checked_by_admin_user_id: string | null;
 };
 
-type AssetSerialMatchRow = QueryResultRow & {
-  owner_user_id: string;
-  owner_display_name: string | null;
-  asset_id: string;
-  asset_display_name: string | null;
-  serial_or_vin: string | null;
-};
-
 type CaptureEventRow = QueryResultRow & {
   id: string;
   capture_request_id: string;
@@ -397,19 +342,6 @@ type DropCodeRow = QueryResultRow & {
   created_at: Date | string;
 };
 
-type OwnerAssetSearchRow = QueryResultRow & {
-  owner_user_id: string;
-  owner_display_name: string | null;
-  asset_id: string;
-  asset_display_name: string | null;
-  model_name: string | null;
-  category_label: string | null;
-  year_model: string | number | null;
-  usage_reading: string | number | null;
-  usage_metric: string | null;
-  serial_or_vin: string | null;
-};
-
 type CaptureUsageAssetRow = QueryResultRow & {
   kind: unknown;
   hours: string | number | null;
@@ -420,8 +352,7 @@ type CaptureUsageAssetRow = QueryResultRow & {
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
-const DROP_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-const DROP_CODE_PATTERN = /^A4P(?:-[23456789A-HJ-NP-Z]{4}){3}$/;
+const REFERENCE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const CAPTURE_STORAGE_KEY_PATTERN = /^v1\/capture-quarantine\/[0-9a-f]{2}\/[a-z0-9][a-z0-9/_-]{15,480}$/;
 const TERMINAL_STATUSES = new Set<CaptureRequestStatus>([
   'completed',
@@ -743,7 +674,7 @@ function generateReference(requestType: CaptureRequestType): string {
   let suffix = '';
   const bytes = randomBytes(10);
   for (let index = 0; index < 10; index += 1) {
-    suffix += DROP_CODE_ALPHABET[bytes[index] % DROP_CODE_ALPHABET.length];
+    suffix += REFERENCE_ALPHABET[bytes[index] % REFERENCE_ALPHABET.length];
   }
   return `A4P-${prefix}-${suffix}`;
 }
@@ -786,7 +717,7 @@ function assertCreationActor(
     if (actor.actorType !== 'dealer' || !actor.userId) throw new Error('CAPTURE_DEALER_REQUIRED');
     return;
   }
-  if (actor.actorType !== 'public') throw new Error('CAPTURE_PUBLIC_ACTOR_REQUIRED');
+  throw new Error('CAPTURE_CHANNEL_INVALID');
 }
 
 async function assertTargetOwnership(
@@ -820,11 +751,11 @@ export async function createCaptureRequest(
     CAPTURE_SUBMISSION_CHANNELS,
     'CAPTURE_CHANNEL_INVALID',
   );
+  if (submissionChannel === 'public_drop') throw new Error('CAPTURE_CHANNEL_INVALID');
   const actor = normalizeActor(eventActor);
   const ownerUserId = cleanText(input.ownerUserId, 200) || null;
   const assetId = optionalUuid(input.assetId, 'CAPTURE_ASSET_INVALID');
   const fuelStorageId = optionalUuid(input.fuelStorageId, 'CAPTURE_FUEL_STORAGE_INVALID');
-  const invoiceDropCodeId = optionalUuid(input.invoiceDropCodeId, 'CAPTURE_DROP_CODE_INVALID');
   const sender = normalizeSender(input.sender);
   const assetReference = cleanText(input.assetReference, 180);
   const requesterNote = cleanMultilineText(input.requesterNote, 5_000);
@@ -832,58 +763,24 @@ export async function createCaptureRequest(
 
   assertCreationActor({ submissionChannel, ownerUserId }, actor);
 
-  if (submissionChannel === 'public_drop') {
-    if (requestType !== 'invoice') throw new Error('CAPTURE_PUBLIC_INVOICE_ONLY');
-    if ((!sender.name && !sender.businessName) || (!sender.email && !sender.phone)) {
-      throw new Error('CAPTURE_PUBLIC_IDENTITY_REQUIRED');
-    }
-    if (!assetId && !assetReference) throw new Error('CAPTURE_ASSET_REFERENCE_REQUIRED');
-  }
   if (requestType === 'invoice' && fuelStorageId) throw new Error('CAPTURE_TARGET_INVALID');
   if (requestType === 'fuel_slip' && Boolean(assetId) === Boolean(fuelStorageId)) {
     throw new Error('CAPTURE_TARGET_INVALID');
   }
   if (requestType === 'fuel_slip' && !ownerUserId) throw new Error('CAPTURE_OWNER_REQUIRED');
-  if (requestType === 'invoice' && submissionChannel !== 'public_drop' && (!ownerUserId || !assetId)) {
+  if (requestType === 'invoice' && (!ownerUserId || !assetId)) {
     throw new Error('CAPTURE_ASSET_REQUIRED');
   }
   if ((assetId || fuelStorageId) && !ownerUserId) throw new Error('CAPTURE_OWNER_REQUIRED');
-  if (invoiceDropCodeId && requestType !== 'invoice') throw new Error('CAPTURE_DROP_CODE_INVALID');
 
   await ensureCaptureAllowanceSchema();
   const publicReference = generateReference(requestType);
-  const initialStatus: CaptureRequestStatus = ownerUserId && (assetId || fuelStorageId)
-    ? 'submitted'
-    : 'needs_matching';
+  const initialStatus: CaptureRequestStatus = 'submitted';
 
   return withTransaction(async (client) => {
     await transaction?.before(client);
     if (ownerUserId) {
       await assertTargetOwnership(client, { ownerUserId, assetId, fuelStorageId });
-    }
-
-    if (invoiceDropCodeId) {
-      const dropCode = await client.query<DropCodeRow>(
-        `select id, owner_user_id, asset_register_item_id, code_last_four, created_at
-           from public.asset_invoice_drop_codes
-          where id = $1::uuid and is_active = true
-          for share`,
-        [invoiceDropCodeId],
-      );
-      const matchedCode = dropCode.rows[0];
-      if (!matchedCode) throw new Error('CAPTURE_DROP_CODE_INVALID');
-      const codeAssetId = matchedCode.asset_register_item_id
-        ? String(matchedCode.asset_register_item_id)
-        : null;
-      if (!ownerUserId || matchedCode.owner_user_id !== ownerUserId) {
-        throw new Error('CAPTURE_DROP_CODE_MISMATCH');
-      }
-      // An asset-scoped code must resolve to its one bound asset. An owner-wide
-      // code may resolve to any verified asset belonging to that owner, or stay
-      // unallocated for admin matching.
-      if (codeAssetId && (!assetId || codeAssetId !== assetId)) {
-        throw new Error('CAPTURE_DROP_CODE_MISMATCH');
-      }
     }
 
     const result = await client.query<CaptureRequestRow>(
@@ -896,7 +793,6 @@ export async function createCaptureRequest(
           owner_user_id,
           asset_register_item_id,
           fuel_storage_id,
-          invoice_drop_code_id,
           submitted_by_user_id,
           sender_type,
           sender_name,
@@ -910,9 +806,9 @@ export async function createCaptureRequest(
           due_at,
           updated_at
         ) values (
-          $1, $2, $3, $4, nullif($5, ''), $6::uuid, $7::uuid, $8::uuid,
-          nullif($9, ''), $10, nullif($11, ''), nullif($12, ''), nullif($13, ''),
-          nullif($14, ''), nullif($15, ''), $16, $17::jsonb,
+          $1, $2, $3, $4, nullif($5, ''), $6::uuid, $7::uuid,
+          nullif($8, ''), $9, nullif($10, ''), nullif($11, ''), nullif($12, ''),
+          nullif($13, ''), nullif($14, ''), $15, $16::jsonb,
           now(), now() + interval '24 hours', now()
         )
         returning *, 0::integer as file_count, 0::integer as clean_file_count
@@ -925,8 +821,7 @@ export async function createCaptureRequest(
         ownerUserId ?? '',
         assetId,
         fuelStorageId,
-        invoiceDropCodeId,
-        actor.actorType === 'public' ? '' : actor.userId,
+        actor.userId,
         sender.type,
         sender.name,
         sender.businessName,
@@ -1018,7 +913,6 @@ export async function addCaptureRequestFile(
       || (requestRow.submission_channel === 'dealer_upload'
         && actor.actorType === 'dealer'
         && actor.userId === requestRow.submitted_by_user_id)
-      || (requestRow.submission_channel === 'public_drop' && actor.actorType === 'public')
       || actor.actorType === 'admin'
       || actor.actorType === 'system'
     );
@@ -2074,512 +1968,3 @@ export async function completeCaptureRequest(
     return getRequestWithCounts(client, id);
   });
 }
-
-function readInvoiceDropCodeSecret(): string {
-  const configuredSecret = cleanText(process.env.INVOICE_DROP_CODE_SECRET, 500);
-  if (configuredSecret.length < 32 && process.env.NODE_ENV === 'production') {
-    throw new Error('INVOICE_DROP_CODE_SECRET_MISSING');
-  }
-  const secret = configuredSecret || cleanText(
-    process.env.BETTER_AUTH_SECRET ?? process.env.AUTH_SECRET,
-    500,
-  );
-  if (secret.length < 32) throw new Error('INVOICE_DROP_CODE_SECRET_MISSING');
-  return secret;
-}
-
-function normalizeInvoiceDropCode(value: unknown): string {
-  const formatted = cleanText(value, 40).toUpperCase().replace(/\s+/g, '');
-  if (!DROP_CODE_PATTERN.test(formatted)) throw new Error('INVOICE_DROP_CODE_INVALID');
-  return formatted;
-}
-
-function invoiceDropCodeHash(code: string): string {
-  const canonical = code.replace(/-/g, '');
-  return createHmac('sha256', readInvoiceDropCodeSecret()).update(canonical).digest('hex');
-}
-
-function deriveInvoiceDropCode(dropCodeIdInput: string): string {
-  const dropCodeId = asUuid(dropCodeIdInput, 'INVOICE_DROP_CODE_INVALID').toLowerCase();
-  const bytes = createHmac('sha256', readInvoiceDropCodeSecret())
-    .update(`invoice-drop-code:v2:${dropCodeId}`)
-    .digest()
-    .subarray(0, 12);
-  const characters = Array.from(bytes, (byte) => DROP_CODE_ALPHABET[byte & 31]).join('');
-  return `A4P-${characters.slice(0, 4)}-${characters.slice(4, 8)}-${characters.slice(8, 12)}`;
-}
-
-function invoiceDropCodeHashMatches(candidateCode: string, storedHash: unknown): boolean {
-  const actual = cleanText(storedHash, 64).toLowerCase();
-  if (!SHA256_PATTERN.test(actual)) return false;
-  const expected = invoiceDropCodeHash(candidateCode);
-  return timingSafeEqual(Buffer.from(actual, 'hex'), Buffer.from(expected, 'hex'));
-}
-
-function assertDropCodeActor(
-  actorInput: CaptureEventActor,
-  ownerUserId?: string,
-): Required<CaptureEventActor> {
-  const actor = normalizeActor(actorInput);
-  if (!['admin', 'owner', 'system'].includes(actor.actorType)) throw new Error('DROP_CODE_ACTOR_FORBIDDEN');
-  if (actor.actorType === 'owner' && actor.userId !== ownerUserId) {
-    throw new Error('CAPTURE_OWNER_SCOPE_FORBIDDEN');
-  }
-  return actor;
-}
-
-export async function issueInvoiceDropCode(
-  input: { ownerUserId: string; assetId?: string | null },
-  actorInput: CaptureEventActor,
-): Promise<IssuedInvoiceDropCode> {
-  const ownerUserId = cleanText(input.ownerUserId, 200);
-  if (!ownerUserId) throw new Error('CAPTURE_OWNER_REQUIRED');
-  const assetIdInput = cleanText(input.assetId, 80);
-  const assetId = assetIdInput ? asUuid(assetIdInput, 'CAPTURE_ASSET_INVALID') : null;
-  const actor = assertDropCodeActor(actorInput, ownerUserId);
-  const dropCodeId = randomUUID();
-  const code = deriveInvoiceDropCode(dropCodeId);
-  const codeHash = invoiceDropCodeHash(code);
-  const lastFour = code.slice(-4);
-
-  return withTransaction(async (client) => {
-    if (assetId) {
-      const asset = await client.query(
-        `select id from public.asset_register_items
-          where id = $1::uuid and user_id = $2
-          for update`,
-        [assetId, ownerUserId],
-      );
-      if (!asset.rows[0]) throw new Error('CAPTURE_ASSET_NOT_FOUND');
-    } else {
-      // Serialise owner-wide code rotation against the owner's profile row.
-      const owner = await client.query(
-        `select user_id from public.account_profiles
-          where user_id = $1
-          for update`,
-        [ownerUserId],
-      );
-      if (!owner.rows[0]) throw new Error('CAPTURE_OWNER_REQUIRED');
-    }
-
-    await client.query(
-      `update public.asset_invoice_drop_codes
-          set is_active = false,
-              revoked_at = now(),
-              revoked_by_user_id = nullif($3, '')
-        where owner_user_id = $1
-          and asset_register_item_id is not distinct from $2::uuid
-          and is_active = true`,
-      [ownerUserId, assetId, actor.userId],
-    );
-
-    const result = await client.query<DropCodeRow>(
-      `insert into public.asset_invoice_drop_codes (
-         id,
-         owner_user_id,
-         asset_register_item_id,
-         code_hash,
-         code_last_four,
-         created_by_actor_type,
-         created_by_user_id,
-         created_by_display_name
-       ) values ($1::uuid, $2, $3::uuid, $4, $5, $6, nullif($7, ''), $8)
-       returning id, owner_user_id, asset_register_item_id, code_last_four, created_at`,
-      [dropCodeId, ownerUserId, assetId, codeHash, lastFour, actor.actorType, actor.userId, actor.displayName],
-    );
-    const row = result.rows[0];
-    if (!row) throw new Error('INVOICE_DROP_CODE_CREATE_FAILED');
-    return {
-      id: String(row.id),
-      ownerUserId: String(row.owner_user_id),
-      assetId: row.asset_register_item_id ? String(row.asset_register_item_id) : null,
-      scope: row.asset_register_item_id ? 'asset' : 'all',
-      code,
-      lastFour: String(row.code_last_four),
-      createdAtIso: asIso(row.created_at),
-    };
-  });
-}
-
-export async function resolveInvoiceDropCode(
-  inputCode: string,
-): Promise<ResolvedInvoiceDropCode | null> {
-  let code: string;
-  try {
-    code = normalizeInvoiceDropCode(inputCode);
-  } catch {
-    return null;
-  }
-  const codeHash = invoiceDropCodeHash(code);
-  const result = await getDb().query<DropCodeRow>(
-    `update public.asset_invoice_drop_codes
-        set use_count = use_count + 1,
-            last_used_at = now()
-      where code_hash = $1
-        and is_active = true
-      returning id, owner_user_id, asset_register_item_id, code_last_four, created_at`,
-    [codeHash],
-  );
-  const row = result.rows[0];
-  return row
-    ? {
-        dropCodeId: String(row.id),
-        ownerUserId: String(row.owner_user_id),
-        assetId: row.asset_register_item_id ? String(row.asset_register_item_id) : null,
-        scope: row.asset_register_item_id ? 'asset' : 'all',
-      }
-    : null;
-}
-
-function normalizeInvoiceDropAssetSearch(value: unknown): string[] {
-  const normalized = cleanText(value, 160)
-    .normalize('NFKC')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-  if (normalized.length < 3) return [];
-  return normalized
-    .split(/\s+/)
-    .filter((token) => token.length >= 2)
-    .slice(0, 8);
-}
-
-function serialSuffix(value: unknown): string {
-  const normalized = normalizeAssetSerialOrVin(value);
-  return normalized.length >= 4 ? normalized.slice(-4) : '';
-}
-
-/**
- * Resolves an owner-scoped, typed asset description to at most one asset.
- * The query is token based, stays inside the known owner's register and never
- * returns a browseable list. Ambiguous matches deliberately return no asset.
- */
-export async function resolveUniqueOwnerInvoiceDropAsset(
-  ownerUserIdInput: string,
-  searchInput: string,
-): Promise<{ match: InvoiceDropAssetSearchMatch | null; ambiguous: boolean }> {
-  const ownerUserId = cleanText(ownerUserIdInput, 200);
-  const searchTokens = normalizeInvoiceDropAssetSearch(searchInput);
-  if (!ownerUserId || !searchTokens.length) return { match: null, ambiguous: false };
-
-  const result = await getDb().query<OwnerAssetSearchRow>(
-    `with candidates as (
-       select
-         asset.user_id as owner_user_id,
-         coalesce(
-           nullif(profile.business_name, ''),
-           nullif(profile.display_name, ''),
-           nullif(to_jsonb(profile)->>'email', ''),
-           'Asset owner'
-         ) as owner_display_name,
-         asset.id::text as asset_id,
-         coalesce(
-           nullif(asset.title, ''),
-           nullif(concat_ws(' ', nullif(asset.brand_name, ''), nullif(asset.model_name, '')), ''),
-           'Saved asset'
-         ) as asset_display_name,
-         coalesce(
-           nullif(asset.model_name, ''),
-           nullif(to_jsonb(asset)->>'typed_model_name', ''),
-           ''
-         ) as model_name,
-         coalesce(
-           nullif(to_jsonb(asset)->>'category_label', ''),
-           nullif(to_jsonb(asset)->>'category', ''),
-           ''
-         ) as category_label,
-         coalesce(
-           nullif(to_jsonb(asset)->>'year_model', ''),
-           nullif(to_jsonb(asset)->>'year', ''),
-           ''
-         ) as year_model,
-         nullif(to_jsonb(asset)->>'hours', '') as usage_reading,
-         case
-           when lower(coalesce(to_jsonb(asset)->>'usage_metric', '')) = 'km' then 'km'
-           when lower(coalesce(to_jsonb(asset)->>'usage_metric', '')) = 'hours' then 'hours'
-           when lower(coalesce(to_jsonb(asset)->>'kind', '')) = 'vehicle' then 'km'
-           else 'hours'
-         end as usage_metric,
-         coalesce(
-           nullif(to_jsonb(asset)->>'serial_number', ''),
-           nullif(to_jsonb(asset)->>'serial', ''),
-           nullif(to_jsonb(asset)->>'vin', ''),
-           ''
-         ) as serial_or_vin,
-         lower(regexp_replace(
-           concat_ws(' ',
-             nullif(asset.title, ''),
-             nullif(asset.brand_name, ''),
-             nullif(asset.model_name, ''),
-             nullif(to_jsonb(asset)->>'typed_model_name', ''),
-             nullif(to_jsonb(asset)->>'serial_number', ''),
-             nullif(to_jsonb(asset)->>'serial', ''),
-             nullif(to_jsonb(asset)->>'vin', ''),
-             nullif(to_jsonb(asset)->>'public_asset_code', ''),
-             nullif(to_jsonb(asset)->>'license_registration_number', ''),
-             nullif(to_jsonb(asset)->>'licence_registration_number', ''),
-             nullif(to_jsonb(asset)->>'registration_number', ''),
-             nullif(to_jsonb(asset)->>'registration', ''),
-             nullif(to_jsonb(asset)->>'number_plate', ''),
-             nullif(to_jsonb(asset)->>'numberplate', ''),
-             nullif(to_jsonb(asset)->>'plate_label', ''),
-             nullif(to_jsonb(asset)->>'license_plate', ''),
-             nullif(to_jsonb(asset)->>'fleet_number', ''),
-             nullif(to_jsonb(asset)->>'asset_number', ''),
-             nullif(to_jsonb(asset)->>'stock_number', ''),
-             nullif(to_jsonb(asset)->'specs_json'->>'fleet_number', ''),
-             nullif(to_jsonb(asset)->'specs_json'->>'asset_number', ''),
-             nullif(to_jsonb(asset)->'specs_json'->>'stock_number', '')
-           ),
-           '[^A-Za-z0-9]+',
-           ' ',
-           'g'
-         )) as search_text
-       from public.asset_register_items asset
-       left join public.account_profiles profile on profile.user_id = asset.user_id
-       where asset.user_id = $1
-     )
-     select
-       owner_user_id,
-       owner_display_name,
-       asset_id,
-       asset_display_name,
-       model_name,
-       category_label,
-       year_model,
-       usage_reading,
-       usage_metric,
-       serial_or_vin
-     from candidates
-     where not exists (
-       select 1
-       from unnest($2::text[]) as token
-       where candidates.search_text not like ('%' || token || '%')
-     )
-     order by asset_display_name, asset_id
-     limit 2`,
-    [ownerUserId, searchTokens],
-  );
-
-  if (result.rows.length !== 1) {
-    return { match: null, ambiguous: result.rows.length > 1 };
-  }
-  const row = result.rows[0];
-  const serialOrVin = cleanText(row.serial_or_vin, 180);
-  const numericUsageReading = Number(row.usage_reading);
-  const usageReading = Number.isFinite(numericUsageReading) && numericUsageReading > 0
-    ? numericUsageReading
-    : null;
-  return {
-    ambiguous: false,
-    match: {
-      ownerUserId: String(row.owner_user_id),
-      ownerDisplayName: cleanText(row.owner_display_name, 180) || 'Asset owner',
-      assetId: String(row.asset_id),
-      assetDisplayName: cleanText(row.asset_display_name, 180) || 'Saved asset',
-      modelName: cleanText(row.model_name, 180),
-      serialOrVin,
-      categoryLabel: cleanText(row.category_label, 120),
-      yearModel: cleanText(row.year_model, 20),
-      usageReading,
-      usageMetric: cleanText(row.usage_metric, 20) === 'km' ? 'km' : 'hours',
-      serialSuffix: serialSuffix(serialOrVin),
-    },
-  };
-}
-
-export async function searchInvoiceDropAssetByCode(
-  inputCode: string,
-  searchInput: string,
-): Promise<InvoiceDropAssetSearchResult | null> {
-  let code: string;
-  try {
-    code = normalizeInvoiceDropCode(inputCode);
-  } catch {
-    return null;
-  }
-  const codeHash = invoiceDropCodeHash(code);
-  const codeResult = await getDb().query<DropCodeRow>(
-    `select id, owner_user_id, asset_register_item_id, code_last_four, created_at
-       from public.asset_invoice_drop_codes
-      where code_hash = $1
-        and is_active = true
-      limit 1`,
-    [codeHash],
-  );
-  const row = codeResult.rows[0];
-  if (!row) return null;
-  if (row.asset_register_item_id) {
-    return { scope: 'asset', match: null, ambiguous: false };
-  }
-
-  const search = await resolveUniqueOwnerInvoiceDropAsset(row.owner_user_id, searchInput);
-  return { scope: 'all', ...search };
-}
-
-function normalizeAssetSerialOrVin(value: unknown): string {
-  return cleanText(value, 180)
-    .normalize('NFKC')
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, '');
-}
-
-/**
- * Privately resolves a public serial/VIN submission only when one saved asset
- * has the exact normalized identifier. An absent or duplicate identifier is
- * deliberately left for admin matching rather than guessing a destination.
- */
-export async function resolveUniqueAssetSerialOrVin(
-  inputReference: string,
-): Promise<ResolvedAssetSerialOrVin | null> {
-  const serialOrVin = normalizeAssetSerialOrVin(inputReference);
-  if (serialOrVin.length < 3) return null;
-
-  const result = await getDb().query<AssetSerialMatchRow>(
-    `select
-       asset.user_id as owner_user_id,
-       coalesce(
-         nullif(profile.business_name, ''),
-         nullif(profile.display_name, ''),
-         nullif(to_jsonb(profile)->>'email', ''),
-         'Asset owner'
-       ) as owner_display_name,
-       asset.id::text as asset_id,
-       coalesce(
-         nullif(asset.title, ''),
-         nullif(concat_ws(' ', nullif(asset.brand_name, ''), nullif(asset.model_name, '')), ''),
-         'Saved asset'
-       ) as asset_display_name,
-       matched_identifier.identifier as serial_or_vin
-     from public.asset_register_items asset
-     left join public.account_profiles profile on profile.user_id = asset.user_id
-     cross join lateral (
-       select identifiers.identifier
-       from (values
-         (1, nullif(to_jsonb(asset)->>'serial_number', '')),
-         (2, nullif(to_jsonb(asset)->>'serial', '')),
-         (3, nullif(to_jsonb(asset)->>'vin', '')),
-         (4, nullif(to_jsonb(asset)->>'serialNumber', ''))
-       ) as identifiers(priority, identifier)
-       where upper(regexp_replace(
-         identifiers.identifier,
-         '[^A-Za-z0-9]+',
-         '',
-         'g'
-       )) = $1
-       order by identifiers.priority
-       limit 1
-     ) matched_identifier
-     order by asset.id
-     limit 2`,
-    [serialOrVin],
-  );
-
-  if (result.rows.length !== 1) return null;
-  const row = result.rows[0];
-  return {
-    ownerUserId: String(row.owner_user_id),
-    ownerDisplayName: cleanText(row.owner_display_name, 180) || 'Asset owner',
-    assetId: String(row.asset_id),
-    assetDisplayName: cleanText(row.asset_display_name, 180) || 'Saved asset',
-    serialOrVin: cleanText(row.serial_or_vin, 180) || inputReference,
-  };
-}
-
-export async function getActiveInvoiceDropCode(
-  ownerUserIdInput: string,
-  assetIdInput?: string | null,
-): Promise<ActiveInvoiceDropCode | null> {
-  const ownerUserId = cleanText(ownerUserIdInput, 200);
-  const assetIdText = cleanText(assetIdInput, 80);
-  const assetId = assetIdText ? asUuid(assetIdText, 'CAPTURE_ASSET_INVALID') : null;
-  if (!ownerUserId) return null;
-  const result = await getDb().query<DropCodeRow>(
-    `select id, owner_user_id, asset_register_item_id, code_last_four, created_at
-       from public.asset_invoice_drop_codes
-      where owner_user_id = $1
-        and asset_register_item_id is not distinct from $2::uuid
-        and is_active = true
-      limit 1`,
-    [ownerUserId, assetId],
-  );
-  const row = result.rows[0];
-  return row
-    ? {
-      id: String(row.id),
-      ownerUserId: String(row.owner_user_id),
-      assetId: row.asset_register_item_id ? String(row.asset_register_item_id) : null,
-      scope: row.asset_register_item_id ? 'asset' : 'all',
-      lastFour: String(row.code_last_four),
-        createdAtIso: asIso(row.created_at),
-      }
-    : null;
-}
-
-/**
- * Reveals a current code only when it was issued with the recoverable v2
- * derivation. Legacy random codes remain valid but cannot be reconstructed
- * from their one-way hash and must be rotated once before they can be viewed.
- */
-export async function revealActiveInvoiceDropCode(
-  ownerUserIdInput: string,
-  assetIdInput?: string | null,
-): Promise<RevealedInvoiceDropCode | null> {
-  const ownerUserId = cleanText(ownerUserIdInput, 200);
-  const assetIdText = cleanText(assetIdInput, 80);
-  const assetId = assetIdText ? asUuid(assetIdText, 'CAPTURE_ASSET_INVALID') : null;
-  if (!ownerUserId) return null;
-
-  const result = await getDb().query<DropCodeRow>(
-    `select id, owner_user_id, asset_register_item_id, code_hash, code_last_four, created_at
-       from public.asset_invoice_drop_codes
-      where owner_user_id = $1
-        and asset_register_item_id is not distinct from $2::uuid
-        and is_active = true
-      limit 1`,
-    [ownerUserId, assetId],
-  );
-  const row = result.rows[0];
-  if (!row) return null;
-
-  const candidate = deriveInvoiceDropCode(String(row.id));
-  return {
-    id: String(row.id),
-    ownerUserId: String(row.owner_user_id),
-    assetId: row.asset_register_item_id ? String(row.asset_register_item_id) : null,
-    scope: row.asset_register_item_id ? 'asset' : 'all',
-    lastFour: String(row.code_last_four),
-    createdAtIso: asIso(row.created_at),
-    code: invoiceDropCodeHashMatches(candidate, row.code_hash) ? candidate : null,
-  };
-}
-
-export async function revokeInvoiceDropCode(
-  dropCodeIdInput: string,
-  actorInput: CaptureEventActor,
-): Promise<boolean> {
-  const dropCodeId = asUuid(dropCodeIdInput, 'INVOICE_DROP_CODE_INVALID');
-  return withTransaction(async (client) => {
-    const result = await client.query<DropCodeRow & { is_active: boolean }>(
-      `select id, owner_user_id, asset_register_item_id, code_last_four, created_at, is_active
-         from public.asset_invoice_drop_codes
-        where id = $1::uuid
-        for update`,
-      [dropCodeId],
-    );
-    const row = result.rows[0];
-    if (!row) return false;
-    const actor = assertDropCodeActor(actorInput, row.owner_user_id);
-    if (!row.is_active) return true;
-    await client.query(
-      `update public.asset_invoice_drop_codes
-          set is_active = false,
-              revoked_at = now(),
-              revoked_by_user_id = nullif($2, '')
-        where id = $1::uuid and is_active = true`,
-      [dropCodeId, actor.userId],
-    );
-    return true;
-  });
-}
-
