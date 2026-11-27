@@ -13,7 +13,7 @@ import downloadStyles from '../../components/ReportDownload.module.css';
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
 import BudgetCostDetails from './BudgetCostDetails';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { budgetStatusLabel, filterTrackedBudgets, EMPTY_BUDGET_FILTERS, type TrackedBudget } from '../../lib/budget-tracking';
+import { budgetStatusLabel, budgetUsageLabel, filterTrackedBudgets, EMPTY_BUDGET_FILTERS, type TrackedBudget } from '../../lib/budget-tracking';
 import { downloadCanonicalReportFile, openCanonicalReportUrl } from '../../lib/report-open';
 import ledger from '../my-invoices/page.module.css';
 import styles from './page.module.css';
@@ -113,8 +113,8 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
       </div>
       <div className={styles.cardBody}>
         <div className={styles.progressBlock}>
-          <div className={styles.track} role="progressbar" aria-label={`${budget.assetTitle} budget used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.max(0, budget.percentUsed))} aria-valuetext={`${budget.percentUsed}% used${budget.overBy > 0 ? `, ${money(budget.overBy)} over budget` : ''}`}><span style={{ width: `${Math.min(100, Math.max(0, budget.percentUsed))}%` }} /><i style={{ left: `${budget.warningPercent}%` }} aria-hidden="true" /></div>
-          <div className={styles.progressLabels}><span>{budgetStatusLabel(budget)} · {money(budget.amount)} budget</span><strong>{budget.percentUsed.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}% used</strong></div>
+          <div className={styles.track} role="progressbar" aria-label={`${budget.assetTitle} budget used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.max(0, budget.percentUsed))} aria-valuetext={`${budgetUsageLabel(budget.percentUsed)}${budget.overBy > 0 ? `, ${money(budget.overBy)} over budget` : ''}`}><span style={{ width: `${Math.min(100, Math.max(0, budget.percentUsed))}%` }} /><i style={{ left: `${budget.warningPercent}%` }} aria-hidden="true" /></div>
+          <div className={styles.progressLabels}><span>{budgetStatusLabel(budget)} · {money(budget.amount)} budget</span><strong>{budgetUsageLabel(budget.percentUsed)}</strong></div>
         </div>
         <div className={styles.cardActions}>
           <button type="button" className={`${ledger.secondaryButtonSmall} ${styles.viewCosts}`} aria-expanded={expandedId === budget.id} aria-controls={`budget-details-${budget.id}`} onClick={() => setExpandedId(expandedId === budget.id ? null : budget.id)}>

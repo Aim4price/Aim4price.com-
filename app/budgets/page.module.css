@@ -26,7 +26,8 @@
 .metrics dd { margin: 0; font-size: 1.45rem; font-weight: 800; line-height: 1.2; color: var(--app-text, #073b30); overflow-wrap: anywhere; }
 .metrics div:last-child dd { color: var(--app-danger, var(--budget-color)); }
 .track { position: relative; height: .5rem; background: var(--app-info-soft, #e5ecee); border-radius: 1rem; overflow: hidden; }
-.track span { display: block; height: 100%; background: var(--app-danger-soft, var(--budget-color)); border-radius: inherit; }
+.track span { display: block; height: 100%; background: var(--budget-color); border-radius: inherit; }
+.track[aria-valuenow]:not([aria-valuenow="0"]) span { min-width: 2px; }
 .track i { position: absolute; top: 0; height: 100%; width: 2px; background: var(--app-surface-soft, #6c7e76); }
 .progressLabels { margin-top: .45rem; font-size: .8rem; font-weight: 650; }
 .progressLabels strong { color: var(--app-danger, var(--budget-color)); }
