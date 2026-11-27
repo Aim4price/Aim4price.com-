@@ -65,3 +65,25 @@
 }
 .typeGrid [data-asset-kind] > span:first-child { width: 2.3rem !important; height: 2.3rem !important; }
 .typeGrid [data-asset-kind] small { white-space: nowrap; color: var(--app-text, #29483e) !important; }
+
+@media (max-width: 640px) {
+  .typeGrid.typeGrid.typeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: .4rem !important;
+  }
+  .typeGrid button[data-asset-kind] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-content: center;
+    gap: .2rem !important;
+    padding: .5rem !important;
+    min-height: 4rem !important;
+  }
+  .typeGrid [data-asset-kind] > span:first-child {
+    width: 1.4rem !important;
+    height: 1.4rem !important;
+    border: none !important;
+    background: transparent !important;
+  }
+  .typeGrid [data-asset-kind] strong { font-size: .88rem !important; }
+  .typeGrid [data-asset-kind] small { font-size: .75rem !important; }
+}

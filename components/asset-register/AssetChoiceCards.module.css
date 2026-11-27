@@ -15,3 +15,7 @@
 .actions button { padding: .65rem 1.2rem; border-radius: .8rem; border: 1px solid var(--app-line, #aecbbd); background: var(--app-surface-soft, #edf5ef); color: var(--app-text, #173c32); font: inherit; font-weight: 750; cursor: pointer; }
 .actions button:disabled { opacity: .5; cursor: default; }
 .pager span { white-space: nowrap; font-weight: 650; }
+@media (max-width: 640px) {
+  .actions button { padding: .55rem .8rem; }
+  .pager { gap: .4rem; }
+}
