@@ -108,7 +108,7 @@ type VaultResponse = {
 
 type VaultView = 'documents' | 'recycle-bin';
 type ModalMode = 'upload' | 'edit';
-type DocumentSlide = 'assets' | 'files' | 'details';
+type DocumentSlide = 'assets' | 'files' | 'details' | 'scope';
 type Notice = { tone: 'success' | 'error'; message: string };
 type SummaryNavigation = { hasOverflow: boolean; atStart: boolean; atEnd: boolean };
 type IconName =
@@ -680,7 +680,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setDocumentTypeSearch('');
     setShowDocumentTypeOptions(false);
     setModalNotice(null);
-    setUploadStep('assets');
+    setUploadStep(initialAssetId || desktop.workspace ? 'assets' : 'scope');
     setTypePage(0);
     setModalMode('upload');
     setNotice(null);
@@ -893,13 +893,15 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   function continueDocumentFlow() {
     setModalNotice(null);
     if (uploadStep === 'assets') {
-      if (desktop.workspace && !draft.assetIds.length) {
+      if (!draft.assetIds.length) {
         setModalNotice({ tone: 'error', message: 'Choose at least one asset.' });
         return;
       }
       setDocumentTypeSearch('');
       setTypePage(0);
       setShowDocumentTypeOptions(true);
+    } else if (uploadStep === 'scope') {
+      return;
     } else if (uploadStep === 'files') {
       if (!selectedFiles.length) {
         setModalNotice({ tone: 'error', message: 'Select at least one document before continuing.' });
@@ -917,9 +919,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     if (modalMode === 'edit') setUploadStep('details');
     else if (uploadStep === 'details') setUploadStep('files');
     else if (uploadStep === 'files') {
-      setUploadStep('assets');
+      setUploadStep(draft.assetIds.length ? 'assets' : 'scope');
       setShowDocumentTypeOptions(true);
-    } else closeModal();
+    } else if (!initialAssetId && !desktop.workspace) setUploadStep('scope');
+    else closeModal();
   }
 
   async function submitDocument(event: FormEvent<HTMLFormElement>) {
@@ -1434,7 +1437,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <section ref={modalRef} className={`${styles.modal} ${styles.accountDocumentModal} ${accountStyles.modalTheme} ${modalMode === 'upload' ? wizardStyles.dialog : styles.editDocumentModal}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
               <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
-                <h2 id="document-modal-title">{modalMode === 'edit' ? 'Edit document' : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
+                <h2 id="document-modal-title">{modalMode === 'edit' ? 'Edit document' : uploadStep === 'scope' ? 'Upload document' : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
                 {modalMode === 'edit' && <p>Update details and linked assets.</p>}
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true" data-modal-close="true"><span aria-hidden="true">×</span></button>
@@ -1452,6 +1455,19 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
                 <div className={modalMode === 'upload' ? `${styles.uploadWizardPanel} ${wizardStyles.panel}` : undefined}>
                 <fieldset className={`${styles.modalFields} ${modalMode === 'upload' ? styles.uploadWizardFields : ''}`} disabled={busy}>
+                {uploadStep === 'scope' && <div className={styles.scopeChoices}>
+                  <button type="button" className={categoryStyles.card} data-category="licence" onClick={() => setUploadStep('assets')}>
+                    <span className={categoryStyles.icon}><Icon name="link" /></span><strong>Related to an asset</strong>
+                  </button>
+                  <button type="button" className={categoryStyles.card} onClick={() => {
+                    updateDraft('assetIds', []);
+                    setDocumentTypeSearch('');
+                    setTypePage(0);
+                    setShowDocumentTypeOptions(true);
+                  }}>
+                    <span className={categoryStyles.icon}><Icon name="document" /></span><strong>General document</strong>
+                  </button>
+                </div>}
                 {modalMode === 'upload' && uploadStep === 'files' ? (
                   <>
                   <div
@@ -1593,7 +1609,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 </div>
               </div>
 
-              <footer className={`${styles.modalFooter} ${modalMode === 'upload' ? wizardStyles.footer : ''}`}>
+              {uploadStep !== 'scope' && <footer className={`${styles.modalFooter} ${modalMode === 'upload' ? wizardStyles.footer : ''}`}>
                 <span className={styles.srOnly} role="status" aria-live="polite">
                   {uploadProgress ? `Uploading document ${uploadProgress.current} of ${uploadProgress.total}.` : ''}
                 </span>
@@ -1611,7 +1627,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     : <Icon name={!finalSlide ? 'chevron-right' : modalMode === 'upload' ? 'upload' : 'edit'} />}
                   {documentActionLabel()}
                 </button>
-              </footer>
+              </footer>}
             </form>
           </section>
         </div>
@@ -1637,12 +1653,12 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             </div>
             {!filteredDocumentTypes.length && <p role="status">No matches.</p>}
             <footer data-download-footer="true">
+              <button className={styles.typeBack} type="button" onClick={closeDocumentTypePicker}>Back</button>
               {typePages > 1 && <>
-                <span aria-live="polite">Page {currentTypePage + 1} of {typePages}</span>
+                <span className={styles.typePageCount} aria-live="polite">Page {currentTypePage + 1} of {typePages}</span>
                 <button type="button" disabled={!currentTypePage} onClick={() => setTypePage(currentTypePage - 1)}>Previous</button>
                 <button type="button" disabled={currentTypePage + 1 >= typePages} onClick={() => setTypePage(currentTypePage + 1)}>Next</button>
               </>}
-              <button type="button" onClick={closeDocumentTypePicker}>Back</button>
             </footer>
           </section>
         </div>
@@ -1666,7 +1682,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             <header className={styles.assetSelectionHeader} data-asset-choice-header="true">
               <div>
                 <h2 id="asset-picker-title">Choose assets</h2>
-                <p id="asset-picker-description">Select the saved assets these documents belong to, or leave them unlinked.</p>
+                <p id="asset-picker-description">Select the saved assets these documents belong to.{modalMode === 'edit' && ' Leave empty to unlink.'}</p>
               </div>
               <button type="button" onClick={closeModal} disabled={busy} aria-label="Close asset chooser" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
@@ -1733,7 +1749,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   : 'Account-level document'}
               </span>
               <button type="button" className={styles.cancelButton} disabled={busy} onClick={returnToPreviousUploadStep}>
-                {modalMode === 'upload' ? 'Cancel' : <><Icon name="chevron-left" /> Back</>}
+                {modalMode === 'upload' && desktop.workspace ? 'Cancel' : <><Icon name="chevron-left" /> Back</>}
               </button>
               <button type="submit" className={styles.uploadButton} data-asset-choice-action="primary" disabled={busy}>
                 {documentActionLabel()}

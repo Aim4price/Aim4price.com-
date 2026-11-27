@@ -4285,3 +4285,11 @@
 .filePages { display: flex; align-items: center; justify-content: space-between; gap: .6rem; padding: .4rem .8rem; }
 .filePages button { padding: .45rem .75rem; border: 1px solid var(--app-line); border-radius: .65rem; color: var(--app-text); background: var(--app-surface); font: inherit; cursor: pointer; }
 .filePages button:disabled { opacity: .5; }
+
+.scopeChoices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: .85rem;
+}
+.typeBack { margin-inline-end: auto; }
+.typePageCount { color: var(--app-text, #10352b); font-weight: 800; white-space: nowrap; }
