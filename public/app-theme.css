@@ -147,3 +147,25 @@
     }
   }
 }
+
+/* A single small twist per hover. Independent rotation preserves page-specific
+   transforms, including the lift on primary actions. */
+@keyframes aim4price-page-button-tilt {
+  0%, 100% { rotate: 0deg; }
+  42% { rotate: var(--page-button-tilt, .8deg); }
+}
+
+@media screen and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  @scope (:root) to (dialog, [role='dialog'], [role='alertdialog'], [aria-modal='true'],
+    [data-website-overlay], [popover], [inert], [aria-hidden='true'], [aria-disabled='true'],
+    [class*='modalBackdrop' i], [class*='modalOverlay' i]) {
+    :where(button, [role='button'], input:is([type='button'], [type='submit'], [type='reset']),
+      a[href]:is([class*='button' i], [class*='btn' i], [class*='cta' i])):hover:not(:disabled, :active, :focus-visible, [aria-busy='true'], [data-modal-close]) {
+      animation: aim4price-page-button-tilt 320ms ease-in-out;
+    }
+
+    :where(button, [role='button'], input, a):nth-child(even) {
+      --page-button-tilt: -.8deg;
+    }
+  }
+}
