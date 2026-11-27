@@ -133,16 +133,16 @@
 .resetChoice { margin-top: .45rem; }
 
 .memberSection { margin-block: 1.2rem; }
-.memberSection h3 { margin: 0 0 .65rem; }
-.memberSection details, .memberRows { border: 1px solid var(--app-line, #d9e7df); border-radius: .85rem; background: var(--app-surface, #fff); }
-.memberSection summary { cursor: pointer; }
-.memberSection summary { padding: .75rem 1rem; color: var(--app-text, #123f32); font-weight: 650; }
-.memberRows { margin: 0 0 .5rem; padding: 0 1rem; }
+.memberSection details { border: 1px solid var(--app-line, #d9e7df); border-radius: .85rem; background: var(--app-surface, #fff); }
+.memberSection summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; list-style: none; cursor: pointer; padding: .75rem 1rem; color: var(--app-text, #123f32); font-weight: 650; }
+.memberSection summary::-webkit-details-marker { display: none; }
+.memberSection summary svg { padding: .15rem; box-sizing: content-box; border-radius: 50%; background: var(--app-info-soft, #e5f3ff); }
+.memberSection details[open] summary svg { transform: rotate(180deg); }
+.memberRows { margin: 0; padding: 0 1rem; }
 .memberRows > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-block: .65rem; }
 .memberRows > div + div { border-top: 1px solid var(--app-line, #d9e7df); }
 .memberRows dt { min-width: 0; overflow-wrap: anywhere; }
 .memberRows dd { margin: 0; white-space: nowrap; font-weight: 750; font-variant-numeric: tabular-nums; }
-.memberSection details .memberRows { margin: 0; border: 0; background: transparent; }
 
 .costControls .deleteCost { color: var(--app-danger, #a83333); border-color: var(--app-danger-line, #ddb5b5); }
 
@@ -151,3 +151,5 @@
 .deleteChoices label:has(:checked) { border-color: var(--app-accent, #187556); background: var(--app-surface-soft, #eef7f2); }
 .deleteChoices input { accent-color: var(--app-accent, #187556); }
 .deleteChoices span { display: grid; gap: .25rem; }
+
+.deleteChoices small { color: var(--app-text, #25483c); font-size: .94rem; font-weight: 650; line-height: 1.45; }

@@ -7,11 +7,6 @@ export default function BudgetCostDetails({ budget, onRefresh, onAddRecurring }:
   const included = budget.includeRecurringCosts !== false;
   const available = availableBudget(budget, included);
   const members = [...(budget.members ?? [])].sort((a, b) => b.spent - a.spent || a.title.localeCompare(b.title));
-  const active = members.filter(member => member.spent !== 0);
-  const idle = members.filter(member => member.spent === 0);
-  const rows = (items: typeof members) => <dl className={styles.memberRows}>{items.map(member =>
-    <div key={member.id}><dt>{member.title}</dt><dd>{money(member.spent)}</dd></div>
-  )}</dl>;
   return <>
     <dl className={styles.metrics}>
       <div><dt><BudgetDetailIcon kind="budget" />Budget</dt><dd>{money(budget.amount)}</dd></div>
@@ -20,12 +15,14 @@ export default function BudgetCostDetails({ budget, onRefresh, onAddRecurring }:
       <div><dt><BudgetDetailIcon kind="alert" />Alert at</dt><dd>{budget.warningPercent}%</dd></div>
     </dl>
     {members.length > 0 && <section aria-label="Spending by asset" className={styles.memberSection}>
-      <h3>Spending by asset</h3>
-      {active.length > 0 && rows(active)}
-      {idle.length > 0 && <details>
-        <summary>{idle.length} {idle.length === 1 ? 'asset' : 'assets'} with no spending</summary>
-        {rows(idle)}
-      </details>}
+      <details>
+        <summary>View spending by asset
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+        </summary>
+        <dl className={styles.memberRows}>{members.map(member =>
+          <div key={member.id}><dt>{member.title}</dt><dd>{money(member.spent)}</dd></div>
+        )}</dl>
+      </details>
     </section>}
     <BudgetRecurringCosts budget={budget} onRefresh={onRefresh} onAdd={onAddRecurring} />
   </>;

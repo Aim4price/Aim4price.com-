@@ -78,10 +78,11 @@ async function main(){let server,browser;const created=[];try{
  await page.click('button[aria-controls="budget-details-new-budget"]');
  const breakdown='#budget-details-new-budget section[aria-label="Spending by asset"]';
  await page.waitForSelector(breakdown);
- assert.match(await page.$eval(breakdown,e=>e.innerText),/Toyota Hilux/);
- assert.doesNotMatch(await page.$eval(breakdown,e=>e.innerText),/New Holland/);
+ assert.doesNotMatch(await page.$eval(breakdown,e=>e.innerText),/Toyota Hilux|New Holland/);
  await page.click(breakdown+' summary');
- assert.match(await page.$eval(breakdown,e=>e.innerText),/New Holland/);
+ assert.match(await page.$eval(breakdown,e=>e.innerText),/Toyota Hilux[\s\S]*New Holland/);
+ await page.click(breakdown+' summary');
+ assert.doesNotMatch(await page.$eval(breakdown,e=>e.innerText),/Toyota Hilux|New Holland/);
  await page.click('button[aria-controls="budget-details-new-budget"]');
  await click('Download');await click('All budgets');await click('Next');
  assert.match(await page.$eval('[role=dialog]',e=>e.textContent),/PDF report.*XLSX workbook/);
@@ -141,7 +142,7 @@ async function main(){let server,browser;const created=[];try{
  const options='[role="dialog"] [role="radiogroup"] input';
  assert.deepEqual(await page.$$eval(options,inputs=>inputs.map(input=>input.checked)),[true,false]);
  await page.click('[role="dialog"] label:nth-child(2) input');
- await click('Delete recurring cost');
+ await click('Delete permanently');
  await page.waitForFunction(selector=>!document.querySelector(selector).textContent.includes('Fleet cover'),{},recurring);
  await click('Add recurring cost');await click('Cancel');
  await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
