@@ -63,9 +63,9 @@ test('wizard steps reset their scroll position without focus-induced jumps', () 
   assert.match(client, /manualCostWizardStepHeadingRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
 });
 
-test('editing starts at cost categories with the existing asset retained', () => {
+test('editing starts at asset selection with the existing asset retained', () => {
   const edit = slice('function openEditBudget(', 'function confirmBudgetAssetPicker(');
-  assert.match(edit, /setBudgetWizardStep\(2\)/);
+  assert.match(edit, /setBudgetWizardStep\(1\)/);
   assert.match(edit, /setBudgetSelectedAssetIds\(budget.groupAssetIds\?\.length \? budget.groupAssetIds : budget.assetId \? \[budget.assetId\] : \[\]\)/);
-  assert.match(budgetModal, /budgetWizardStep === 0 \|\| \(editingBudgetId && !groupBudget && budgetWizardStep === 2\) \? closeBudgetModal : goBackBudgetWizard/);
+  assert.match(budgetModal, /budgetWizardStep === 0 \? closeBudgetModal : goBackBudgetWizard/);
 });

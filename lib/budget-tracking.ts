@@ -21,3 +21,8 @@ export const formatBudgetMoney = (value: number) => `R ${value.toLocaleString('e
 export function availableBudget(budget: TrackedBudget, includeRecurring: boolean) {
   return Math.round((budget.amount - budget.spent - (includeRecurring ? budget.expected ?? 0 : 0)) * 100) / 100;
 }
+
+export function budgetUsageLabel(percent: number) {
+  const value = percent > 0 && percent < 0.01 ? '<0.01' : percent.toLocaleString('en-ZA', { maximumFractionDigits: 2 });
+  return `${value}% used`;
+}

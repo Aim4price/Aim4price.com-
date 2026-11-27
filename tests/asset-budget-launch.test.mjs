@@ -34,7 +34,7 @@ function dismissBudget({step=1,editing=false,launched=true,saving=false}={}) {
 }
 test('Cancel and close at the launched budget entry step return directly to asset Manage',()=>{
   assert.deepEqual(dismissBudget(),['/asset-register?assetId=a&mapAction=manage']);
-  assert.deepEqual(dismissBudget({editing:true,step:2}),['/asset-register?assetId=a&mapAction=manage']);
+  assert.deepEqual(dismissBudget({editing:true,step:1}),['/asset-register?assetId=a&mapAction=manage']);
 });
 test('later budget steps return one step without resetting the draft or leaving the page',()=>assert.deepEqual(dismissBudget({step:3}),['previous-step']));
 test('normal budget-page dialogs close locally and saving prevents dismissal',()=>{

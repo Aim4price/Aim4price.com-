@@ -39,7 +39,7 @@ test('coverage uses the Fuel Ledger saved-asset picker design with multi-select'
     assert.match(picker, /data-asset-choice-toolbar="true"/);
     assert.match(picker, /data-asset-choice-row="true"/);
   }
-  assert.match(budgetModal, /<h2 id="budget-scope-picker-title">Choose assets<\/h2>/);
+  assert.match(budgetModal, /<h2 id="budget-scope-picker-title">{editingBudgetId \? 'Edit budget assets' : 'Choose assets'}<\/h2>/);
   assert.match(budgetModal, /styles\.pickerToolbar/);
   assert.match(budgetModal, /styles\.budgetAssetPickerToolbar/);
   assert.match(budgetModal, /filteredBudgetAssets/);
@@ -80,7 +80,7 @@ test('budget coverage uses its own complete asset list, independent of fuel excl
   assert.match(client, /assets\?: AssetOption\[]/);
   assert.match(budgetAssetSelectors, /budgetAssets\.find/);
   assert.match(budgetAssetSelectors, /budgetAssets\.filter/);
-  assert.match(budgetAssetSelectors, /if \(!query\) return budgetAssets/);
+  assert.match(budgetAssetSelectors, /if \(!editingBudgetId\) return matches/);
   assert.match(createBudget, /budgetAssets\.some/);
   assert.match(budgetModal, /Add a saved asset to create a budget/);
   assert.doesNotMatch(budgetAssetSelectors, /workUseExcluded|fuel_asset_exclusions/);

@@ -16,7 +16,7 @@ async function main(){let server,browser;const created=[];try{
  server=spawn(process.execPath,['node_modules/next/dist/bin/next','dev','-p','3031'],{cwd:root,env:{...process.env,PGHOST:'127.0.0.1',PGUSER:'budget_fixture',PGPASSWORD:'local-fixture-only',PGDATABASE:'budget_fixture',BETTER_AUTH_SECRET:'local-budget-fixture-secret'},stdio:['ignore','pipe','pipe']});
  const logs=[];server.stdout.on('data',d=>logs.push(String(d)));server.stderr.on('data',d=>logs.push(String(d)));
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Server timeout')),60000);server.stdout.on('data',d=>{if(String(d).includes('Ready')){clearTimeout(timer);resolve();}});server.once('exit',()=>reject(Error(logs.join(''))));});
- browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH || await require('@sparticuz/chromium').executablePath(),headless:true,pipe:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote']});
+ browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH || await require('@sparticuz/chromium').executablePath(),headless:true,ignoreDefaultArgs:['--hide-scrollbars'],pipe:true,args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote']});
  const page=await browser.newPage(),errors=[],requests=[],savedCosts=[];const pdfBytes=await page.pdf({format:'A4'});page.on('pageerror',e=>errors.push(e.message));
  await page.evaluateOnNewDocument(()=>{Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth});localStorage.setItem('aim4price.website-canvas.v2.intro','seen');});
  await page.setRequestInterception(true);page.on('request',r=>{const u=new URL(r.url());if(u.pathname.startsWith('/api/')){
@@ -51,7 +51,18 @@ async function main(){let server,browser;const created=[];try{
  await page.screenshot({path:'/tmp/budget-desktop.png',fullPage:true});
  await click('Alerts (2)');assert.equal(await page.$$eval('article[data-status]',e=>e.length),2);await click('Clear filters');
  await page.type('input[aria-label="Search budgets"]','Toyota');await page.waitForFunction(()=>document.querySelectorAll('article[data-status]').length===1);await click('Clear filters');
- await click('Manage');await page.waitForSelector('[role=dialog]');await click('Edit budget & alerts');await page.waitForFunction(()=>document.querySelector('[role=dialog]')?.textContent.includes('budget'));await page.keyboard.press('Escape');
+ await page.click('[data-budget-trigger="budget-one"]');
+ await click('Edit budget & alerts');
+ const rows = '[data-asset-choice-row]';
+ await page.waitForSelector(rows);
+ assert.deepEqual(await page.$$eval(rows, items => items.map(item => item.dataset.assetChoiceSelected)), ['true']);
+ await click('More assets');
+ assert.equal(await page.$$eval(rows, items => items.length), 2);
+ await page.click(rows + ':nth-child(2)');
+ await click('Next');
+ await click('Back');
+ assert.equal(await page.$$eval(rows + '[data-asset-choice-selected="true"]', items => items.length), 2);
+ await page.keyboard.press('Escape');
  await click('Manage');await page.waitForSelector('[role=dialog]');await click('Delete budget');await page.waitForSelector('[role=alertdialog]');await page.keyboard.press('Escape');assert.equal(await page.$('[role=alertdialog]'),null);
  await click('Add Budget');await page.waitForSelector('[role=dialog]');await page.keyboard.press('Escape');
  await click('Add Budget');
@@ -161,6 +172,32 @@ async function main(){let server,browser;const created=[];try{
  await page.setViewport({width:430,height:932});await page.goto('http://localhost:3031/owner-app/budget-validation',{waitUntil:'networkidle0'});await page.waitForSelector('article[data-status]');await page.screenshot({path:'/tmp/budget-mobile.png',fullPage:true});
  await checkDetails('budget-one');
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No mobile horizontal overflow');
+ // Exercise the painted picker scrollbar with a long list and a small, nonzero budget usage.
+ assets.push(...Array.from({length:20}, (_, i) => ({...assets[1], id:'extra-'+i, title:'Vehicle '+i})));
+ Object.assign(base,{spent:5, remaining:49995, percentUsed:0.01});
+ await page.setViewport({width:1440,height:900});
+ await page.goto('http://localhost:3031/budget-validation',{waitUntil:'networkidle0'});
+ const bar='#cost-budget-budget-one [role=progressbar]';
+ await page.waitForSelector(bar);
+ assert.equal(await page.$eval(bar, e=>e.getAttribute('aria-valuenow')), '0.01');
+ assert.ok(await page.$eval(bar+' span', e=>getComputedStyle(e).minWidth === '2px' && e.getBoundingClientRect().width > 0));
+ await page.click('[data-budget-trigger="budget-one"]');
+ await click('Edit budget & alerts');
+ await click('More assets');
+ const list='[data-asset-choice-list]';
+ const thumb=await page.$eval(list,e=>{
+   const r=e.getBoundingClientRect();
+   if(e.scrollHeight<=e.clientHeight || e.offsetWidth<=e.clientWidth) throw Error('Expected a scrollable asset list');
+   return {x:r.right-5, y:r.top+15, end:r.bottom-20};
+ });
+ await page.mouse.move(thumb.x,thumb.y);
+ await page.mouse.down();
+ await page.mouse.move(thumb.x,thumb.end,{steps:16});
+ await page.mouse.up();
+ await page.waitForFunction(sel=>document.querySelector(sel)?.scrollTop>0,{},list);
+ await page.focus(list);await page.keyboard.press('Home');
+ await page.waitForFunction(sel=>document.querySelector(sel)?.scrollTop===0,{},list);
+ assert.equal(await page.$$eval(rows+'[data-asset-choice-selected="true"]',items=>items.length),1);
  assert.deepEqual(errors,[]);
  console.log('PASS: desktop/mobile cards, alerts, asset filter, add/edit modal launch, export choices and budget details ending at the recurring-costs panel');
  }finally{for(const dir of created){await fs.rm(dir,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types',path.relative(root,dir)),{recursive:true,force:true});}if(browser)await browser.close();if(server)server.kill();}

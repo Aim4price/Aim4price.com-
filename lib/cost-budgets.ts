@@ -510,7 +510,7 @@ export async function listCostBudgetsWithProgress(userId: string, options: { rec
     const spent = Math.max(0, Math.round((Number(row.spent) || 0) * 100) / 100);
     const remaining = Math.max(0, Math.round((amount - spent) * 100) / 100);
     const overBy = Math.max(0, Math.round((spent - amount) * 100) / 100);
-    const percentUsed = amount > 0 ? Math.round((spent / amount) * 1000) / 10 : 0;
+    const percentUsed = amount > 0 ? spent * 100 / amount : 0;
     const status: CostBudgetStatusName = spent >= amount
       ? 'over_budget'
       : percentUsed >= warningPercent
@@ -703,9 +703,8 @@ export async function updateCostBudget(
           updated_at = now()
         where id = $1::uuid
           and user_id = $2
-          and (cardinality(group_asset_ids) > 0) = (cardinality($11::uuid[]) > 0)
-          and ($3::uuid is not null or
-               (asset_register_item_id is null and register_id is not distinct from $9::uuid))
+          and (cardinality($11::uuid[]) > 0 or (cardinality(group_asset_ids) = 0 and ($3::uuid is not null or
+               (asset_register_item_id is null and register_id is not distinct from $9::uuid))))
         returning id::text
       `,
       [

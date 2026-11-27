@@ -35,7 +35,7 @@ import ListPagination, { type ListPageSize } from '../../components/ListPaginati
 import pickerStyles from '../../components/AssetPicker.module.css';
 import { normalizeInternalReturnPath } from '../../lib/internal-return-path';
 import BudgetTracking from '../budgets/BudgetTracking';
-import type { TrackedBudget } from '../../lib/budget-tracking';
+import { budgetUsageLabel, type TrackedBudget } from '../../lib/budget-tracking';
 import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
@@ -1166,6 +1166,8 @@ export default function MyInvoicesClient({
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
   const [groupBudget, setGroupBudget] = useState(false);
   const [groupName, setGroupName] = useState('');
+  const [showMoreBudgetAssets, setShowMoreBudgetAssets] = useState(false);
+  const [originalBudgetAssets, setOriginalBudgetAssets] = useState<string[]>([]);
   const [budgetAssetSearch, setBudgetAssetSearch] = useState('');
   const [budgetSelectedAssetIds, setBudgetSelectedAssetIds] = useState<string[]>([]);
   const [budgetPickerAssetIds, setBudgetPickerAssetIds] = useState<string[]>([]);
@@ -1541,9 +1543,12 @@ export default function MyInvoicesClient({
 
   const filteredBudgetAssets = useMemo(() => {
     const query = budgetAssetSearch.trim().toLowerCase();
-    if (!query) return budgetAssets;
-    return budgetAssets.filter((asset) => assetSearchText(asset).includes(query));
-  }, [budgetAssetSearch, budgetAssets]);
+    const matches = query ? budgetAssets.filter(asset => assetSearchText(asset).includes(query)) : budgetAssets;
+    if (!editingBudgetId) return matches;
+    const original = new Set(originalBudgetAssets);
+    const selected = matches.filter(asset => original.has(asset.id));
+    return showMoreBudgetAssets ? [...selected, ...matches.filter(asset => !original.has(asset.id))] : selected;
+  }, [budgetAssetSearch, budgetAssets, editingBudgetId, originalBudgetAssets, showMoreBudgetAssets]);
 
   const selectedBudgetCategories = budgetCategoryFilter.join(',');
   const budgetUnavailableAssetIdsByPeriod = useMemo<Record<BudgetPeriod, Set<string>>>(() => {
@@ -2172,7 +2177,11 @@ export default function MyInvoicesClient({
     setGroupBudget(Boolean(budget.groupAssetIds?.length));
     setGroupName(budget.groupAssetIds?.length ? budget.assetTitle : '');
     setEditingBudgetId(budget.id);
-    setBudgetWizardStep(2);
+    const currentIds = budget.groupAssetIds?.length ? budget.groupAssetIds : budget.assetId ? [budget.assetId]
+      : budgetAssets.filter(asset => !budget.registerId || asset.registerId === budget.registerId).map(asset => asset.id);
+    setShowMoreBudgetAssets(false);
+    setOriginalBudgetAssets(currentIds);
+    setBudgetWizardStep(1);
     setBudgetDraft({
       assetId: budget.assetId || (budget.groupAssetIds?.length ? 'group' : 'all'),
       period: budget.period,
@@ -2183,20 +2192,28 @@ export default function MyInvoicesClient({
       includeFuelSlipCosts: budget.includeFuelSlipCosts,
     });
     setBudgetSelectedAssetIds(budget.groupAssetIds?.length ? budget.groupAssetIds : budget.assetId ? [budget.assetId] : []);
-    setBudgetPickerAssetIds(budget.groupAssetIds?.length ? budget.groupAssetIds : budget.assetId ? [budget.assetId] : []);
+    setBudgetPickerAssetIds(currentIds);
     setBudgetAssetSearch('');
     setBudgetFormError('');
     setBudgetModalOpen(true);
   }
 
+  const editingBudget = costBudgets.find(budget => budget.id === editingBudgetId);
+  const keepExistingScope = editingBudget && !editingBudget.assetId && !editingBudget.groupAssetIds?.length
+    && budgetPickerAssetIds.length === originalBudgetAssets.length
+    && originalBudgetAssets.every(id => budgetPickerAssetIds.includes(id));
+  const requiresGroup = editingBudget ? Boolean(editingBudget.groupAssetIds?.length) : groupBudget;
+  const validAssetSelection = keepExistingScope || budgetPickerAssetIds.length >= (requiresGroup ? 2 : 1);
+
   function confirmBudgetAssetPicker() {
-    const selectedIds = budgetPickerAssetIds;
-    if (!selectedIds.length || (groupBudget && selectedIds.length < 2)) return;
+    if (!validAssetSelection) return;
+    const selectedIds = keepExistingScope ? [] : budgetPickerAssetIds;
+    if (editingBudget) setGroupBudget(selectedIds.length > 1);
     setBudgetSelectedAssetIds(selectedIds);
-    setBudgetDraft((current) => ({
+    setBudgetDraft(current => ({
       ...current,
-      assetId: selectedIds[0],
-      registerId: '',
+      assetId: selectedIds[0] || 'all',
+      registerId: keepExistingScope ? editingBudget.registerId || '' : '',
     }));
     setBudgetFormError('');
     setBudgetAssetSearch('');
@@ -2221,7 +2238,7 @@ export default function MyInvoicesClient({
 
   function closeBudgetModal() {
     if (budgetSaving) return;
-    if (budgetWizardStep > (editingBudgetId && !groupBudget ? 2 : 1)) { goBackBudgetWizard(); return; }
+    if (budgetWizardStep > 1) { goBackBudgetWizard(); return; }
     if (assetBudgetLaunchActive.current && budgetLaunchReturnTo) {
       assetBudgetLaunchActive.current = false;
       window.location.assign(budgetLaunchReturnTo);
@@ -3920,7 +3937,7 @@ export default function MyInvoicesClient({
                           </div>
                           <div className={styles.budgetStatusRow}>
                             <strong>{statusLabel}</strong>
-                            <span>{budget.percentUsed.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}% used</span>
+                            <span>{budgetUsageLabel(budget.percentUsed)}</span>
                           </div>
                           <div className={styles.budgetMeta}>
                             <span>Alert at {budget.warningPercent}%</span>
@@ -3962,8 +3979,8 @@ export default function MyInvoicesClient({
             <div className={[styles.assetModal, styles.budgetAssetPickerModal, styles.accountCostModal, styles.accountAssetPickerModal, pickerStyles.modal, accountStyles.modalTheme].join(' ')} data-asset-choice-surface="true" data-asset-choice-modal="true">
               <div className={styles.modalHeader} data-asset-choice-header="true">
                 <div>
-                  <h2 id="budget-scope-picker-title">Choose assets</h2>
-                  <p>{groupBudget ? 'Choose at least two assets to share one spending limit.' : 'Select one or more assets. Each gets its own spending limit.'}</p>
+                  <h2 id="budget-scope-picker-title">{editingBudgetId ? 'Edit budget assets' : 'Choose assets'}</h2>
+                  <p>{editingBudgetId ? 'Choose which assets this budget covers.' : groupBudget ? 'Choose at least two assets to share one spending limit.' : 'Select one or more assets. Each gets its own spending limit.'}</p>
                 </div>
                 <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetModal} aria-label="Close budget" data-modal-close="true"><span aria-hidden="true">×</span></button>
               </div>
@@ -3981,6 +3998,8 @@ export default function MyInvoicesClient({
                   autoComplete="off"
                   autoFocus
                 />
+                {editingBudgetId && !showMoreBudgetAssets && originalBudgetAssets.length < budgetAssets.length ?
+                  <button type="button" className={styles.secondaryButton} onClick={() => setShowMoreBudgetAssets(true)}>More assets</button> :
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${styles.budgetSelectAllButton}`}
@@ -3992,12 +4011,12 @@ export default function MyInvoicesClient({
                   {allFilteredBudgetAssetsSelected
                     ? `Unselect shown (${filteredBudgetAssets.length})`
                     : `Select all shown (${filteredBudgetAssets.length})`}
-                </button>
+                </button>}
                 <button type="button" className={styles.secondaryButton} onClick={() => setBudgetAssetSearch('')}>
                   Clear
                 </button>
               </div>
-              <div className={[styles.assetList, styles.budgetAssetList].join(' ')} data-asset-choice-list="true">
+              <div className={[styles.assetList, styles.budgetAssetList].join(' ')} data-asset-choice-list="true" tabIndex={0} aria-label="Budget assets" role="region">
                 {filteredBudgetAssets.length ? filteredBudgetAssets.map((asset) => {
                   const isSelected = budgetPickerAssetIds.includes(asset.id);
                   return (
@@ -4043,7 +4062,7 @@ export default function MyInvoicesClient({
                   className={styles.primaryButton}
                   data-asset-choice-action="primary"
                   onClick={confirmBudgetAssetPicker}
-                  disabled={!budgetPickerAssetIds.length || (groupBudget && budgetPickerAssetIds.length < 2)}
+                  disabled={!validAssetSelection}
                 >
                   Next
                 </button>
@@ -4278,10 +4297,10 @@ export default function MyInvoicesClient({
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`}
-                  onClick={budgetWizardStep === 0 || (editingBudgetId && !groupBudget && budgetWizardStep === 2) ? closeBudgetModal : goBackBudgetWizard}
+                  onClick={budgetWizardStep === 0 ? closeBudgetModal : goBackBudgetWizard}
                   disabled={budgetSaving}
                 >
-                  {budgetWizardStep === 0 || (editingBudgetId && !groupBudget && budgetWizardStep === 2) ? 'Cancel' : 'Back'}
+                  {budgetWizardStep === 0 ? 'Cancel' : 'Back'}
                 </button>
                 {budgetWizardStep < 5 ? (
                   <button key="budget-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueBudgetWizard} disabled={budgetSaving || (budgetWizardStep === 2 && !budgetDraft.categories.length)}>
