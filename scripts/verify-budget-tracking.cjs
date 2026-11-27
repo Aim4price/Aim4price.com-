@@ -30,6 +30,7 @@ async function main(){let server,browser;const created=[];try{
    budgets.find(b=>b.id==='budget-two').includeRecurringCosts=JSON.parse(r.postData()).includeRecurringCosts;
  }
  if(u.pathname==='/api/recurring-commitments/test-cost' && r.method()==='DELETE'){
+   assert.equal(JSON.parse(r.postData()).deleteSaved,true);
    const budget=budgets.find(b=>b.id==='budget-two');budget.recurringCosts=[];budget.expected=0;
  }
  if(u.pathname==='/api/recurring-commitments' && r.method()==='POST'){
@@ -136,7 +137,11 @@ async function main(){let server,browser;const created=[];try{
  await page.waitForSelector(toggle+'[aria-checked="true"]');
  await click('Manage recurring costs');await click('Delete');await click('Cancel');
  assert.match(await page.$eval(recurring,e=>e.innerText),/Fleet cover/);
- await click('Delete');await click('Delete recurring cost');
+ await click('Delete');
+ const options='[role="dialog"] [role="radiogroup"] input';
+ assert.deepEqual(await page.$$eval(options,inputs=>inputs.map(input=>input.checked)),[true,false]);
+ await page.click('[role="dialog"] label:nth-child(2) input');
+ await click('Delete recurring cost');
  await page.waitForFunction(selector=>!document.querySelector(selector).textContent.includes('Fleet cover'),{},recurring);
  await click('Add recurring cost');await click('Cancel');
  await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));

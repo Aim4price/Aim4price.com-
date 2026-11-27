@@ -56,12 +56,17 @@ async function changeSchedule(request: Request, { params }: Context, remove: boo
     if (Number(current.amount) !== body.previousAmount || (current.status === 'paused') !== body.previousPaused) {
       throw new TeamAccessError('This cost changed. Reopen it to see the latest amount.', 409);
     }
-    const status = remove ? 'cancelled' : body.paused ? 'paused' : 'active';
-    await client.query(`update public.asset_recurring_commitments set amount=$3, status=$4, updated_at=now(), updated_by_user_id=$5
-      where owner_user_id=$1 and id::text=$2`, [...args,remove ? current.amount : body.amount,status,actorId]);
-    if (!remove && body.amount !== Number(current.amount) && Number(current.amount) > 0) {
-      await client.query(`update public.asset_recurring_commitment_assets set annual_allocation=round(annual_allocation*$3::numeric/$4::numeric,2)
-        where owner_user_id=$1 and recurring_commitment_id::text=$2 and annual_allocation is not null`, [...args,body.amount,current.amount]);
+    if (remove && body.deleteSaved === true) {
+      await client.query('delete from public.asset_recurring_commitment_assets where owner_user_id=$1 and recurring_commitment_id::text=$2', args);
+      await client.query('delete from public.asset_recurring_commitments where owner_user_id=$1 and id::text=$2', args);
+    } else {
+      const status = remove ? 'cancelled' : body.paused ? 'paused' : 'active';
+      await client.query(`update public.asset_recurring_commitments set amount=$3, status=$4, updated_at=now(), updated_by_user_id=$5
+        where owner_user_id=$1 and id::text=$2`, [...args,remove ? current.amount : body.amount,status,actorId]);
+      if (!remove && body.amount !== Number(current.amount) && Number(current.amount) > 0) {
+        await client.query(`update public.asset_recurring_commitment_assets set annual_allocation=round(annual_allocation*$3::numeric/$4::numeric,2)
+          where owner_user_id=$1 and recurring_commitment_id::text=$2 and annual_allocation is not null`, [...args,body.amount,current.amount]);
+      }
     }
     if (team && grant) await auditTeam(client,team.actor,grant,permission,links.length === 1 ? links[0].id : null,{commitmentId:current.id});
     await client.query('COMMIT');
