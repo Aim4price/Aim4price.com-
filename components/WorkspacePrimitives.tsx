@@ -60,7 +60,7 @@ export function WorkspaceSummaryTile({
   className,
 }: WorkspaceSummaryTileProps) {
   return (
-    <article className={joinClassNames(styles.summaryTile, summaryToneClasses[tone], className)}>
+    <article data-page-tilt-card={tone === 'green' || undefined} className={joinClassNames(styles.summaryTile, summaryToneClasses[tone], className)}>
       <div>
         <span>{label}</span>
         <small>{helper}</small>

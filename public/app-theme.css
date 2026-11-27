@@ -148,24 +148,30 @@
   }
 }
 
-/* A single small twist per hover. Independent rotation preserves page-specific
-   transforms, including the lift on primary actions. */
+/* Rotate independently of existing transforms so card lifts and focus styles
+   still work. Menu contents are outside the scope even when portalled. */
 @keyframes aim4price-page-button-tilt {
   0%, 100% { rotate: 0deg; }
-  42% { rotate: var(--page-button-tilt, .8deg); }
+  42% { rotate: var(--page-button-tilt, 1.35deg); }
 }
 
 @media screen and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   @scope (:root) to (dialog, [role='dialog'], [role='alertdialog'], [aria-modal='true'],
     [data-website-overlay], [popover], [inert], [aria-hidden='true'], [aria-disabled='true'],
-    [class*='modalBackdrop' i], [class*='modalOverlay' i]) {
+    [class*='modalBackdrop' i], [class*='modalOverlay' i], [role='listbox'], [role='menu'],
+    [data-dropdown-overlay], [data-dropdown-overlay-portal]) {
     :where(button, [role='button'], input:is([type='button'], [type='submit'], [type='reset']),
-      a[href]:is([class*='button' i], [class*='btn' i], [class*='cta' i])):hover:not(:disabled, :active, :focus-visible, [aria-busy='true'], [data-modal-close]) {
-      animation: aim4price-page-button-tilt 320ms ease-in-out;
+      select, summary, [role='combobox'], [aria-haspopup], h1, header a[href], nav a[href],
+      [data-page-tilt-card], :has(> [data-contour-surface]),
+      a[href]:is([class*='button' i], [class*='btn' i], [class*='cta' i], [class*='card' i], [class*='tile' i])
+    ):hover:not(:disabled, :active, :focus-visible, [aria-busy='true'], [data-modal-close],
+      [aria-expanded='true'], details[open] > summary, :has(> [data-contour-surface]) *) {
+      animation: aim4price-page-button-tilt 360ms ease-in-out;
     }
 
-    :where(button, [role='button'], input, a):nth-child(even) {
-      --page-button-tilt: -.8deg;
+    :where(button, [role='button'], input, a, select, summary, [role='combobox'], [aria-haspopup],
+      [data-page-tilt-card], :has(> [data-contour-surface])):nth-child(even) {
+      --page-button-tilt: -1.35deg;
     }
   }
 }
