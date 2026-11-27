@@ -189,7 +189,7 @@ async function main(){let server,browser;const created=[];try{
  await click('Filter');await click('New Holland TT4.90');
  await click('Next');await click('Next');await click('Apply filters');
  await page.click('button[data-tooltip^="Filter cost records"]');
- await click('All assets');await click('Cancel');
+ await click('All saved assets');await click('Cancel');
  await click('Clear filters');
  assert.equal(await page.$eval(ledgerSearch,input=>input.value),'Workshop');
  assert.equal(await page.$('button[data-tooltip^="Filter cost records"] strong'),null);

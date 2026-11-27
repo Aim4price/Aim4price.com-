@@ -3246,29 +3246,28 @@ export default function MyInvoicesClient({
             ) : null}
           </label>
 
-          {dealerMode ? (
-            <div className={`${styles.toolbarButtons} ${dealerMode ? styles.dealerToolbarButtons : ''}`}>
-              <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
-                <span className={styles.plusMark} aria-hidden="true">+</span>
-                <span>Add Cost</span>
-              </button>
-              <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton}`} onClick={openFilterPanel}>
-                <FilterIcon className={styles.buttonIcon} />
-                <span>Filter</span>
-                {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
-              </button>
-              {activeFilterCount > 0 && <button type="button" className={styles.clearAppliedFilters} onClick={clearFilters}>Clear filters</button>}
-            </div>
-          ) : (
-            <div className={styles.filterControls}>
-              <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton} ${styles.searchFilterButton}`} onClick={openFilterPanel} data-tooltip="Filter cost records to narrow your search." data-tooltip-style="description">
-                <FilterIcon className={styles.buttonIcon} />
-                <span>Filter</span>
-                {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
-              </button>
-              {activeFilterCount > 0 && <button type="button" className={styles.clearAppliedFilters} onClick={clearFilters}>Clear filters</button>}
-            </div>
-          )}
+          <div className={styles.filterControls}>
+            {dealerMode ? (
+              <div className={`${styles.toolbarButtons} ${dealerMode ? styles.dealerToolbarButtons : ''}`}>
+                <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
+                  <span className={styles.plusMark} aria-hidden="true">+</span>
+                  <span>Add Cost</span>
+                </button>
+                <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton}`} onClick={openFilterPanel}>
+                  <FilterIcon className={styles.buttonIcon} />
+                  <span>Filter</span>
+                  {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
+                </button>
+              </div>
+            ) : (
+                <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton} ${styles.searchFilterButton}`} onClick={openFilterPanel} data-tooltip="Filter cost records to narrow your search." data-tooltip-style="description">
+                  <FilterIcon className={styles.buttonIcon} />
+                  <span>Filter</span>
+                  {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
+                </button>
+            )}
+            {activeFilterCount > 0 && <button type="button" className={styles.clearAppliedFilters} onClick={clearFilters}>Clear filters</button>}
+          </div>
         </section>
 
         <CaptureRequestStatusList
