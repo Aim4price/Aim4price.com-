@@ -4344,14 +4344,28 @@
   .modalForm[data-upload-slide='details'] .expiryToggle input { appearance: auto; }
 }
 
-.editTypeAction {
-  justify-self: start;
-  margin-bottom: .65rem;
-  border: 0;
-  background: transparent;
-  color: var(--app-accent, #17563f);
-  font: inherit;
-  font-weight: 700;
-  text-decoration: underline;
-  cursor: pointer;
+.modalForm .editTypeAction {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  width: 100%;
+  min-height: 0;
+  margin-bottom: .75rem;
+  padding: .45rem .75rem;
+  border-width: 1px;
+  border-radius: .85rem;
+  box-shadow: none;
 }
+.editTypeAction > span:first-child { width: 2.15rem; height: 2.15rem; border-width: 1px; border-radius: .6rem; }
+.editTypeAction > span:first-child svg { width: 1.15rem; height: 1.15rem; }
+.editTypeAction .changeTypeLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .35rem .65rem;
+  border-radius: .5rem;
+  color: var(--app-text, #173e32);
+  background: var(--app-surface, #fff);
+  font-size: .85rem;
+  font-weight: 700;
+}
+.changeTypeLabel svg { width: 1rem; height: 1rem; }
+.editTypeAction:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
