@@ -154,3 +154,6 @@
 .deleteChoices span { display: grid; gap: .25rem; }
 
 .deleteChoices small { color: var(--app-text, #25483c); font-size: .94rem; font-weight: 650; line-height: 1.45; }
+
+.recurringPanel > .memberSection { margin: .75rem 0 0; }
+.recurringContent { padding: 0 1rem .75rem; }

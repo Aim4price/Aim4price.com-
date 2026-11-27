@@ -1,4 +1,5 @@
 'use client';
+import { isScrollbarInteraction } from '../../lib/scrollbar-interaction';
 import { categorySummary } from '../../lib/cost-categories';
 import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
@@ -62,6 +63,18 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!expandedId) return;
+    function closeOutside(event: MouseEvent) {
+      const card = document.getElementById(`cost-budget-${expandedId}`);
+      const target = event.target;
+      if (!(target instanceof Element) || card?.contains(target) || isScrollbarInteraction(event)) return;
+      if (target.closest('[role="dialog"], [role="alertdialog"], dialog, [data-website-overlay]')) return;
+      setExpandedId(null);
+    }
+    document.addEventListener('click', closeOutside, true);
+    return () => document.removeEventListener('click', closeOutside, true);
+  }, [expandedId]);
   const [filters, setFilters] = useState(EMPTY_BUDGET_FILTERS);
   const [manageId, setManageId] = useState<string | null>(null);
   const [downloadOpen, setDownloadOpen] = useState(false);

@@ -111,17 +111,22 @@ async function main(){let server,browser;const created=[];try{
      text: section.innerText,
    }));
    assert.equal(panel.label, 'Recurring costs');
-   assert.match(panel.text, /Expected this period/);
-   assert.match(panel.text, /Add recurring cost/);
+   assert.match(panel.text, /View recurring costs/);
+   const disclosure = details + ' section[aria-label="Recurring costs"] details';
+   assert.equal(await page.$eval(disclosure,e=>e.open),false);
+   await page.click(disclosure+' summary');
+   assert.match(await page.$eval(disclosure,e=>e.innerText), /Expected this period/);
+   assert.match(await page.$eval(disclosure,e=>e.innerText), /Add recurring cost/);
    assert.doesNotMatch(panel.text, /Recorded costs|No costs allocated|Workshop|Fuel depot/);
    assert.ok(!requests.slice(start).some(u=>u.split('?')[0]==='/api/my-invoices'), 'Expanding a budget should not fetch ledger rows');
-   await page.click(trigger);
+   await page.click('input[aria-label="Search budgets"]');
    await page.waitForSelector(details, {hidden:true});
  };
  await checkDetails('budget-one');
  await checkDetails('budget-two');
  // Start from the second card to catch accidental selection of the first saved asset.
  await page.click('button[aria-controls="budget-details-budget-two"]');
+ await page.click('#budget-details-budget-two section[aria-label="Recurring costs"] summary');
  await click('Add recurring cost');
  assert.deepEqual(await page.$$eval('[data-category]', buttons => buttons.map(b=>b.dataset.category)), ['repair','insurance']);
  await page.click('[data-category="insurance"]');
@@ -147,6 +152,7 @@ async function main(){let server,browser;const created=[];try{
  assert.equal(await page.$eval(recurring,e=>e.children.length),1);
  await page.click(toggle);
  await page.waitForSelector(toggle+'[aria-checked="true"]');
+ await page.click(recurring+' summary');
  await click('Manage recurring costs');await click('Delete');await click('Cancel');
  assert.match(await page.$eval(recurring,e=>e.innerText),/Fleet cover/);
  await click('Delete');
@@ -159,7 +165,8 @@ async function main(){let server,browser;const created=[];try{
  await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
 
  // Budgets spanning more than one asset still need the coverage picker.
- await page.click('button[aria-controls="budget-details-budget-three"]');await click('Add recurring cost');
+ await page.click('button[aria-controls="budget-details-budget-three"]');
+ await page.click('#budget-details-budget-three section[aria-label="Recurring costs"] summary');await click('Add recurring cost');
  await page.click('[data-category="insurance"]');await click('Choose assets');
  assert.equal(await page.$$eval('[data-asset-choice-row]',rows=>rows.length),2);
  await page.click('[aria-label="Back to recurring cost"]');await page.click('[aria-label="Close recurring cost"]');
