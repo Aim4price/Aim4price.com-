@@ -57,5 +57,17 @@ test('matched lines post once and unassigned lines stay outside totals until all
     await service.postAllocation('owner',uncategorised.id,1,asset,'repair');
     assert.equal((await pending()).length,0);
     assert.deepEqual(await amounts(),[120,120,150]);
+    await pg.exec(`create table sage_za_connections(owner_id text,connection_id uuid,company_id integer,sync_register text);
+      insert into sage_za_connections values('owner','30000000-0000-4000-8000-000000000001',17,'selected')`);
+    const connected = '30000000-0000-4000-8000-000000000001';
+    const sync = (line,assetId)=>service.importAccountingLine('owner',{...source,company:'17',line},
+      details,assetId,false,connected);
+    await sync('paid',asset); await sync('paid',asset);
+    await sync('unallocated',null);
+    assert.equal((await pending()).length,1);
+    await pg.exec('delete from sage_za_connections');
+    await sync('after-disconnect',asset); await sync('unmatched-after-disconnect',null);
+    assert.equal((await pending()).length,1);
+    assert.deepEqual(await amounts(),[120,120,120,150]);
   }finally{await pg.close();}
 });
