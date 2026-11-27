@@ -45,7 +45,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
     edits.push(JSON.parse(r.postData()));
     return r.respond({status:200,contentType:'application/json',body:JSON.stringify({ok:true,document:doc})});
    }
-   const data=u.pathname==='/api/me'?{ok:true,signedIn:true,user}:u.pathname==='/api/documents'?{ok:true,documents:[doc,{...doc,id:"second",title:"Second policy"},{...doc,id:"standalone",category:"other",documentType:"other",title:"Standalone"}],assets}:{ok:true,items:[],notifications:[],profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
+   const data=u.pathname==='/api/me'?{ok:true,signedIn:true,user}:u.pathname==='/api/documents'?{ok:true,documents:[doc,{...doc,id:"second",title:"Second policy"},{...doc,id:"standalone",category:"other",documentType:"other",title:"Standalone",assetLinks:[]}],assets}:{ok:true,items:[],notifications:[],profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
    r.respond({status:200,contentType:'application/json',body:JSON.stringify(data)});
   });
   async function click(text){await page.$$eval('button',(buttons,text)=>{const b=buttons.find(b=>b.textContent.trim()===text || b.getAttribute("aria-label")===text);if(!b)throw Error('Missing '+text);b.click();},text);}
@@ -59,6 +59,15 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   }
   const single = await page.waitForSelector('[aria-label="Open Standalone"]');
   assert.equal(await single.evaluate(el=>el.closest('details')===null),true);
+  await click('Filter');await click('General document');await click('Other');
+  await page.waitForSelector('[aria-label="Open Standalone"]');
+  assert.equal(await page.$('[aria-label="Open Saved title"]'),null);
+  await click('Clear filter');
+  await click('Filter');await click('Related to an asset');await page.waitForSelector(row);
+  await page.click(row);await click('Next');await click('Insurance');await click('Policy');
+  await page.waitForSelector('[aria-label="Open Saved title"]');
+  assert.equal(await page.$('[aria-label="Open Standalone"]'),null);
+  await click('Clear filter');
   await openPolicyGroup();
   const groupHeader = await page.$('details > summary');
   await groupHeader.focus();
