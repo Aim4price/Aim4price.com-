@@ -23,19 +23,19 @@ function RecurringDeleteDialog({cost, busy, onClose, onDelete}: {
     onClose={() => { if (!busy) onClose(); }} focusSelector="input:checked">
     <div className={deleteStyles.deleteConfirm}>
       <span className={deleteStyles.deleteIcon}><HistoryDeleteIcon /></span>
-      <strong>What would you like to delete?</strong>
+      <strong>What should happen to this recurring cost?</strong>
       <div className={styles.deleteChoices} role="radiogroup" aria-label="Deletion options">
         <label><input type="radio" name={group} checked={!deleteSaved} disabled={busy} onChange={() => setDeleteSaved(false)} />
-          <span><strong>Schedule only</strong><small>Stop future payments and keep the saved record.</small></span></label>
+          <span><strong>Stop schedule</strong><small>End future repeats. Keep the saved cost and its asset links.</small></span></label>
         <label><input type="radio" name={group} checked={deleteSaved} disabled={busy} onChange={() => setDeleteSaved(true)} />
-          <span><strong>Schedule and saved record</strong><small>Permanently delete this schedule and its asset allocations.</small></span></label>
+          <span><strong>Delete permanently</strong><small>Remove the schedule, its saved record and its asset allocations.</small></span></label>
       </div>
       {cost.shared && <p>This applies to all assets linked to this schedule.</p>}
       <div className={deleteStyles.confirmActions}>
         <button type="button" disabled={busy} onClick={onClose}>Cancel</button>
         <button type="button" disabled={busy} className={deleteStyles.deleteButton}
           onClick={async () => { await onDelete(deleteSaved); onClose(); }}>
-          {busy ? 'Deleting…' : 'Delete recurring cost'}
+          {deleteSaved ? (busy ? 'Deleting…' : 'Delete permanently') : (busy ? 'Stopping…' : 'Stop schedule')}
         </button>
       </div>
     </div>
