@@ -1,6 +1,8 @@
 'use client';
 import {useState,useEffect,useCallback, type ReactNode} from 'react';
 import {createPortal} from '../WebsitePortal';
+import dynamic from 'next/dynamic';
+const DocumentUpload = dynamic(() => import('../../app/documents/documents-client').then(module => module.AssetDocumentUploadFlow));
 import SharedAssetValueDialog from './SharedAssetValueDialog';
 import SharedAssetWorkDialog from './SharedAssetWorkDialog';
 import SharedAssetLocationDialog from './SharedAssetLocationDialog';
@@ -14,11 +16,13 @@ import type {SharedMarketAssessment} from '../../lib/shared-market-assessment';
 import styles from '../../app/asset-register/page.module.css';
 export type FactField = 'serial'|'year'|'usage'|'condition'|'replacement'|'finance'|'insurance'|'license'|'location';
 export type FactPermissions = Partial<Record<FactField | 'market', boolean>>;
-export default function SharedAssetFacts({assetTitle,serial,year,usage,condition,replacementPrice,marketAssessment,vatIncluded=false,statuses,permissions={},endpoint,sourceId,externalShare,directUpdates=false,correction,onSaved}: {
+export default function SharedAssetFacts({documentTarget,assetTitle,serial,year,usage,condition,replacementPrice,marketAssessment,vatIncluded=false,statuses,permissions={},endpoint,sourceId,externalShare,directUpdates=false,correction,onSaved}: {
+ documentTarget?:{assetId:string;client:string};
  assetTitle:string;serial:string;year:ReactNode;usage:ReactNode;condition:ReactNode;replacementPrice:number|null;marketAssessment?:SharedMarketAssessment;vatIncluded?:boolean;
  statuses:{finance:ReactNode;insurance:ReactNode;license:ReactNode;location:ReactNode};permissions?:FactPermissions;
  endpoint:string;sourceId:string;externalShare?:{token:string;assetId:string};directUpdates?:boolean;correction?:DealerAssetCorrectionRequest|null;onSaved?:()=>void;
 }) {
+ const [uploading,setUploading]=useState(false);
  const [live,setLive]=useState<ExternalAssetShareItem|null>(null);
  const [readError,setReadError]=useState('');
  const refresh=useCallback(async(signal?:AbortSignal)=>{
@@ -45,6 +49,8 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
   </div>
   {permissions.replacement?<button type="button" className={`${styles.assetReplacementPriceBubble} ${styles.assetReplacementPriceButton}`} aria-label={`Edit replacement price for ${assetTitle}`} onClick={()=>setField('replacement')}>{price}</button>:<div className={styles.assetReplacementPriceBubble}>{price}</div>}
   {(marketAssessment || permissions.market) && <SharedMarketPrice assessment={marketAssessment} assetTitle={assetTitle} vatIncluded={vatIncluded} editEndpoint={permissions.market ? `${endpoint}/market-price` : undefined} onSaved={saved}/>}
+  {documentTarget && <button type="button" className={styles.assetDetailRowButton} onClick={()=>setUploading(true)}>Add document</button>}
+  {uploading && documentTarget && createPortal(<DocumentUpload assetId={documentTarget.assetId} assetTitle={`${documentTarget.client} · ${assetTitle}`} endpoint={endpoint+'/documents'} onClose={()=>setUploading(false)} onUploaded={(_,result)=>{if(result.complete){setUploading(false);saved();}}}/>,document.body)}
   {field && permissions[field] && createPortal(field==='replacement'?<SharedAssetValueDialog endpoint={endpoint} assetTitle={assetTitle} field="replacement" onClose={close} onSaved={saved}/>:field==='location'?<SharedAssetLocationDialog endpoint={endpoint} assetTitle={assetTitle} onClose={close} onSaved={saved}/>:<SharedAssetWorkDialog key={field} endpoint={endpoint} action="details" initialField={field} assetTitle={assetTitle} onClose={close} onSaved={saved}/>,document.body)}
  </>;
 }

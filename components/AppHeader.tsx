@@ -240,7 +240,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/account', label: 'Account' },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
   { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner', 'dealer'] },
-  { href: '/documents', label: 'Documents', accountTypes: ['owner'] },
+  { href: '/documents', label: 'Documents', accountTypes: ['owner','dealer','business'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
   { href: '/tracking', label: 'Maintenance', accountTypes: ['dealer'] },
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },

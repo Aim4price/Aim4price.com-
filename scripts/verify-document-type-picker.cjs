@@ -10,7 +10,7 @@ async function main() {
  let server, browser;
  try {
   await fs.mkdir(fixture, {recursive:true});
-  await fs.writeFile(path.join(fixture,'page.tsx'), "import DocumentsClient from '../documents/documents-client';\nexport default function Page(){return <DocumentsClient />;}\n");
+  await fs.writeFile(path.join(fixture,'page.tsx'), "import DocumentsClient from '../documents/documents-client';\nexport default function Page({searchParams}:{searchParams?:{business?:string}}){return <DocumentsClient businessVault={searchParams?.business === '1'} />;}\n");
   await fs.mkdir(path.join(fixture, 'asset'), {recursive:true});
   await fs.writeFile(path.join(fixture, 'asset/page.tsx'), `'use client';
 import {useState} from 'react';
@@ -36,6 +36,12 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    const u=new URL(r.url());if(!u.pathname.startsWith('/api/'))return r.continue();
    const user={id:'fixture',name:'Test Owner',email:'test@example.invalid',accountType:'owner'};
    const doc={id:'fixture',title:'Saved title',category:'insurance',documentType:legacyDocument ? null : 'insurance-policy',notes:'Keep these notes',expiryDate:'2027-01-30',fileName:'policy.pdf',contentType:'application/pdf',byteSize:100,assetLinks:[assets[0]],createdAtIso:'2026-10-01',updatedAtIso:'2026-10-01',deletedAtIso:null};
+   if(u.pathname==='/api/documents/client-assets')return r.respond({contentType:'application/json',body:JSON.stringify({assets:[{id:'client-tractor',client:'Client Farm',title:'Tractor X',endpoint:'/api/asset-leads/fixture/documents'}]})});
+   if(u.pathname==='/api/asset-leads/fixture/documents'){
+    assert.equal(r.method(),'POST');
+    assert.match(await r.fetchPostData(),/client-tractor/);
+    return r.respond({contentType:'application/json',body:JSON.stringify({ok:true,document:doc})});
+   }
    if(u.pathname==='/api/documents'&&r.method()==='POST') {
     uploads.push(await r.fetchPostData());
     if(failNextUpload){failNextUpload=false;return r.respond({status:500,contentType:'application/json',body:JSON.stringify({ok:false,error:'Fixture upload failure'})});}
@@ -238,6 +244,15 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    await click('Add document');await page.waitForSelector('#linked-asset-heading');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
   }
   assert.deepEqual(errors,[]);
+  await page.goto('http://127.0.0.1:3049/document-type-validation?business=1',{waitUntil:'networkidle0'});
+  await click('Upload documents');await click('My business');await page.waitForSelector('[data-upload-slide="scope"]');
+  await click('Back');await click('Client asset');await page.waitForSelector(row);await page.click(row);
+  await page.waitForSelector('#document-type-title');
+  assert.match(await page.$eval('[role=dialog] header',el=>el.innerText),/Client Farm · Tractor X/);
+  await click('Insurance');await click('Policy');await page.waitForSelector('input[type=file]');
+  await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');
+  await click('Next');await page.waitForSelector('textarea');
+  await click('Upload document');await page.waitForFunction(()=>document.body.textContent.includes('Saved to Client Farm · Tractor X.'));
   console.log('PASS scrollable document asset list, search, bulk selection, edit and upload, fixed links, partial retry, and desktop/mobile fit');
  } finally {if(browser)await browser.close();if(server){server.kill('SIGTERM');await new Promise(resolve=>server.once('exit',resolve));}await fs.rm(fixture,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types/app/document-type-validation'),{recursive:true,force:true});}
 }

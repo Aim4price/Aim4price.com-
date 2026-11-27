@@ -42,9 +42,10 @@ export const dealerMaintenancePermissionOptions: Array<{
   title: string;
   description: string;
 }> = [
-  {key:'canUpdateDetails', title:'Update details', description:'Edit details and documents.'},
+  {key:'canUpdateDetails', title:'Update details', description:'Edit details and view asset documents.'},
   {key:'canUpdateSerial', title:'Update serial / VIN', description:'Edit the asset identifier.'},
   {key:'canAccessLocation', title:'Update location', description:'Change the asset location.'},
+  {key:'canAddDocuments', title:'Add documents', description:'Upload files to this asset in your vault.'},
   {key:'canAddPhotos', title:'Add photos', description:'Upload asset photos.'},
   {key:'canAddCosts', title:'Add costs', description:'Record costs and documents.'},
   {key:'canViewLoggedProblems', title:'Log problems', description:'Record and resolve problems.'},
@@ -61,7 +62,7 @@ export const dealerMaintenancePermissionOptions: Array<{
 ];
 
 export const dealerMaintenancePermissionGroups: Array<{ title: string; keys: Array<keyof DealerMaintenancePermissions>; note?: string }> = [
-  { title: 'Asset details', keys: ['canUpdateDetails', 'canUpdateSerial', 'canAccessLocation', 'canAddPhotos'] },
+  { title: 'Asset details', keys: ['canUpdateDetails', 'canUpdateSerial', 'canAccessLocation', 'canAddPhotos', 'canAddDocuments'] },
   { title: 'Costs and values', keys: ['canAddCosts', 'canSuggestCurrentValue', 'canUpdateReplacementPrice'], note: 'Manual values can be updated. Aim4price values require owner approval. Upload invoices through Add costs.' },
   { title: 'Maintenance and parts', keys: ['canAddMaintenance', 'canCreateMaintenanceSchedules', 'canViewLoggedProblems', 'canViewParts', 'canAddParts'] },
   { title: 'History and reports', keys: ['canViewHistory', 'canViewMaintenanceReports', 'canViewCostOfOwnership'] },
