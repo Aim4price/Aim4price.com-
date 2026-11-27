@@ -3219,6 +3219,7 @@ export default function MyInvoicesClient({
 
         {approvalsOpen && canReviewCaptureRequests ? (
           <CaptureRequestStatusList
+            approvalsView
             title="Needs approval"
             requests={pendingApprovals}
             emptyLabel={captureLoadState === 'loading' ? 'Loading costs…' : captureLoadState === 'error' ? 'Could not load costs awaiting approval.' : 'No costs need approval.'}
