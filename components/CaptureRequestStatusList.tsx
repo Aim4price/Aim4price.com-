@@ -22,6 +22,7 @@ type CaptureRequestStatusListProps = {
   requests: CaptureRequestStatusItem[];
   title?: string;
   emptyLabel?: string;
+  approvalsView?: boolean;
   dealerMode?: boolean;
   onReply?: (request: CaptureRequestStatusItem, message: string) => Promise<void>;
   onReview?: (requestId: string) => void;
@@ -69,6 +70,7 @@ export default function CaptureRequestStatusList({
   requests,
   title = 'Being captured',
   emptyLabel = '',
+  approvalsView = false,
   onReview,
   onRetract,
   onReply,
@@ -125,10 +127,10 @@ export default function CaptureRequestStatusList({
   if (!requests.length && !emptyLabel) return null;
 
   return (
-    <section className={styles.panel} aria-label={title}>
+    <section className={approvalsView ? `${styles.panel} ${styles.approvals}` : styles.panel} aria-label={title}>
       <div className={styles.header}>
         <div>
-          <span className={styles.eyebrow}>Automatic upload</span>
+          {!approvalsView && <span className={styles.eyebrow}>Automatic upload</span>}
           <h2>{title}</h2>
         </div>
         {requests.length ? <strong className={styles.count}>{requests.length}</strong> : null}

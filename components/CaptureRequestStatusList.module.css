@@ -274,6 +274,32 @@
   font-size: 0.84rem;
 }
 
+.approvals .header {
+  padding: 1.2rem 1.35rem 0.8rem;
+}
+
+.approvals .header h2 {
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 1.35rem;
+  font-weight: 760;
+  line-height: 1.15;
+  letter-spacing: -0.026em;
+}
+
+.approvals .empty,
+.approvals .details span,
+.approvals .timing small {
+  color: var(--app-text, #173f31);
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.approvals .empty {
+  padding: 0 1.35rem 1.2rem;
+}
+
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .row {
     grid-template-columns: auto minmax(0, 1fr);
