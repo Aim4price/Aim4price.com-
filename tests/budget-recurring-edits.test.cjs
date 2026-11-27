@@ -28,8 +28,8 @@ test('schedule edits enforce ownership and asset scope, preserve shared proporti
   const update = async (amount, paused, previousAmount, previousPaused) => api.PATCH(new Request('https://example.test/api/recurring-commitments/'+cost, {
     method:'PATCH', headers:{origin:'https://example.test'}, body:JSON.stringify({amount,paused,previousAmount,previousPaused}),
   }),{params:{commitmentId:cost}});
-  const remove = () => api.DELETE(new Request('https://example.test/api/recurring-commitments/'+cost, {
-    method:'DELETE', headers:{origin:'https://example.test'}, body:JSON.stringify({previousAmount:200,previousPaused:false}),
+  const remove = (deleteSaved = false) => api.DELETE(new Request('https://example.test/api/recurring-commitments/'+cost, {
+    method:'DELETE', headers:{origin:'https://example.test'}, body:JSON.stringify({deleteSaved,previousAmount:200,previousPaused:false}),
   }),{params:{commitmentId:cost}});
   try {
     await db.exec(`create table asset_recurring_commitments(id uuid primary key, owner_user_id text, amount numeric, status text, updated_at timestamptz, updated_by_user_id text,
@@ -52,5 +52,10 @@ test('schedule edits enforce ownership and asset scope, preserve shared proporti
     allowed.push(assetB); assert.equal((await remove()).status,200);
     assert.equal((await query('select status from asset_recurring_commitments')).rows[0].status,'cancelled');
     assert.equal((await update(200,false,200,false)).status,404);
+    await query("update asset_recurring_commitments set status='active' where id=$1",[cost]);
+    allowed=[assetA]; assert.equal((await remove(true)).status,404);
+    allowed.push(assetB); assert.equal((await remove(true)).status,200);
+    assert.equal((await query('select id from asset_recurring_commitments')).rows.length,0);
+    assert.equal((await query('select recurring_commitment_id from asset_recurring_commitment_assets')).rows.length,0);
   } finally { await db.close(); }
 });

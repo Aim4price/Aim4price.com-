@@ -2,6 +2,9 @@
 
 import { useId, useState } from 'react';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
+import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
+import { HistoryDeleteIcon } from '../../components/asset-register/DeleteAllHistoryDialog';
+import deleteStyles from '../../components/asset-register/AssetLocationHistoryDialog.module.css';
 import RecurringCostsSwitch from '../../components/RecurringCostsSwitch';
 import type { BudgetRecurringCost } from '../../lib/budget-expected';
 import { formatBudgetMoney, type TrackedBudget } from '../../lib/budget-tracking';
@@ -11,8 +14,36 @@ import ledgerStyles from '../my-invoices/page.module.css';
 const frequencies = {monthly:'Monthly', quarterly:'Quarterly', six_monthly:'Every six months', annual:'Annual'};
 const dateLabel = (date: string) => new Date(date + 'T12:00:00Z').toLocaleDateString('en-ZA',{day:'numeric',month:'short',timeZone:'UTC'});
 
+function RecurringDeleteDialog({cost, busy, onClose, onDelete}: {
+  cost: BudgetRecurringCost; busy: boolean; onClose: () => void; onDelete: (deleteSaved: boolean) => Promise<boolean>;
+}) {
+  const [deleteSaved, setDeleteSaved] = useState(false);
+  const group = useId();
+  return <AssetAccessSettingsDialog locationLayout title="Delete recurring cost?" assetTitle={cost.description}
+    onClose={() => { if (!busy) onClose(); }} focusSelector="input:checked">
+    <div className={deleteStyles.deleteConfirm}>
+      <span className={deleteStyles.deleteIcon}><HistoryDeleteIcon /></span>
+      <strong>What would you like to delete?</strong>
+      <div className={styles.deleteChoices} role="radiogroup" aria-label="Deletion options">
+        <label><input type="radio" name={group} checked={!deleteSaved} disabled={busy} onChange={() => setDeleteSaved(false)} />
+          <span><strong>Schedule only</strong><small>Stop future payments and keep the saved record.</small></span></label>
+        <label><input type="radio" name={group} checked={deleteSaved} disabled={busy} onChange={() => setDeleteSaved(true)} />
+          <span><strong>Schedule and saved record</strong><small>Permanently delete this schedule and its asset allocations.</small></span></label>
+      </div>
+      {cost.shared && <p>This applies to all assets linked to this schedule.</p>}
+      <div className={deleteStyles.confirmActions}>
+        <button type="button" disabled={busy} onClick={onClose}>Cancel</button>
+        <button type="button" disabled={busy} className={deleteStyles.deleteButton}
+          onClick={async () => { await onDelete(deleteSaved); onClose(); }}>
+          {busy ? 'Deleting…' : 'Delete recurring cost'}
+        </button>
+      </div>
+    </div>
+  </AssetAccessSettingsDialog>;
+}
+
 function CostEditor({ cost, busy, onSave, onDelete, canEdit, canDelete }: {
-  canEdit: boolean; canDelete: boolean; onDelete: () => Promise<boolean>;
+  canEdit: boolean; canDelete: boolean; onDelete: (deleteSaved: boolean) => Promise<boolean>;
   cost: BudgetRecurringCost; busy: boolean; onSave: (amount: number, paused: boolean) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
@@ -20,15 +51,11 @@ function CostEditor({ cost, busy, onSave, onDelete, canEdit, canDelete }: {
   const [draft, setDraft] = useState('');
   const amount = Number(draft.trim().replace(/\s/g,'').replace(',','.'));
   if (cost.editableAmount === null) return null;
-  if (confirmDelete) return <div className={styles.costControls} role="group" aria-label="Confirm deletion">
-    <span>Delete {cost.description}{cost.shared ? ' for all linked assets' : ''}? Recorded costs are kept.</span>
-    <button type="button" autoFocus disabled={busy} onClick={() => setConfirmDelete(false)}>Cancel</button>
-    <button className={styles.deleteCost} type="button" disabled={busy} onClick={() => void onDelete()}>Delete recurring cost</button>
-  </div>;
   if (!editing) return <div className={styles.costControls}>
     {canEdit && <><button type="button" disabled={busy} onClick={() => {setDraft(String(cost.editableAmount));setEditing(true);}}>Edit amount</button>
     <button type="button" disabled={busy} onClick={() => void onSave(cost.editableAmount!, !cost.paused)}>{cost.paused ? 'Resume' : 'Pause'}</button></>}
     {canDelete && <button type="button" disabled={busy} className={styles.deleteCost} onClick={() => setConfirmDelete(true)}>Delete</button>}
+    {confirmDelete && <RecurringDeleteDialog cost={cost} busy={busy} onClose={() => setConfirmDelete(false)} onDelete={onDelete} />}
   </div>;
   return <form className={styles.editCost} onSubmit={async event => {
     event.preventDefault();
@@ -91,7 +118,7 @@ export default function BudgetRecurringCosts({budget, onRefresh, onAdd}: {
           <strong>{cost.allocationNeeded ? 'Allocation needed' : formatBudgetMoney(manage ? cost.editableAmount ?? cost.instalment : cost.expected)}</strong>
           {manage && (desktop.can('editCosts') || desktop.can('deleteCosts')) && <CostEditor key={String(cost.editableAmount) + String(cost.paused)} cost={cost} busy={busy}
             canEdit={desktop.can('editCosts')} canDelete={desktop.can('deleteCosts')}
-            onDelete={() => save('/api/recurring-commitments/' + cost.id,{previousAmount:cost.editableAmount,previousPaused:cost.paused},'DELETE')}
+            onDelete={deleteSaved => save('/api/recurring-commitments/' + cost.id,{deleteSaved,previousAmount:cost.editableAmount,previousPaused:cost.paused},'DELETE')}
             onSave={(amount, paused) => save('/api/recurring-commitments/' + cost.id,{amount,paused,previousAmount:cost.editableAmount,previousPaused:cost.paused})} />}
         </li>)}</ul>}
       </div>
