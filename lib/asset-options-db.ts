@@ -20,7 +20,7 @@ function optionFor(family: EquipmentFamilyRecord, overrides: Map<string, AssetOp
   const id = [basic ? 'basic' : 'public', family.sectorKey, family.familyKey].join('/');
   return overrides.get(id) ?? {
     id, label: family.familyLabel, sector: family.sectorKey,
-    mode: basic ? 'basic' : basicCatalogueEnabled() ? 'advanced' : 'both',
+    mode: basic || (family.sectorKey === 'motor' && family.familyKey === 'boats') ? 'basic' : basicCatalogueEnabled() ? 'advanced' : 'both',
     archived: false, version: 0,
   };
 }

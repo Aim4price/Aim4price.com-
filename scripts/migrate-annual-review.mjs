@@ -17,6 +17,7 @@ try {
   await client.query(await readFile(new URL('../database/migrations/151-annual-asset-reviews.sql', import.meta.url), 'utf8'));
   await client.query(await readFile(new URL('../database/migrations/164-business-desktop.sql', import.meta.url), 'utf8'));
   await client.query(await readFile(new URL('../database/migrations/165-recurring-cost-controls.sql', import.meta.url), 'utf8'));
+  await client.query(await readFile(new URL('../database/migrations/168-motor-boats.sql', import.meta.url), 'utf8'));
   await client.query('COMMIT');
   console.log('Annual review schema is ready.');
 } catch (error) {

@@ -302,7 +302,7 @@ function getGenericUsageMode(result: GenericValuationResult): 'percent' | 'hours
     return 'percent';
   }
 
-  if (result.specsJson.basic_catalogue_release) return result.family.usageMetricType === 'km' ? 'km' : 'hours';
+  if (result.specsJson.basic_catalogue_release || result.family.key === 'boats') return result.family.usageMetricType === 'km' ? 'km' : 'hours';
   return result.sector.key === 'motor' || result.family.usageMetricType === 'km' ? 'km' : 'hours';
 }
 

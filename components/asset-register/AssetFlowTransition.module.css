@@ -40,6 +40,8 @@
 }
 .typeGrid [data-asset-kind="equipment"] { --icon-colour: #197657; }
 .typeGrid [data-asset-kind="vehicle"] { --icon-colour: #2868a2; }
+.typeGrid [data-asset-kind="boat"] { --icon-colour: #187889; }
+.typeGrid [data-asset-kind="other"] { --icon-colour: #586877; }
 .typeGrid [data-asset-kind="property"] { --icon-colour: #916126; }
 .typeGrid [data-asset-kind="tools"] { --icon-colour: #765299; }
 .typeGrid [data-asset-kind="stock"] { --icon-colour: #9a552e; }
