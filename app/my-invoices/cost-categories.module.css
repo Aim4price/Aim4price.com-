@@ -100,18 +100,20 @@
 .reportCategories .card {
   min-height: 4rem;
   padding-block: .45rem;
+}
+.plainCards .card {
   border-color: color-mix(in srgb, var(--edge) 30%, var(--app-surface, white));
   background: var(--app-surface, white);
   box-shadow: none;
 }
-.reportCategories .card[aria-pressed="false"]:hover { border-color: var(--ink); }
-.reportCategories .card[aria-pressed="true"],
+.plainCards .card[aria-pressed="false"]:hover { border-color: var(--ink); }
+.plainCards .card[aria-pressed="true"],
 .reportToolbar button[aria-pressed="true"] {
   background: var(--selected-green);
   border-color: #39876b;
   color: white;
 }
-.reportCategories .card[aria-pressed="true"] .copy small { color: #e4f4ec; }
+.plainCards .card[aria-pressed="true"] .copy small { color: #e4f4ec; }
 .selectionCheck {
   display: grid;
   place-items: center;
