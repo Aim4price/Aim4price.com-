@@ -15,31 +15,34 @@ export type SageOwner = Awaited<ReturnType<typeof sageOwner>>;
 type Grant = Awaited<ReturnType<typeof sageTokens>>;
 type Row = { connection_id: string; company_id: number | null; company_name: string | null; grant_cipher: string };
 
-async function database() {
+export async function sageDatabase() {
   const db = getDb();
   await db.query(`create table if not exists public.sage_za_connections (
     owner_id text primary key references public."user"(id) on delete cascade,
     connection_id uuid not null, company_id integer, company_name text, grant_cipher text not null
   )`);
+  await db.query(`alter table public.sage_za_connections add column if not exists sync_register text,
+    add column if not exists sync_from date, add column if not exists sync_offset integer not null default 0,
+    add column if not exists sync_note text`);
   return db;
 }
 
 export async function saveAuthorisation({owner, config}: SageOwner, grant: Grant) {
   const id = randomUUID();
-  const db = await database();
+  const db = await sageDatabase();
   await db.query(`insert into public.sage_za_connections(owner_id,connection_id,grant_cipher)
     values ($1,$2,$3) on conflict (owner_id) do nothing`, [owner,id,seal(JSON.stringify(grant),owner + '/' + id,config.key)]);
 }
 
 export async function connection(owner: string) {
-  const db = await database();
-  const result = await db.query<Pick<Row,'connection_id'|'company_id'|'company_name'>>(
-    'select connection_id, company_id, company_name from public.sage_za_connections where owner_id=$1',[owner]);
+  const db = await sageDatabase();
+  const result = await db.query<Pick<Row,'connection_id'|'company_id'|'company_name'> & {sync_register:string|null; sync_note:string|null}>(
+    'select connection_id, company_id, company_name,sync_register,sync_note from public.sage_za_connections where owner_id=$1',[owner]);
   return result.rows[0];
 }
 
 export async function accessGrant({owner, config}: SageOwner, id: string) {
-  const db = await database();
+  const db = await sageDatabase();
   const client = await db.connect();
   try {
     await client.query('begin');
@@ -63,12 +66,12 @@ export async function accessGrant({owner, config}: SageOwner, id: string) {
 }
 
 export async function selectCompany(owner: string, id: string, company: {id: number; name: string}) {
-  const db = await database();
+  const db = await sageDatabase();
   await db.query('update public.sage_za_connections set company_id=$3,company_name=$4 where owner_id=$1 and connection_id=$2 and company_id is null',
     [owner,id,company.id,company.name]);
 }
 
 export async function disconnect(owner: string, id: string) {
-  const db = await database();
+  const db = await sageDatabase();
   await db.query('delete from public.sage_za_connections where owner_id=$1 and connection_id=$2',[owner,id]);
 }

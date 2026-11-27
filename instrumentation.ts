@@ -8,6 +8,8 @@ export async function register() {
     await startAutomaticValuations();
     const { startPhoneNotificationSender } = await import('./lib/push-runtime');
     await startPhoneNotificationSender();
+    const { startPaidBillImports } = await import('./lib/sage-paid-runtime');
+    startPaidBillImports();
     const { startBillingSender } = await import('./lib/billing-mail');
     await startBillingSender();
   }

@@ -151,7 +151,7 @@ test('owner Cost Ledger presents cost actions and a header budget switch', () =>
   assert.match(actionGrid, /Needs approval/);
   assert.match(actionGrid, /aria-pressed=\{approvalsOpen\}/);
   assert.match(actionGrid, /\{canReviewCaptureRequests \? \(\s*<button/);
-  assert.match(costClient, /requests=\{pendingApprovals\}[\s\S]*?onReview=\{setCaptureReviewRequestId\}/);
+  assert.match(costClient, /<AllocationCards rows=\{pendingApprovals\}/);
   assert.match(costClient, /costBudgets\.filter\(\(budget\) => budget\.status !== 'on_track'\)\.length/);
   assert.match(costClient, /count=\{budgetAttentionCount\}/);
   assert.doesNotMatch(costClient, /styles\.invoiceDropCodeBanner/);

@@ -37,3 +37,16 @@ export async function removeSage(form: FormData) {
   cookies().delete('__Host-sage-za-state');
   redirect(sagePage);
 }
+
+export async function enablePaidBills(form: FormData) {
+  const {owner} = await sageOwner();
+  const {listAssetRegisters} = await import('../../../lib/asset-registers');
+  const {getDb} = await import('../../../lib/db');
+  const register = (await listAssetRegisters(owner)).find(r => r.id === form.get('register'));
+  const date = String(form.get('from'));
+  if (!register || !/^\d{4}-\d{2}-\d{2}$/.test(date)) redirect(sagePage+'?error=1');
+  await getDb().query(`update public.sage_za_connections set sync_register=$3, sync_from=$4
+    where owner_id=$1 and connection_id=$2 and company_id is not null and sync_register is null`,
+    [owner,form.get('connection'),register.id,date]);
+  redirect(sagePage);
+}

@@ -14,7 +14,7 @@ export function categoryForLine(description: string) {
 }
 
 // Preserve punctuation and leading zeroes. A labelled serial also supports purely numeric serials.
-export function assetForLine(description: string, assets: {title: string; serialNumber?: string | null}[]) {
+export function matchedAccountingAsset<T extends {title: string; serialNumber?: string | null}>(description: string, assets: T[]) {
   const label = /(?:^|\s)(?:S\/N|SERIAL(?:\s+(?:NO\.?|NUMBER))?|VIN)(?:\s*[:#]\s*|\s+)([^\s,;]+)/gi;
   const serials = Array.from(description.matchAll(label), match => match[1].toUpperCase());
   const tokens = description.toUpperCase().split(/[\s,;]+/);
@@ -25,5 +25,9 @@ export function assetForLine(description: string, assets: {title: string; serial
     return serials.includes(serial) || (/[A-Z]/.test(serial) && /[0-9]/.test(serial) && tokens.includes(serial));
   });
   if (hits.length !== 1 || serials.some(s => s !== hits[0].serialNumber?.trim().toUpperCase())) return null;
-  return hits[0].title;
+  return hits[0];
+}
+
+export function assetForLine(description: string, assets: {title: string; serialNumber?: string | null}[]) {
+  return matchedAccountingAsset(description,assets)?.title ?? null;
 }

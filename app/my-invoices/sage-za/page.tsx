@@ -4,7 +4,7 @@ import AppHeader from '../../../components/AppHeader';
 import { listAllOwnerAppAssets } from '../../../lib/owner-app-assets';
 import { assetForSageLine, sageCompanies, sagePage, sageRead } from '../../../lib/sage-za-api';
 import { accessGrant, connection, sageOwner } from '../../../lib/sage-za-connection';
-import { chooseSage, removeSage, startSage } from './actions';
+import { enablePaidBills, chooseSage, removeSage, startSage } from './actions';
 import styles from './sage.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 export default async function SagePage({searchParams}: {searchParams?: {preview?: string; error?: string}}) {
   const ctx = await sageOwner();
   const current = await connection(ctx.owner);
+  const registers = current?.company_id && !current.sync_register ? await (await import('../../../lib/asset-registers')).listAssetRegisters(ctx.owner) : [];
   let companies: {id: number; name: string}[] = [];
   let preview: {supplier: string; invoice: string; description: string; amount: string; asset: string}[] | undefined;
   let failed = Boolean(searchParams?.error);
@@ -41,7 +42,14 @@ export default async function SagePage({searchParams}: {searchParams?: {preview?
     {failed && <p role="alert">Sage could not complete the request. Try again or reconnect your account.</p>}
     {!current ? <form action={startSage}><p>Connect your company to preview supplier costs by asset serial number.</p><button>Connect Sage</button></form>
       : <>
-        {current.company_id ? <><h2>{current.company_name}</h2><p>Connected · Read-only invoice preview</p>
+        {current.company_id ? <><h2>{current.company_name}</h2><p>Connected</p>
+          {current.sync_register ? <p>{current.sync_note || 'Paid bill imports enabled'}</p> :
+            <form action={enablePaidBills}><h2>Import paid bills automatically</h2>
+              <input type="hidden" name="connection" value={current.connection_id}/>
+              <label>Asset register<select name="register" required defaultValue=""><option value="" disabled>Choose register</option>
+                {registers.map(r=><option key={r.id} value={r.id}>{r.businessName}</option>)}</select></label>
+              <label>Include bills dated from<input type="date" name="from" required/></label>
+              <button>Enable paid bill imports</button></form>}
           <Link href={sagePage + '?preview=1'} prefetch={false}>Preview latest 10 supplier bills</Link></>
           : <><h2>Choose your Sage company</h2>{companies.length ? companies.map(company =>
             <form key={company.id} action={chooseSage}><input type="hidden" name="connection" value={current.connection_id}/>
