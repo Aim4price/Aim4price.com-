@@ -125,8 +125,14 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
           <path d="M4 5h16M7 12h10M10 19h4" /><circle cx="15" cy="5" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="19" r="1.5" />
         </svg><span>Filter</span>{count > 0 && <strong>{count}</strong>}
       </button>
+      {Boolean(count || query) && (
+        <button type="button" className={`${ledger.secondaryButton} ${ledger.toolbarButton} ${ledger.clearFiltersButton}`}
+          onClick={() => { setFilters(EMPTY_BUDGET_FILTERS); setQuery(''); }}>
+          Clear filters
+        </button>
+      )}
     </div>
-    {count || query ? <div className={styles.results}><span>{visible.length} matching budgets{filters.status === 'attention' ? ' · Alerts' : ''}</span><button onClick={() => { setFilters(EMPTY_BUDGET_FILTERS); setQuery(''); }}>Clear filters</button></div> : null}
+    {count || query ? <div className={styles.results}><span>{visible.length} matching budgets{filters.status === 'attention' ? ' · Alerts' : ''}</span></div> : null}
     {loading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>{error}</p><button onClick={onRetry}>Try again</button></div> : !visible.length ? <div className={ledger.emptyState}>{budgets.length ? 'No budgets match these filters.' : 'No budgets yet. Add a budget to start tracking spending.'}</div> : null}
     {ready ? pagedBudgets.map(budget => <LedgerDetailsCard expanded={expandedId === budget.id} onToggle={() => setExpandedId((current) => current === budget.id ? null : budget.id)} id={`cost-budget-${budget.id}`} key={budget.id} className={`${ledger.invoiceRow} ${styles.card}`} data-status={budget.status}>
       <div className={styles.cardHeading}>
