@@ -180,7 +180,7 @@ async function main(){let server,browser;const created=[];try{
  const bar='#cost-budget-budget-one [role=progressbar]';
  await page.waitForSelector(bar);
  assert.equal(await page.$eval(bar, e=>e.getAttribute('aria-valuenow')), '0.01');
- assert.ok(await page.$eval(bar+' span', e=>parseFloat(getComputedStyle(e).width) >= 2 && e.getBoundingClientRect().width > 0));
+ assert.ok(await page.$eval(bar+' span', e=>getComputedStyle(e).minWidth === '2px' && e.getBoundingClientRect().width > 0));
  await page.click('[data-budget-trigger="budget-one"]');
  await click('Edit budget & alerts');
  await click('More assets');
