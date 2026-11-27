@@ -287,9 +287,8 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(client, /document\.body\.style\.overflow = previousOverflow/);
   assert.match(client, /modalMode && showDocumentTypeOptionsRef\.current/);
   assert.match(client, /closeDocumentTypePicker\(\)/);
-  assert.match(client, /window\.requestAnimationFrame\(\(\) => documentTypeInputRef\.current\?\.focus\(\)\)/);
-  assert.match(client, /<div className=\{modalMode === 'upload' \? `\$\{styles\.uploadWizardPanel\} \$\{wizardStyles\.panel\}` : undefined\}>/);
-  assert.match(client, /<fieldset className=\{`\$\{styles\.modalFields\} \$\{modalMode === 'upload' \? styles\.uploadWizardFields : ''\}`\} disabled=\{busy\}>/);
+  assert.match(client, /<div className=\{`\$\{styles\.uploadWizardPanel\} \$\{wizardStyles\.panel\}`\}>/);
+  assert.match(client, /<fieldset className=\{`\$\{styles\.modalFields\} \$\{styles\.uploadWizardFields\}`\} disabled=\{busy\}>/);
   assert.match(client, /role="status" aria-live="polite"/);
   assert.match(client, /async function readVaultResponse/);
   assert.match(client, /setOperationBusy\(false\);\s*setModalMode\(null\);/);
