@@ -111,8 +111,8 @@
 .recurringBar { justify-content: space-between; padding: .8rem .35rem .1rem; }
 .recurringActions { display: flex; flex-wrap: wrap; align-items: stretch; gap: .6rem; }
 .recurringActions > button { min-height: 2.75rem; }
-.recurringBar > span { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; color: var(--app-muted,#536c60); font-size: .92rem; font-weight: 700; }
-.recurringBar strong { color: var(--app-text,#123f32); font-size: 1.2rem; font-variant-numeric: tabular-nums; }
+.recurringBar > span { color: var(--app-text,#25483c); font-size: .96rem; font-weight: 600; line-height: 1.45; }
+.recurringBar strong { white-space: nowrap; font-weight: 750; font-variant-numeric: tabular-nums; }
 .manageCosts, .costControls button, .resetChoice {
   padding: .65rem 1rem; border-radius: .8rem; border: 1px solid var(--app-line,#b7d2c3); color: var(--app-accent,#155a40);
   background: var(--app-surface,#fff); font: inherit; font-size: .9rem; font-weight: 750; cursor: pointer;

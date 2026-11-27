@@ -79,6 +79,7 @@ export default function BudgetRecurringCosts({budget, onRefresh, onAdd}: {
   const listId = useId();
   const included = budget.includeRecurringCosts !== false;
   const costs = budget.recurringCosts ?? [];
+  const scheduledTotal = formatBudgetMoney(budget.expected ?? 0).replace(/^R /, 'R').replace(/,00$/, '');
   const due = costs.filter(cost => !cost.paused && cost.count > 0);
   const visible = manage ? costs : due;
   async function save(url: string, body: object, method: 'PATCH' | 'DELETE' = 'PATCH') {
@@ -110,7 +111,7 @@ export default function BudgetRecurringCosts({budget, onRefresh, onAdd}: {
         </summary>
         <div className={styles.recurringContent}>
           <div className={styles.recurringBar}>
-            <span>Expected this period <strong>{formatBudgetMoney(budget.expected ?? 0)}</strong></span>
+            <span>Scheduled payments for {budget.periodLabel} total <strong>{scheduledTotal}</strong>.</span>
             <div className={styles.recurringActions}>
               {costs.length > 0 && <button className={styles.manageCosts} type="button" aria-expanded={manage} aria-controls={listId} disabled={busy} onClick={() => setManage(!manage)}>{manage ? 'Done' : 'Manage recurring costs'}</button>}
               {!desktop.workspace && <button type="button" className={ledgerStyles.primaryButton} disabled={busy} onClick={onAdd}>Add recurring cost</button>}
