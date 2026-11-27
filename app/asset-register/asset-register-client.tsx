@@ -21966,7 +21966,6 @@ export default function AssetRegisterClient({
         <AssetDocumentUploadModal
           assetId={documentUploadAsset.id}
           assetTitle={documentUploadAsset.title}
-          assetDetail={`Year Model: ${documentUploadAsset.yearModel || 'Not recorded'} • Usage: ${buildAssetUsageValue(documentUploadAsset)} • Condition: ${conditionLabel(documentUploadAsset.condition)}`}
           onClose={() => closeAssetDocumentUpload(documentUploadAsset.id)}
           onUploaded={(documents, outcome) => handleVaultDocumentsUploaded(documentUploadAsset, documents, outcome)}
         />

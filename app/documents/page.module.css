@@ -4296,13 +4296,27 @@
 .assetSubheader { margin: .35rem 0 0; color: var(--app-text, #20483c); font-weight: 600; overflow-wrap: anywhere; }
 .assetSubheader strong { font-weight: 800; }
 
-.modalForm[data-upload-slide='details'] .expiryFields {
-  padding: .65rem .9rem;
+.modalForm[data-upload-slide='details'] .expiryFields { display: contents; }
+.modalForm[data-upload-slide='details'] .formGrid > .field input,
+.modalForm[data-upload-slide='details'] .expiryToggle {
+  box-sizing: border-box;
+  width: 100%;
+  height: 3.25rem;
+  min-height: 3.25rem;
+}
+.modalForm[data-upload-slide='details'] .expiryToggle {
+  align-self: end;
+  justify-content: space-between;
+  flex-direction: row-reverse;
+  font-weight: 700;
+  padding: 0 .9rem;
   border: 1px solid var(--app-border, #c4d9ce);
   border-radius: .85rem;
   background: var(--app-surface-soft, #f3f8f5);
 }
-.modalForm[data-upload-slide='details'] .expiryToggle { justify-content: space-between; flex-direction: row-reverse; font-weight: 700; }
+.modalForm[data-upload-slide='details'] .expiryFields:first-child > label { grid-column: 1 / -1; }
+/* Keep the revealed date beneath its switch when a document title is present. */
+.modalForm[data-upload-slide='details'] .formGrid:has(> label:first-child input) .expiryFields > .field { grid-column: -2 / -1; }
 .modalForm[data-upload-slide='details'] .expiryToggle input {
   appearance: none;
   box-sizing: border-box;
