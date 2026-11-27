@@ -1279,25 +1279,25 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   {
     value: 'equipment',
     label: 'Equipment',
-    description: 'Machines and plant',
+    description: 'Machinery',
     titlePlaceholder: 'Example: Water pump trailer',
   },
   {
     value: 'vehicle',
     label: 'Vehicle',
-    description: 'Cars and trucks',
+    description: 'Cars & trucks',
     titlePlaceholder: 'Example: Toyota Hilux farm bakkie',
   },
   {
     value: 'boat',
     label: 'Boat',
-    description: 'Boats and jet skis',
+    description: 'Watercraft',
     titlePlaceholder: 'Example: Bowrider with outboard motor',
   },
   {
     value: 'property',
     label: PROPERTY_ASSET_LABEL,
-    description: 'Land and structures',
+    description: 'Land & homes',
     titlePlaceholder: PROPERTY_ASSET_TITLE_PLACEHOLDER,
   },
   {
@@ -1309,13 +1309,13 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   {
     value: 'stock',
     label: 'Stock',
-    description: 'Goods and livestock',
+    description: 'Goods & herds',
     titlePlaceholder: 'Example: Parts inventory, fertiliser stock or livestock',
   },
   {
     value: 'manual',
     label: 'Contents & electronics',
-    description: 'Furniture and devices',
+    description: 'Home & tech',
     titlePlaceholder: 'Example: Samsung fridge, office desks or MacBook Pro',
   },
   {

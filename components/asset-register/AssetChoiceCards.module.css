@@ -16,6 +16,6 @@
 .actions button:disabled { opacity: .5; cursor: default; }
 .pager span { white-space: nowrap; font-weight: 650; }
 @media (max-width: 640px) {
-  .actions button { padding: .55rem .8rem; }
-  .pager { gap: .4rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions button { padding: .55rem .8rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .pager { gap: .4rem; }
 }
