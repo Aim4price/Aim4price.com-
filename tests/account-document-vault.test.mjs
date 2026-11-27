@@ -245,7 +245,7 @@ test('Documents activates the full vault with the Asset Register visual system',
   assert.match(client, /id="document-vault-title">Document Vault/);
   assert.match(client, /Recycle Bin/);
   assert.match(client, /Summary/);
-  assert.match(client, /Filters/);
+  assert.match(client, /<Icon name="filter" \/> Filter/);
   assert.match(client, /Upload document/);
   assert.match(styles, /\.shell\s*\{[\s\S]*?1320px/);
   assert.match(styles, /\.vaultCanvas\s*\{[\s\S]*?padding:\s*clamp\(1\.15rem, calc\(var\(--website-design-vw\) \* 1\.9\), 1\.7rem\)/);
@@ -306,12 +306,8 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /if \(!finalSlide\) \{\s*continueDocumentFlow\(\)/);
   assert.match(client, /uploadStep === 'files'[\s\S]*?setUploadStep\('details'\)/);
 
-  assert.match(client, /<FilterFlow title="Filter documents" dialogRef=\{filterModalRef\}/);
-  assert.match(client, /onClose=\{\(\) => setShowFilters\(false\)\}/);
-  assert.match(client, /onClear=\{\(\) => setCategory\('all'\)\}/);
-  assert.match(client, /onApply=\{\(\) => \{ setCategory\(draftCategory\); setShowFilters\(false\); \}\}/);
-  assert.match(client, /<FilterQuestion label="Which category\?" value=\{draftCategory\} options=\{\[\{ value: 'all', label: 'All documents' \}, \.\.\.CATEGORY_OPTIONS\]\}/);
-  assert.match(client, /onChange=\{\(value\) => setDraftCategory\(value as 'all' \| DocumentCategory\)\}/);
+  assert.match(client, /setModalMode\('filter'\)/);
+  assert.match(client, /if \(modalMode === 'filter'\) return applyFilter\(documentType\)/);
   assert.doesNotMatch(client, /id="document-vault-filters" className=\{styles\.filterPanel\}/);
 
   assert.match(client, /Are you sure you want to delete this document\?/);

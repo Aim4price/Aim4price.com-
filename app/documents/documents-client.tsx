@@ -10,7 +10,6 @@ import AssetPickerDetail from '../../components/AssetPickerDetail';
 
 import DateInput from '../../components/DateInput';
 
-import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
 import DocumentFileLink from '../../components/DocumentFileLink';
 
@@ -115,7 +114,8 @@ type VaultResponse = {
 };
 
 type VaultView = 'documents' | 'recycle-bin';
-type ModalMode = 'upload' | 'edit';
+type ModalMode = 'upload' | 'edit' | 'filter';
+type VaultFilter = { assetIds: string[]; documentType: DocumentType | null };
 type DocumentSlide = 'assets' | 'files' | 'details' | 'scope';
 type Notice = { tone: 'success' | 'error'; message: string };
 type SummaryNavigation = { hasOverflow: boolean; atStart: boolean; atEnd: boolean };
@@ -390,10 +390,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [selectedAsset, setSelectedAsset] = useState<AssetLink | null>(uploadContext?.asset ?? null);
   const [view, setView] = useState<VaultView>('documents');
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<'all' | DocumentCategory>('all');
-  const [draftCategory, setDraftCategory] = useState<'all' | DocumentCategory>('all');
+  const [filter, setFilter] = useState<VaultFilter | null>(null);
   const [showSummary, setShowSummary] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -425,7 +423,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const modalRef = useRef<HTMLElement | null>(null);
   const uploadWizardBodyRef = useRef<HTMLDivElement | null>(null);
   const assetPickerModalRef = useRef<HTMLFormElement | null>(null);
-  const filterModalRef = useRef<HTMLDivElement | null>(null);
   const deleteModalRef = useRef<HTMLElement | null>(null);
   const documentTypeModalRef = useRef<HTMLElement | null>(null);
   const pageContentRef = useRef<HTMLDivElement | null>(null);
@@ -500,7 +497,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }, [showDocumentTypeOptions]);
 
   useEffect(() => {
-    if (!modalMode && !showFilters && !documentPendingDelete) return;
+    if (!modalMode && !documentPendingDelete) return;
 
     const dialog = showDocumentTypeOptions
       ? documentTypeModalRef.current
@@ -508,9 +505,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       ? assetPickerModalRef.current
       : modalMode
         ? modalRef.current
-        : showFilters
-          ? filterModalRef.current
-          : deleteModalRef.current;
+        : deleteModalRef.current;
     const pageContent = pageContentRef.current;
     const previousOverflow = document.body.style.overflow;
     dialog?.querySelector<HTMLElement>('[data-modal-initial-focus]')?.focus();
@@ -526,7 +521,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         }
         setModalNotice(null);
         if (modalMode) closeModal();
-        else if (showFilters) setShowFilters(false);
         else setDocumentPendingDelete(null);
         return;
       }
@@ -556,7 +550,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       pageContent?.removeAttribute('aria-hidden');
       returnFocusRef.current?.focus();
     };
-  }, [documentPendingDelete, modalMode, showAssetPicker, showFilters, showDocumentTypeOptions]);
+  }, [documentPendingDelete, modalMode, showAssetPicker, showDocumentTypeOptions]);
 
   useEffect(() => {
     if (!modalMode || showAssetPicker) return undefined;
@@ -570,7 +564,12 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     const needle = search.trim().toLowerCase();
 
     return documents.filter((document) => {
-      if (category !== 'all' && document.category !== category) return false;
+      if (filter) {
+        const matchesScope = filter.assetIds.length
+          ? document.assetLinks.some(asset => filter.assetIds.includes(asset.id))
+          : document.assetLinks.length === 0;
+        if (!matchesScope || (filter.documentType && document.documentType !== filter.documentType)) return false;
+      }
       if (!needle) return true;
 
       return [
@@ -582,7 +581,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         ...document.assetLinks.flatMap((asset) => [asset.title, asset.meta]),
       ].some((value) => value.toLowerCase().includes(needle));
     });
-  }, [category, documents, search]);
+  }, [filter, documents, search]);
+
+  let resultsLabel = view === 'recycle-bin' ? 'Recycle Bin' : initialAssetId ? 'Documents linked to this asset' : 'All documents';
+  if (filter) {
+    const firstAsset = assets.find(asset => asset.id === filter.assetIds[0]);
+    const scopeLabel = filter.assetIds.length > 1 ? `${filter.assetIds.length} assets` : firstAsset?.title ?? (filter.assetIds.length ? 'Asset documents' : 'General documents');
+    resultsLabel = [scopeLabel, getAccountDocumentTypeLabel(filter.documentType)].filter(Boolean).join(' · ');
+  }
 
   const groupedDocuments = useMemo(() => {
     return CATEGORY_OPTIONS
@@ -668,9 +674,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   function switchView(nextView: VaultView) {
     if (busyRef.current || loading) return;
     setView(nextView);
-    setCategory('all');
+    setFilter(null);
     setSearch('');
-    setShowFilters(false);
     setNotice(null);
   }
 
@@ -726,11 +731,23 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setNotice(null);
   }
 
-  function openFiltersModal() {
+  function openFilterModal() {
     if (busyRef.current || loading || loadFailed || !hasDocumentsInView) return;
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setDraftCategory(category);
-    setShowFilters(true);
+    setEditingDocument(null);
+    setDraft({ ...createEmptyDraft(), assetIds: filter?.assetIds ?? [], documentType: filter?.documentType ?? '' });
+    setAssetSearch('');
+    setDocumentTypeSearch('');
+    setTypeGroup(null);
+    setShowDocumentTypeOptions(false);
+    setModalNotice(null);
+    setUploadStep('scope');
+    setModalMode('filter');
+  }
+
+  function applyFilter(documentType: DocumentType | null) {
+    setFilter({ assetIds: draft.assetIds, documentType });
+    closeModal();
   }
 
   function requestDocumentDelete(document: VaultDocument) {
@@ -745,6 +762,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }
 
   function selectDocumentType(documentType: DocumentType) {
+    if (modalMode === 'filter') return applyFilter(documentType);
     const option = getAccountDocumentType(documentType);
     if (!option) return;
     setDraft((current) => ({
@@ -934,7 +952,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     else if (uploadStep === 'files') {
       setUploadStep(draft.assetIds.length ? 'assets' : 'scope');
       setShowDocumentTypeOptions(true);
-    } else if (modalMode === 'edit' || (!initialAssetId && !desktop.workspace)) setUploadStep('scope');
+    } else if (modalMode !== 'upload' || (!initialAssetId && !desktop.workspace)) setUploadStep('scope');
     else closeModal();
   }
 
@@ -947,6 +965,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       return;
     }
 
+    if (modalMode === 'filter') return;
     if (!validateDocumentDetails()) {
       setUploadStep('details');
       return;
@@ -1295,13 +1314,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <button
             type="button"
             className={`${styles.headerButton} ${styles.filtersButton}`}
-            onClick={openFiltersModal}
-            aria-expanded={showFilters}
+            onClick={openFilterModal}
+            aria-expanded={modalMode === 'filter'}
             aria-haspopup="dialog"
             disabled={loading || loadFailed || !hasDocumentsInView}
-           data-tooltip="Filter documents by category to narrow your search." data-tooltip-style="description">
-            <Icon name="filter" /> Filters
-            {category !== 'all' ? <span className={styles.activeFilterText}>1 active</span> : null}
+           data-tooltip="Filter by asset or general document, then by type." data-tooltip-style="description">
+            <Icon name="filter" /> Filter
+            {filter ? <span className={styles.activeFilterText}>1 active</span> : null}
           </button>
           <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={loading || loadFailed || view === 'recycle-bin' || busy} data-tooltip="Upload documents to your account and link them to assets." data-tooltip-style="description">
             <Icon name="upload" /> Upload documents
@@ -1386,11 +1405,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         {!loadFailed && hasDocumentsInView ? (
           <div className={styles.resultsHeading}>
             <div>
-              <span>{view === 'recycle-bin' ? 'Recycle Bin' : initialAssetId ? 'Documents linked to this asset' : category === 'all' ? 'All documents' : categoryLabel(category)}</span>
+              <span>{resultsLabel}</span>
               <strong>{filteredDocuments.length} {filteredDocuments.length === 1 ? 'document' : 'documents'}</strong>
             </div>
-            {(search || category !== 'all') ? (
-              <button type="button" onClick={() => { setSearch(''); setCategory('all'); }}>Clear search &amp; filters</button>
+            {(search || filter) ? (
+              <button type="button" onClick={() => { setSearch(''); setFilter(null); }}>{search && filter ? 'Clear search and filter' : filter ? 'Clear filter' : 'Clear search'}</button>
             ) : null}
           </div>
         ) : null}
@@ -1437,7 +1456,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               {view === 'recycle-bin'
                 ? 'Documents moved here will remain recoverable for 90 days.'
                 : documents.length
-                  ? 'Try clearing your search or choosing another category.'
+                  ? 'Clear the filter or try another search.'
                   : initialAssetId
                     ? 'Upload a document here and it will be saved in the Document Vault already linked to this asset.'
                   : 'Upload finance, accounting, insurance and licensing records in bulk. Files stay at account level unless you choose to link them to assets.'}
@@ -1464,7 +1483,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <section ref={modalRef} className={`${styles.modal} ${styles.accountDocumentModal} ${accountStyles.modalTheme} ${wizardStyles.dialog}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
-                <h2 id="document-modal-title">{uploadStep === 'scope' ? (modalMode === 'edit' ? 'Edit document' : 'Upload document') : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
+                <h2 id="document-modal-title">{uploadStep === 'scope' ? (modalMode === 'filter' ? 'Filter documents' : modalMode === 'edit' ? 'Edit document' : 'Upload document') : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
                 {(uploadStep === 'files' || uploadStep === 'details' || (uploadStep === 'scope' && modalMode === 'edit')) && assetSubheader}
                 {modalMode === 'edit' && uploadStep === 'scope' && !draft.assetIds.length && <p>General document</p>}
               </div>
@@ -1485,9 +1504,9 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 <fieldset className={`${styles.modalFields} ${styles.uploadWizardFields}`} disabled={busy}>
                 {uploadStep === 'scope' && <div className={styles.scopeChoices}>
                   <button type="button" className={categoryStyles.card} data-category="licence" onClick={() => setUploadStep('assets')}>
-                    <span className={categoryStyles.icon}><Icon name="link" /></span><strong>{modalMode === 'upload' ? 'Related to an asset' : draft.assetIds.length ? 'Change asset' : 'Link to an asset'}</strong>
+                    <span className={categoryStyles.icon}><Icon name="link" /></span><strong>{modalMode !== 'edit' ? 'Related to an asset' : draft.assetIds.length ? 'Change asset' : 'Link to an asset'}</strong>
                   </button>
-                  {(modalMode === 'upload' || draft.assetIds.length > 0) && <button type="button" className={categoryStyles.card} onClick={() => {
+                  {(modalMode !== 'edit' || draft.assetIds.length > 0) && <button type="button" className={categoryStyles.card} onClick={() => {
                     updateDraft('assetIds', []);
                     setDocumentTypeSearch('');
                     setTypeGroup(null);
@@ -1694,6 +1713,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 setDocumentTypeSearch('');
                 documentTypeModalRef.current?.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
               }}>Back</button>
+              {modalMode === 'filter' && !typeGroup && <button type="button" onClick={() => applyFilter(null)}>All types</button>}
               {modalMode === 'edit' && !draft.documentType && !typeGroup && (
                 <button type="button" onClick={() => { setShowDocumentTypeOptions(false); setUploadStep('details'); }}>Keep unclassified</button>
               )}
@@ -1795,12 +1815,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             </footer>
           </form>
         </div>
-      ) : null}
-
-      {showFilters ? (
-        <FilterFlow title="Filter documents" dialogRef={filterModalRef} onClose={() => setShowFilters(false)} onClear={() => setCategory('all')} onApply={() => { setCategory(draftCategory); setShowFilters(false); }}>
-          <FilterQuestion label="Which category?" value={draftCategory} options={[{ value: 'all', label: 'All documents' }, ...CATEGORY_OPTIONS]} onChange={(value) => setDraftCategory(value as 'all' | DocumentCategory)} />
-        </FilterFlow>
       ) : null}
 
       {documentPendingDelete ? (
