@@ -793,13 +793,13 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
         limit 1;
 
         if kind_constraint_definition is null
-          or position('stock' in lower(kind_constraint_definition)) = 0 then
+          or position('boat' in lower(kind_constraint_definition)) = 0 or position('other' in lower(kind_constraint_definition)) = 0 then
           alter table public.asset_register_items
             drop constraint if exists asset_register_items_kind_check;
 
           alter table public.asset_register_items
             add constraint asset_register_items_kind_check
-              check (kind in ('tractor', 'equipment', 'manual', 'property', 'vehicle', 'tools', 'stock'));
+              check (kind in ('tractor', 'equipment', 'manual', 'property', 'vehicle', 'tools', 'stock', 'boat', 'other'));
         end if;
       end if;
     end

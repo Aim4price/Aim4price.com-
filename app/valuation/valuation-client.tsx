@@ -1756,7 +1756,7 @@ function getResultUsageMetricType(state: ValuationResultState | null): UsageMetr
 }
 
 function getResultUsageSectorKey(state: ValuationResultState | null): SectorKey | null {
-  return state?.kind === 'generic' && state.result.specsJson.basic_catalogue_release ? null : getResultSectorKey(state);
+  return state?.kind === 'generic' && (state.result.specsJson.basic_catalogue_release || state.result.family.key === 'boats') ? null : getResultSectorKey(state);
 }
 
 function getResultSectorKey(state: ValuationResultState | null): SectorKey {
@@ -2254,7 +2254,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         ? normalizeText(typedModelName)
         : '';
   const shouldSaveGenericModelCandidate = genericModelMode === 'manual' && !selectedBrandIsUnknown && Boolean(normalizeText(typedModelName));
-  const selectedUsageSector = selectedFamily?.basicCatalogue ? null : selectedSector;
+  const selectedUsageSector = selectedFamily?.basicCatalogue || selectedFamily?.familyKey === 'boats' ? null : selectedSector;
   const selectedUsageDisplayUnit = getUsageDisplayUnit(selectedUsageSector, selectedFamily?.usageMetricType);
   const selectedUsageFieldLabel = getUsageFieldLabel(selectedUsageSector, selectedFamily?.usageMetricType);
   const selectedUsageSentenceLabel = getUsageSentenceLabel(selectedUsageSector, selectedFamily?.usageMetricType);
@@ -4357,7 +4357,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const usageLabel = formatSingleUsageSummary({
       actualUsageAmount: result.usageAmount,
       lifeWorkedPercent: result.lifeWorkedPercent,
-      sectorKey: result.specsJson.basic_catalogue_release ? null : result.sector.key,
+      sectorKey: result.specsJson.basic_catalogue_release || result.family.key === 'boats' ? null : result.sector.key,
       allowZero: Boolean(result.specsJson.basic_catalogue_release),
       usageMetricType: result.family.usageMetricType,
       fallback: '',
@@ -4404,7 +4404,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const resultYear = isGeneric ? genericResult?.year ?? calculationYear : calculationYear;
     const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
     const resultUsageShortUnit = isGeneric && genericResult
-      ? getUsageShortUnit(genericResult.specsJson.basic_catalogue_release ? null : genericResult.sector.key, genericResult.family.usageMetricType)
+      ? getUsageShortUnit(genericResult.specsJson.basic_catalogue_release || genericResult.family.key === 'boats' ? null : genericResult.sector.key, genericResult.family.usageMetricType)
       : 'hours';
     const usageSummary = formatSingleUsageSummary({
       actualUsageAmount: isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
@@ -7921,7 +7921,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
               {showHoursInput ? (
                 <button type="button" className={styles.unknownAnswerButton} onClick={() => setUsageModalMode('hours')}>
-                  {getKnownUsageButtonLabel(selectedSector, selectedFamily?.usageMetricType)}
+                  {getKnownUsageButtonLabel(selectedUsageSector, selectedFamily?.usageMetricType)}
                 </button>
               ) : null}
             </>
@@ -9264,7 +9264,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const resultYear = isGeneric ? genericResult?.year ?? calculationYear : calculationYear;
     const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
     const resultUsageShortUnit = isGeneric && genericResult
-      ? getUsageShortUnit(genericResult.specsJson.basic_catalogue_release ? null : genericResult.sector.key, genericResult.family.usageMetricType)
+      ? getUsageShortUnit(genericResult.specsJson.basic_catalogue_release || genericResult.family.key === 'boats' ? null : genericResult.sector.key, genericResult.family.usageMetricType)
       : 'hours';
     const usageSummary = formatSingleUsageSummary({
       actualUsageAmount: isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,

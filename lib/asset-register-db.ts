@@ -20,7 +20,7 @@ import {
   type AssetDocumentCategory,
 } from './asset-document-permissions';
 
-export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools' | 'stock';
+export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools' | 'stock' | 'boat' | 'other';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
 export type AssetRegisterItemCondition = ConditionKey | '';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
@@ -1236,6 +1236,7 @@ function withSaleabilityValuationInputs(
 }
 
 function getGenericAssetRegisterKind(result: GenericValuationResult): AssetRegisterItemKind {
+  if (result.sector.key === 'motor' && result.family.key === 'boats') return 'boat';
   return result.sector.key === 'motor' || result.family.usageMetricType === 'km' ? 'vehicle' : 'equipment';
 }
 
@@ -1259,7 +1260,7 @@ function withGenericUsageMetadata(
   specs: Record<string, unknown>,
   result: GenericValuationResult,
 ): Record<string, unknown> {
-  const usageMetric = result.family.usageMetricType === 'km' || (!result.specsJson.basic_catalogue_release && result.sector.key === 'motor') ? 'km' : 'hours';
+  const usageMetric = result.family.usageMetricType === 'km' || (!result.specsJson.basic_catalogue_release && result.family.key !== 'boats' && result.sector.key === 'motor') ? 'km' : 'hours';
   const lifeWorkedPercent = asNumber(result.lifeWorkedPercent);
   const usageSpecs = genericValuationResultUsesPercentBasis(result) && lifeWorkedPercent !== null
     ? buildPercentUsageSpecsJson({}, lifeWorkedPercent)
@@ -1630,6 +1631,7 @@ function normalizeKind(value: unknown): AssetRegisterItemKind {
   if (normalized === 'tractor') return 'tractor';
   if (normalized === 'equipment' || normalized === 'valued equipment') return 'equipment';
   if (normalized === 'property') return 'property';
+  if (normalized === 'boat' || normalized === 'other') return normalized;
   if (normalized === 'vehicle') return 'vehicle';
   if (normalized === 'tool' || normalized === 'tools') return 'tools';
   if (normalized === 'stock' || normalized === 'inventory') return 'stock';

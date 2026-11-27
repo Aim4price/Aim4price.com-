@@ -40,7 +40,7 @@ export function desktopRegisterAssets(data: TeamRegisterData, membership: string
     registerIncludedInCombinedTotals: asset.registerIncludedInCombinedTotals !== false,
     depreciationMethodUsed: '', lifeWorkedPercent: asset.usageMetric === 'percentage' ? asset.usage : null,
     lifeRemainingPercent: null, estimatedHours: null, maxLifetimeHours: null,
-    kind: (['tractor','equipment','manual','property','vehicle','tools','stock'].includes(asset.kind || '') ? asset.kind : 'equipment') as RegisterAsset['kind'],
+    kind: (['tractor','equipment','manual','property','vehicle','tools','stock','boat','other'].includes(asset.kind || '') ? asset.kind : 'equipment') as RegisterAsset['kind'],
     title: asset.title, value: asset.values?.current ?? 0, selectedMethod: 'aim4price',
     selectedValueExVat: asset.values?.current ?? 0, replacementPriceExVat: asset.values?.replacement ?? null,
     brandName: asset.brand, modelName: asset.model, drive: '', tractorType: '', cab: '', powerKw: null,

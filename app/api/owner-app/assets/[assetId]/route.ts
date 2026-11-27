@@ -24,7 +24,7 @@ import { listOwnerAssetCorrectionAlerts } from '../../../../../lib/dealer-asset-
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const KINDS = new Set<AssetRegisterItemKind>(['tractor', 'equipment', 'manual', 'property', 'vehicle', 'tools', 'stock']);
+const KINDS = new Set<AssetRegisterItemKind>(['tractor', 'equipment', 'manual', 'property', 'vehicle', 'tools', 'stock', 'boat', 'other']);
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};

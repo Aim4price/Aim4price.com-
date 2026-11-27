@@ -21,6 +21,8 @@ const KINDS = new Set<AssetRegisterItemKind>([
   'vehicle',
   'tools',
   'stock',
+  'boat',
+  'other',
 ]);
 
 const CONDITIONS = new Set(['excellent', 'good', 'fair', 'used', 'serious']);
