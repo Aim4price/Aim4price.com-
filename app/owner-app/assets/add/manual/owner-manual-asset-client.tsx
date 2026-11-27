@@ -108,10 +108,12 @@ export default function OwnerManualAssetClient() {
               <option value="tractor">Tractor</option>
               <option value="equipment">Equipment</option>
               <option value="vehicle">Vehicle</option>
+              <option value="boat">Boat</option>
               <option value="property">Property / Land / Building</option>
               <option value="tools">Tools</option>
               <option value="stock">Stock</option>
               <option value="manual">Furniture, appliances &amp; electronics</option>
+              <option value="other">Other</option>
             </select>
           </label>
           {assetKind === 'property' ? <label className={styles.field}>
