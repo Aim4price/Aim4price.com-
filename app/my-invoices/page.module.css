@@ -193,6 +193,7 @@
   background: linear-gradient(var(--app-surface, #fff), var(--app-info-soft, #f0f7ff));
 }
 
+.costActionButton.costActionContribution[aria-pressed="true"],
 .costActionButton.costActionContribution:hover:not(:disabled) {
   color: var(--app-info, #164578);
   border-color: var(--app-info-line, #6daee8);

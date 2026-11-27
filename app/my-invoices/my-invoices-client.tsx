@@ -1053,6 +1053,8 @@ export default function MyInvoicesClient({
   const [isLoading, setIsLoading] = useState(!sharedFlow);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [captureRequests, setCaptureRequests] = useState<CaptureRequestStatusItem[]>([]);
+  const [approvalsOpen, setApprovalsOpen] = useState(false);
+  const [captureLoadState, setCaptureLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const pendingApprovals = canReviewCaptureRequests
     ? captureRequests.filter((request) => request.status === 'awaiting_owner')
     : [];
@@ -1294,12 +1296,14 @@ export default function MyInvoicesClient({
     async function loadCaptureRequests() {
       if (sharedFlow || budgetsPage) return;
       const requests = await fetchCaptureRequests();
-      if (!cancelled && requests) setCaptureRequests(requests);
+      if (cancelled) return;
+      setCaptureLoadState(requests ? 'ready' : 'error');
+      if (requests) setCaptureRequests(requests);
     }
 
     void loadCaptureRequests();
     return () => { cancelled = true; };
-  }, [budgetsPage, captureApiRoot]);
+  }, [budgetsPage, captureApiRoot, approvalsOpen]);
 
   useEffect(() => {
     if (!canReviewCaptureRequests) return;
@@ -3176,7 +3180,7 @@ export default function MyInvoicesClient({
 
         {!dealerMode ? (
           <section
-            className={`${styles.costActionGrid} ${pendingApprovals.length ? '' : styles.costActionGridCompact}`}
+            className={`${styles.costActionGrid} ${canReviewCaptureRequests ? '' : styles.costActionGridCompact}`}
             aria-label="Cost Ledger actions"
           >
             <button
@@ -3188,15 +3192,17 @@ export default function MyInvoicesClient({
               <span>Add Cost</span>
             </button>
 
-            {pendingApprovals.length > 0 ? (
+            {canReviewCaptureRequests ? (
               <button
                 type="button"
                 className={`${styles.secondaryButton} ${styles.costActionButton} ${styles.costActionContribution}`}
-                onClick={() => setCaptureReviewRequestId(pendingApprovals[0].id)}
-                aria-haspopup="dialog"
+                onClick={() => setApprovalsOpen((open) => !open)}
+                aria-pressed={approvalsOpen}
+                data-tooltip={approvalsOpen ? 'Show all costs' : 'Show costs awaiting your approval'}
+                data-tooltip-style="description"
               >
                 <ReportFileIcon />
-                <span>Needs approval ({pendingApprovals.length})</span>
+                <span>Needs approval{pendingApprovals.length > 0 ? ` (${pendingApprovals.length})` : ''}</span>
               </button>
             ) : null}
 
@@ -3211,6 +3217,14 @@ export default function MyInvoicesClient({
           </section>
         ) : null}
 
+        {approvalsOpen && canReviewCaptureRequests ? (
+          <CaptureRequestStatusList
+            title="Needs approval"
+            requests={pendingApprovals}
+            emptyLabel={captureLoadState === 'loading' ? 'Loading costs…' : captureLoadState === 'error' ? 'Could not load costs awaiting approval.' : 'No costs need approval.'}
+            onReview={setCaptureReviewRequestId}
+          />
+        ) : <>
         <section className={`${styles.invoiceToolbar} ${!dealerMode ? styles.ownerInvoiceToolbar : ''}`} aria-label="Saved cost record controls">
           <label className={styles.searchWrap}>
             <SearchIcon className={styles.searchIcon} />
@@ -3367,6 +3381,7 @@ export default function MyInvoicesClient({
             />
           ) : null}
         </section>
+        </>}
         </>}
       </section>}
 
