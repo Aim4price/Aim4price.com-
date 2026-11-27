@@ -359,9 +359,10 @@ type AssetUploadContext = {
 };
 
 /** The vault wizard, opened in place from an asset card with its link fixed. */
-export function AssetDocumentUploadFlow({ assetId, assetTitle, onClose, onUploaded }: {
+export function AssetDocumentUploadFlow({ assetId, assetTitle, assetDetail, onClose, onUploaded }: {
   assetId: string;
   assetTitle: string;
+  assetDetail?: string;
   onClose: AssetUploadContext['onClose'];
   onUploaded: AssetUploadContext['onUploaded'];
 }) {
@@ -372,7 +373,7 @@ export function AssetDocumentUploadFlow({ assetId, assetTitle, onClose, onUpload
     return () => trigger?.focus({ preventScroll: true });
   }, []);
   if (!mounted) return null;
-  return <DocumentsClient initialAssetId={assetId} uploadContext={{ asset: { id: assetId, title: assetTitle, meta: '' }, onClose, onUploaded }} />;
+  return <DocumentsClient initialAssetId={assetId} uploadContext={{ asset: { id: assetId, title: assetTitle, meta: '', detail: assetDetail }, onClose, onUploaded }} />;
 }
 
 type DocumentsClientProps = {
@@ -612,6 +613,18 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   const [typeGroup, setTypeGroup] = useState<DocumentCategory | null>(null);
   const typeScope = draft.assetIds.length ? 'asset' : 'general';
+  const firstAssetId = draft.assetIds[0];
+  const contextAsset = selectedAsset?.id === firstAssetId ? selectedAsset
+    : assets.find(asset => asset.id === firstAssetId) ?? editingDocument?.assetLinks.find(asset => asset.id === firstAssetId);
+  const contextDetails = contextAsset?.detail || contextAsset?.meta;
+  const assetSubheader = contextAsset && (
+    <p className={styles.assetSubheader}>
+      <strong>{contextAsset.title}</strong>
+      {draft.assetIds.length > 1
+        ? ` · +${draft.assetIds.length - 1} more`
+        : contextDetails && ` · ${contextDetails}`}
+    </p>
+  );
   const typeQuery = documentTypeSearch.trim().toLowerCase();
   const filteredDocumentTypes = ACCOUNT_DOCUMENT_TYPES.filter(option => {
     const currentEditType = modalMode === 'edit' && option.value === editingDocument?.documentType;
@@ -1436,6 +1449,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
               <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
                 <h2 id="document-modal-title">{modalMode === 'edit' ? 'Edit document' : uploadStep === 'scope' ? 'Upload document' : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
+                {modalMode === 'upload' && (uploadStep === 'files' || uploadStep === 'details') && assetSubheader}
                 {modalMode === 'edit' && <p>Update details and linked assets.</p>}
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true" data-modal-close="true"><span aria-hidden="true">×</span></button>
@@ -1564,7 +1578,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                           if (!event.target.checked) updateDraft('expiryDate', '');
                         }}
                       />
-                      <span>{selectedFiles.length > 1 ? 'Do these documents expire?' : 'Does this document expire?'}</span>
+                      <span>{modalMode === 'upload' ? 'Set expiry date' : 'Does this document expire?'}</span>
                     </label>
                     {documentExpires ? (
                       <label id="document-expiry-date" className={styles.field}>
@@ -1635,7 +1649,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         <div className={`${styles.modalBackdrop} ${downloadStyles.backdrop}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeDocumentTypePicker(); }}>
           <section ref={documentTypeModalRef} className={`${downloadStyles.dialog} ${categoryStyles.dialog}`} data-download-dialog="true" role="dialog" aria-modal="true" aria-labelledby="document-type-title">
             <header data-download-header="true">
-              <h2 id="document-type-title">{typeGroup ? assetTypeGroups[typeGroup] : 'Document type'}</h2>
+              <div>
+                <h2 id="document-type-title">{typeGroup ? assetTypeGroups[typeGroup] : 'Document type'}</h2>
+                {assetSubheader}
+              </div>
               <button type="button" onClick={modalMode === 'upload' ? closeModal : closeDocumentTypePicker} aria-label="Close document type chooser" data-modal-close="true">×</button>
             </header>
             <input className={styles.documentTypeSearch} type="search" value={documentTypeSearch} onChange={(event) => setDocumentTypeSearch(event.target.value)} placeholder="Search types" aria-label="Search document types" data-modal-initial-focus="true" />
