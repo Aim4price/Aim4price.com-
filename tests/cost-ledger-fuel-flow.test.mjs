@@ -6,7 +6,7 @@ const cost = read('app/my-invoices/my-invoices-client.tsx');
 const fuel = read('app/fuel/fuel-client.tsx');
 
 test('fuel-derived costs open the shared fuel editor instead of the manual cost draft', () => {
-  assert.match(cost, /function editInvoice\(invoice: InvoiceRecord\) \{\s*if \(invoice.source === 'fuel_slip'\).*setFuelCostInvoiceId\(invoice.id\); return;/);
+  assert.match(cost, /function editInvoice\(invoice: InvoiceRecord\) \{\s*if \(!desktop.allow\('editCosts'\)\) return;\s*if \(invoice.source === 'fuel_slip'\).*setFuelCostInvoiceId\(invoice.id\); return;/);
   assert.match(cost, /CostLedgerFuelEditor key=\{fuelCostInvoiceId\}/);
   assert.match(fuel, /item.assetInvoiceId === costLedgerEntry.invoiceId/);
   assert.match(fuel, /if \(slip\) openFuelSlipReview\(slip\)/);
@@ -29,6 +29,8 @@ test('invoice lookup stays owner scoped, workspace filtered, and applies before 
   const manager = cost.slice(cost.indexOf('function openInvoiceManager('), cost.indexOf('function closeFuelCostEditor('));
   assert.match(manager, /setManagedInvoice\(invoice\)/);
   assert.doesNotMatch(manager, /setFuelCostInvoiceId/);
+  assert.match(cost, /if \(desktop.allow\('editCosts'\)\) setConfirmingCostAsset\(true\)/);
+  assert.match(cost, /id="confirm-cost-asset-title">Confirm asset/);
   assert.match(cost, /setManagedInvoice\(null\); editInvoice\(managedInvoice\)/);
   assert.match(cost, /setManagedInvoice\(null\); openDeleteInvoiceDialog\(managedInvoice\)/);
 });

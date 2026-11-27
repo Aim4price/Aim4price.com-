@@ -1037,6 +1037,7 @@ export default function MyInvoicesClient({
   const [expandedInvoiceId, setExpandedInvoiceId] = useLedgerCardFocus('cost');
   const [fuelCostInvoiceId, setFuelCostInvoiceId] = useState<string | null>(null);
   const [managedInvoice, setManagedInvoice] = useState<InvoiceRecord | null>(null);
+  const [confirmingCostAsset, setConfirmingCostAsset] = useState(false);
   const manageCostRef = useRef<HTMLDivElement>(null);
   const manageCostTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [captureMethod, setCaptureMethod] = useState<'manual' | 'recurring' | 'automatic'>('manual');
@@ -1618,7 +1619,7 @@ export default function MyInvoicesClient({
     }
     document.addEventListener('keydown', handleKey);
     return () => { window.cancelAnimationFrame(frame); document.removeEventListener('keydown', handleKey); };
-  }, [managedInvoice]);
+  }, [managedInvoice, confirmingCostAsset]);
 
   useEffect(() => {
     setCurrentInvoicePage(1);
@@ -2979,6 +2980,7 @@ export default function MyInvoicesClient({
   },[invoices,routeSearchParams]);
 
   function openInvoiceManager(invoice: InvoiceRecord) {
+    setConfirmingCostAsset(false);
     setManagedInvoice(invoice);
   }
 
@@ -4943,7 +4945,32 @@ export default function MyInvoicesClient({
         },
       }} /> : null}
 
-      {managedInvoice ? (
+      {managedInvoice && confirmingCostAsset ? (
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay onClick={closeManageCost}>
+          <div ref={manageCostRef} className={[styles.assetModal, styles.budgetAssetPickerModal, styles.accountCostModal, styles.accountAssetPickerModal, pickerStyles.modal, accountStyles.modalTheme].join(' ')}
+            data-asset-choice-surface="true" data-asset-choice-modal="true" role="dialog" aria-modal="true" aria-labelledby="confirm-cost-asset-title" onClick={event => event.stopPropagation()}>
+            <div className={styles.modalHeader} data-asset-choice-header="true">
+              <div><h2 id="confirm-cost-asset-title">Confirm asset</h2><p>{managedInvoice.supplierName || 'Unknown supplier'} · {formatMoney(managedInvoice.totalIncVat)}</p></div>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeManageCost} aria-label="Close" data-modal-close="true">×</button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={`${styles.assetList} ${styles.budgetAssetList}`} data-asset-choice-list="true">
+              <div className={`${styles.assetRow} ${styles.budgetScopeRow}`} data-asset-choice-row="true" data-asset-choice-selected="true">
+                <span className={styles.assetInfo} data-asset-choice-copy="true">
+                  <strong>{managedInvoice.assetTitle || 'Saved asset'}</strong>
+                  <small data-asset-choice-meta="true">{buildInvoiceAssetMeta(managedInvoice).slice(1).join(' · ')}</small>
+                  {managedInvoice.assetCategoryLabel && <AssetPickerDetail>{managedInvoice.assetCategoryLabel}</AssetPickerDetail>}
+                </span>
+                <span className={styles.assetValue} data-asset-choice-value="true"><span className={`${pickerStyles.select} ${pickerStyles.multi}`}><i aria-hidden="true">✓</i><strong>Selected</strong></span></span>
+              </div>
+            </div>
+            <div className={`${styles.modalFooter} ${styles.budgetAssetPickerFooter}`} data-asset-choice-footer="true">
+              <button type="button" className={styles.secondaryButton} onClick={closeManageCost}>Cancel</button>
+              <button type="button" className={styles.primaryButton} data-asset-choice-action="primary" onClick={() => { setManagedInvoice(null); editInvoice(managedInvoice); }}>Next</button>
+            </div>
+          </div>
+        </div>
+      ) : managedInvoice ? (
         <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay onClick={closeManageCost}>
           <div ref={manageCostRef} className={`${umbrellaStyles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${registerStyles.optionsModal} ${umbrellaStyles.manageModal}`} role="dialog" aria-modal="true" aria-labelledby="manage-cost-title" aria-describedby="manage-cost-supplier" onClick={(event) => event.stopPropagation()}>
             <header className={`${registerStyles.modalHeader} ${registerStyles.optionsModalHeader} ${umbrellaStyles.manageHeader}`}>
@@ -4953,7 +4980,7 @@ export default function MyInvoicesClient({
             <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody} ${umbrellaStyles.manageMenuBody}`}>
               <div className={`${registerStyles.optionsContent} ${umbrellaStyles.manageMenuContent}`}>
                 <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid} ${umbrellaStyles.manageMenuGrid}`}>
-              <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { setManagedInvoice(null); editInvoice(managedInvoice); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg></i><span><strong>Edit cost</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update the cost details.</small></span></button>
+              <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { if (desktop.allow('editCosts')) setConfirmingCostAsset(true); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg></i><span><strong>Edit cost</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update the cost details.</small></span></button>
               <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { setManagedInvoice(null); openDeleteInvoiceDialog(managedInvoice); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" /></svg></i><span><strong>{dealerMode ? 'Remove cost' : 'Delete cost'}</strong><small className={umbrellaStyles.menuOptionSubtitle}>Remove this cost record.</small></span></button>
                 </div>
               </div>
