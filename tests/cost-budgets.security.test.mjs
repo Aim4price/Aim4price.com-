@@ -124,7 +124,7 @@ test('Cost Ledger exposes total-spend controls only to the direct owner experien
   }
 });
 
-test('owner Cost Ledger presents three primary actions and a header budget switch', () => {
+test('owner Cost Ledger presents cost actions and a header budget switch', () => {
   const actionGridLabel = costClient.indexOf('aria-label="Cost Ledger actions"');
   const actionGridStart = costClient.lastIndexOf('<section', actionGridLabel);
   const toolbarStart = costClient.indexOf('<section className={`${styles.invoiceToolbar}', actionGridStart);
@@ -137,7 +137,6 @@ test('owner Cost Ledger presents three primary actions and a header budget switc
 
   const expectedActions = [
     ['Add Cost', /onClick=\{\(\) => openAddInvoiceModal\(\)\}/],
-    ['Invoice Drop', /openInvoiceDropCodeManager\(\)/],
     ['Download', /onClick=\{openDownloadModal\}/],
   ];
   let previousActionIndex = -1;
@@ -149,11 +148,10 @@ test('owner Cost Ledger presents three primary actions and a header budget switc
   }
 
   assert.match(costClient, /WorkspaceViewSwitch label="Switch to Budgets" onClick=\{openBudgetManager\} buttonRef=\{budgetManagerTriggerRef\} count=\{budgetAttentionCount\}/);
+  assert.match(actionGrid, /Needs approval/);
   assert.match(actionGrid, /aria-haspopup="dialog"/);
   assert.match(costClient, /costBudgets\.filter\(\(budget\) => budget\.status !== 'on_track'\)\.length/);
   assert.match(costClient, /count=\{budgetAttentionCount\}/);
-  assert.match(actionGrid, /Add an asset first/);
-  assert.match(actionGrid, /Add a saved asset before creating an Invoice Drop code/);
   assert.doesNotMatch(costClient, /styles\.invoiceDropCodeBanner/);
 
   assert.match(

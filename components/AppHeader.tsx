@@ -215,7 +215,6 @@ const BASE_NAV_ITEMS: NavItem[] = [
 
 const PUBLIC_NAV_ITEMS: NavItem[] = [
   ...BASE_NAV_ITEMS,
-  { key: 'invoices', href: '/drop-invoice', label: 'Drop invoice' },
   { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
 ];
 

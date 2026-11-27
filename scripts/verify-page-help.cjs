@@ -43,7 +43,7 @@ const output = path.join(root, '.next/page-help-validation');
         for (const [key, expected] of Object.entries({buttonWidth:44,buttonHeight:44,iconWidth:20,iconHeight:20})) assert.ok(Math.abs(parseFloat(sizes[key])-expected)<0.1,`${topic}: ${key} is ${sizes[key]}, expected ${expected}px`);
         const overlaps=await page.$eval(trigger,el=>{const r=el.getBoundingClientRect();return [...document.querySelectorAll('button')].filter(b=>b!==el && b.getAttribute('aria-label')?.startsWith('Switch')).some(b=>{const q=b.getBoundingClientRect();return r.left<q.right && r.right>q.left && r.top<q.bottom && r.bottom>q.top;});});
         assert.equal(overlaps,false,`${topic} help does not overlap switches`);
-        if(width===1440 && ['register','fuelSlips','map','budgets','registers','desktopUsers','managerUsers','aiConnections','transfers','showroom','invoiceDrop'].includes(topic)) await page.screenshot({path:path.join(output,`${topic}-heading.png`)});
+        if(width===1440 && ['register','fuelSlips','map','budgets','registers','desktopUsers','managerUsers','aiConnections','transfers','showroom'].includes(topic)) await page.screenshot({path:path.join(output,`${topic}-heading.png`)});
         await page.hover(trigger);
         await page.waitForSelector('[role="tooltip"]',{visible:true});
         const tooltip=await page.$eval('[role="tooltip"]',el=>{const r=el.getBoundingClientRect();return {text:el.textContent,left:r.left,right:r.right,top:r.top,bottom:r.bottom,height:r.height};});

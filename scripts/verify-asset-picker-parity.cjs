@@ -14,7 +14,6 @@ const scenarios = [
   ['capture', 'costs', ['+Add Cost', 'Automatic upload', 'Services']],
   ['budget', 'budgets', ['Add Budget']],
   ['recurring', 'costs', ['+Add Cost', 'Add recurring cost', 'Services', 'Choose assets']],
-  ['invoice-drop', 'costs', ['Invoice Drop', 'Specific asset', 'Next', 'Choose an asset']],
   ['maintenance', 'maintenance', ['+Add Maintenance']],
   ['checklist', 'maintenance', ['Checklists']],
   ['maintenance-report', 'maintenance', ['Download', 'Specific asset']],

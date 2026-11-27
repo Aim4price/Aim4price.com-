@@ -17,7 +17,6 @@ import registers from '../../app/asset-registers/page.module.css';
 import access from '../../app/account/app-access-management.module.css';
 import { WorkspaceTitlePanel } from '../../components/WorkspacePrimitives';
 import BudgetTracking from '../../app/budgets/BudgetTracking';
-import InvoiceDropClient from '../../app/drop-invoice/invoice-drop-client';
 
 export default function PageHelpFixture() {
   const requested = useSearchParams().get('topic') || 'register';
@@ -38,6 +37,5 @@ export default function PageHelpFixture() {
   if (topic === 'sharedEnquiries') return <main><AppHeader active="none"/><SharedAccountHero count={0}/></main>;
   if (topic === 'showroom') title = <WorkspaceTitlePanel title="MY ADVERT SHOWROOM" helpTopic={topic} />;
   if (topic === 'budgets') title = <BudgetTracking onRefresh={async()=>{}} onAddRecurring={()=>{}} budgets={[]} loading={false} error="" onRetry={()=>{}} onAdd={()=>{}} onEdit={()=>{}} onDelete={()=>{}} />;
-  if (topic === 'invoiceDrop') return <main><AppHeader active="none"/><InvoiceDropClient /></main>;
   return <main><AppHeader active="asset-register"/><div style={{padding:'3rem', minHeight:'120vh'}}>{title}<button style={{marginTop:32}}>Unrelated page action</button></div></main>;
 }

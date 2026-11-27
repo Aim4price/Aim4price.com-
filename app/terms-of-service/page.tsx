@@ -25,7 +25,7 @@ const contents = [
   ['estimates', 'Estimates and reports'],
   ['records', 'Asset records and documents'],
   ['marketplace', 'Marketplace and Discovery'],
-  ['integrations', 'Invoice Drop and connected services'],
+  ['integrations', 'Assisted capture and connected services'],
   ['content', 'User content and platform rights'],
   ['processing', 'Processing customer records'],
   ['acceptable-use', 'Acceptable use'],
@@ -136,7 +136,7 @@ export default async function TermsOfServicePage() {
               <p>
                 Aim4price provides digital tools for asset estimates, Asset Registers, documents,
                 values, costs, fuel, maintenance, licensing, finance, insurance, accounting-related
-                records, budgets, reports, QR-linked information, Invoice Drop, assisted capture,
+                records, budgets, reports, QR-linked information, assisted capture,
                 Document Vault, Advert Studio, showrooms, mobile and offline tools, collaboration,
                 Discovery and Marketplace.
                 Features may differ by account type, role, subscription and stage of development.
@@ -269,7 +269,7 @@ export default async function TermsOfServicePage() {
             </section>
 
             <section id="integrations" className={styles.section}>
-              <h2>9. Invoice Drop, assisted capture and connected services</h2>
+              <h2>9. Assisted capture and connected services</h2>
               <p>
                 When you submit an invoice, fuel slip, document or photograph for capture, you
                 authorise Aim4price staff and necessary service providers to handle it for that

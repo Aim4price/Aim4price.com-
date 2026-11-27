@@ -5,7 +5,6 @@ import test from 'node:test';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const capture = read('lib/capture-requests.ts');
 const migration = read('database/migrations/83-assisted-document-capture.sql');
-const ownerWideDropCodeMigration = read('database/migrations/87-owner-wide-invoice-drop-codes.sql');
 const accountDeletion = read('lib/account-deletion.ts');
 const retractionRoute = read('app/api/capture-requests/[requestId]/route.ts');
 const adminCaptureTargets = read('lib/admin-capture-targets.ts');
@@ -75,86 +74,10 @@ test('only private quarantined, hashed and size-limited capture files may be cat
   assert.match(capture, /CAPTURE_FILE_SECURITY_PENDING/);
 });
 
-test('public submissions require identity but never get a public request-detail lookup', () => {
-  assert.match(migration, /document_capture_requests_public_identity_check/i);
-  assert.match(capture, /CAPTURE_PUBLIC_IDENTITY_REQUIRED/);
-  assert.match(capture, /CAPTURE_ASSET_REFERENCE_REQUIRED/);
-  assert.match(capture, /initialStatus:[\s\S]*?'needs_matching'/);
-  assert.match(capture, /getCaptureRequestDetail\([\s\S]*?UUID_PATTERN\.test\(normalized\)/);
-  assert.doesNotMatch(capture, /getCaptureRequestByPublicReference|publicReference:\s*string\)[\s\S]*?select/);
-});
-
-test('drop codes remain revocable keyed hashes while owner viewing uses a verified server derivation', () => {
-  const dropCodeTable = migration.slice(
-    migration.indexOf('create table if not exists public.asset_invoice_drop_codes'),
-    migration.indexOf('create table if not exists public.document_capture_requests'),
-  );
-  assert.match(dropCodeTable, /code_hash text not null/i);
-  assert.match(dropCodeTable, /code_last_four text not null/i);
-  assert.doesNotMatch(dropCodeTable, /\bcode\s+text\b/i);
-  assert.match(migration, /idx_asset_invoice_drop_codes_one_active_asset[\s\S]*?where is_active = true/i);
-  assert.match(capture, /createHmac\('sha256', readInvoiceDropCodeSecret\(\)\)/);
-  assert.match(capture, /randomUUID\(\)/);
-  assert.match(capture, /invoice-drop-code:v2:\$\{dropCodeId\}/);
-  assert.match(capture, /timingSafeEqual/);
-  assert.match(capture, /export async function revealActiveInvoiceDropCode/);
-  assert.match(capture, /invoiceDropCodeHashMatches\(candidate, row\.code_hash\)/);
-  assert.match(capture, /insert into public\.asset_invoice_drop_codes \([\s\S]*?id,[\s\S]*?code_hash/);
-  assert.match(capture, /configuredSecret\.length < 32 && process\.env\.NODE_ENV === 'production'/);
-  assert.match(capture, /secret\.length < 32/);
-  assert.match(capture, /resolveInvoiceDropCode[\s\S]*?where code_hash = \$1[\s\S]*?is_active = true/);
-  const resolveBody = capture.slice(
-    capture.indexOf('export async function resolveInvoiceDropCode'),
-    capture.indexOf('function normalizeInvoiceDropAssetSearch'),
-  );
-  assert.doesNotMatch(resolveBody, /sender_|business_name|asset_title|owner_name/);
-});
-
-test('owner-wide drop codes stay owner-scoped without exposing a browseable asset list', () => {
-  assert.match(ownerWideDropCodeMigration, /alter column asset_register_item_id drop not null/i);
-  assert.match(ownerWideDropCodeMigration, /idx_asset_invoice_drop_codes_one_active_asset[\s\S]*?asset_register_item_id is not null/i);
-  assert.match(ownerWideDropCodeMigration, /idx_asset_invoice_drop_codes_one_active_owner[\s\S]*?owner_user_id[\s\S]*?asset_register_item_id is null/i);
-  assert.match(capture, /asset_register_item_id is not distinct from \$2::uuid/);
-
-  const ownerSearch = capture.slice(
-    capture.indexOf('export async function resolveUniqueOwnerInvoiceDropAsset'),
-    capture.indexOf('export async function searchInvoiceDropAssetByCode'),
-  );
-  assert.match(ownerSearch, /where asset\.user_id = \$1/);
-  assert.match(ownerSearch, /from unnest\(\$2::text\[\]\) as token/);
-  assert.match(ownerSearch, /public_asset_code[\s\S]*?license_registration_number[\s\S]*?fleet_number/);
-  assert.match(ownerSearch, /limit 2/);
-  assert.match(ownerSearch, /result\.rows\.length !== 1/);
-  assert.doesNotMatch(ownerSearch, /return result\.rows\.map|matches:/);
-
-  const createRequest = capture.slice(
-    capture.indexOf('export async function createCaptureRequest'),
-    capture.indexOf('export async function addCaptureRequestFile'),
-  );
-  const matchRequest = capture.slice(
-    capture.indexOf('export async function matchCaptureRequest'),
-    capture.indexOf('async function assertFilesReady'),
-  );
-
-  assert.match(createRequest, /const codeAssetId = matchedCode\.asset_register_item_id[\s\S]*?: null/);
-  assert.match(createRequest, /if \(codeAssetId && \(!assetId \|\| codeAssetId !== assetId\)\)/);
-  assert.doesNotMatch(createRequest, /String\(matchedCode\.asset_register_item_id\) !== assetId/);
-  assert.match(matchRequest, /const codeAssetId = code\.rows\[0\]\?\.asset_register_item_id[\s\S]*?: null/);
-  assert.match(matchRequest, /\|\| \(codeAssetId && codeAssetId !== assetId\)/);
-  assert.doesNotMatch(matchRequest, /String\(code\.rows\[0\]\.asset_register_item_id\) !== assetId/);
-});
-
-test('public serial and VIN matching is exact, unique and private', () => {
-  const resolver = capture.slice(
-    capture.indexOf('export async function resolveUniqueAssetSerialOrVin'),
-    capture.indexOf('export async function getActiveInvoiceDropCode'),
-  );
-  assert.match(resolver, /from public\.asset_register_items asset/);
-  assert.match(resolver, /serial_number[\s\S]*?serial[\s\S]*?vin/);
-  assert.match(resolver, /regexp_replace/);
-  assert.match(resolver, /limit 2/);
-  assert.match(resolver, /result\.rows\.length !== 1/);
-  assert.doesNotMatch(resolver, /ilike|brand_name\s*=|model_name\s*=/i);
+test('new capture requests reject the retired public channel before opening a transaction', () => {
+  const create = capture.slice(capture.indexOf('export async function createCaptureRequest'), capture.indexOf('function normalizeCaptureFileInput'));
+  const reject = create.indexOf("if (submissionChannel === 'public_drop') throw new Error('CAPTURE_CHANNEL_INVALID')");
+  assert.ok(reject >= 0 && reject < create.indexOf('return withTransaction'));
 });
 
 test('all admin work is claimed, row-locked and actor-attributed', () => {

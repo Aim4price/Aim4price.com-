@@ -53,7 +53,6 @@ test('wizard steps reset their scroll position without focus-induced jumps', () 
     'budgetWizardBodyRef',
     'recurringWizardBodyRef',
     'manualCostWizardBodyRef',
-    'invoiceDropWizardBodyRef',
   ]) {
     assert.match(client, new RegExp(`${bodyRef}\\.current\\?\\.scrollTo\\(\\{ top: 0, left: 0 \\}\\)`));
   }
