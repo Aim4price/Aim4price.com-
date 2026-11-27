@@ -25,12 +25,12 @@ type Sheet = {
 const sheetRand = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const choices = {
   choose: [
-    ['one', 'Add 1 asset', 'Value a single asset', 'blue', 'M12 5v14M5 12h14'],
+    ['one', 'Add 1 asset', 'Add a single asset', 'blue', 'M12 5v14M5 12h14'],
     ['multiple', 'Add multiple assets', 'Enter or upload a list', 'green', 'M3 5h18v14H3z M3 10h18M3 14h18M8 5v14'],
   ],
   one: [
-    ['valuation', 'Aim4price Value', 'Get an Aim4price estimate', 'blue', 'M3 4v16h18 M6 15l5-5 4 3 6-7'],
-    ['manual', 'Manual Value', 'Enter your own value', 'green', 'M4 16l-1 5 5-1L20 8l-4-4z M13 7l4 4'],
+    ['valuation', 'Aim4price Value', 'Add an asset through Aim4price Value', 'blue', 'M3 4v16h18 M6 15l5-5 4 3 6-7'],
+    ['manual', 'Manual Value', 'Manually enter an asset', 'green', 'M4 16l-1 5 5-1L20 8l-4-4z M13 7l4 4'],
   ],
   multiple: [
     ['edit', 'Add in a sheet', 'Type or paste multiple assets', 'green', 'M3 3h18v18H3z M3 9h18M3 15h18M9 3v18'],
