@@ -3,6 +3,7 @@ import { isScrollbarInteraction } from '../../lib/scrollbar-interaction';
 import { categorySummary } from '../../lib/cost-categories';
 import { PageHelpHeading } from '../../components/PageHelp';
 import { useDesktopControls } from '../../components/DesktopWorkspace';
+import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import RecurringCostsSwitch from '../../components/RecurringCostsSwitch';
 import ReportDownloadFlow, { type ReportSelection } from '../../components/ReportDownloadFlow';
@@ -76,6 +77,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
     return () => document.removeEventListener('click', closeOutside, true);
   }, [expandedId]);
   const [filters, setFilters] = useState(EMPTY_BUDGET_FILTERS);
+  const [draftFilters, setDraftFilters] = useState<typeof filters | null>(null);
   const [manageId, setManageId] = useState<string | null>(null);
   const [downloadOpen, setDownloadOpen] = useState(false);
 
@@ -111,11 +113,18 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
     <section className={ledger.pageTitleBlock}><div><PageHelpHeading topic="budgets"><h1>BUDGET TRACKING SYSTEM</h1></PageHelpHeading><WorkspaceViewSwitch label="Switch to Cost Ledger" href="/my-invoices?view=costs" /></div></section>
     <section className={ledger.costActionGrid} aria-label="Budget actions">
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionAdd}`} data-budget-trigger="add" onClick={onAdd} disabled={!ready}><Icon kind="add" />Add Budget</button>
-      <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...EMPTY_BUDGET_FILTERS, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready} data-tooltip={filters.status === 'attention' ? 'Show all budgets again.' : 'Show budgets that need attention.'} data-tooltip-style="description"><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
+      <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...filters, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready} data-tooltip={filters.status === 'attention' ? 'Show all budgets again.' : 'Show budgets that need attention.'} data-tooltip-style="description"><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
       <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => {if(desktop.allow('exportCosts')) { setDownloadChoice(null); setDownloadOpen(true); }}} disabled={!ready || !budgets.length} data-tooltip="Download your budget reports." data-tooltip-style="description"><Icon kind="download" />Download</button>
     </section>
-    <div className={`${ledger.invoiceToolbar} ${styles.searchToolbar}`}>
+    <div className={`${ledger.invoiceToolbar} ${ledger.ownerInvoiceToolbar} ${styles.searchToolbar}`}>
       <label className={ledger.searchWrap}><Icon kind="search" /><input className={ledger.searchInput} type="search" placeholder="Search budgets by asset or period..." aria-label="Search budgets" value={query} onChange={e => setQuery(e.target.value)} /></label>
+      <button type="button" className={`${ledger.secondaryButton} ${ledger.toolbarButton} ${ledger.toolbarFilterButton} ${ledger.searchFilterButton}`}
+        aria-haspopup="dialog" disabled={!ready} onClick={() => setDraftFilters(filters)}
+        data-tooltip="Filter budgets to narrow your search." data-tooltip-style="description">
+        <svg className={ledger.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+          <path d="M4 5h16M7 12h10M10 19h4" /><circle cx="15" cy="5" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="19" r="1.5" />
+        </svg><span>Filter</span>{count > 0 && <strong>{count}</strong>}
+      </button>
     </div>
     {count || query ? <div className={styles.results}><span>{visible.length} matching budgets{filters.status === 'attention' ? ' · Alerts' : ''}</span><button onClick={() => { setFilters(EMPTY_BUDGET_FILTERS); setQuery(''); }}>Clear filters</button></div> : null}
     {loading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>{error}</p><button onClick={onRetry}>Try again</button></div> : !visible.length ? <div className={ledger.emptyState}>{budgets.length ? 'No budgets match these filters.' : 'No budgets yet. Add a budget to start tracking spending.'}</div> : null}
@@ -161,6 +170,21 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
         </div>
       </Dialog>
     ) : null}
+    {draftFilters && <FilterFlow title="Filter budgets"
+      onClose={() => setDraftFilters(null)}
+      onClear={() => { setFilters(EMPTY_BUDGET_FILTERS); setDraftFilters(null); }}
+      onApply={() => { setFilters(draftFilters); setDraftFilters(null); }}>
+      <FilterQuestion label="Which asset?" value={draftFilters.asset}
+        assetPicker={{title: 'Choose asset for budget filters', assets: exportAssets}}
+        options={[{value:'all', label:'All assets'}, ...exportAssets.map(asset => ({value:asset.id, label:asset.title}))]}
+        onChange={asset => setDraftFilters({...draftFilters, asset})} />
+      <FilterQuestion label="Which budget period?" value={draftFilters.period}
+        options={[{value:'all',label:'All periods'}, {value:'monthly',label:'Monthly'}, {value:'annual',label:'Annual'}]}
+        onChange={period => setDraftFilters({...draftFilters, period})} />
+      <FilterQuestion label="Which budget status?" value={draftFilters.status}
+        options={[{value:'all',label:'All statuses'}, {value:'on_track',label:'Within budget'}, {value:'attention',label:'Needs attention'}, {value:'warning',label:'Approaching limit'}, {value:'over_budget',label:'At or over budget'}]}
+        onChange={status => setDraftFilters({...draftFilters, status})} />
+    </FilterFlow>}
     {desktop.dialog}{downloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Budget reports" allLabel="All budgets" assets={exportAssets} lockedAssetId={scopeAssetId || undefined} budgetPeriods formatOptions={recurringReportOption}
       fields={[{key:'period',label:'Budget period',initial:'all',options:[{value:'all',label:'Current month and year'},{value:'monthly',label:'Current monthly budgets'},{value:'annual',label:'Current annual budgets'}]},{key:'status',label:'Budget status',initial:'all',options:[{value:'all',label:'All statuses'},{value:'attention',label:'Needs attention'},{value:'on_track',label:'Within budget'}]}]}
       onClose={()=>setDownloadOpen(false)} onDownload={async selection=>{

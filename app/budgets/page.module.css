@@ -90,9 +90,8 @@
 }
 .dialog.manageDialog header p { overflow-wrap: anywhere; }
 
-/* Search fills the toolbar now that budgets no longer expose a filter menu. */
 .page > section[aria-label="Budget actions"] { gap: .85rem; margin-bottom: .8rem; }
-.page .searchToolbar { grid-template-columns: minmax(0, 1fr); margin-bottom: 1.1rem; }
+.page .searchToolbar { margin-bottom: 1.1rem; }
 
 
 /* Consistent icon alignment and a quieter, structured budget summary. */
