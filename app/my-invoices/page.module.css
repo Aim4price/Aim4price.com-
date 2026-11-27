@@ -281,9 +281,13 @@
   white-space: nowrap;
 }
 
-@media (min-width: 901px) {
-  .invoiceToolbar:has(.clearFiltersButton) {
-    grid-template-columns: minmax(0, 1fr) auto auto;
+.invoiceToolbar:has(.clearFiltersButton) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+@media (max-width: 900px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceToolbar:has(.clearFiltersButton) {
+    grid-template-columns: 1fr;
   }
 }
 
