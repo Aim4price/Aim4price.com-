@@ -3746,7 +3746,7 @@ export default function MyInvoicesClient({
                   </section>
                 )}
                 {budgetWizardStep === 2 ? (
-                  <OwnershipReportCategories
+                  <OwnershipReportCategories categoryColours
                     question="Which costs should count towards this budget?"
                     headingRef={budgetWizardStepHeadingRef}
                     selected={budgetDraft.categories}
@@ -4434,7 +4434,7 @@ export default function MyInvoicesClient({
         costStep={{
           className: categoryStyles.dialog,
           canContinue: downloadCategories.length > 0 || downloadFuelSlips,
-          content: <OwnershipReportCategories selected={downloadCategories} onChange={setDownloadCategories}
+          content: <OwnershipReportCategories categoryColours selected={downloadCategories} onChange={setDownloadCategories}
             fuelSlips={{included: downloadFuelSlips, onChange: setDownloadFuelSlips}} />,
         }}
         onClose={closeDownloadModal} onDownload={async selection => {
