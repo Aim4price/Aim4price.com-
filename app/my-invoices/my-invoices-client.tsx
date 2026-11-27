@@ -3257,13 +3257,17 @@ export default function MyInvoicesClient({
                 <span>Filter</span>
                 {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
               </button>
+              {activeFilterCount > 0 && <button type="button" className={styles.clearAppliedFilters} onClick={clearFilters}>Clear filters</button>}
             </div>
           ) : (
-            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton} ${styles.searchFilterButton}`} onClick={openFilterPanel} data-tooltip="Filter cost records to narrow your search." data-tooltip-style="description">
-              <FilterIcon className={styles.buttonIcon} />
-              <span>Filter</span>
-              {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
-            </button>
+            <div className={styles.filterControls}>
+              <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton} ${styles.searchFilterButton}`} onClick={openFilterPanel} data-tooltip="Filter cost records to narrow your search." data-tooltip-style="description">
+                <FilterIcon className={styles.buttonIcon} />
+                <span>Filter</span>
+                {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
+              </button>
+              {activeFilterCount > 0 && <button type="button" className={styles.clearAppliedFilters} onClick={clearFilters}>Clear filters</button>}
+            </div>
           )}
         </section>
 
@@ -4392,7 +4396,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {filterOpen ? (
-        <FilterFlow title="Filter cost records" onClose={closeFilterPanel} onClear={clearFilters} onApply={applyFilters}>
+        <FilterFlow showCancelAndClear title="Filter cost records" onClose={closeFilterPanel} onClear={clearFilters} onApply={applyFilters}>
           {dealerMode ? (
             <FilterQuestion
               label="Which company or owner?"
