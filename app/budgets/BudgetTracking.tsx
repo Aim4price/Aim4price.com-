@@ -27,7 +27,7 @@ function Icon({ kind }: { kind: string }) {
   if (kind === 'edit') return <svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg>;
   if (kind === 'delete') return <svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" /></svg>;
   if (kind === 'search') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>;
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={kind === 'add' ? 'M12 5v14M5 12h14' : kind === 'download' ? 'M12 3v12m-5-5 5 5 5-5M5 20h14' : kind === 'filter' ? 'M4 6h16M7 12h10M10 18h4' : kind === 'alerts' ? 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4' : kind === 'manage' ? 'M4 7h16M4 17h16M8 4v6M16 14v6' : 'M5 3h14v18H5zM9 7h6M9 12h6M9 17h6'} /></svg>;
+  return <svg className={kind === 'download' ? umbrellaStyles.manageMenuIconGlyph : undefined} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={kind === 'add' ? 'M12 5v14M5 12h14' : kind === 'download' ? 'M12 3v12m-5-5 5 5 5-5M5 20h14' : kind === 'filter' ? 'M4 6h16M7 12h10M10 18h4' : kind === 'alerts' ? 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4' : kind === 'manage' ? 'M4 7h16M4 17h16M8 4v6M16 14v6' : 'M5 3h14v18H5zM9 7h6M9 12h6M9 17h6'} /></svg>;
 }
 function Dialog({ title, onClose, children, report = false, subtitle }: { subtitle?: string; report?: boolean; title: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -79,12 +79,12 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
   const [filters, setFilters] = useState(EMPTY_BUDGET_FILTERS);
   const [draftFilters, setDraftFilters] = useState<typeof filters | null>(null);
   const [manageId, setManageId] = useState<string | null>(null);
-  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [download, setDownload] = useState<{ budget?: TrackedBudget } | null>(null);
 
   const [downloadChoice, setDownloadChoice] = useState<{scope: string; included: boolean} | null>(null);
   const reportScope = (selection: ReportSelection) => [selection.assetId, selection.fields.period, selection.fields.status].join('/');
   function recurringReportOption(selection: ReportSelection) {
-    const matching = filterTrackedBudgets(budgets, '', {asset:selection.assetId, period:selection.fields.period, status:selection.fields.status});
+    const matching = download?.budget ? [download.budget] : filterTrackedBudgets(budgets, '', {asset:selection.assetId, period:selection.fields.period, status:selection.fields.status});
     const count = matching.filter(budget => budget.includeRecurringCosts !== false).length;
     const saved = count === 0 ? false : count === matching.length ? true : 'mixed';
     const scope = reportScope(selection);
@@ -114,7 +114,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
     <section className={ledger.costActionGrid} aria-label="Budget actions">
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionAdd}`} data-budget-trigger="add" onClick={onAdd} disabled={!ready}><Icon kind="add" />Add Budget</button>
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...filters, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready} data-tooltip={filters.status === 'attention' ? 'Show all budgets again.' : 'Show budgets that need attention.'} data-tooltip-style="description"><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
-      <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => {if(desktop.allow('exportCosts')) { setDownloadChoice(null); setDownloadOpen(true); }}} disabled={!ready || !budgets.length} data-tooltip="Download your budget reports." data-tooltip-style="description"><Icon kind="download" />Download</button>
+      <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => {if(desktop.allow('exportCosts')) { setDownloadChoice(null); setDownload({}); }}} disabled={!ready || !budgets.length} data-tooltip="Download your budget reports." data-tooltip-style="description"><Icon kind="download" />Download</button>
     </section>
     <div className={`${ledger.invoiceToolbar} ${ledger.ownerInvoiceToolbar} ${styles.searchToolbar}`}>
       <label className={ledger.searchWrap}><Icon kind="search" /><input className={ledger.searchInput} type="search" placeholder="Search budgets by asset or period..." aria-label="Search budgets" value={query} onChange={e => setQuery(e.target.value)} /></label>
@@ -167,6 +167,15 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
           <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { setManageId(null); onEdit(selected.id); }}>
             <i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><Icon kind="edit" /></i><span><strong>Edit budget &amp; alerts</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update the limit and reminders.</small></span>
           </button>
+          <button type="button" className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} onClick={() => {
+            if (!desktop.allow('exportCosts')) return;
+            setManageId(null);
+            setDownloadChoice(null);
+            setDownload({ budget: selected });
+          }}>
+            <i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><Icon kind="download" /></i>
+            <span><strong>{selected.groupAssetIds?.length ? 'Download group budget' : 'Download budget'}</strong><small className={umbrellaStyles.menuOptionSubtitle}>Budget and spending for this period.</small></span>
+          </button>
           <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { setManageId(null); if (desktop.allow('manageBudgets')) onDelete(selected.id); }}>
             <i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><Icon kind="delete" /></i><span><strong>Delete budget</strong><small className={umbrellaStyles.menuOptionSubtitle}>Remove this spending budget.</small></span>
           </button>
@@ -188,10 +197,11 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
         options={[{value:'all',label:'All statuses'}, {value:'on_track',label:'Within budget'}, {value:'attention',label:'Needs attention'}, {value:'warning',label:'Approaching limit'}, {value:'over_budget',label:'At or over budget'}]}
         onChange={status => setDraftFilters({...draftFilters, status})} />
     </FilterFlow>}
-    {desktop.dialog}{downloadOpen ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title="Budget reports" allLabel="All budgets" assets={exportAssets} lockedAssetId={scopeAssetId || undefined} budgetPeriods formatOptions={recurringReportOption}
+    {desktop.dialog}{download ? <ReportDownloadFlow pdfOnly={Boolean(desktop.workspace)} title={download.budget?.assetTitle ?? 'Budget reports'} allLabel={download.budget?.periodLabel ?? 'All budgets'} assets={exportAssets} lockedAssetId={download.budget ? 'all' : scopeAssetId || undefined} skipTimeline={Boolean(download.budget)} budgetPeriods formatOptions={recurringReportOption}
       fields={[{key:'period',label:'Budget period',initial:'all',options:[{value:'all',label:'Current month and year'},{value:'monthly',label:'Current monthly budgets'},{value:'annual',label:'Current annual budgets'}]},{key:'status',label:'Budget status',initial:'all',options:[{value:'all',label:'All statuses'},{value:'attention',label:'Needs attention'},{value:'on_track',label:'Within budget'}]}]}
-      onClose={()=>setDownloadOpen(false)} onDownload={async selection=>{
+      onClose={()=>setDownload(null)} onDownload={async selection=>{
         const params=new URLSearchParams({format:selection.format === 'pdf' ? 'html' : 'xlsx',asset:selection.assetId,period:selection.fields.period,status:selection.fields.status});
+        if (download.budget) params.set('budgetId', download.budget.id);
         if (downloadChoice?.scope === reportScope(selection)) params.set('recurring', String(downloadChoice.included));
         if (!desktop.allow('exportCosts')) return;
         const url=desktop.url('/api/my-invoices/budgets/report?'+params);

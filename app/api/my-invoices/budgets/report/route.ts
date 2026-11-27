@@ -19,10 +19,13 @@ export async function GET(request: NextRequest) {
   const recurringOverride = recurring === null ? undefined : recurring === 'true';
   const format = params.get('format') || 'pdf';
   if (!['html','pdf','xlsx'].includes(format)) return NextResponse.json({ error: 'Unsupported report format.' }, { status: 400 });
-  const budgets = filterTrackedBudgets(data.budgets, params.get('q') || '', { asset: params.get('asset') || 'all', period: params.get('period') || 'all', status: params.get('status') || 'all' });
+  const budgetId = params.get('budgetId');
+  const budgets = budgetId !== null
+    ? data.budgets.filter(budget => budget.id === budgetId)
+    : filterTrackedBudgets(data.budgets, params.get('q') || '', { asset: params.get('asset') || 'all', period: params.get('period') || 'all', status: params.get('status') || 'all' });
   const headers = { 'Cache-Control': 'private, no-store, max-age=0' };
   if (!budgets.length) return NextResponse.json({ error: 'No matching budgets to export.' }, { status: 404, headers });
-  const assetName = params.get('asset') && params.get('asset') !== 'all' ? budgets[0]?.assetTitle : '';
+  const assetName = budgetId !== null || (params.get('asset') && params.get('asset') !== 'all') ? budgets[0]?.assetTitle : '';
   const filename = assetName ? `${assetName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-budgets` : 'Aim4price-budgets';
   const generated = new Date().toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' });
   try {
