@@ -277,6 +277,16 @@
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
+.clearFiltersButton {
+  white-space: nowrap;
+}
+
+@media (min-width: 901px) {
+  .invoiceToolbar:has(.clearFiltersButton) {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+}
+
 .searchFilterButton {
   min-width: 11.5rem;
 }
