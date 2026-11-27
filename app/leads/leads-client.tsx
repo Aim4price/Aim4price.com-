@@ -144,6 +144,7 @@ type AssetLead = {
       canViewMaintenanceReports: boolean;
       canViewCostOfOwnership: boolean;
       canCreateMaintenanceSchedules: boolean;
+      canAddDocuments?: boolean;
       canAddPhotos?: boolean;
       canUpdateDetails?:boolean;canAccessLocation?:boolean;canSuggestCurrentValue?:boolean;canViewHistory?:boolean;canUpdateYear?:boolean;canUpdateUsage?:boolean;canUpdateCondition?:boolean;canAddMaintenance?:boolean;canViewParts?:boolean;canAddParts?:boolean;
       canAddCosts?: boolean;
@@ -3453,7 +3454,7 @@ export default function LeadsClient({
         familyLabel={familyLabel} onPhotoIndexChange={index => setLeadPhotoIndex(lead.id, index)}
         onOpenPhoto={index => openAssetPhotoModal(lead, photos, index)}
         details={
-          <SharedAssetFacts vatIncluded={!!vatIncluded[lead.id]} assetTitle={assetTitle(lead)} serial={asText(lead.assetSnapshot.serialNumber)} year={lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : 'Not saved'} usage={assetUsageValue(lead)} condition={conditionLabel(lead.assetSnapshot.condition)} replacementPrice={replacementPrice}
+          <SharedAssetFacts documentTarget={isDealerLeadsMode && lead.maintenanceAccess?.permissions.canAddDocuments ? {assetId:lead.assetRegisterItemId,client:lead.ownerBusinessName || lead.ownerName} : undefined} vatIncluded={!!vatIncluded[lead.id]} assetTitle={assetTitle(lead)} serial={asText(lead.assetSnapshot.serialNumber)} year={lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : 'Not saved'} usage={assetUsageValue(lead)} condition={conditionLabel(lead.assetSnapshot.condition)} replacementPrice={replacementPrice}
             statuses={{finance:renderLeadAssetStatusMark(readLeadFinanceStatusChoice(lead)),insurance:renderLeadAssetStatusMark(readLeadInsuranceStatusChoice(lead)),license:renderLeadAssetStatusMark(licenseStatus),location:renderLeadAssetStatusMark(typeof lead.assetSnapshot.lastKnownLat==='number' && typeof lead.assetSnapshot.lastKnownLng==='number' ? 'yes':'no')}}
             permissions={lead.maintenanceAccess?.isActive ? {
               serial:canAddDealerCosts && lead.maintenanceAccess.permissions.canUpdateSerial && lead.dealerCorrection?.status !== 'pending',

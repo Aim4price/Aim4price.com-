@@ -11,13 +11,14 @@ import AssetSerialNumber from './AssetSerialNumber';
 type FilterAssetPicker = { title: string; assets: Array<{ id: string; title: string; meta?: string; serialNumber?: string; selectedMethod?: string; categoryLabel?: string }> };
 
 /** Shared filter dialog: keep choices in the caller so Back never loses an answer. */
-export default function FilterFlow({ title, children, onClose, onClear, onApply, dialogRef, overview = false, applyLabel = 'Apply filters' }: {
+export default function FilterFlow({ title, children, onClose, onClear, onApply, dialogRef, showCancelAndClear = false, overview = false, applyLabel = 'Apply filters' }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   onClear: () => void;
   onApply: () => void;
   dialogRef?: Ref<HTMLDivElement>;
+  showCancelAndClear?: boolean;
   overview?: boolean;
   applyLabel?: string;
 }) {
@@ -68,9 +69,10 @@ export default function FilterFlow({ title, children, onClose, onClear, onApply,
           {overview ? <div className={styles.overviewGrid}>{steps}</div> : assetQuestion ? cloneElement(assetQuestion, {onChange: (value: string) => {assetQuestion.props.onChange(value); if(currentStep < steps.length - 1) setStep(currentStep + 1);}}) : question}
         </div>
         <footer className={styles.footer} data-asset-choice-footer={assetPicker ? "true" : undefined}>
-          {assetPicker ? <>{currentStep > 0 ? <button type="button" onClick={()=>setStep(currentStep - 1)}>Back</button> : null}<button type="button" onClick={onClose}>Cancel</button></> : <>
+          {assetPicker ? <>{showCancelAndClear && <button type="button" className={styles.clear} onClick={onClear}>Clear filters</button>}{currentStep > 0 ? <button type="button" onClick={()=>setStep(currentStep - 1)}>Back</button> : null}<button type="button" onClick={onClose}>Cancel</button></> : <>
           <button type="button" className={styles.clear} onClick={() => { onClear(); if (!overview) onClose(); }}>Clear filters</button>
           {!overview && currentStep > 0 ? <button type="button" onClick={() => setStep(currentStep - 1)}>Back</button> : null}
+          {showCancelAndClear && <button type="button" onClick={onClose}>Cancel</button>}
           {overview || currentStep === steps.length - 1 ? <button type="button" className={styles.apply} onClick={onApply}>{applyLabel}</button> : null}
           {!overview && currentStep < steps.length - 1 ? <button type="button" className={styles.next} onClick={() => setStep(currentStep + 1)}>Next</button> : null}
           </>}

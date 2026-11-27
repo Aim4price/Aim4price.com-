@@ -101,7 +101,7 @@ export async function markSharedAssetViewed(accountId:string, token:string, asse
  await getDb().query('INSERT INTO shared_asset_views(account_id, token, asset_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',[accountId,token,assetId]);
 }
 
-export async function listReceivedSharedEnquiries(){
+export async function listReceivedSharedEnquiries(options: { documentUploadsOnly?: boolean } = {}){
  const session=await getServerSession({requireActive:false,allowDealerApp:true});
  if(!session?.user?.email)return[];
  await ensureGuestLeadSchema();await ensureSharingFoundation();
@@ -110,8 +110,12 @@ export async function listReceivedSharedEnquiries(){
  const result = [];
  for(const candidate of candidates){
   const lead=await readLeadPage(candidate.token);
-  if(!lead||!['active','read-only','owner'].includes((await externalLeadAccess(lead)).access))continue;
-  await recordDeliveredAssets(session.user.email,candidate.token,lead.share.assets.flatMap(asset=>asset.assetId?[asset.assetId]:[]));
+  if(!lead)continue;
+  const {access}=await externalLeadAccess(lead);
+  if(options.documentUploadsOnly){
+    if(access!=='active'||lead.details?.permissions?.addDocuments!==true)continue;
+  } else if(!['active','read-only','owner'].includes(access))continue;
+  if(!options.documentUploadsOnly)await recordDeliveredAssets(session.user.email,candidate.token,lead.share.assets.flatMap(asset=>asset.assetId?[asset.assetId]:[]));
   const assets = lead.share.assets.filter(asset => !candidate.dismissed.includes(asset.assetId || ''));
   if (!assets.length) continue;
   result.push({

@@ -118,15 +118,18 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
     </section>
     <div className={`${ledger.invoiceToolbar} ${ledger.ownerInvoiceToolbar} ${styles.searchToolbar}`}>
       <label className={ledger.searchWrap}><Icon kind="search" /><input className={ledger.searchInput} type="search" placeholder="Search budgets by asset or period..." aria-label="Search budgets" value={query} onChange={e => setQuery(e.target.value)} /></label>
-      <button type="button" className={`${ledger.secondaryButton} ${ledger.toolbarButton} ${ledger.toolbarFilterButton} ${ledger.searchFilterButton}`}
-        aria-haspopup="dialog" disabled={!ready} onClick={() => setDraftFilters(filters)}
-        data-tooltip="Filter budgets to narrow your search." data-tooltip-style="description">
-        <svg className={ledger.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-          <path d="M4 5h16M7 12h10M10 19h4" /><circle cx="15" cy="5" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="19" r="1.5" />
-        </svg><span>Filter</span>{count > 0 && <strong>{count}</strong>}
-      </button>
+      <div className={ledger.filterControls}>
+        <button type="button" className={`${ledger.secondaryButton} ${ledger.toolbarButton} ${ledger.toolbarFilterButton} ${ledger.searchFilterButton}`}
+          aria-haspopup="dialog" disabled={!ready} onClick={() => setDraftFilters(filters)}
+          data-tooltip="Filter budgets to narrow your search." data-tooltip-style="description">
+          <svg className={ledger.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 5h16M7 12h10M10 19h4" /><circle cx="15" cy="5" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="19" r="1.5" />
+          </svg><span>Filter</span>{count > 0 && <strong>{count}</strong>}
+        </button>
+        {count > 0 && <button type="button" className={ledger.clearAppliedFilters} onClick={() => setFilters(EMPTY_BUDGET_FILTERS)}>Clear filters</button>}
+      </div>
     </div>
-    {count || query ? <div className={styles.results}><span>{visible.length} matching budgets{filters.status === 'attention' ? ' · Alerts' : ''}</span><button onClick={() => { setFilters(EMPTY_BUDGET_FILTERS); setQuery(''); }}>Clear filters</button></div> : null}
+    {count || query ? <div className={styles.results}><span>{visible.length} matching budgets{filters.status === 'attention' ? ' · Alerts' : ''}</span>{query && <button onClick={() => setQuery('')}>Clear search</button>}</div> : null}
     {loading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>{error}</p><button onClick={onRetry}>Try again</button></div> : !visible.length ? <div className={ledger.emptyState}>{budgets.length ? 'No budgets match these filters.' : 'No budgets yet. Add a budget to start tracking spending.'}</div> : null}
     {ready ? pagedBudgets.map(budget => <LedgerDetailsCard expanded={expandedId === budget.id} onToggle={() => setExpandedId((current) => current === budget.id ? null : budget.id)} id={`cost-budget-${budget.id}`} key={budget.id} className={`${ledger.invoiceRow} ${styles.card}`} data-status={budget.status}>
       <div className={styles.cardHeading}>
@@ -170,7 +173,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onRef
         </div>
       </Dialog>
     ) : null}
-    {draftFilters && <FilterFlow title="Filter budgets"
+    {draftFilters && <FilterFlow showCancelAndClear title="Filter budgets"
       onClose={() => setDraftFilters(null)}
       onClear={() => { setFilters(EMPTY_BUDGET_FILTERS); setDraftFilters(null); }}
       onApply={() => { setFilters(draftFilters); setDraftFilters(null); }}>

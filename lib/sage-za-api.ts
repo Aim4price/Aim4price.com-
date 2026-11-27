@@ -56,14 +56,20 @@ export async function sageTokens(config: SageConfig, grant: {code: string} | {re
   return {access: data.access_token as string, refresh, expires: Date.now() + Math.max(0, Number(data.expires_in) || 0) * 1000};
 }
 
-export async function sageRead(config: SageConfig, access: string, path: 'Company/Get' | 'SupplierInvoice/Get', company?: number, skip = 0) {
+export async function sageRead(config: SageConfig, access: string, path: 'Company/Get' | 'SupplierInvoice/Get' | 'Currency/Get', company?: number, skip = 0, paidSince?: string) {
   const url = new URL(path, 'https://accounting.sageone.co.za/api/2.0.0/');
   url.searchParams.set('apikey', config.apiKey);
   url.searchParams.set('$skip', String(skip));
   url.searchParams.set('$top', path === 'Company/Get' ? '100' : '10');
-  if (path === 'SupplierInvoice/Get') {
+  if (path !== 'Company/Get') {
     if (!Number.isSafeInteger(company) || Number(company) <= 0) throw new Error('Choose a Sage company.');
     url.searchParams.set('CompanyId', String(company));
+  }
+  if (path === 'SupplierInvoice/Get') {
+    if (paidSince) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(paidSince)) throw Error('Invalid start date');
+      url.searchParams.set('$filter', "Paid eq true and Date ge datetime'" + paidSince + "T00:00:00'");
+    }
     url.searchParams.set('includeDetail', 'true');
     url.searchParams.set('$orderby', 'Date desc,ID desc');
   }
@@ -73,6 +79,18 @@ export async function sageRead(config: SageConfig, access: string, path: 'Compan
   const result = await response.json();
   if (!Array.isArray(result.Results) || !Number.isSafeInteger(result.TotalResults)) throw new Error('Unexpected Sage response.');
   return { rows: result.Results as Record<string, unknown>[], total: Number(result.TotalResults) };
+}
+
+export async function sageHomeCurrency(config: SageConfig, access: string, company: number) {
+  const url = new URL('Company/Current','https://accounting.sageone.co.za/api/2.0.0/');
+  url.searchParams.set('apikey',config.apiKey);
+  url.searchParams.set('CompanyId',String(company));
+  const response = await fetch(url,{headers:{Authorization:'Bearer '+access,Accept:'application/json'},
+    redirect:'error',cache:'no-store',signal:AbortSignal.timeout(12000)});
+  if (!response.ok) throw Error('Sage company unavailable');
+  const data = await response.json();
+  if (data.ID !== company) throw Error('Company changed');
+  return typeof data.HomeCurrencyId==='number' ? data.HomeCurrencyId : undefined;
 }
 
 export async function sageCompanies(config: SageConfig, access: string) {

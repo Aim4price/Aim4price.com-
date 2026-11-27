@@ -51,6 +51,7 @@ export type DealerMaintenancePermissions = {
   canViewMaintenanceReports: boolean;
   canViewCostOfOwnership: boolean;
   canCreateMaintenanceSchedules: boolean;
+  canAddDocuments?: boolean;
   canAddPhotos?: boolean;
   canUpdateDetails?: boolean;
   canAccessLocation?: boolean;
@@ -228,6 +229,7 @@ type DealerMaintenanceAccessRow = {
   can_view_maintenance_reports: boolean | null;
   can_view_cost_of_ownership: boolean | null;
   can_create_maintenance_schedules: boolean | null;
+  can_add_documents?: boolean | null;
   can_add_photos?: boolean | null;
   can_update_details?: boolean | null;
   can_access_location?: boolean | null;
@@ -440,6 +442,7 @@ function rowPermissions(row: DealerMaintenanceAccessRow): DealerMaintenancePermi
     canViewMaintenanceReports: Boolean(row.can_view_maintenance_reports),
     canViewCostOfOwnership: Boolean(row.can_view_cost_of_ownership),
     canCreateMaintenanceSchedules: row.can_create_maintenance_schedules !== false,
+    canAddDocuments: row.can_add_documents === true,
     canAddPhotos: row.can_add_photos === true,
     canUpdateDetails: row.can_update_details === true,
     canAccessLocation: row.can_access_location === true,
@@ -492,6 +495,7 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
         can_view_maintenance_reports,
         can_view_cost_of_ownership,
         can_create_maintenance_schedules,
+        can_add_documents,
         can_add_photos,
         can_update_details,
         can_access_location,
@@ -566,6 +570,7 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
       add column if not exists can_view_maintenance_reports boolean not null default false,
       add column if not exists can_view_cost_of_ownership boolean not null default false,
       add column if not exists can_create_maintenance_schedules boolean not null default true,
+      add column if not exists can_add_documents boolean not null default false,
       add column if not exists can_add_photos boolean not null default false,
       add column if not exists can_update_details boolean not null default false,
       add column if not exists can_access_location boolean not null default false,
@@ -671,6 +676,7 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         access.can_view_maintenance_reports,
         access.can_view_cost_of_ownership,
         access.can_create_maintenance_schedules,
+        access.can_add_documents,
         access.can_add_photos,
         access.can_update_details,
         access.can_access_location,
@@ -777,6 +783,7 @@ export async function grantDealerMaintenanceTracking(input: {
         can_view_maintenance_reports,
         can_view_cost_of_ownership,
         can_create_maintenance_schedules,
+        can_add_documents,
         can_add_photos,
         can_update_details,
         can_access_location,
@@ -796,7 +803,7 @@ export async function grantDealerMaintenanceTracking(input: {
         created_at,
         updated_at
       )
-      values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $13, $19, $20, $21, $22, $15, $16, $17, $18, $23, $24, $14, $11, $12, true, null, now(), now())
+      values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $25, $13, $19, $20, $21, $22, $15, $16, $17, $18, $23, $24, $14, $11, $12, true, null, now(), now())
       on conflict (owner_user_id, dealer_user_id, asset_register_item_id)
       do update set
         granted_by_actor_type = excluded.granted_by_actor_type,
@@ -806,6 +813,7 @@ export async function grantDealerMaintenanceTracking(input: {
         can_view_maintenance_reports = excluded.can_view_maintenance_reports,
         can_view_cost_of_ownership = excluded.can_view_cost_of_ownership,
         can_create_maintenance_schedules = excluded.can_create_maintenance_schedules,
+        can_add_documents = excluded.can_add_documents,
         can_add_photos = excluded.can_add_photos,
         can_update_details = excluded.can_update_details,
         can_access_location = excluded.can_access_location,
@@ -850,6 +858,7 @@ export async function grantDealerMaintenanceTracking(input: {
       permissions.canViewHistory === true,
       permissions.canViewParts === true,
       permissions.canAddParts === true,
+      permissions.canAddDocuments === true,
 
     ],
   );
@@ -892,6 +901,7 @@ export async function updateDealerMaintenancePermissions(input: {
         can_view_maintenance_reports = $5,
         can_view_cost_of_ownership = $6,
         can_create_maintenance_schedules = $7,
+        can_add_documents = $22,
         can_add_photos = $10,
         can_add_costs = $11,
         can_update_year = $12,
@@ -935,6 +945,7 @@ export async function updateDealerMaintenancePermissions(input: {
       input.permissions.canViewHistory === true,
       input.permissions.canViewParts === true,
       input.permissions.canAddParts === true,
+      input.permissions.canAddDocuments === true,
 
     ],
   );

@@ -88,17 +88,21 @@ export async function postAllocation(owner: string, id: string, version: number,
   });
 }
 
-export async function importAccountingLine(owner: string, source: ImportSource, details: AllocationDetails, assetId: string | null, needsCategory = false) {
+export async function importAccountingLine(owner: string, source: ImportSource, details: AllocationDetails, assetId: string | null, needsCategory = false, sageConnection?: string) {
   await ensureTable();
   if (![source.company,source.bill,source.line].every(value => value && value.length <= 500)) throw new Error('This line needs a stable invoice and line reference.');
   const params=[owner,source.provider,source.company,source.bill,source.line,...values(details)];
+  const prior = await getDb().query(`select 1 from public.accounting_cost_imports where owner_id=$1 and provider=$2
+    and company=$3 and bill_key=$4 and line_key=$5`,params.slice(0,5));
+  if (prior.rowCount) return 'This line has already been imported.';
   const id=randomUUID();
   const insert = `insert into public.accounting_cost_imports
     (owner_id,provider,company,bill_key,line_key,supplier,invoice,invoice_date,description,category,total,vat,id,state,suggested_asset,needs_category)
-    values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+    select $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16
+    ${sageConnection ? 'where exists (select 1 from public.sage_za_connections where owner_id=$1 and connection_id=$17 and company_id::text=$3 and sync_register is not null for share)' : ''}
     on conflict(owner_id,provider,company,bill_key,line_key) do nothing returning id`;
   if (!assetId || needsCategory) {
-    const r=await getDb().query(insert,[...params,id,'pending',assetId,needsCategory]);
+    const r=await getDb().query(insert,[...params,id,'pending',assetId,needsCategory,...(sageConnection ? [sageConnection] : [])]);
     return r.rowCount ? 'Added to Needs approval for allocation.' : 'This line has already been imported.';
   }
   // Reserve the provider line and write the ledger cost in the same transaction.
@@ -111,7 +115,7 @@ export async function importAccountingLine(owner: string, source: ImportSource, 
       costCategory:details.category,notes:details.description,
     },{displayName:source.provider},{
       before:async client=>{
-        const r=await client.query(insert,[...params,id,'posted',assetId,false]);
+        const r=await client.query(insert,[...params,id,'posted',assetId,false,...(sageConnection ? [sageConnection] : [])]);
         if (!r.rowCount) throw duplicate;
       },
       after:async()=>{},

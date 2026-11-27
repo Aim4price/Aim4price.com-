@@ -21,7 +21,7 @@ function safeFileName(value: string): string {
 
 export async function GET(request: NextRequest, context: RouteContext) {
   const desktop = await getDesktopScope(request.nextUrl.searchParams.get('desktopMembershipId') || undefined);
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowDealerApp: true, allowBusinessWorkspace: true });
   const userId = desktop?.grant.ownerId || session?.user?.id;
   if (!userId) return new NextResponse('You must be signed in.', { status: 401 });
 

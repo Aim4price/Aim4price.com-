@@ -30,6 +30,7 @@ function readPermissions(value: unknown): DealerMaintenancePermissions | null {
     canViewMaintenanceReports: permissions.canViewMaintenanceReports as boolean,
     canViewCostOfOwnership: permissions.canViewCostOfOwnership as boolean,
     canCreateMaintenanceSchedules: permissions.canCreateMaintenanceSchedules as boolean,
+    canAddDocuments: permissions.canAddDocuments === true,
     canAddPhotos: permissions.canAddPhotos === true,
     canAddCosts: permissions.canAddCosts === true,
     canUpdateDetails: permissions.canUpdateDetails === true,
