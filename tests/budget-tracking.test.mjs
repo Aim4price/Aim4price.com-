@@ -40,9 +40,11 @@ test('Excel keeps money numeric and percentages correctly scaled', () => {
 });
 test('export propagates authorization errors and exports only authorized matching budgets', async () => {
  const {NextResponse} = require('next/server');
+ const fleet = {...base, id:'fleet', assetId:null, assetTitle:'Delivery Fleet', groupAssetIds:['tractor','truck'],
+  members:[{id:'tractor',title:'Tractor <A>',spent:500},{id:'truck',title:'Truck',spent:0}]};
  let allowed = false, captured;
  const route = load('app/api/my-invoices/budgets/report/route.ts',{
-  '../route': {GET: async () => allowed ? NextResponse.json({budgets:[base,warning]}) : NextResponse.json({error:'Forbidden'},{status:403})},
+  '../route': {GET: async () => allowed ? NextResponse.json({budgets:[base,warning,fleet]}) : NextResponse.json({error:'Forbidden'},{status:403})},
   '../../../../../lib/budget-tracking':tracking,
   '../../../../../lib/budget-tracking-report':reports,
   '../../../../../lib/simple-xlsx':{createXlsxWorkbook: sheets => {captured=sheets; return Buffer.from('test');}},
@@ -52,6 +54,16 @@ test('export propagates authorization errors and exports only authorized matchin
  assert.equal((await route.GET(request)).status,403); assert.equal(captured,undefined);
  allowed=true; assert.equal((await route.GET(request)).status,200); assert.equal(captured[0].rows.length,5);assert.equal(captured[0].rows[4][0],'All saved assets');
  request.nextUrl.searchParams.set('asset','unauthorized');assert.equal((await route.GET(request)).status,404);
+ request.nextUrl.search = '?format=xlsx&budgetId=fleet';
+ assert.equal((await route.GET(request)).status,200);
+ assert.deepEqual(captured[0].rows.slice(4).map(row => row[0]), ['Delivery Fleet']);
+ assert.deepEqual(captured.find(sheet => sheet.name === 'Group assets').rows.slice(1).map(row => [row[2],row[3].value]), [['Tractor <A>',500],['Truck',0]]);
+ request.nextUrl.searchParams.set('format','html');
+ const html = await (await route.GET(request)).text();
+ assert.match(html,/Tractor &lt;A&gt;/);
+ assert.doesNotMatch(html,/All saved assets/);
+ request.nextUrl.searchParams.set('budgetId','unavailable');
+ assert.equal((await route.GET(request)).status,404);
 });
 
 test('budget downloads inherit each saved switch and can override it without changing spending or settings', () => {
