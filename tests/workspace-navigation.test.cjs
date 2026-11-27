@@ -16,8 +16,12 @@ const nav = load('lib/workspace-navigation.ts', {
 });
 
 test('each personal workspace has four ordered header links and role-specific cards', () => {
-  for (const [role, third] of [['owner','Asset Register'],['business','Shared Assets'],['middleman','Marketplace']]) {
-    assert.deepEqual(nav.workspaceHeader(role,'/business').map(item=>item.label), ['Home','Workspace',third,'Value Asset']);
+  for (const [role, second, third] of [
+    ['owner', 'Asset Register', 'Workspace'],
+    ['business', 'Workspace', 'Shared Assets'],
+    ['middleman', 'Workspace', 'Marketplace'],
+  ]) {
+    assert.deepEqual(nav.workspaceHeader(role,'/business').map(item=>item.label), ['Home',second,third,'Value Asset']);
     const cards = nav.workspaceCards(role,false,'/leads');
     if (role !== 'business') assert.equal(cards.at(-1).key,'account');
     assert.equal(cards.find(card=>card.key==='marketplace').href,'/marketplace/browse');
