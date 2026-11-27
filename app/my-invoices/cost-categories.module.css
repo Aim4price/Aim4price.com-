@@ -81,7 +81,8 @@
   .cards { grid-template-columns: minmax(0, 1fr); }
 }
 
-.reportCategories { --selected-green: #185e47; display: grid; gap: .7rem; }
+.reportCategories, .dialog { --selected-green: #185e47; }
+.reportCategories { display: grid; gap: .7rem; }
 .reportToolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; }
 .reportToggles { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
 .reportToolbar h3 { margin: 0; font-weight: 700; line-height: 1.3; color: var(--app-text, #10352b); font-size: 1.05rem; }
@@ -107,13 +108,13 @@
   box-shadow: none;
 }
 .plainCards .card[aria-pressed="false"]:hover { border-color: var(--ink); }
-.plainCards .card[aria-pressed="true"],
+.card[aria-pressed="true"],
 .reportToolbar button[aria-pressed="true"] {
   background: var(--selected-green);
   border-color: #39876b;
   color: white;
 }
-.plainCards .card[aria-pressed="true"] .copy small { color: #e4f4ec; }
+.card[aria-pressed="true"] .copy small { color: #e4f4ec; }
 .selectionCheck {
   display: grid;
   place-items: center;
