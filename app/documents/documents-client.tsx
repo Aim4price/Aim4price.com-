@@ -57,6 +57,14 @@ const shortTypeLabels: Partial<Record<DocumentType, string>> = {
   'other': 'Other',
 };
 
+const assetTypeGroups: Partial<Record<DocumentCategory, string>> = {
+  licence: 'Licensing', insurance: 'Insurance', finance: 'Finance', ownership: 'Ownership',
+};
+const groupedTypeLabels: Partial<Record<DocumentType, string>> = {
+  'insurance-policy': 'Policy', 'insurance-schedule': 'Schedule', 'insurance-claim': 'Claim',
+  'finance-agreement': 'Agreement', 'finance-statement': 'Statement',
+};
+
 const documentIcons: Record<DocumentCategory, string> = {
   business: 'storage', insurance: 'insurance', finance: 'finance', licence: 'licence',
   'tax-accounting': 'amount', ownership: 'rental', contract: 'lease', warranty: 'extended_warranty', other: 'other',
@@ -602,34 +610,24 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const allFilteredAssetsSelected = filteredAssets.length > 0
     && filteredAssets.every((asset) => draft.assetIds.includes(asset.id));
 
-  const filteredDocumentTypes = useMemo(() => {
-    const needle = documentTypeSearch.trim().toLowerCase();
-    if (!needle) return ACCOUNT_DOCUMENT_TYPES;
-    return ACCOUNT_DOCUMENT_TYPES.filter((option) => [
-      shortTypeLabels[option.value] ?? option.label,
-      option.label,
-      option.value,
-      ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category],
-      ...option.keywords,
-    ].some((value) => value.toLowerCase().includes(needle)));
-  }, [documentTypeSearch]);
-
-  const [typePage, setTypePage] = useState(0);
-  const [typesPerPage, setTypesPerPage] = useState(12);
-  useEffect(() => {
-    const dialog = documentTypeModalRef.current;
-    if (!showDocumentTypeOptions || !dialog) return;
-    const grid = dialog.querySelector<HTMLElement>('[data-document-types]');
-    if (!grid) return;
-    const resize = () => setTypesPerPage(getComputedStyle(grid).gridTemplateColumns.split(' ').length * 3);
-    const observer = new ResizeObserver(resize);
-    observer.observe(grid);
-    resize();
-    return () => observer.disconnect();
-  }, [showDocumentTypeOptions]);
-  const typePages = Math.ceil(filteredDocumentTypes.length / typesPerPage);
-  const currentTypePage = Math.max(0, Math.min(typePage, typePages - 1));
-  const firstType = currentTypePage * typesPerPage;
+  const [typeGroup, setTypeGroup] = useState<DocumentCategory | null>(null);
+  const typeScope = draft.assetIds.length ? 'asset' : 'general';
+  const typeQuery = documentTypeSearch.trim().toLowerCase();
+  const filteredDocumentTypes = ACCOUNT_DOCUMENT_TYPES.filter(option => {
+    const currentEditType = modalMode === 'edit' && option.value === editingDocument?.documentType;
+    if (!currentEditType && option.scope !== 'both' && option.scope !== typeScope) return false;
+    if (typeGroup && option.category !== typeGroup) return false;
+    return !typeQuery || [shortTypeLabels[option.value], option.label, option.value,
+      assetTypeGroups[option.category], ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category], ...option.keywords]
+      .some(label => label?.toLowerCase().includes(typeQuery));
+  });
+  const showTypeGroups = typeScope === 'asset' && !typeGroup && (!typeQuery || filteredDocumentTypes.length > 12);
+  const visibleGroups = showTypeGroups
+    ? (Object.keys(assetTypeGroups) as DocumentCategory[]).filter(group => filteredDocumentTypes.some(option => option.category === group))
+    : [];
+  const visibleTypes = showTypeGroups
+    ? filteredDocumentTypes.filter(option => !assetTypeGroups[option.category])
+    : filteredDocumentTypes;
 
   const selectedFilesBytes = useMemo(
     () => selectedFiles.reduce((total, file) => total + file.size, 0),
@@ -681,7 +679,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setShowDocumentTypeOptions(false);
     setModalNotice(null);
     setUploadStep(initialAssetId || desktop.workspace ? 'assets' : 'scope');
-    setTypePage(0);
+    setTypeGroup(null);
     setModalMode('upload');
     setNotice(null);
   }
@@ -898,7 +896,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         return;
       }
       setDocumentTypeSearch('');
-      setTypePage(0);
+      setTypeGroup(null);
       setShowDocumentTypeOptions(true);
     } else if (uploadStep === 'scope') {
       return;
@@ -1462,7 +1460,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   <button type="button" className={categoryStyles.card} onClick={() => {
                     updateDraft('assetIds', []);
                     setDocumentTypeSearch('');
-                    setTypePage(0);
+                    setTypeGroup(null);
                     setShowDocumentTypeOptions(true);
                   }}>
                     <span className={categoryStyles.icon}><Icon name="document" /></span><strong>General document</strong>
@@ -1549,7 +1547,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                       type="button"
                       aria-haspopup="dialog"
                       aria-invalid={!draft.documentType && modalNotice?.tone === 'error'}
-                      onClick={() => { setDocumentTypeSearch(''); setTypePage(0); setShowDocumentTypeOptions(true); }}
+                      onClick={() => { setDocumentTypeSearch(''); setTypeGroup(null); setShowDocumentTypeOptions(true); }}
                     >
                       <span>{getAccountDocumentTypeLabel(draft.documentType) || 'Choose document type'}</span>
                       <AssetChooseIcon />
@@ -1637,14 +1635,23 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         <div className={`${styles.modalBackdrop} ${downloadStyles.backdrop}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeDocumentTypePicker(); }}>
           <section ref={documentTypeModalRef} className={`${downloadStyles.dialog} ${categoryStyles.dialog}`} data-download-dialog="true" role="dialog" aria-modal="true" aria-labelledby="document-type-title">
             <header data-download-header="true">
-              <h2 id="document-type-title">Document type</h2>
+              <h2 id="document-type-title">{typeGroup ? assetTypeGroups[typeGroup] : 'Document type'}</h2>
               <button type="button" onClick={modalMode === 'upload' ? closeModal : closeDocumentTypePicker} aria-label="Close document type chooser" data-modal-close="true">×</button>
             </header>
-            <input className={styles.documentTypeSearch} type="search" value={documentTypeSearch} onChange={(event) => { setDocumentTypeSearch(event.target.value); setTypePage(0); }} placeholder="Search types" aria-label="Search document types" data-modal-initial-focus="true" />
+            <input className={styles.documentTypeSearch} type="search" value={documentTypeSearch} onChange={(event) => setDocumentTypeSearch(event.target.value)} placeholder="Search types" aria-label="Search document types" data-modal-initial-focus="true" />
             <div className={categoryStyles.cards} data-document-types>
-              {filteredDocumentTypes.slice(firstType, firstType + typesPerPage).map((option) => {
+              {visibleGroups.map(group => (
+                <button key={group} type="button" className={categoryStyles.card} data-category={documentIcons[group]} onClick={() => {
+                  setTypeGroup(group);
+                  documentTypeModalRef.current?.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
+                }}>
+                  <span className={categoryStyles.icon}><CategoryIcon kind={documentIcons[group]} /></span>
+                  <span className={categoryStyles.copy}><strong>{assetTypeGroups[group]}</strong></span>
+                </button>
+              ))}
+              {visibleTypes.map((option) => {
                 const icon = option.value === 'service-record' ? 'service_plan' : documentIcons[option.category];
-                const label = shortTypeLabels[option.value] ?? option.label;
+                const label = (typeGroup && groupedTypeLabels[option.value]) || shortTypeLabels[option.value] || option.label;
                 return <button key={option.value} type="button" className={`${categoryStyles.card} ${styles.documentTile}`} data-category={icon} title={option.label} aria-pressed={draft.documentType === option.value} onClick={() => selectDocumentType(option.value)}>
                   <span className={categoryStyles.icon}><CategoryIcon kind={icon} /></span>
                   <span className={categoryStyles.copy}><strong>{label}</strong></span>
@@ -1653,12 +1660,12 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             </div>
             {!filteredDocumentTypes.length && <p role="status">No matches.</p>}
             <footer data-download-footer="true">
-              <button className={styles.typeBack} type="button" onClick={closeDocumentTypePicker}>Back</button>
-              {typePages > 1 && <>
-                <span className={styles.typePageCount} aria-live="polite">Page {currentTypePage + 1} of {typePages}</span>
-                <button type="button" disabled={!currentTypePage} onClick={() => setTypePage(currentTypePage - 1)}>Previous</button>
-                <button type="button" disabled={currentTypePage + 1 >= typePages} onClick={() => setTypePage(currentTypePage + 1)}>Next</button>
-              </>}
+              <button className={styles.typeBack} type="button" onClick={() => {
+                if (!typeGroup) return closeDocumentTypePicker();
+                setTypeGroup(null);
+                setDocumentTypeSearch('');
+                documentTypeModalRef.current?.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
+              }}>Back</button>
             </footer>
           </section>
         </div>

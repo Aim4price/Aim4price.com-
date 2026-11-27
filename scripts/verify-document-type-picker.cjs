@@ -59,17 +59,12 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    ).map(label=>label.textContent));
    assert.deepEqual(clipped,[]);
   }
-  const footerLayout=await page.$eval('[data-download-footer]',el=>{
-   const back=el.querySelector('button'),count=el.querySelector('[aria-live]');
-   return {left:back.getBoundingClientRect().left-el.getBoundingClientRect().left,weight:Number(getComputedStyle(count).fontWeight)};
-  });
-  assert(Math.abs(footerLayout.left)<2);
-  assert(footerLayout.weight>=700);
+  assert.equal(await page.$$eval('[data-download-footer] button',bs=>bs.map(b=>b.textContent).join()),'Back');
   await checkTypeLabelFit();
-  await click('Next');
-  await page.waitForFunction(()=>document.querySelector('[data-download-footer]')?.textContent.includes('Page 2'));
-  await checkTypeLabelFit();
-  await click('Previous');
+  await click('Insurance');
+  assert.deepEqual(await page.$$eval('[data-document-types] strong',ls=>ls.map(l=>l.textContent)),['Policy','Schedule','Claim']);
+  await click('Back');
+  assert.equal(await page.$$eval('[data-document-types] strong',ls=>ls.some(l=>l.textContent==='Company registration')),false);
   await page.type('[aria-label="Search document types"]','licence');
   await page.keyboard.press('Escape');await page.waitForSelector('#document-type-trigger');
   assert.match(await page.$eval('#document-type-trigger',e=>e.textContent),/Insurance policy/);
@@ -126,9 +121,20 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
    await click('Insurance policy');
    await page.waitForSelector('input[type=file]');
   }
+  await page.setViewport({width:1920,height:870});
+  await page.click('[aria-label="Zoom in"]');
+  await page.waitForSelector('#website-zoom-slider');
+  await page.$eval('#website-zoom-slider',el=>{
+   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'106');
+   el.dispatchEvent(new Event('input',{bubbles:true}));
+   el.dispatchEvent(new Event('change',{bubbles:true}));
+  });
+  await page.waitForFunction(()=>Number(document.querySelector('[data-website-canvas]').dataset.websiteScale)===1.06);
+  await page.click('[aria-label="Close page size"]');
   await click('Upload documents');await click('Related to an asset');await page.waitForSelector(search);
   await page.type(search,'SN-23');await page.click(row);
-  await page.click('[data-asset-choice-action="primary"]');await chooseInsurance();
+  await page.click('[data-asset-choice-action="primary"]');await page.waitForSelector('#document-type-title');
+  await fits('[data-download-dialog]');await checkTypeLabelFit();await click('Insurance');await click('Policy');await page.waitForSelector('input[type=file]');
   await fs.writeFile('/tmp/document-picker-fixture.txt','Local test document');
   await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');
   await click('Next');await page.waitForSelector('[data-upload-slide="details"]');
@@ -136,7 +142,12 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   assert.equal(uploads.length,1);assert.match(uploads[0],/tractor-23/);
   await click('Upload documents');await click('Related to an asset');await page.waitForSelector(row);
   await page.click(row);await click('Back');await click('General document');
-  await page.waitForSelector('#document-type-title');await click('Back');await click('General document');
+  await page.waitForSelector('#document-type-title');
+  const generalTypes=await page.$$eval('[data-document-types] strong',ls=>ls.map(l=>l.textContent));
+  await fits('[data-download-dialog]');await checkTypeLabelFit();
+  assert.equal(generalTypes.length,12);
+  assert(generalTypes.includes('Operating permit') && generalTypes.includes('Company registration') && !generalTypes.includes('Licence disc'));
+  await click('Back');await click('General document');
   await chooseInsurance();
   await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');
   await click('Next');await click('Upload document');
