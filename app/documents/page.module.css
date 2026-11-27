@@ -217,13 +217,6 @@
   box-shadow: 0 18px 42px rgba(21, 50, 44, 0.065), inset 0 1px 0 #ffffff;
 }
 
-.summaryAttention {
-  border-color: #ebc59e;
-  background:
-    radial-gradient(circle at 100% 0%, rgba(210, 122, 46, 0.11), transparent 42%),
-    rgba(255, 253, 249, 0.96);
-}
-
 .summaryHeading {
   display: flex;
   align-items: center;
@@ -2626,11 +2619,6 @@
     linear-gradient(180deg, #fbfefd 0%, #edf8f3 100%);
 }
 
-.summaryAttention {
-  border-color: rgba(196, 215, 223, 0.96);
-  background: linear-gradient(180deg, #fbfdfe 0%, #f3f8f9 100%);
-}
-
 .summaryHeading {
   min-height: 0;
   display: block;
@@ -4399,3 +4387,9 @@
 .documentFacts strong[data-tone='warning'] { color: var(--app-warning, #8e580f); }
 .documentTitleRow { position: relative; }
 .documentTitleRow .disclosureAction::after { position: absolute; inset: 0; content: ''; }
+
+.summaryCard[data-expiry-attention],
+.documentCard[data-expiry-attention] {
+  background: #fff0ee;
+  border-color: #d5948d;
+}

@@ -45,7 +45,7 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
     edits.push(JSON.parse(r.postData()));
     return r.respond({status:200,contentType:'application/json',body:JSON.stringify({ok:true,document:doc})});
    }
-   const data=u.pathname==='/api/me'?{ok:true,signedIn:true,user}:u.pathname==='/api/documents'?{ok:true,documents:[doc,{...doc,id:"second",title:"Second policy"},{...doc,id:"standalone",category:"other",documentType:"other",title:"Standalone",assetLinks:[]}],assets}:{ok:true,items:[],notifications:[],profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
+   const data=u.pathname==='/api/me'?{ok:true,signedIn:true,user}:u.pathname==='/api/documents'?{ok:true,documents:[doc,{...doc,id:"second",title:"Second policy",expiryDate:null},{...doc,id:"standalone",category:"other",documentType:"other",title:"Standalone",assetLinks:[],expiryDate:new Date().toISOString().slice(0,10)}],assets,summary:{totalDocuments:3,expiringSoon:1,linkedDocuments:2,storageBytes:300}}:{ok:true,items:[],notifications:[],profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
    r.respond({status:200,contentType:'application/json',body:JSON.stringify(data)});
   });
   async function click(text){await page.$$eval('button',(buttons,text)=>{const b=buttons.find(b=>b.textContent.trim()===text || b.getAttribute("aria-label")===text);if(!b)throw Error('Missing '+text);b.click();},text);}
@@ -59,6 +59,14 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   }
   const single = await page.waitForSelector('[aria-label="Open Standalone"]');
   assert.equal(await single.evaluate(el=>el.closest('details')===null),true);
+  const attentionCard='article[data-expiry-attention]';
+  const attentionColor=await single.evaluate(button=>getComputedStyle(button.closest('article')).backgroundColor);
+  assert.equal(attentionColor,'rgb(255, 240, 238)');
+  assert.equal(await page.$eval('#document-vault-summary '+attentionCard,card=>getComputedStyle(card).backgroundColor),attentionColor);
+  assert.equal(await page.$eval('[aria-label="Open Second policy"]',button=>button.closest('article').hasAttribute('data-expiry-attention')),false);
+  await click('Open Standalone');
+  assert.match(await page.$eval('#document-details-standalone',el=>el.innerText),/Expires today/);
+  await click('Close Standalone');
   await click('Filter');await click('General document');await click('Other');
   await page.waitForSelector('[aria-label="Open Standalone"]');
   assert.equal(await page.$('[aria-label="Open Saved title"]'),null);
