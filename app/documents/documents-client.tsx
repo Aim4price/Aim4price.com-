@@ -621,9 +621,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     </p>
   );
   const typeQuery = documentTypeSearch.trim().toLowerCase();
+  const retainedEditType = modalMode === 'edit' && Boolean(editingDocument?.assetLinks.length) === Boolean(draft.assetIds.length)
+    ? editingDocument?.documentType : null;
   const filteredDocumentTypes = ACCOUNT_DOCUMENT_TYPES.filter(option => {
-    const currentEditType = modalMode === 'edit' && option.value === editingDocument?.documentType
-      && Boolean(editingDocument.assetLinks.length) === Boolean(draft.assetIds.length);
+    const currentEditType = option.value === retainedEditType;
     if (!currentEditType && option.scope !== 'both' && option.scope !== typeScope) return false;
     if (typeGroup && option.category !== typeGroup) return false;
     return !typeQuery || [shortTypeLabels[option.value], option.label, option.value,
@@ -747,7 +748,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       category: option.category,
     }));
     setShowDocumentTypeOptions(false);
-    setUploadStep('files');
+    setUploadStep(modalMode === 'edit' ? 'details' : 'files');
   }
 
   function closeDocumentTypePicker() {
@@ -897,7 +898,15 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   function continueDocumentFlow() {
     setModalNotice(null);
-    if (uploadStep === 'assets') {
+    if (modalMode === 'edit' && uploadStep === 'scope') {
+      const type = getAccountDocumentType(draft.documentType);
+      if (type && type.scope !== 'both' && type.scope !== typeScope
+          && type.value !== retainedEditType) {
+        setDocumentTypeSearch('');
+        setTypeGroup(null);
+        setShowDocumentTypeOptions(true);
+      } else setUploadStep('details');
+    } else if (uploadStep === 'assets') {
       if (!draft.assetIds.length) {
         setModalNotice({ tone: 'error', message: 'Choose at least one asset.' });
         return;
@@ -916,7 +925,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   function returnToPreviousUploadStep() {
     setModalNotice(null);
-    if (uploadStep === 'details') setUploadStep('files');
+    if (uploadStep === 'details') setUploadStep(modalMode === 'edit' ? 'scope' : 'files');
     else if (uploadStep === 'files') {
       setUploadStep(draft.assetIds.length ? 'assets' : 'scope');
       setShowDocumentTypeOptions(true);
@@ -1436,8 +1445,9 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <section ref={modalRef} className={`${styles.modal} ${styles.accountDocumentModal} ${accountStyles.modalTheme} ${wizardStyles.dialog}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
-                <h2 id="document-modal-title">{uploadStep === 'scope' ? (modalMode === 'edit' ? 'Edit document' : 'Upload document') : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? (modalMode === 'edit' ? 'Saved file' : 'Choose files') : 'Extra details'}</h2>
-                {(uploadStep === 'files' || uploadStep === 'details') && assetSubheader}
+                <h2 id="document-modal-title">{uploadStep === 'scope' ? (modalMode === 'edit' ? 'Edit document' : 'Upload document') : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
+                {(uploadStep === 'files' || uploadStep === 'details' || (uploadStep === 'scope' && modalMode === 'edit')) && assetSubheader}
+                {modalMode === 'edit' && uploadStep === 'scope' && !draft.assetIds.length && <p>General document</p>}
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true" data-modal-close="true"><span aria-hidden="true">×</span></button>
             </header>
@@ -1455,17 +1465,17 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 <div className={`${styles.uploadWizardPanel} ${wizardStyles.panel}`}>
                 <fieldset className={`${styles.modalFields} ${styles.uploadWizardFields}`} disabled={busy}>
                 {uploadStep === 'scope' && <div className={styles.scopeChoices}>
-                  <button type="button" className={categoryStyles.card} data-category="licence" aria-pressed={modalMode === 'edit' ? Boolean(draft.assetIds.length) : undefined} onClick={() => setUploadStep('assets')}>
-                    <span className={categoryStyles.icon}><Icon name="link" /></span><strong>Related to an asset</strong>
+                  <button type="button" className={categoryStyles.card} data-category="licence" onClick={() => setUploadStep('assets')}>
+                    <span className={categoryStyles.icon}><Icon name="link" /></span><strong>{modalMode === 'upload' ? 'Related to an asset' : draft.assetIds.length ? 'Change asset' : 'Link to an asset'}</strong>
                   </button>
-                  <button type="button" className={categoryStyles.card} aria-pressed={modalMode === 'edit' ? !draft.assetIds.length : undefined} onClick={() => {
+                  {(modalMode === 'upload' || draft.assetIds.length > 0) && <button type="button" className={categoryStyles.card} onClick={() => {
                     updateDraft('assetIds', []);
                     setDocumentTypeSearch('');
                     setTypeGroup(null);
                     setShowDocumentTypeOptions(true);
                   }}>
-                    <span className={categoryStyles.icon}><Icon name="document" /></span><strong>General document</strong>
-                  </button>
+                    <span className={categoryStyles.icon}><Icon name="document" /></span><strong>{modalMode === 'edit' ? 'Change to general document' : 'General document'}</strong>
+                  </button>}
                 </div>}
                 {modalMode === 'upload' && uploadStep === 'files' ? (
                   <>
@@ -1521,13 +1531,15 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   ) : null}
 
                   </>
-                ) : modalMode === 'edit' && uploadStep === 'files' ? (
-                  <div className={styles.currentFile}>
-                    <Icon name="document" />
-                    <div><strong>{editingDocument?.fileName}</strong><span>{formatBytes(editingDocument?.byteSize ?? 0)}</span></div>
-                  </div>
                 ) : null}
 
+                {modalMode === 'edit' && uploadStep === 'details' && (
+                  <button type="button" className={styles.editTypeAction} onClick={() => {
+                    setDocumentTypeSearch('');
+                    setTypeGroup(null);
+                    setShowDocumentTypeOptions(true);
+                  }}>{getAccountDocumentTypeLabel(draft.documentType) || 'Unclassified'} · Change type</button>
+                )}
                 {uploadStep === 'details' ? <div className={styles.formGrid}>
                   {modalMode === 'edit' || selectedFiles.length <= 1 ? <label className={styles.field}>
                     <span>
@@ -1590,7 +1602,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 </div>
               </div>
 
-              {uploadStep !== 'scope' && <footer className={`${styles.modalFooter} ${wizardStyles.footer}`}>
+              {(uploadStep !== 'scope' || modalMode === 'edit') && <footer className={`${styles.modalFooter} ${wizardStyles.footer}`}>
                 <span className={styles.srOnly} role="status" aria-live="polite">
                   {uploadProgress ? `Uploading document ${uploadProgress.current} of ${uploadProgress.total}.` : ''}
                 </span>
@@ -1598,9 +1610,9 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   type="button"
                   className={`${styles.cancelButton} ${wizardStyles.secondaryAction}`}
                   disabled={busy}
-                  onClick={uploadStep !== 'assets' ? returnToPreviousUploadStep : closeModal}
+                  onClick={uploadStep !== 'assets' && uploadStep !== 'scope' ? returnToPreviousUploadStep : closeModal}
                 >
-                  {uploadStep !== 'assets' ? <><Icon name="chevron-left" /> Back</> : 'Cancel'}
+                  {uploadStep !== 'assets' && uploadStep !== 'scope' ? <><Icon name="chevron-left" /> Back</> : 'Cancel'}
                 </button>
                 <button type="submit" className={`${styles.uploadButton} ${wizardStyles.primaryAction}`} disabled={busy}>
                   {busy
@@ -1653,7 +1665,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 documentTypeModalRef.current?.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
               }}>Back</button>
               {modalMode === 'edit' && !draft.documentType && !typeGroup && (
-                <button type="button" onClick={() => { setShowDocumentTypeOptions(false); setUploadStep('files'); }}>Keep unclassified</button>
+                <button type="button" onClick={() => { setShowDocumentTypeOptions(false); setUploadStep('details'); }}>Keep unclassified</button>
               )}
             </footer>
           </section>

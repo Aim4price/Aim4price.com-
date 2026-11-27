@@ -52,7 +52,10 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await page.goto('http://127.0.0.1:3049/document-type-validation',{waitUntil:'networkidle0',timeout:120000});
   const row = '[data-asset-choice-row]';
   const search = '[aria-label="Search assets"]';
-  await click('Edit');await click('Related to an asset');await page.waitForSelector(row);
+  await click('Edit');await click('Next');await page.waitForSelector('textarea');
+  assert.match(await page.$eval('[role=dialog] header',el=>el.textContent),/Tractor 1/);
+  await click('Insurance policy · Change type');await click('Back');await page.waitForSelector('textarea');
+  await click('Back');await click('Change asset');await page.waitForSelector(row);
   assert.equal(await page.$eval(row+' input',el=>el.checked),true);
   for(const [width,height] of [[1440,900],[1920,870],[1366,650],[390,844]]) {
     await page.setViewport({width,height});
@@ -80,10 +83,9 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await page.keyboard.press('Escape');await page.waitForSelector(row);
   await page.click('[data-asset-choice-action="primary"]');await page.waitForSelector('#document-type-title');
   await page.type('[aria-label="Search document types"]','licence');await click('Licence disc');
-  await page.waitForSelector('[data-upload-slide="files"]');
-  assert.match(await page.$eval('[role=dialog]',el=>el.textContent),/policy.pdf/);
+  await page.waitForSelector('[data-upload-slide="details"]');
   assert.equal(await page.$('input[type=file]'),null);
-  await click('Next');await page.waitForSelector('textarea');
+  await page.waitForSelector('textarea');
   assert.equal(await page.$eval('textarea',el=>el.value),'Keep these notes');
   assert.equal(await page.$eval('input[maxlength="180"]',el=>el.value),'Saved title');
   assert(await page.$('#document-expiry-date'));
@@ -98,14 +100,14 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   assert.deepEqual(edits[0].assetIds.sort(),['tractor-1','tractor-23']);
   assert.equal(edits[0].documentType,'licence-disc');
   assert.equal(edits[0].expiryDate,'2027-01-30');
-  await click('Edit');await click('General document');await click('Company registration');
-  await click('Next');await click('Save changes');
+  await click('Edit');await click('Change to general document');await click('Company registration');
+  await click('Save changes');
   await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
   assert.deepEqual(edits[1].assetIds,[]);
   legacyDocument=true;
   await page.reload({waitUntil:'networkidle0'});
-  await click('Edit');await click('General document');await click('Keep unclassified');
-  await click('Next');await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+  await click('Edit');await click('Change to general document');await click('Keep unclassified');
+  await click('Save changes');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
   assert.equal(edits[2].documentType,'');
   legacyDocument=false;
   async function fits(selector) {
