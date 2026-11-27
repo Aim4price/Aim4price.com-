@@ -20,10 +20,10 @@ export function workspaceHeader(role: WorkspaceRole, receivedHref: string) {
     business: {key:'leads', href:receivedHref, label:'Shared Assets'},
     middleman: {key:'marketplace', href:'/marketplace', label:'Marketplace'},
   } as const;
+  const workspace = {key:'workspace', href:'/workspace', label:'Workspace'} as const;
   return [
     {key:'home', href:'/', label:'Home'},
-    {key:'workspace', href:'/workspace', label:'Workspace'},
-    primary[role],
+    ...(role === 'owner' ? [primary.owner, workspace] : [workspace, primary[role]]),
     {key:'valuation', href:'/valuation', label:'Value Asset'},
   ] as const;
 }
