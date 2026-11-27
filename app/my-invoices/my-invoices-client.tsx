@@ -1280,7 +1280,8 @@ export default function MyInvoicesClient({
   }, [budgetsPage, captureApiRoot]);
 
   useEffect(() => {
-    if (budgetsPage || !canReviewCaptureRequests) return;
+    if (budgetsPage || !canReviewCaptureRequests || !approvalsOpen) return;
+    setAllocationStatus('Loading imported costs…');
     let active = true;
     loadAllocations().then(rows => {
       if (!Array.isArray(rows)) throw new Error('Missing allocation list');
@@ -3184,7 +3185,7 @@ export default function MyInvoicesClient({
                 data-tooltip-style="description"
               >
                 <ReportFileIcon />
-                <span>Needs approval{pendingApprovals.length > 0 ? ` (${pendingApprovals.length})` : ''}</span>
+                <span>Needs approval{approvalsOpen && pendingApprovals.length > 0 ? ` (${pendingApprovals.length})` : ''}</span>
               </button>
             ) : null}
 
