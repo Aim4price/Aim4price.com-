@@ -336,14 +336,13 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /<p id="asset-picker-description">Select the saved assets/);
   assert.match(client, /Select all \$\{filteredAssets.length\} matches/);
   assert.match(client, />\s*Clear\s*</);
-  assert.match(client, /filteredAssets\.slice\(firstAsset, firstAsset \+ assetsPerPage\)/);
-  assert.match(client, /aria-label="Previous asset page"/);
-  assert.match(client, /aria-label="Next asset page"/);
+  assert.match(client, /filteredAssets\.map/);
+  assert.doesNotMatch(client, /aria-label="Asset pages"/);
   assert.match(client, /onClick=\{returnToPreviousUploadStep\}/);
   assert.match(client, /asset\.detail \|\| asset\.meta \|\| 'No key details saved yet'/);
   assert.match(client, /\[asset\.categoryLabel, asset\.methodLabel\]\.filter\(Boolean\)\.join\(' · '\)/);
   assert.match(client, /AssetSerialNumber value=\{asset\.serialNumber\}/);
-  assert.match(client, /checked \? 'Selected' : 'Select'/);
+  assert.match(client, /AssetChooseIcon selected=\{checked\}/);
   assert.match(documentStore, /listAssetRegisterItems/);
   assert.match(documentStore, /listAssetRegisterItemsForRegisters\(userId, registers.rows.map/);
   assert.match(documentStore, /from asset_registers where user_id = \$1/);

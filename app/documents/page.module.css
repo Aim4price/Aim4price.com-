@@ -4276,41 +4276,6 @@
 .editDocumentModal .notesField { grid-column: auto; }
 .editDocumentModal .notesField textarea { min-height: 3.5rem; height: 3.5rem; }
 
-.assetSelectionModal[data-asset-choice-modal] .assetSelectionBody .assetSelectionList[data-asset-choice-list] {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)) !important;
-  flex: 1 1 0 !important;
-  scrollbar-gutter: auto;
-}
-.assetPager {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: flex-end;
-  gap: .6rem;
-  padding: .4rem var(--picker-padding) .85rem;
-  font-weight: 700;
-  color: var(--app-text, #244d3e);
-}
-.assetPager span { margin-inline-end: auto; }
-.assetPager button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: .45rem;
-  min-height: 2.75rem;
-  padding: .55rem 1rem;
-  border: 1px solid var(--app-line, #adccbf);
-  border-radius: .85rem;
-  background: var(--app-surface-soft, #eff7f2);
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.assetPager button:focus-visible { outline: 2px solid var(--app-accent, #167055); outline-offset: 2px; }
-.assetPager button:hover:not(:disabled) { border-color: var(--app-accent, #167055); }
-.assetPager button:disabled { opacity: .45; cursor: default; }
-.assetPager svg { width: 1.1rem; height: 1.1rem; }
-
 .modalForm[data-upload-slide] .modalScroll { scrollbar-gutter: auto; }
 .modalForm[data-upload-slide] .uploadWizardPanel { padding: 0; border: 0; box-shadow: none; }
 .modalForm[data-upload-slide] .filePicker { min-height: 5rem; padding: .85rem 1rem; }
