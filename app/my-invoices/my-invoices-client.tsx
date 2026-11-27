@@ -3265,6 +3265,11 @@ export default function MyInvoicesClient({
               {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
             </button>
           )}
+          {activeFilterCount > 0 && (
+            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.clearFiltersButton}`} onClick={clearFilters}>
+              Clear filters
+            </button>
+          )}
         </section>
 
         <CaptureRequestStatusList
