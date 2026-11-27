@@ -359,10 +359,9 @@ type AssetUploadContext = {
 };
 
 /** The vault wizard, opened in place from an asset card with its link fixed. */
-export function AssetDocumentUploadFlow({ assetId, assetTitle, assetDetail, onClose, onUploaded }: {
+export function AssetDocumentUploadFlow({ assetId, assetTitle, onClose, onUploaded }: {
   assetId: string;
   assetTitle: string;
-  assetDetail?: string;
   onClose: AssetUploadContext['onClose'];
   onUploaded: AssetUploadContext['onUploaded'];
 }) {
@@ -373,7 +372,7 @@ export function AssetDocumentUploadFlow({ assetId, assetTitle, assetDetail, onCl
     return () => trigger?.focus({ preventScroll: true });
   }, []);
   if (!mounted) return null;
-  return <DocumentsClient initialAssetId={assetId} uploadContext={{ asset: { id: assetId, title: assetTitle, meta: '', detail: assetDetail }, onClose, onUploaded }} />;
+  return <DocumentsClient initialAssetId={assetId} uploadContext={{ asset: { id: assetId, title: assetTitle, meta: '' }, onClose, onUploaded }} />;
 }
 
 type DocumentsClientProps = {
@@ -616,13 +615,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const firstAssetId = draft.assetIds[0];
   const contextAsset = selectedAsset?.id === firstAssetId ? selectedAsset
     : assets.find(asset => asset.id === firstAssetId) ?? editingDocument?.assetLinks.find(asset => asset.id === firstAssetId);
-  const contextDetails = contextAsset?.detail || contextAsset?.meta;
   const assetSubheader = contextAsset && (
     <p className={styles.assetSubheader}>
       <strong>{contextAsset.title}</strong>
-      {draft.assetIds.length > 1
-        ? ` · +${draft.assetIds.length - 1} more`
-        : contextDetails && ` · ${contextDetails}`}
+      {draft.assetIds.length > 1 && ` · +${draft.assetIds.length - 1} more`}
     </p>
   );
   const typeQuery = documentTypeSearch.trim().toLowerCase();

@@ -135,14 +135,24 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await page.type(search,'SN-23');await page.click(row);
   await page.click('[data-asset-choice-action="primary"]');await page.waitForSelector('#document-type-title');
   const headerAsset = () => page.$eval('[role=dialog] header p', el => el.textContent);
-  assert.match(await headerAsset(),/Tractor 23.*Year Model: 2022.*Condition: Good/);
+  assert.equal(await headerAsset(),'Tractor 23');
   await fits('[data-download-dialog]');await checkTypeLabelFit();await click('Insurance');await click('Policy');await page.waitForSelector('input[type=file]');
   await fs.writeFile('/tmp/document-picker-fixture.txt','Local test document');
   await (await page.$('input[type=file]')).uploadFile('/tmp/document-picker-fixture.txt');
   await click('Next');await page.waitForSelector('[data-upload-slide="details"]');
-  assert.match(await headerAsset(),/Tractor 23.*3 200 hours/);
+  assert.equal(await headerAsset(),'Tractor 23');
+  async function checkExpiryAlignment() {
+    const boxes = await page.$eval('[data-upload-slide="details"]', form => {
+      const title = form.querySelector('input[maxlength="180"]').getBoundingClientRect();
+      const toggle = form.querySelector('input[type="checkbox"]').closest('label').getBoundingClientRect();
+      return ['width','height','top'].map(key => Math.abs(title[key] - toggle[key]));
+    });
+    assert(boxes.every(delta => delta <= 1), 'Title and expiry alignment: '+boxes);
+  }
+  await checkExpiryAlignment();
   await page.click('[aria-controls="document-expiry-date"]');
   await page.waitForSelector('#document-expiry-date');
+  await checkExpiryAlignment();
   await fits('[data-upload-slide="details"] [class*="modalScroll"]');
   await fits('[data-upload-slide="details"] textarea');
   await click('Upload document');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
