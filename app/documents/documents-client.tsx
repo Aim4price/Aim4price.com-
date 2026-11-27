@@ -1651,6 +1651,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 </div>
               </div>
 
+              {modalMode === 'filter' && uploadStep === 'scope' && filter && (
+                <footer className={`${styles.modalFooter} ${wizardStyles.footer}`}>
+                  <button type="button" className={`${styles.cancelButton} ${wizardStyles.secondaryAction}`} onClick={() => {
+                    setFilter(null);
+                    closeModal();
+                  }}>Turn filter off</button>
+                </footer>
+              )}
               {(uploadStep !== 'scope' || modalMode === 'edit') && <footer className={`${styles.modalFooter} ${wizardStyles.footer}`}>
                 <span className={styles.srOnly} role="status" aria-live="polite">
                   {uploadProgress ? `Uploading document ${uploadProgress.current} of ${uploadProgress.total}.` : ''}

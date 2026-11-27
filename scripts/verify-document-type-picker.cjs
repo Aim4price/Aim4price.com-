@@ -62,7 +62,11 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   await click('Filter');await click('General document');await click('Other');
   await page.waitForSelector('[aria-label="Open Standalone"]');
   assert.equal(await page.$('[aria-label="Open Saved title"]'),null);
-  await click('Clear filter');
+  await page.click('button[aria-haspopup="dialog"][data-tooltip^="Filter by"]');
+  await click('Turn filter off');
+  await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));
+  assert.ok(await page.$('[aria-label="Open Saved title"]'));
+  assert.ok(await page.$('[aria-label="Open Standalone"]'));
   await click('Filter');await click('Related to an asset');await page.waitForSelector(row);
   await page.click(row);await click('Next');await click('Insurance');await click('Policy');
   await page.waitForSelector('[aria-label="Open Saved title"]');
