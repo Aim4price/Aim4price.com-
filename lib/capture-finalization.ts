@@ -519,7 +519,8 @@ async function createInvoiceOutput(
         dealerUserId,
         dealerStaffId: text(request.candidatePayload.dealerStaffId, 200),
         displayName: request.sender.businessName || request.sender.name || 'Dealer',
-        ownerApproved: ownerApprovalOverridden
+        ownerApproved: request.submissionChannel === 'dealer_upload'
+          || ownerApprovalOverridden
           || request.events.some((event) => event.eventType === 'owner_approved'),
       }
     : { displayName: 'Aim4price assisted capture' };
@@ -735,12 +736,13 @@ export async function finalizeCaptureRequestForAdmin(
       const outputId = request.finalInvoiceId ?? request.finalFuelSlipId ?? undefined;
       return { request, outcome: 'completed', outputId };
     }
-    if (request.status === 'awaiting_owner' && !ownerApprovalOverrideReason) {
+    const verifiedDealerUpload = request.status === 'awaiting_owner' && request.submissionChannel === 'dealer_upload';
+    if (request.status === 'awaiting_owner' && !verifiedDealerUpload && !ownerApprovalOverrideReason) {
       return { request, outcome: 'awaiting_owner' };
     }
     if (
       request.status !== 'in_progress'
-      && !(request.status === 'awaiting_owner' && ownerApprovalOverrideReason)
+      && !verifiedDealerUpload && !(request.status === 'awaiting_owner' && ownerApprovalOverrideReason)
     ) {
       throw new Error('CAPTURE_COMPLETION_STATUS_INVALID');
     }
@@ -753,7 +755,7 @@ export async function finalizeCaptureRequestForAdmin(
     await validateCapturedDraft(request);
     const ownerApproved = request.events.some((event) => event.eventType === 'owner_approved');
     if (
-      EXTERNAL_CHANNELS.has(request.submissionChannel)
+      request.submissionChannel === 'public_drop'
       && !ownerApproved
       && !ownerApprovalOverrideReason
     ) {

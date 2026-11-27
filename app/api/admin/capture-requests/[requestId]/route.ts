@@ -410,7 +410,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       }
 
       case "complete": {
-        const saved = await saveAdminDraft(existing, draft, actor);
+        const saved = existing.status === "awaiting_owner" && existing.submissionChannel === "dealer_upload"
+          ? existing : await saveAdminDraft(existing, draft, actor);
         const target = draftMatch(saved, draft);
         const finalized = await finalizeCaptureRequestForAdmin(requestId, actor, {
           expectedVersion: saved.version,

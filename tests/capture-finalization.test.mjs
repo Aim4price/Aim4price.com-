@@ -11,7 +11,7 @@ test('admin completion owns canonical creation and gates outside submissions on 
   ]);
 
   assert.match(finalizer, /export async function finalizeCaptureRequestForAdmin/);
-  assert.match(finalizer, /EXTERNAL_CHANNELS\.has\(request\.submissionChannel\)[\s\S]*?&& !ownerApproved[\s\S]*?&& !ownerApprovalOverrideReason/);
+  assert.match(finalizer, /request\.submissionChannel === 'public_drop'[\s\S]*?&& !ownerApproved[\s\S]*?&& !ownerApprovalOverrideReason/);
   assert.match(finalizer, /transitionCaptureRequest\(request\.id, 'awaiting_owner'/);
   assert.match(finalizer, /createInvoiceDocumentRecord/);
   assert.match(finalizer, /createMyInvoice/);
@@ -40,12 +40,12 @@ test('audited direct completion records an explicit owner-approval override', as
   assert.match(adminRoute, /action === "complete_direct"[\s\S]*?existing\.submissionChannel !== "dealer_upload"[\s\S]*?existing\.submissionChannel !== "public_drop"/);
   assert.match(adminRoute, /finalizeCaptureRequestForAdmin\(requestId, actor, \{[\s\S]*?ownerApprovalOverrideReason: note/);
   assert.match(finalization, /const ownerApprovalOverrideReason = text\(options\.ownerApprovalOverrideReason, 1_000\)/);
-  assert.match(finalization, /request\.status === 'awaiting_owner' && !ownerApprovalOverrideReason/);
+  assert.match(finalization, /request\.status === 'awaiting_owner' && !verifiedDealerUpload && !ownerApprovalOverrideReason/);
   assert.match(finalization, /request\.status === 'awaiting_owner' && ownerApprovalOverrideReason/);
   assert.match(finalization, /&& !ownerApprovalOverrideReason[\s\S]*?transitionCaptureRequest\(request\.id, 'awaiting_owner'/);
   assert.match(finalization, /completeCanonicalOutput\(request, actor, \{ ownerApprovalOverrideReason \}\)/);
   assert.match(completion, /const overrideReason = cleanMultilineText\(input\.ownerApprovalOverrideReason, 1_000\)/);
-  assert.match(completion, /status === 'awaiting_owner' && Boolean\(overrideReason\)/);
+  assert.match(completion, /status === 'awaiting_owner' && \(existing\.submission_channel === 'dealer_upload' \|\| Boolean\(overrideReason\)\)/);
   assert.match(completion, /and status = \$4/);
   assert.match(completion, /await assertOwnerApproval\(client, existing, overrideReason\)/);
   assert.match(completion, /eventType: 'output_linked'[\s\S]*?note: overrideReason[\s\S]*?ownerApprovalOverridden: Boolean\(overrideReason\)/);
@@ -331,7 +331,7 @@ test('approved dealer submissions keep dealer provenance on the document and led
   assert.match(finalizer, /request\.submissionChannel === 'dealer_upload'/);
   assert.match(finalizer, /dealerUserId[\s\S]*?request\.submittedByUserId/);
   assert.match(finalizer, /dealerStaffId: text\(request\.candidatePayload\.dealerStaffId/);
-  assert.match(finalizer, /ownerApproved: ownerApprovalOverridden[\s\S]*?event\.eventType === 'owner_approved'/);
+  assert.match(finalizer, /ownerApproved: request\.submissionChannel === 'dealer_upload'[\s\S]*?ownerApprovalOverridden[\s\S]*?event\.eventType === 'owner_approved'/);
   assert.match(finalizer, /createInvoiceDocumentRecord\([\s\S]*?actor: outputActor/);
   assert.match(finalizer, /createMyInvoice\([\s\S]*?\}, outputActor\)/);
   assert.match(invoices, /actor\.ownerApproved \? 'approved' : 'pending'/);

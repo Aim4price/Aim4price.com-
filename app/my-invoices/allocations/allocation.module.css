@@ -1,0 +1,4 @@
+.dialog::backdrop {
+  background: var(--modal-backdrop-color, rgba(12, 27, 21, .7));
+  backdrop-filter: var(--modal-backdrop-filter);
+}

@@ -1620,6 +1620,11 @@ export async function matchCaptureRequest(
     }
     await assertTargetOwnership(client, { ownerUserId, assetId, fuelStorageId });
 
+    if (existing.submission_channel === 'dealer_upload'
+      && (existing.owner_user_id !== ownerUserId || existing.asset_register_item_id !== assetId)) {
+      throw new Error('CAPTURE_TARGET_INVALID');
+    }
+
     if (existing.invoice_drop_code_id) {
       const code = await client.query<DropCodeRow>(
         `select id, owner_user_id, asset_register_item_id, code_last_four, created_at
@@ -1856,7 +1861,7 @@ async function assertOwnerApproval(
   row: CaptureRequestRow,
   overrideReason: string,
 ): Promise<void> {
-  if (row.submission_channel === 'owner_upload' || row.submission_channel === 'accountant_upload') return;
+  if (row.submission_channel !== 'public_drop') return;
   const approval = await client.query(
     `select 1 from public.document_capture_events
       where capture_request_id = $1::uuid and event_type = 'owner_approved'
@@ -1924,7 +1929,7 @@ export async function completeCaptureRequest(
       if (!sameOutput) throw new Error('CAPTURE_ALREADY_COMPLETED');
       return getRequestWithCounts(client, id);
     }
-    const mayOverrideAwaitingOwner = status === 'awaiting_owner' && Boolean(overrideReason);
+    const mayOverrideAwaitingOwner = status === 'awaiting_owner' && (existing.submission_channel === 'dealer_upload' || Boolean(overrideReason));
     if (status !== 'in_progress' && !mayOverrideAwaitingOwner) {
       throw new Error('CAPTURE_COMPLETION_STATUS_INVALID');
     }

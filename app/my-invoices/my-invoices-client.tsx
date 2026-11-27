@@ -1,4 +1,5 @@
 'use client';
+import { IconBase, ChevronDownIcon, ManageCostIcon, LinkedAssetIcon, ReportFileIcon } from './LedgerIcons';
 import { costCategories, categorySummary, appendReportCategories } from '../../lib/cost-categories';
 import categoryStyles from './cost-categories.module.css';
 import { PageHelpHeading } from '../../components/PageHelp';
@@ -15,6 +16,9 @@ import RecurringFieldIcon from './RecurringFieldIcon';
 import reviewStyles from '../../components/BudgetReview.module.css';
 import BudgetWarningInput from '../../components/BudgetWarningInput';
 import WorkspaceViewSwitch from '../../components/WorkspaceViewSwitch';
+import AllocationCards from './allocations/AllocationCards';
+import { loadAllocations } from './allocations/actions';
+import type { Allocation } from '../../lib/accounting-allocations';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
 import { useCaptureAllowance } from '../../lib/use-capture-allowance';
@@ -410,9 +414,6 @@ const USAGE_METRIC_OPTIONS: Array<{ value: UsageMetric; label: string }> = [
   { value: 'percentage', label: 'Percentage reading' },
 ];
 
-function IconBase(props: SVGProps<SVGSVGElement>) {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
-}
 
 function CostEntryIcon({ kind }: { kind: 'supplier' | 'invoice' | 'maintenance' | 'parts' | 'repairs' | 'notes' }) {
   const paths = {
@@ -430,13 +431,7 @@ function CostEntryIcon({ kind }: { kind: 'supplier' | 'invoice' | 'maintenance' 
   return <IconBase className={styles.costEntryIcon} strokeWidth="1.7">{paths[kind]}</IconBase>;
 }
 
-function ManageCostIcon(props: SVGProps<SVGSVGElement>) {
-  return <IconBase {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></IconBase>;
-}
 
-function LinkedAssetIcon(props: SVGProps<SVGSVGElement>) {
-  return <IconBase {...props}><rect x="4" y="7" width="16" height="13" rx="3" /><path d="M9 7V4h6v3M9 12h6" /></IconBase>;
-}
 
 function SearchIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -498,17 +493,6 @@ function ShieldCheckIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function ReportFileIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <IconBase {...props}>
-      <path d="M6 2.75h8l4 4V21.25H6z" />
-      <path d="M14 2.75v4h4" />
-      <path d="M9 11h6" />
-      <path d="M9 15h6" />
-      <path d="M9 19h4" />
-    </IconBase>
-  );
-}
 
 function CostExportGraphic({ src }: { src: string }) {
   const [hasError, setHasError] = useState(false);
@@ -604,13 +588,6 @@ function AutomaticInvoiceIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <IconBase {...props}>
-      <path d="m6 9 6 6 6-6" />
-    </IconBase>
-  );
-}
 
 function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -1054,10 +1031,8 @@ export default function MyInvoicesClient({
   const [notice, setNotice] = useState<Notice | null>(null);
   const [captureRequests, setCaptureRequests] = useState<CaptureRequestStatusItem[]>([]);
   const [approvalsOpen, setApprovalsOpen] = useState(false);
-  const [captureLoadState, setCaptureLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const pendingApprovals = canReviewCaptureRequests
-    ? captureRequests.filter((request) => request.status === 'awaiting_owner')
-    : [];
+  const [pendingApprovals, setPendingApprovals] = useState<Allocation[]>([]);
+  const [allocationStatus, setAllocationStatus] = useState('Loading costs…');
   const [captureReviewRequestId, setCaptureReviewRequestId] = useState<string | null>(null);
   const [expandedInvoiceId, setExpandedInvoiceId] = useLedgerCardFocus('cost');
   const [fuelCostInvoiceId, setFuelCostInvoiceId] = useState<string | null>(null);
@@ -1297,13 +1272,21 @@ export default function MyInvoicesClient({
       if (sharedFlow || budgetsPage) return;
       const requests = await fetchCaptureRequests();
       if (cancelled) return;
-      setCaptureLoadState(requests ? 'ready' : 'error');
       if (requests) setCaptureRequests(requests);
     }
 
     void loadCaptureRequests();
     return () => { cancelled = true; };
-  }, [budgetsPage, captureApiRoot, approvalsOpen]);
+  }, [budgetsPage, captureApiRoot]);
+
+  useEffect(() => {
+    if (budgetsPage || !canReviewCaptureRequests) return;
+    let active = true;
+    loadAllocations().then(rows => {
+      if (active) { setPendingApprovals(rows); setAllocationStatus(''); }
+    }).catch(() => { if (active) setAllocationStatus('Could not load imported costs.'); });
+    return () => { active = false; };
+  }, [budgetsPage, canReviewCaptureRequests, approvalsOpen]);
 
   useEffect(() => {
     if (!canReviewCaptureRequests) return;
@@ -2866,9 +2849,7 @@ export default function MyInvoicesClient({
       finishModal();
       setNotice({
         tone: 'success',
-        message: dealerMode
-          ? `${data.request.referenceCode} received. Aim4price will check it within 24 hours, then the owner approves it.`
-          : `${data.request.referenceCode} received. Aim4price will capture, verify and allocate it within 24 hours.`,
+        message: `${data.request.referenceCode} received. Aim4price will capture, verify and allocate it within 24 hours.`,
       });
     } catch (error) {
       if (error instanceof Error && error.message === 'CAPTURE_DAILY_LIMIT') { captureAllowance.markBlocked(); return; }
@@ -3218,12 +3199,14 @@ export default function MyInvoicesClient({
         ) : null}
 
         {approvalsOpen && canReviewCaptureRequests ? (
-          <CaptureRequestStatusList
-            approvalsView
-            title="Needs approval"
-            requests={pendingApprovals}
-            emptyLabel={captureLoadState === 'loading' ? 'Loading costs…' : captureLoadState === 'error' ? 'Could not load costs awaiting approval.' : 'No costs need approval.'}
-            onReview={setCaptureReviewRequestId}
+          <AllocationCards rows={pendingApprovals} assets={assets} status={allocationStatus} money={formatMoneyWithCents} dateLabel={formatDateTime}
+            onChanged={async message => {
+              setNotice({tone:'success', message});
+              const [rows, data] = await Promise.all([loadAllocations(), fetchInvoiceData(activeFilters)]);
+              setPendingApprovals(rows);
+              applyInvoiceData(data);
+              if (canManageBudgets) dispatchCostLedgerUpdated();
+            }}
           />
         ) : <>
         <section className={`${styles.invoiceToolbar} ${!dealerMode ? styles.ownerInvoiceToolbar : ''}`} aria-label="Saved cost record controls">
@@ -4576,7 +4559,7 @@ export default function MyInvoicesClient({
                   <textarea value={captureNote} onChange={(event) => setCaptureNote(event.target.value)} maxLength={1000} rows={2} placeholder="For example, split between Tractor 1 and Tractor 2." disabled={isExtracting} />
                 </label>
                 )}
-                <div className={captureAttachmentStyles.info}><p>{dealerMode ? 'Aim4price captures and allocates the invoice within 24 hours, then the owner approves it.' : 'Aim4price will capture, verify and allocate it within 24 hours.'}</p>
+                <div className={captureAttachmentStyles.info}><p>Aim4price will capture, verify and allocate it within 24 hours.</p>
                 <p role="status">{captureAllowance.label}</p></div>
                 {captureAllowance.error ? <p role="alert">{captureAllowance.error} <button type="button" className={styles.secondaryButton} onClick={captureAllowance.retry}>Try again</button></p> : null}
                 {captureUploadError ? <p className={styles.noticeError} role="alert">{captureUploadError}</p> : null}

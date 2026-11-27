@@ -474,8 +474,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
       .find((event) => event.eventType === "matched");
     return Boolean(latestMatch && targetKey(latestMatch.metadata) === currentTargetKey);
   }, [currentTargetKey, events, requiresTargetReconfirmation]);
-  const isExternalSubmission = detail?.submissionChannel === "dealer_upload"
-    || detail?.submissionChannel === "public_drop";
+  const isExternalSubmission = detail?.submissionChannel === "public_drop";
   const needsOwnerApproval = isExternalSubmission && !events.some(event => event.eventType === "owner_approved");
   const completionLabel = needsOwnerApproval ? "Send to owner for approval" : "Save to owner’s ledger";
   const completionTarget = [detail?.publicReference, selectedTarget?.ownerDisplayName || detail?.ownerDisplayName,
@@ -1490,7 +1489,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
                 <button type="button" className={styles.secondaryButton} disabled={Boolean(busyAction) || !isRequestEditable || hasUnconfirmedTargetChange} onClick={() => void runAction("save_draft")}>
                   {busyAction === "save_draft" ? "Saving…" : "Save draft"}
                 </button>
-                <button type="button" className={styles.completeButton} disabled={Boolean(busyAction) || !isRequestEditable || !isMatchConfirmed} onClick={() => void runAction("complete")}>
+                <button type="button" className={styles.completeButton} disabled={Boolean(busyAction) || (!isRequestEditable && !(detail.submissionChannel === "dealer_upload" && detail.status === "awaiting_owner")) || !isMatchConfirmed} onClick={() => void runAction("complete")}>
                   {busyAction === "complete"
                     ? "Completing…"
                     : completionLabel}

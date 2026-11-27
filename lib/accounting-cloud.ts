@@ -6,7 +6,7 @@ export function isProvider(value: string): value is Provider {
 export type Config = {provider: Provider; origin: string; key: Buffer; clientId: string; secret: string; sandbox: boolean};
 export type Grant = {access: string; refresh: string; expires: number; realm: string; dc: string};
 export type Company = {id: string; name: string};
-export type BillLine = {invoice: string; supplier: string; description: string; amount: number | null; currency: string};
+export type BillLine = {invoice: string; supplier: string; description: string; amount: number | null; currency: string; billKey?: string; lineKey?: string; date?: string; grossZar?: number; vatZar?: number};
 const dcs: Record<string,string> = {us:'com',eu:'eu',in:'in',au:'com.au',ca:'ca',jp:'jp',sa:'sa'};
 const zohoDomain = (dc: string) => {
   if (!Object.hasOwn(dcs,dc)) throw new Error('Unsupported Zoho data centre.');
@@ -112,6 +112,16 @@ function billLine(invoice: unknown,supplier: unknown,description: unknown,amount
   return {invoice:String(invoice??''),supplier:String(supplier??''),description:String(description??''),amount:typeof amount==='number' && Number.isFinite(amount)?amount:null,currency:String(currency??'')};
 }
 
+function identified(line: BillLine, bill: unknown, key: unknown, date: unknown, gross?: number, vat?: number): BillLine {
+  if (bill == null || key == null || key === '') return line;
+  const rawDate=String(date ?? '');
+  const ms=/^\/Date\((\d+)/.exec(rawDate);
+  const iso=ms && Number(ms[1]) < 8640000000000000 ? new Date(Number(ms[1])).toISOString() : rawDate;
+  return {...line,billKey:String(bill),lineKey:String(key),date:iso.slice(0,10),
+    vatZar:line.currency === 'ZAR' && Number.isFinite(vat) ? vat : undefined,
+    grossZar:line.currency === 'ZAR' && typeof gross==='number' && Number.isFinite(gross) ? gross : undefined};
+}
+
 // Keep provider-reported line amounts in the source currency; tax basis varies by bill.
 export async function latestBills(c:Config,g:Grant,id:string): Promise<BillLine[]> {
   if (c.provider==='intacct') {
@@ -122,8 +132,8 @@ export async function latestBills(c:Config,g:Grant,id:string): Promise<BillLine[
       const bill=result['ia::result'];
       for (const line of records(bill.lines)) {
         const amount=line.txnAmount;
-        lines.push(billLine(bill.billNumber??bill.id,bill.vendor?.name,line.memo,
-          typeof amount==='string' && amount.trim() ? Number(amount):amount,bill.currency?.txnCurrency));
+        lines.push(identified(billLine(bill.billNumber??bill.id,bill.vendor?.name,line.memo,
+          typeof amount==='string' && amount.trim() ? Number(amount):amount,bill.currency?.txnCurrency),bill.key ?? record.key,line.key,bill.billDate));
       }
     }
     return lines;
@@ -135,13 +145,16 @@ export async function latestBills(c:Config,g:Grant,id:string): Promise<BillLine[
     const data = await read(c,g,url);
     if (!data.QueryResponse) throw new Error('Missing bill response.');
     return records(data.QueryResponse.Bill??[]).flatMap(b=>records(b.Line).filter(l=>['AccountBasedExpenseLineDetail','ItemBasedExpenseLineDetail'].includes(l.DetailType))
-      .map(l=>billLine(b.DocNumber??b.Id,b.VendorRef?.name,l.Description,l.Amount,b.CurrencyRef?.value)));
+      .map(l=>identified(billLine(b.DocNumber??b.Id,b.VendorRef?.name,l.Description,l.Amount,b.CurrencyRef?.value),b.Id,l.Id,b.TxnDate)));
   }
   if (c.provider==='xero') {
     const url = new URL('https://api.xero.com/api.xro/2.0/Invoices');
     url.search = new URLSearchParams({where:'Type=="ACCPAY"&&(Status=="AUTHORISED"||Status=="PAID")',order:'Date DESC',page:'1',pageSize:'10'}).toString();
     const data = await read(c,g,url,{'xero-tenant-id':id});
-    return records(data.Invoices).flatMap(b=>records(b.LineItems).map(l=>billLine(b.InvoiceNumber??b.InvoiceID,b.Contact?.Name,l.Description,l.LineAmount,b.CurrencyCode)));
+    return records(data.Invoices).flatMap(b=>records(b.LineItems).map(l=>identified(billLine(b.InvoiceNumber??b.InvoiceID,b.Contact?.Name,l.Description,l.LineAmount,b.CurrencyCode),
+      b.InvoiceID,l.LineItemID,b.DateString ?? b.Date,
+      b.LineAmountTypes==='Inclusive' || b.LineAmountTypes==='NoTax' ? l.LineAmount :
+        b.LineAmountTypes==='Exclusive' && typeof l.TaxAmount==='number' ? l.LineAmount+l.TaxAmount : undefined,l.TaxAmount)));
   }
   const url = new URL(zohoBase(g)+'/bills');
   url.search = new URLSearchParams({organization_id:id,sort_column:'date',sort_order:'D',per_page:'10'}).toString();
@@ -151,7 +164,7 @@ export async function latestBills(c:Config,g:Grant,id:string): Promise<BillLine[
     const detail = new URL(zohoBase(g)+'/bills/'+encodeURIComponent(b.bill_id));
     detail.searchParams.set('organization_id',id);
     const {bill} = await read(c,g,detail);
-    for (const l of records(bill.line_items)) lines.push(billLine(bill.bill_number??bill.bill_id,bill.vendor_name,l.description,l.item_total,bill.currency_code));
+    for (const l of records(bill.line_items)) lines.push(identified(billLine(bill.bill_number??bill.bill_id,bill.vendor_name,l.description,l.item_total,bill.currency_code),bill.bill_id,l.line_item_id,bill.date));
   }
   return lines;
 }

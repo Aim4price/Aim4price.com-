@@ -551,6 +551,7 @@ async function listOwnerCaptureNotifications(userId: string): Promise<HeaderNoti
       ownerUserId: userId,
       requestTypes: ['invoice'],
       statuses: ['awaiting_owner'],
+      submissionChannels: ['public_drop'],
       limit: 50,
     });
 

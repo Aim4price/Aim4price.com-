@@ -268,7 +268,7 @@ test("external approval override and queue deletion are deliberate audited actio
   assert.match(itemRoute, /case "complete_direct"/);
   assert.match(itemRoute, /ownerApprovalOverrideReason: note/);
   assert.match(finalizer, /ownerApprovalOverrideReason/);
-  assert.match(finalizer, /ownerApproved: ownerApprovalOverridden/);
+  assert.match(finalizer, /ownerApproved: request\.submissionChannel === 'dealer_upload'/);
 
   assert.match(client, /Delete capture request/);
   assert.match(client, /Type \$\{detail\?\.publicReference/);
