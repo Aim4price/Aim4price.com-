@@ -7,7 +7,7 @@ const root = path.resolve(__dirname,'..');
 const fixture = path.join(root,'app/budget-validation');
 const native = path.join(root,'app/owner-app/budget-validation');
 const base={id:'budget-one',assetId:'tractor',assetTitle:'New Holland TT4.90',period:'monthly',periodLabel:'September 2026',periodKey:'2026-09',periodStart:'2026-09-01',periodEnd:'2026-10-01',amount:50000,spent:0,remaining:50000,overBy:0,percentUsed:0,warningPercent:80,includeFuelSlipCosts:false,status:'on_track',revision:1};
-let budgets=[base,{...base,id:'budget-two',categories:['insurance','repair'],assetId:'truck',assetTitle:'Toyota Hilux',spent:45000,remaining:5000,percentUsed:90,status:'warning'},{...base,id:'budget-three',assetId:null,assetTitle:'All saved assets',period:'annual',periodLabel:'2026',periodKey:'2026',spent:60000,remaining:0,overBy:10000,percentUsed:120,status:'over_budget'}];
+let budgets=[{...base,expected:4000},{...base,id:'budget-two',expected:125.50,categories:['insurance','repair'],assetId:'truck',assetTitle:'Toyota Hilux',spent:45000,remaining:5000,percentUsed:90,status:'warning'},{...base,id:'budget-three',assetId:null,assetTitle:'All saved assets',period:'annual',periodLabel:'2026',periodKey:'2026',spent:60000,remaining:0,overBy:10000,percentUsed:120,status:'over_budget'}];
 const assets=[{id:'tractor',title:'New Holland TT4.90',kind:'tractor',categoryLabel:'Tractor',yearModel:2022,usageReading:1276,usageMetric:'hours',condition:'Good',value:200000,serialNumber:'TEST-001',meta:''},{id:'truck',title:'Toyota Hilux',kind:'vehicle',categoryLabel:'Vehicle',yearModel:2020,usageReading:100000,usageMetric:'km',condition:'Good',value:200000,serialNumber:'TEST-002',meta:''}];
 async function main(){let server,browser;const created=[];try{
  await fs.mkdir(fixture);created.push(fixture);await fs.mkdir(native);created.push(native);
@@ -115,7 +115,8 @@ async function main(){let server,browser;const created=[];try{
    const disclosure = details + ' section[aria-label="Recurring costs"] details';
    assert.equal(await page.$eval(disclosure,e=>e.open),false);
    await page.click(disclosure+' summary');
-   assert.match(await page.$eval(disclosure,e=>e.innerText), /Expected this period/);
+   const expectedTotal = id === 'budget-one' ? 'R4 000' : 'R125,50';
+   assert.ok((await page.$eval(disclosure, e=>e.innerText)).includes('Scheduled payments for September 2026 total ' + expectedTotal + '.'));
    assert.match(await page.$eval(disclosure,e=>e.innerText), /Add recurring cost/);
    assert.doesNotMatch(panel.text, /Recorded costs|No costs allocated|Workshop|Fuel depot/);
    assert.ok(!requests.slice(start).some(u=>u.split('?')[0]==='/api/my-invoices'), 'Expanding a budget should not fetch ledger rows');
@@ -181,7 +182,7 @@ async function main(){let server,browser;const created=[];try{
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No mobile horizontal overflow');
  // Exercise the painted picker scrollbar with a long list and a small, nonzero budget usage.
  assets.push(...Array.from({length:20}, (_, i) => ({...assets[1], id:'extra-'+i, title:'Vehicle '+i})));
- Object.assign(base,{spent:5, remaining:49995, percentUsed:0.01});
+ Object.assign(budgets.find(b=>b.id==='budget-one'),{spent:5, remaining:49995, percentUsed:0.01});
  await page.setViewport({width:1440,height:900});
  await page.goto('http://localhost:3031/budget-validation',{waitUntil:'networkidle0'});
  const bar='#cost-budget-budget-one [role=progressbar]';
