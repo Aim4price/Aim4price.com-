@@ -103,26 +103,33 @@ export default function BudgetRecurringCosts({budget, onRefresh, onAdd}: {
       onChange={async value => {
         if (await save('/api/my-invoices/budgets/' + budget.id, {includeRecurringCosts:value}) && !value) setManage(false);
       }} />
-    {included && <>
-      <div className={styles.recurringBar}>
-        <span>Expected this period <strong>{formatBudgetMoney(budget.expected ?? 0)}</strong></span>
-        <div className={styles.recurringActions}>
-          {costs.length > 0 && <button className={styles.manageCosts} type="button" aria-expanded={manage} aria-controls={listId} disabled={busy} onClick={() => setManage(!manage)}>{manage ? 'Done' : 'Manage recurring costs'}</button>}
-          {!desktop.workspace && <button type="button" className={ledgerStyles.primaryButton} disabled={busy} onClick={onAdd}>Add recurring cost</button>}
+    {included && <div className={styles.memberSection}>
+      <details onToggle={event => { if (!event.currentTarget.open) setManage(false); }}>
+        <summary>View recurring costs
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+        </summary>
+        <div className={styles.recurringContent}>
+          <div className={styles.recurringBar}>
+            <span>Expected this period <strong>{formatBudgetMoney(budget.expected ?? 0)}</strong></span>
+            <div className={styles.recurringActions}>
+              {costs.length > 0 && <button className={styles.manageCosts} type="button" aria-expanded={manage} aria-controls={listId} disabled={busy} onClick={() => setManage(!manage)}>{manage ? 'Done' : 'Manage recurring costs'}</button>}
+              {!desktop.workspace && <button type="button" className={ledgerStyles.primaryButton} disabled={busy} onClick={onAdd}>Add recurring cost</button>}
+            </div>
+          </div>
+          <div id={listId}>
+            {visible.length > 0 && <ul className={styles.recurringList}>{visible.map(cost => <li key={cost.id}>
+              <div><strong>{cost.description}</strong><small>{[frequencies[cost.frequency],cost.paused ? 'Paused' : cost.nextDue ? 'Due ' + dateLabel(cost.nextDue) : 'No payment due this period',cost.count > 1 && !cost.paused ? cost.count + ' payments' : '',cost.shared ? 'Shared cost' : ''].filter(Boolean).join(' · ')}</small>
+                {manage && cost.shared && cost.editableAmount !== null && <small>Edits apply to all linked assets.</small>}</div>
+              <strong>{cost.allocationNeeded ? 'Allocation needed' : formatBudgetMoney(manage ? cost.editableAmount ?? cost.instalment : cost.expected)}</strong>
+              {manage && (desktop.can('editCosts') || desktop.can('deleteCosts')) && <CostEditor key={String(cost.editableAmount) + String(cost.paused)} cost={cost} busy={busy}
+                canEdit={desktop.can('editCosts')} canDelete={desktop.can('deleteCosts')}
+                onDelete={deleteSaved => save('/api/recurring-commitments/' + cost.id,{deleteSaved,previousAmount:cost.editableAmount,previousPaused:cost.paused},'DELETE')}
+                onSave={(amount, paused) => save('/api/recurring-commitments/' + cost.id,{amount,paused,previousAmount:cost.editableAmount,previousPaused:cost.paused})} />}
+            </li>)}</ul>}
+          </div>
+          {due.some(cost => cost.allocationNeeded) && <p className={styles.detailsNote}>Available funds exclude unallocated shares.</p>}
         </div>
-      </div>
-      <div id={listId}>
-        {visible.length > 0 && <ul className={styles.recurringList}>{visible.map(cost => <li key={cost.id}>
-          <div><strong>{cost.description}</strong><small>{[frequencies[cost.frequency],cost.paused ? 'Paused' : cost.nextDue ? 'Due ' + dateLabel(cost.nextDue) : 'No payment due this period',cost.count > 1 && !cost.paused ? cost.count + ' payments' : '',cost.shared ? 'Shared cost' : ''].filter(Boolean).join(' · ')}</small>
-            {manage && cost.shared && cost.editableAmount !== null && <small>Edits apply to all linked assets.</small>}</div>
-          <strong>{cost.allocationNeeded ? 'Allocation needed' : formatBudgetMoney(manage ? cost.editableAmount ?? cost.instalment : cost.expected)}</strong>
-          {manage && (desktop.can('editCosts') || desktop.can('deleteCosts')) && <CostEditor key={String(cost.editableAmount) + String(cost.paused)} cost={cost} busy={busy}
-            canEdit={desktop.can('editCosts')} canDelete={desktop.can('deleteCosts')}
-            onDelete={deleteSaved => save('/api/recurring-commitments/' + cost.id,{deleteSaved,previousAmount:cost.editableAmount,previousPaused:cost.paused},'DELETE')}
-            onSave={(amount, paused) => save('/api/recurring-commitments/' + cost.id,{amount,paused,previousAmount:cost.editableAmount,previousPaused:cost.paused})} />}
-        </li>)}</ul>}
-      </div>
-      {due.some(cost => cost.allocationNeeded) && <p className={styles.detailsNote}>Available funds exclude unallocated shares.</p>}
-    </>}
+      </details>
+    </div>}
   </section>;
 }
