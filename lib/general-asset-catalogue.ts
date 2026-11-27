@@ -2,57 +2,57 @@ export const GENERAL_ASSET_CATEGORIES = [
   {
     value: 'furniture_contents',
     label: 'Furniture & contents',
-    description: 'Desks, chairs, couches, beds, cupboards, shelving and ordinary contents.',
+    description: 'Desks and chairs',
   },
   {
     value: 'appliances',
     label: 'Appliances',
-    description: 'Fridges, freezers, stoves, washing machines, microwaves and similar appliances.',
+    description: 'Home appliances',
   },
   {
     value: 'computers_it',
     label: 'Computers & IT',
-    description: 'Laptops, desktops, servers, tablets, printers and network equipment.',
+    description: 'Computing equipment',
   },
   {
     value: 'portable_electronics',
     label: 'Phones, cameras & portable electronics',
-    description: 'Mobile phones, cameras, scanners and electronics that regularly leave the premises.',
+    description: 'Handheld devices',
   },
   {
     value: 'commercial_refrigeration',
     label: 'Commercial refrigeration & cold storage',
-    description: 'Cold rooms, display fridges, milk tanks and refrigeration used to protect stock or produce.',
+    description: 'Cold rooms and tanks',
   },
   {
     value: 'kitchen_catering',
     label: 'Kitchen & catering equipment',
-    description: 'Ovens, mixers, coffee machines, fryers and other commercial food-service equipment.',
+    description: 'Food preparation',
   },
   {
     value: 'security_systems',
     label: 'Security & access systems',
-    description: 'Cameras, alarms, access control, electric fencing and monitoring equipment.',
+    description: 'Alarms and cameras',
   },
   {
     value: 'power_energy',
     label: 'Generators, inverters, batteries & solar',
-    description: 'Backup power, solar equipment, batteries, generators and related controls.',
+    description: 'Solar and backup power',
   },
   {
     value: 'fixtures_improvements',
     label: 'Fixed fixtures & improvements',
-    description: 'Built-in counters, fitted equipment, tenant improvements and other attached items.',
+    description: 'Built-in fittings',
   },
   {
     value: 'high_value_items',
     label: 'High-value or specialist items',
-    description: 'Art, jewellery, collectibles, display items and assets that may need individual specification.',
+    description: 'Art and valuables',
   },
   {
     value: 'other_general',
     label: 'Something else',
-    description: 'Another ordinary asset that does not fit one of the groups above.',
+    description: 'Unlisted contents',
   },
 ] as const;
 
@@ -60,27 +60,27 @@ export const PROPERTY_ASSET_SUBTYPES = [
   {
     value: 'land',
     label: 'Land',
-    description: 'Vacant, agricultural or other land recorded separately from buildings and improvements.',
+    description: 'Vacant or farm land',
   },
   {
     value: 'building_structure',
     label: 'Building or structure',
-    description: 'Houses, offices, warehouses, workshops, sheds, stores and similar structures.',
+    description: 'Homes and sheds',
   },
   {
     value: 'fixed_improvement',
     label: 'Fixed improvement',
-    description: 'Walls, paving, boreholes, fencing and other permanent improvements to a property.',
+    description: 'Fences and paving',
   },
   {
     value: 'tenant_improvement',
     label: 'Tenant improvement',
-    description: 'Alterations, fittings or improvements paid for by a tenant at a leased premises.',
+    description: 'Tenant-funded work',
   },
   {
     value: 'other_property',
     label: 'Other property',
-    description: 'Another property interest that does not fit one of the groups above.',
+    description: 'Unlisted property',
   },
 ] as const;
 
@@ -88,42 +88,42 @@ export const STOCK_ASSET_SUBTYPES = [
   {
     value: 'raw_materials',
     label: 'Raw materials',
-    description: 'Materials and commodities held for manufacturing, processing or production.',
+    description: 'Production supplies',
   },
   {
     value: 'finished_goods',
     label: 'Finished goods',
-    description: 'Completed products or merchandise held for sale or distribution.',
+    description: 'Ready for sale',
   },
   {
     value: 'parts_spares',
     label: 'Parts and spares',
-    description: 'Replacement parts, workshop spares and service inventory.',
+    description: 'Workshop spares',
   },
   {
     value: 'agricultural_inputs',
     label: 'Agricultural inputs',
-    description: 'Seed, fertiliser, chemicals, feed and other farming inputs.',
+    description: 'Seed and fertiliser',
   },
   {
     value: 'produce',
     label: 'Produce',
-    description: 'Harvested crops, food products and other stored agricultural produce.',
+    description: 'Harvested crops',
   },
   {
     value: 'livestock',
     label: 'Livestock',
-    description: 'Animals or herds recorded on a market, agreed or declared-value basis.',
+    description: 'Animals and herds',
   },
   {
     value: 'third_party_stock',
     label: 'Third-party or consignment stock',
-    description: 'Goods held on behalf of a customer, supplier or another owner.',
+    description: 'Held for others',
   },
   {
     value: 'other_stock',
     label: 'Other stock',
-    description: 'Another inventory or stock group that does not fit one of the groups above.',
+    description: 'Unlisted stock',
   },
 ] as const;
 

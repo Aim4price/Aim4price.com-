@@ -1,4 +1,21 @@
-.copy.copy strong, .copy.copy small {
-  white-space: normal;
-  overflow-wrap: anywhere;
+.field { display: grid; min-width: 0; gap: .4rem; }
+.field > span { font-size: .88rem; line-height: 1.25; font-weight: 750; color: var(--app-text, #173c32); }
+.field > button { min-height: 3rem; }
+.field > button svg { width: 1rem; height: 1rem; }
+.dialog .grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: .65rem; }
+.dialog .grid button { min-height: 4.25rem; }
+.dialog .grid button[aria-pressed="true"] { background: #15533e; color: white; border-color: #15533e; }
+.dialog .grid button[aria-pressed="true"] small { color: white; }
+.copy.copy strong { white-space: normal; }
+.copy.copy small { white-space: nowrap; font-weight: 650; color: var(--app-text, #29483e); }
+.dialog > header p:empty { display: none; }
+.actions, .pager { display: flex; align-items: center; gap: .65rem; }
+.actions { width: 100%; justify-content: flex-end; }
+.actions:has(.pager) { justify-content: space-between; }
+.actions button { padding: .65rem 1.2rem; border-radius: .8rem; border: 1px solid var(--app-line, #aecbbd); background: var(--app-surface-soft, #edf5ef); color: var(--app-text, #173c32); font: inherit; font-weight: 750; cursor: pointer; }
+.actions button:disabled { opacity: .5; cursor: default; }
+.pager span { white-space: nowrap; font-weight: 650; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .actions button { padding: .55rem .8rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .pager { gap: .4rem; }
 }

@@ -43,6 +43,7 @@ import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
 import LeadActionDialog from '../../components/leads/LeadActionDialog';
 const SharedAssetWorkDialog = dynamic(() => import('../../components/leads/SharedAssetWorkDialog'));
 import AssetDetailsFields from '../../components/AssetDetailsFields';
+import AssetOptionIcon from '../../components/asset-register/AssetOptionIcon';
 import AssetChoiceCards from '../../components/asset-register/AssetChoiceCards';
 import AssetDetailChoiceField from '../../components/AssetDetailChoiceField';
 import AssetRegisterGuide from '../../components/asset-register/AssetRegisterGuide';
@@ -1278,49 +1279,49 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   {
     value: 'equipment',
     label: 'Equipment',
-    description: 'Machines and larger equipment.',
+    description: 'Machinery',
     titlePlaceholder: 'Example: Water pump trailer',
   },
   {
     value: 'vehicle',
     label: 'Vehicle',
-    description: 'Bakkies, trucks and trailers.',
+    description: 'Cars & trucks',
     titlePlaceholder: 'Example: Toyota Hilux farm bakkie',
   },
   {
     value: 'boat',
     label: 'Boat',
-    description: 'Boats, yachts and personal watercraft.',
+    description: 'Watercraft',
     titlePlaceholder: 'Example: Bowrider with outboard motor',
   },
   {
     value: 'property',
     label: PROPERTY_ASSET_LABEL,
-    description: 'Land, buildings and fixed structures.',
+    description: 'Land & homes',
     titlePlaceholder: PROPERTY_ASSET_TITLE_PLACEHOLDER,
   },
   {
     value: 'tools',
     label: 'Tools',
-    description: 'Hand tools and workshop equipment.',
+    description: 'Workshop tools',
     titlePlaceholder: 'Example: Workshop tool set',
   },
   {
     value: 'stock',
     label: 'Stock',
-    description: 'Goods, produce and livestock.',
+    description: 'Goods & herds',
     titlePlaceholder: 'Example: Parts inventory, fertiliser stock or livestock',
   },
   {
     value: 'manual',
     label: 'Contents & electronics',
-    description: 'Furniture, appliances and electronics.',
+    description: 'Home & tech',
     titlePlaceholder: 'Example: Samsung fridge, office desks or MacBook Pro',
   },
   {
     value: 'other',
     label: 'Other',
-    description: 'Any asset outside these categories.',
+    description: 'Unlisted assets',
     titlePlaceholder: 'Enter the name of your asset',
   },
 ];
@@ -1344,53 +1345,53 @@ const STOCK_ASSET_SUBTYPE_OPTIONS: Array<{
 }> = STOCK_ASSET_SUBTYPES.map((category) => ({ ...category }));
 
 const INSURANCE_USE_CONTEXT_OPTIONS: Array<{ value: InsuranceUseContext; label: string; description: string }> = [
-  { value: 'business', label: 'Business use', description: 'Used for work, trade, farming or another business activity.' },
-  { value: 'home', label: 'Home / personal use', description: 'Used mainly as part of a household or for private purposes.' },
-  { value: 'mixed', label: 'Both business and personal', description: 'Regularly used for both business and personal purposes.' },
+  { value: 'business', label: 'Business use', description: 'Work or trade' },
+  { value: 'home', label: 'Home / personal use', description: 'Private use' },
+  { value: 'mixed', label: 'Both business and personal', description: 'Work and home' },
 ];
 
 const INSURANCE_MOBILITY_OPTIONS: Array<{ value: InsuranceMobility; label: string; description: string }> = [
-  { value: 'premises', label: 'Usually stays at one premises', description: 'Movable, but normally kept and used at one address.' },
-  { value: 'portable', label: 'Portable / carried around', description: 'Regularly carried by a person, such as a laptop, phone or camera.' },
-  { value: 'moves_between_locations', label: 'Moves between sites', description: 'Regularly transported between farms, branches, jobs or client sites.' },
-  { value: 'fixed', label: 'Fixed or built in', description: 'Attached to the building or installed as a permanent fixture.' },
+  { value: 'premises', label: 'Usually stays at one premises', description: 'One address' },
+  { value: 'portable', label: 'Portable / carried around', description: 'Carried with you' },
+  { value: 'moves_between_locations', label: 'Moves between sites', description: 'Across sites' },
+  { value: 'fixed', label: 'Fixed or built in', description: 'Attached in place' },
 ];
 
 const PROPERTY_INTEREST_OPTIONS: Array<{ value: PropertyInterest; label: string; description: string }> = [
-  { value: 'owned_occupied', label: 'Owned and occupied', description: 'The owner owns and uses the property.' },
-  { value: 'owned_let', label: 'Owned and let to others', description: 'The owner owns the property and rents or lets it to another party.' },
-  { value: 'leased_occupied', label: 'Leased or rented', description: 'The property is occupied under a lease or rental arrangement.' },
-  { value: 'tenant_improvement', label: 'Tenant improvement only', description: 'Only alterations or improvements paid for by the tenant are being recorded.' },
-  { value: 'unknown', label: 'Not sure', description: 'Leave the property interest for later confirmation.' },
+  { value: 'owned_occupied', label: 'Owned and occupied', description: 'Your own premises' },
+  { value: 'owned_let', label: 'Owned and let to others', description: 'Rented to others' },
+  { value: 'leased_occupied', label: 'Leased or rented', description: 'Rented from others' },
+  { value: 'tenant_improvement', label: 'Tenant improvement only', description: 'Tenant-funded work' },
+  { value: 'unknown', label: 'Not sure', description: 'Confirm later' },
 ];
 
 const STOCK_VALUATION_BASIS_OPTIONS: Array<{ value: StockValuationBasis; label: string; description: string }> = [
-  { value: 'purchase_cost', label: 'Purchase or landed cost', description: 'The amount paid to buy and bring the stock to its current location.' },
-  { value: 'replacement_cost', label: 'Replacement cost', description: 'The current cost to replace the stock with similar goods.' },
-  { value: 'selling_price', label: 'Selling price', description: 'The expected selling value of the stock.' },
-  { value: 'market_value', label: 'Market value', description: 'The supported current market value, including livestock or commodities.' },
-  { value: 'other', label: 'Another basis', description: 'A different value basis applies to this stock group.' },
-  { value: 'unknown', label: 'Not sure', description: 'Record the value now and confirm the basis later.' },
+  { value: 'purchase_cost', label: 'Purchase or landed cost', description: 'Cost to acquire' },
+  { value: 'replacement_cost', label: 'Replacement cost', description: 'Cost to replace' },
+  { value: 'selling_price', label: 'Selling price', description: 'Expected sale price' },
+  { value: 'market_value', label: 'Market value', description: 'Current market price' },
+  { value: 'other', label: 'Another basis', description: 'Custom basis' },
+  { value: 'unknown', label: 'Not sure', description: 'Confirm later' },
 ];
 
 const STOCK_MOVEMENT_OPTIONS: Array<{ value: StockMovement; label: string; description: string }> = [
-  { value: 'one_location', label: 'Usually at one location', description: 'The stock normally remains at one premises, farm or storage site.' },
-  { value: 'multiple_locations', label: 'Held at multiple locations', description: 'The total is spread across more than one site.' },
-  { value: 'regular_transit', label: 'Regularly transported', description: 'The stock routinely moves between suppliers, sites or customers.' },
-  { value: 'seasonal_locations', label: 'Moves seasonally', description: 'The normal storage location changes during the year or production cycle.' },
-  { value: 'unknown', label: 'Not sure', description: 'Leave the movement pattern for later confirmation.' },
+  { value: 'one_location', label: 'Usually at one location', description: 'One site' },
+  { value: 'multiple_locations', label: 'Held at multiple locations', description: 'Several sites' },
+  { value: 'regular_transit', label: 'Regularly transported', description: 'In transit' },
+  { value: 'seasonal_locations', label: 'Moves seasonally', description: 'Varies by season' },
+  { value: 'unknown', label: 'Not sure', description: 'Confirm later' },
 ];
 
 const INSURANCE_CRITICALITY_OPTIONS: Array<{ value: InsuranceFactAnswer; label: string; description: string }> = [
-  { value: 'yes', label: 'Yes', description: 'Losing it would stop or materially disrupt operations.' },
-  { value: 'no', label: 'No', description: 'The business or household could continue without material disruption.' },
-  { value: 'unknown', label: 'Not sure', description: 'Leave this for the insurance review to confirm.' },
+  { value: 'yes', label: 'Yes', description: 'Operations depend on it' },
+  { value: 'no', label: 'No', description: 'Work can continue' },
+  { value: 'unknown', label: 'Not sure', description: 'Confirm later' },
 ];
 
 const TEMPERATURE_SENSITIVE_STOCK_OPTIONS: Array<{ value: InsuranceFactAnswer; label: string; description: string }> = [
-  { value: 'yes', label: 'Yes', description: 'A failure could spoil refrigerated or frozen stock, food, medicine or produce.' },
-  { value: 'no', label: 'No', description: 'No temperature-sensitive stock depends on this equipment.' },
-  { value: 'unknown', label: 'Not sure', description: 'Leave this for the insurance review to confirm.' },
+  { value: 'yes', label: 'Yes', description: 'Needs cooling' },
+  { value: 'no', label: 'No', description: 'No cooling needed' },
+  { value: 'unknown', label: 'Not sure', description: 'Confirm later' },
 ];
 
 const LIFETIME_PERCENT_SETTINGS_ERROR =
@@ -6281,16 +6282,7 @@ function renderQuoteOptionIcon(leadType: AssetLeadType, className?: string) {
   return <ReplacementQuoteIcon className={className} />;
 }
 
-function renderManualAssetTypeIcon(assetKind: AssetKind, className?: string) {
-  if (assetKind === 'boat') return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 14l9-3 9 3-4 6H7zM7 12V7h10v5M12 7V3" /></svg>;
-  if (assetKind === 'other') return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM17.5 14v7M14 17.5h7" /></svg>;
-  if (assetKind === 'vehicle') return <QuoteMachineIcon className={className} />;
-  if (assetKind === 'property') return <StoreIcon className={className} />;
-  if (assetKind === 'tools') return <ManageIcon className={className} />;
-  if (assetKind === 'stock') return <CartIcon className={className} />;
-  if (assetKind === 'manual') return <DocumentIcon className={className} />;
-  return <UpdateAssetIcon className={className} />;
-}
+
 
 export default function AssetRegisterClient({
   meterBusinessCredits = false,
@@ -18431,7 +18423,7 @@ export default function AssetRegisterClient({
                               autoFocus={index === 0}
                             >
                               <span className={styles.manualAssetTypeIcon}>
-                                {renderManualAssetTypeIcon(option.value, styles.buttonIcon)}
+                                <AssetOptionIcon value={option.value} className={styles.buttonIcon} />
                               </span>
 
                               <span className={styles.manualAssetTypeCopy}>
@@ -18517,7 +18509,7 @@ export default function AssetRegisterClient({
                           <div className={styles.assetInsuranceClassificationIntro}>
                             <strong>Tell us more about this asset</strong>
                             <p>
-                              Choose the closest match for accurate records. Your broker confirms any insurance classification and cover.
+                              Choose the details that describe this asset. Your broker confirms cover.
                             </p>
                           </div>
 
@@ -18562,7 +18554,7 @@ export default function AssetRegisterClient({
                                   onChange={(insuranceMobility) =>
                                     setAssetDraft((current) => ({ ...current, insuranceMobility }))
                                   }
-                                  placeholder="Choose how the item is used"
+                                  placeholder="Choose mobility"
                                 />
 
                                 <AssetChoiceCards<InsuranceFactAnswer>
@@ -18606,7 +18598,7 @@ export default function AssetRegisterClient({
                                           : current.propertyInterest,
                                     }))
                                   }
-                                  placeholder="Choose the closest property type"
+                                  placeholder="Choose property type"
                                 />
 
                                 <AssetChoiceCards<InsuranceUseContext>
@@ -18626,7 +18618,7 @@ export default function AssetRegisterClient({
                                   onChange={(propertyInterest) =>
                                     setAssetDraft((current) => ({ ...current, propertyInterest }))
                                   }
-                                  placeholder="Choose ownership or occupancy"
+                                  placeholder="Choose your interest"
                                 />
                               </>
                             ) : null}
@@ -18647,7 +18639,7 @@ export default function AssetRegisterClient({
                                           : current.insuranceTemperatureSensitiveStock,
                                     }))
                                   }
-                                  placeholder="Choose the closest stock type"
+                                  placeholder="Choose stock type"
                                 />
 
                                 <AssetChoiceCards<StockValuationBasis>
@@ -18657,7 +18649,7 @@ export default function AssetRegisterClient({
                                   onChange={(stockValuationBasis) =>
                                     setAssetDraft((current) => ({ ...current, stockValuationBasis }))
                                   }
-                                  placeholder="Choose the value basis"
+                                  placeholder="Choose value basis"
                                 />
 
                                 <AssetChoiceCards<StockMovement>
@@ -18667,7 +18659,7 @@ export default function AssetRegisterClient({
                                   onChange={(stockMovement) =>
                                     setAssetDraft((current) => ({ ...current, stockMovement }))
                                   }
-                                  placeholder="Choose the normal movement pattern"
+                                  placeholder="Choose location"
                                 />
 
                                 {assetDraft.stockAssetSubtype !== 'livestock' ? (
