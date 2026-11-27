@@ -143,3 +143,5 @@
 .memberRows dt { min-width: 0; overflow-wrap: anywhere; }
 .memberRows dd { margin: 0; white-space: nowrap; font-weight: 750; font-variant-numeric: tabular-nums; }
 .memberSection details .memberRows { margin: 0; border: 0; background: transparent; }
+
+.costControls .deleteCost { color: var(--app-danger, #a83333); border-color: var(--app-danger-line, #ddb5b5); }

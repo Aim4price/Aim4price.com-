@@ -26,6 +26,12 @@ async function main(){let server,browser;const created=[];try{
  let body={ok:true,assets,items:[],invoices:[],requests:[],notifications:[],groups:[],registers:[],budgets};
  if(u.pathname==='/api/my-invoices/budgets' && r.method()==='POST'){const input=JSON.parse(r.postData());budgets.push({...base,...input,id:'new-budget',assetTitle:input.groupName || 'New budget',members:input.groupAssetIds?.map(id=>({id,title:assets.find(asset=>asset.id===id).title,spent:id==='truck'?5:0}))});body={ok:true,budgets,assets};}
  if(u.pathname.startsWith('/api/my-invoices/budgets/') && r.method()==='DELETE'){budgets=budgets.filter(b=>b.id!==u.pathname.split('/').pop());body={ok:true};}
+ if(u.pathname==='/api/my-invoices/budgets/budget-two' && r.method()==='PATCH'){
+   budgets.find(b=>b.id==='budget-two').includeRecurringCosts=JSON.parse(r.postData()).includeRecurringCosts;
+ }
+ if(u.pathname==='/api/recurring-commitments/test-cost' && r.method()==='DELETE'){
+   const budget=budgets.find(b=>b.id==='budget-two');budget.recurringCosts=[];budget.expected=0;
+ }
  if(u.pathname==='/api/recurring-commitments' && r.method()==='POST'){
    const input=JSON.parse(r.postData());savedCosts.push(input);
    const budget=budgets.find(b=>b.assetId===input.assetIds[0]);
@@ -120,7 +126,18 @@ async function main(){let server,browser;const created=[];try{
  assert.equal(savedCosts.length,1);
  assert.deepEqual(savedCosts[0].assetIds,['truck']);
  assert.equal(savedCosts[0].category,'repair');
- await click('Manage recurring costs');await click('Done');
+ await click('Manage recurring costs');
+ const recurring='#budget-details-budget-two section[aria-label="Recurring costs"]';
+ const toggle=recurring+' [role="switch"]';
+ await page.click(toggle);
+ await page.waitForSelector(toggle+'[aria-checked="false"]');
+ assert.equal(await page.$eval(recurring,e=>e.children.length),1);
+ await page.click(toggle);
+ await page.waitForSelector(toggle+'[aria-checked="true"]');
+ await click('Manage recurring costs');await click('Delete');await click('Cancel');
+ assert.match(await page.$eval(recurring,e=>e.innerText),/Fleet cover/);
+ await click('Delete');await click('Delete recurring cost');
+ await page.waitForFunction(selector=>!document.querySelector(selector).textContent.includes('Fleet cover'),{},recurring);
  await click('Add recurring cost');await click('Cancel');
  await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
 
