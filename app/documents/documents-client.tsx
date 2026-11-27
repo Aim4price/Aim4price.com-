@@ -308,9 +308,8 @@ function formatDate(value: string | null, includeYear = true): string {
 function documentExpiryState(expiryDate: string | null): { label: string; tone: 'safe' | 'warning' | 'danger' | 'neutral' } {
   if (!expiryDate) return { label: 'No expiry date', tone: 'neutral' };
 
-  const expiry = new Date(`${expiryDate}T23:59:59`);
-  const today = new Date();
-  const days = Math.ceil((expiry.getTime() - today.getTime()) / 86_400_000);
+  const today = new Date().toISOString().slice(0, 10);
+  const days = (Date.parse(expiryDate) - Date.parse(today)) / 86_400_000;
 
   if (days < 0) return { label: `Expired ${formatDate(expiryDate)}`, tone: 'danger' };
   if (days === 0) return { label: `${formatDate(expiryDate)} · Expires today`, tone: 'danger' };
@@ -1170,7 +1169,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     const isDeleted = view === 'recycle-bin';
 
     return (
-      <article key={document.id} className={styles.documentCard}>
+      <article key={document.id} className={styles.documentCard} data-expiry-attention={!isDeleted && (expiry.tone === 'warning' || expiry.tone === 'danger') || undefined}>
         <div className={styles.documentBody}>
           <div className={styles.documentTitleRow}>
             <div className={styles.fileMark} aria-hidden="true">
@@ -1347,7 +1346,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   <strong>{summary.totalDocuments}</strong>
                   <p>{activeCategoryCount} {activeCategoryCount === 1 ? 'category' : 'categories'} in use</p>
                 </article>
-                <article className={`${styles.summaryCard} ${summary.expiringSoon ? styles.summaryAttention : ''}`}>
+                <article className={styles.summaryCard} data-expiry-attention={summary.expiringSoon > 0 || undefined}>
                   <div className={styles.summaryHeading}><span>Expiry attention</span><Icon name="calendar" /></div>
                   <strong>{summary.expiringSoon}</strong>
                   <p>{summary.expiringSoon ? 'Expired or due within 60 days' : 'No upcoming expiry actions'}</p>

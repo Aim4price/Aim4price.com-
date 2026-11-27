@@ -666,7 +666,7 @@ export async function getAccountDocumentSummary(userId: string): Promise<Account
         count(*)::bigint as total_documents,
         count(*) filter (
           where expiry_date is not null
-            and expiry_date <= current_date + 60
+            and expiry_date <= (current_timestamp at time zone 'UTC')::date + 60
         )::bigint as expiring_soon,
         count(*) filter (
           where exists (
