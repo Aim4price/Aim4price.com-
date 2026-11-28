@@ -39,17 +39,18 @@ export default function AssetChoiceCards<T extends string>({ label, value, optio
       <span>{display}</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
     </button>
-    {open && <AssetChoiceDialog title={question} value={value} options={options}
+    {open && <AssetChoiceDialog paginate title={question} value={value} options={options}
       onClose={() => setOpen(false)} onBack={() => setOpen(false)}
       onSelect={next => { onChange(next); setOpen(false); }} />}
   </div>;
 }
 
-export function AssetChoiceDialog<T extends string>({ title, subtitle = '', value, options, busy = false, onClose, onBack, onSelect }: {
+export function AssetChoiceDialog<T extends string>({ title, subtitle = '', value, options, paginate = false, busy = false, onClose, onBack, onSelect }: {
   title: string;
   subtitle?: string;
   value: T | '';
   options: ModalSelectOption<T>[];
+  paginate?: boolean;
   busy?: boolean;
   onClose: () => void;
   onBack: () => void;
@@ -57,7 +58,7 @@ export function AssetChoiceDialog<T extends string>({ title, subtitle = '', valu
 }) {
   const [start, setStart] = useState(() => Math.max(0, options.findIndex(option => option.value === value)));
   const compact = useSyncExternalStore(subscribeToSize, isCompact, () => false);
-  const pageSize = compact ? 3 : 6;
+  const pageSize = paginate ? (compact ? 3 : 6) : Math.max(1, options.length);
   const page = Math.floor(start / pageSize);
   const pages = Math.ceil(options.length / pageSize);
   const visible = options.slice(page * pageSize, (page + 1) * pageSize);
@@ -71,7 +72,7 @@ export function AssetChoiceDialog<T extends string>({ title, subtitle = '', valu
           <button type="button" disabled={busy || page + 1 === pages} onClick={() => setStart((page + 1) * pageSize)}>Next</button>
         </div>}
       </div>}>
-      <div className={`${cards.cards} ${styles.grid}`} role="group" aria-label={title}>
+      <div className={`${cards.cards} ${styles.grid} ${paginate ? '' : styles.allTypes}`} role="group" aria-label={title}>
         {visible.map((option, index) => <button type="button" key={option.value} className={cards.card}
           data-category={['storage', 'rental', 'insurance', 'service'][index % 4]} aria-pressed={value === option.value}
           disabled={busy} onClick={event => onSelect(option.value, event.currentTarget)}>

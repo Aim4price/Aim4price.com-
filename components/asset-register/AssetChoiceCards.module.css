@@ -19,3 +19,27 @@
   :global(:where(html:not(:has([data-website-canvas])))) .actions button { padding: .55rem .8rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .pager { gap: .4rem; }
 }
+
+/* Let each row share its spare width while reserving space for the full label. */
+.dialog .allTypes {
+  display: flex;
+  flex-wrap: wrap;
+}
+.dialog .allTypes > button {
+  flex: 1 0 calc((100% - 1.95rem) / 4);
+  min-width: max-content;
+  grid-template-columns: auto auto;
+  justify-content: start;
+}
+.allTypes .copy strong { white-space: nowrap; }
+@container (max-width: 40rem) {
+  .dialog .allTypes { gap: .4rem; }
+  .dialog .allTypes > button {
+    flex-basis: calc(50% - .2rem);
+    min-height: 2.75rem;
+    padding: .35rem .55rem;
+    gap: .45rem;
+  }
+  .allTypes > button > span:first-child { width: 1.85rem; height: 1.85rem; }
+  .allTypes > button svg { width: 1.1rem; height: 1.1rem; }
+}
