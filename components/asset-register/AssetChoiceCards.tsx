@@ -17,9 +17,10 @@ type Props<T extends string> = {
   placeholder?: string;
   className?: string;
   hideLabel?: boolean;
+  compactLabel?: string;
 };
 
-export default function AssetChoiceCards<T extends string>({ label, value, options, onChange, placeholder, className, hideLabel }: Props<T>) {
+export default function AssetChoiceCards<T extends string>({ label, value, options, onChange, placeholder, className, hideLabel, compactLabel }: Props<T>) {
   const [open, setOpen] = useState(false);
   const [confirmedValue, setConfirmedValue] = useState<T | null>(null);
   const answered = Boolean(value && (confirmedValue === value || !['unknown', 'included', 'excluded'].includes(value)));
@@ -30,8 +31,8 @@ export default function AssetChoiceCards<T extends string>({ label, value, optio
   return <div className={className || styles.field}>
     {!hideLabel && <span>{label}</span>}
     <button type="button" className={field.trigger} data-answered={answered} aria-label={`${question} — ${display}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
-      <span>{display}</span>
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
+      <span>{compactLabel ?? display}</span>
+      {!compactLabel && <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>}
     </button>
     {open && <AssetChoiceDialog title={question} value={value} options={options}
       onClose={() => setOpen(false)} onBack={() => setOpen(false)}
