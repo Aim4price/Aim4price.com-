@@ -175,3 +175,48 @@
     }
   }
 }
+
+/* Navigation controls share the reference dimensions and palette across page and portal styles. */
+@layer aim4price-step-actions {
+  @media screen {
+    :where([data-step-action], button#note-back, button#fuel-back) {
+      box-sizing: border-box !important;
+      width: 8.75rem !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      min-height: 3rem !important;
+      height: auto !important;
+      padding: .65rem 1rem !important;
+      border: 1px solid var(--app-info-line, #80aff0) !important;
+      border-radius: 1rem !important;
+      background: var(--app-info-soft, #e5eef7) !important;
+      color: var(--app-text, #17392f) !important;
+      box-shadow: none !important;
+      font-family: var(--font-heading, 'Montserrat'), sans-serif !important;
+      font-size: 1rem !important;
+      font-weight: 750 !important;
+      line-height: 1.3 !important;
+      letter-spacing: normal !important;
+      text-transform: none !important;
+      text-decoration: none !important;
+      text-align: center !important;
+      justify-content: center !important;
+      align-items: center !important;
+      white-space: nowrap !important;
+    }
+    [data-step-action='continue'] {
+      border-color: #17523f !important;
+      background: linear-gradient(180deg, #1a5944, #124334) !important;
+      color: #fff !important;
+      box-shadow: 0 .5rem 1rem rgb(18 67 52 / 14%) !important;
+    }
+    :where([data-step-action], button#note-back, button#fuel-back):is(:disabled, [aria-disabled='true']) {
+      opacity: .55 !important;
+      cursor: not-allowed !important;
+    }
+    :where([data-step-action], button#note-back, button#fuel-back):focus-visible {
+      outline: 3px solid var(--app-accent, #228663) !important;
+      outline-offset: 3px !important;
+    }
+  }
+}
