@@ -2577,6 +2577,7 @@ function AssetVatValueField({ label, value, onChange, initialVatMode, className,
         <AssetChoiceCards<AssetPriceVatMode>
           label={`${label.replace(' *', '')} VAT`}
           hideLabel
+          compactLabel={vatMode === 'included' ? 'Incl. VAT' : 'Excl. VAT'}
           className={updateStyles.vatValueSelect}
           value={vatMode}
           options={[{ value: 'excluded', label: 'Excluding VAT' }, { value: 'included', label: 'Including VAT' }]}
@@ -9456,11 +9457,6 @@ export default function AssetRegisterClient({
         : showUsageHoursField
           ? 'Machine hours'
           : 'Usage';
-  const usageFieldPlaceholder = showPercentUsageField
-    ? 'Enter usage %'
-    : assetDraft.usageMetric === 'km'
-      ? 'Enter kilometres'
-      : 'Enter machine hours';
   const usageFieldHint = showPercentUsageField
     ? 'Saved as a usage percentage, not as machine hours.'
     : assetDraft.usageMetric === 'km'
@@ -18858,7 +18854,7 @@ export default function AssetRegisterClient({
                                       lifeWorkedPercent: event.target.value,
                                     }))
                                   }
-                                  placeholder={usageFieldPlaceholder}
+                                  placeholder="Optional"
                                 />
                               ) : assetFormUsageNotApplicable ? (
                                 <input value="Unknown" disabled readOnly />
@@ -18873,7 +18869,7 @@ export default function AssetRegisterClient({
                                       hours: formatUsageAmountInput(event.target.value),
                                     }))
                                   }
-                                  placeholder={usageFieldPlaceholder}
+                                  placeholder="Optional"
                                 />
                               )}
                             </label>}
