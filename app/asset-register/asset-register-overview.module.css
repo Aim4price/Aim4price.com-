@@ -357,16 +357,28 @@
 }
 
 .messageActions { grid-column: 1 / -1; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .75rem; }
-.messageAssetLink, .messageNotedButton {
-  display: inline-flex; align-items: center; justify-content: center; min-height: 3rem;
-  min-width: 9rem; padding: .75rem 1.25rem; border-radius: .75rem;
-  font: inherit; font-size: 1rem; font-weight: 750; text-decoration: none; cursor: pointer;
+.messageAssetLink {
+  composes: cancelButton from '../../components/DealerAssetCorrectionEditor.module.css';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
-.messageAssetLink { border: 1px solid var(--app-line, #c9ded4); background: var(--app-surface-soft, #edf6f1); color: var(--app-text, #174b39); }
-.messageNotedButton { border: 1px solid #12684e; background: #12684e; color: #fff; }
-.messageNotedButton:disabled, .messageAssetLink[aria-disabled=true] { opacity: .55; cursor: wait; }
-.messageAssetLink:focus-visible, .messageNotedButton:focus-visible { outline: 3px solid #229970; outline-offset: 3px; }
-.messageHint { margin: 1.5rem 0 0; color: var(--app-muted, #5c7067); font-size: .88rem; line-height: 1.6; }
+.messageNotedButton {
+  composes: saveButton from '../../components/DealerAssetCorrectionEditor.module.css';
+}
+.messageAssetLink, .messageNotedButton {
+  box-sizing: border-box;
+  min-width: min(9rem, 100%);
+}
+.messageAssetLink[aria-disabled=true] { opacity: .58; cursor: wait; }
+.messageHint {
+  margin: 1.1rem 0 0;
+  color: var(--app-muted, #64746a);
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
 
 /* Overview messages keep the shared dialog controls and a comfortable reading width. */
 .overviewDialog.overviewDialog.overviewDialog {
@@ -389,9 +401,8 @@
 }
 .messageCategory {
   color: var(--app-text, #193c2f);
-  font-size: .9rem;
-  font-weight: 750;
-  letter-spacing: .01em;
+  font-size: .95rem;
+  font-weight: 800;
 }
 .messageStatus {
   color: var(--app-muted, #50675c);
@@ -401,8 +412,8 @@
 }
 .messagePanel > p {
   margin: 0;
-  font-size: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.5), 1.2rem);
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 650;
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -413,12 +424,11 @@
   padding-top: 1rem;
   border-top: 1px solid var(--app-line, #c9ded4);
   color: var(--app-muted, #5c7067);
-  font-size: .85rem;
-  font-weight: 500;
+  font-size: .88rem;
+  font-weight: 650;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
-.messageHint { margin-top: 1.1rem; font-size: .82rem; }
 
 /* The hint sits directly on the desktop background, outside the light cards. */
 :global(html[data-background='dark']) .overviewHint,
