@@ -169,7 +169,7 @@ test('manager-origin cancellation and same-target backtracking preserve user con
   assert.match(client, /openFuelSlipModal\(true\)/);
   assert.match(client, /function closeFuelSlipFlow\([\s\S]*?setModalMode\('fuel-slip-manager'\)/);
   assert.match(client, /setFuelSlipDraft\(\(current\) => current\.targetKey === value \? current :/);
-  assert.match(client, /setFuelSlipReturnToManager\(true\);[\s\S]*?setFuelSlipDraft\(buildFuelSlipDraftFromRecord\(slip\)\)/);
+  assert.match(client, /setFuelSlipReturnToManager\(true\);[\s\S]*?const draft = buildFuelSlipDraftFromRecord\(slip\);[\s\S]*?setFuelSlipDraft\(draft\)/);
 });
 
 test('upload capture cannot navigate away or let a stale response close a newer flow', () => {

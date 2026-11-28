@@ -29,8 +29,8 @@ test('invoice lookup stays owner scoped, workspace filtered, and applies before 
   const manager = cost.slice(cost.indexOf('function openInvoiceManager('), cost.indexOf('function closeFuelCostEditor('));
   assert.match(manager, /setManagedInvoice\(invoice\)/);
   assert.doesNotMatch(manager, /setFuelCostInvoiceId/);
-  assert.match(cost, /if \(desktop.allow\('editCosts'\)\) setConfirmingCostAsset\(true\)/);
-  assert.match(cost, /id="confirm-cost-asset-title">Confirm asset/);
+  assert.match(cost, /beginCostAssetChoice\(managedInvoice\)/);
+  assert.match(cost, /assetPickerOpen \|\| editingAssetChoice/);
   assert.match(cost, /setManagedInvoice\(null\); editInvoice\(managedInvoice\)/);
   assert.match(cost, /setManagedInvoice\(null\); openDeleteInvoiceDialog\(managedInvoice\)/);
 });
