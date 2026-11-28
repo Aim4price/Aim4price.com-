@@ -217,7 +217,7 @@ function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGElement>) 
       paths = <><rect x="4" y="5.5" width="16" height="14" rx="2" /><path d="M8 3.5v4M16 3.5v4M4 10h16M8 14h2M13.5 14h2" /></>;
       break;
     case 'chevron-down':
-      paths = <path d="m7 9.5 5 5 5-5" />;
+      paths = <path d="m6 9 6 6 6-6" />;
       break;
     case 'chevron-left':
       paths = <path d="m14.5 6.5-5.5 5.5 5.5 5.5" />;
