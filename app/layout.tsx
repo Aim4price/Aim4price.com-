@@ -10,6 +10,7 @@ import SiteWorkspaceZoom from '../components/SiteWorkspaceZoom';
 import { BACKGROUND_PREFERENCE_SCRIPT } from '../lib/background-preference';
 import { APP_THEME_SCRIPT } from '../lib/app-theme';
 import AppThemeSync from '../components/AppThemeSync';
+import StepActionStyles from '../components/StepActionStyles';
 import HoverLabels from '../components/HoverLabels';
 import ScrollbarInteractionGuard from '../components/ScrollbarInteractionGuard';
 import './globals.css';
@@ -77,6 +78,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body>
         <ScrollbarInteractionGuard />
         <AppThemeSync />
+        <StepActionStyles />
         <HoverLabels />
         <div className="appRoot">
           <SiteWorkspaceZoom footer={<AppFooter />} operational={<AdminWorkTrackerBar />}>
