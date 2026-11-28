@@ -1237,7 +1237,7 @@ const DEFAULT_PAGE_SIZE: PageSize = 6;
 const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
 const PROPERTY_ASSET_LABEL = 'Property, land & buildings';
 const PROPERTY_ASSET_DESCRIPTION = 'Land, buildings, structures and fixed improvements.';
-const PROPERTY_ASSET_TITLE_PLACEHOLDER = 'Example: Farm land, machinery shed or workshop building';
+const PROPERTY_ASSET_TITLE_PLACEHOLDER = 'Example: Office, warehouse or home';
 const PROPERTY_YEAR_LABEL = 'Year';
 const PROPERTY_SIZE_SPEC_KEYS = ['propertySize', 'property_size', 'size', 'sizeText', 'size_text'] as const;
 const GENERAL_ASSET_INSURANCE_SPEC_KEYS = [
@@ -1280,13 +1280,13 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
     value: 'equipment',
     label: 'Equipment',
     description: 'Machinery',
-    titlePlaceholder: 'Example: Water pump trailer',
+    titlePlaceholder: 'Example: Air compressor, excavator or tractor',
   },
   {
     value: 'vehicle',
     label: 'Vehicle',
     description: 'Road vehicles & trailers',
-    titlePlaceholder: 'Example: Toyota Hilux farm bakkie',
+    titlePlaceholder: 'Example: Delivery van, bakkie or trailer',
   },
   {
     value: 'boat',
@@ -1309,14 +1309,14 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   {
     value: 'stock',
     label: 'Stock',
-    description: 'Goods & produce',
-    titlePlaceholder: 'Example: Parts inventory or fertiliser stock',
+    description: 'Goods & materials',
+    titlePlaceholder: 'Example: Shop inventory, steel sheets or fresh produce',
   },
   {
     value: 'manual',
     label: 'Contents & electronics',
     description: 'Furnishings & devices',
-    titlePlaceholder: 'Example: Samsung fridge, office desks or MacBook Pro',
+    titlePlaceholder: 'Example: Fridge, office desk or laptop',
   },
   {
     value: 'other',
@@ -1361,7 +1361,7 @@ const INSURANCE_USE_CONTEXT_OPTIONS: Array<{ value: InsuranceUseContext; label: 
 ];
 
 const INSURANCE_MOBILITY_OPTIONS: Array<{ value: InsuranceMobility; label: string; description: string }> = [
-  { value: 'premises', label: 'Usually stays at one premises', description: 'One address' },
+  { value: 'premises', label: 'Usually stays at one site', description: 'One address' },
   { value: 'portable', label: 'Portable / carried around', description: 'Carried with you' },
   { value: 'moves_between_locations', label: 'Moves between sites', description: 'Across sites' },
   { value: 'fixed', label: 'Fixed or built in', description: 'Attached in place' },
@@ -1399,8 +1399,8 @@ const INSURANCE_CRITICALITY_OPTIONS: Array<{ value: InsuranceFactAnswer; label: 
 ];
 
 const TEMPERATURE_SENSITIVE_STOCK_OPTIONS: Array<{ value: InsuranceFactAnswer; label: string; description: string }> = [
-  { value: 'yes', label: 'Yes', description: 'Needs cooling' },
-  { value: 'no', label: 'No', description: 'No cooling needed' },
+  { value: 'yes', label: 'Yes', description: 'Temperature control needed' },
+  { value: 'no', label: 'No', description: 'Ambient storage is fine' },
   { value: 'unknown', label: 'Not sure', description: 'Confirm later' },
 ];
 
@@ -18570,7 +18570,7 @@ export default function AssetRegisterClient({
                                 />
 
                                 <AssetChoiceCards<InsuranceUseContext>
-                                  label="Where is it used? *"
+                                  label="How is it used? *"
                                   value={assetDraft.insuranceUseContext}
                                   options={INSURANCE_USE_CONTEXT_OPTIONS}
                                   onChange={(insuranceUseContext) =>
