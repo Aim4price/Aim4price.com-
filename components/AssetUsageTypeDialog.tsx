@@ -1,5 +1,6 @@
 'use client';
 
+import { AssetChoiceDialog } from './asset-register/AssetChoiceCards';
 import { useState } from 'react';
 import { createPortal } from './WebsitePortal';
 import LeadActionDialog from './leads/LeadActionDialog';
@@ -8,13 +9,14 @@ import styles from './AssetDetailChoiceField.module.css';
 import layout from './AssetUsageTypeDialog.module.css';
 
 export const USAGE_TYPE_OPTIONS: Array<{value: AssetUsageMetric; label: string; description: string}> = [
-  {value: 'hours', label: 'Hours', description: 'Use the machine hour meter.'},
-  {value: 'km', label: 'Kilometers', description: 'Use the odometer reading.'},
-  {value: 'percentage', label: 'Percentage', description: 'Estimate the working life already used.'},
-  {value: 'not_applicable', label: 'Unknown', description: 'No usage reading is available.'},
+  {value: 'hours', label: 'Hours', description: 'Hour meter'},
+  {value: 'km', label: 'Kilometers', description: 'Odometer'},
+  {value: 'percentage', label: 'Percentage', description: 'Working life used'},
+  {value: 'not_applicable', label: 'Unknown', description: 'No reading'},
 ];
 
-export default function AssetUsageTypeDialog({value, assetTitle, onClose, onConfirm}: {
+export default function AssetUsageTypeDialog({value, assetTitle, onClose, onConfirm, addingAsset = false}: {
+  addingAsset?: boolean;
   value: AssetUsageMetric; assetTitle: string; onClose: () => void;
   onConfirm: (metric: AssetUsageMetric, reading: string) => void;
 }) {
@@ -23,6 +25,14 @@ export default function AssetUsageTypeDialog({value, assetTitle, onClose, onConf
   const label = (metric: AssetUsageMetric) => USAGE_TYPE_OPTIONS.find(option => option.value === metric)!.label;
   const number = Number(reading.replace(/\s/g, ''));
   const valid = pending === 'not_applicable' || (reading.trim() !== '' && Number.isFinite(number) && number >= 0 && (pending !== 'percentage' || number <= 100));
+  if (addingAsset && !pending) {
+    return <AssetChoiceDialog title="Choose usage type" value={value} options={USAGE_TYPE_OPTIONS}
+      onClose={onClose} onBack={onClose} onSelect={metric => {
+        if (metric === value) return onClose();
+        setReading('');
+        setPending(metric);
+      }} />;
+  }
   return createPortal(<LeadActionDialog title={pending ? 'Change usage type?' : 'Choose usage type'} assetTitle={assetTitle}
     className={`${styles.dialog} ${layout.dialog}`} onClose={onClose} closeLabel="Close usage type"
     footer={pending ? <div className={layout.actions}><button type="button" onClick={() => setPending(null)}>Back</button><button type="button" disabled={!valid} onClick={() => {onConfirm(pending, pending === 'not_applicable' ? '' : String(number)); onClose();}}>Confirm change</button></div> : undefined}>
