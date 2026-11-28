@@ -787,10 +787,6 @@ export default function AssetRegisterOverview() {
           onClose={() => setOpenItem(null)}
           closeLabel="Close overview message"
           footer={<div className={styles.messageActions}>
-            <button type="button" className={documentStyles.disclosureAction} disabled={clearingId !== null} onClick={() => setOpenItem(null)}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
-              Close
-            </button>
             <a className={styles.messageAssetLink} href={buildAssetHref(openItem.assetId)}
               aria-disabled={clearingId !== null}
               onClick={event => {
