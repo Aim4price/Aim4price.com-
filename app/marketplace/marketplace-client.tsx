@@ -3144,18 +3144,32 @@ export default function MarketplaceClient({
         <div className={styles.browseTools}>
           <label className={styles.searchBox}><span className={styles.searchIcon}><IconSearch /></span><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search Marketplace" placeholder="Search make, model or equipment" /></label>
           <button type="button" aria-expanded={dealerFiltersOpen} aria-controls="browse-filters" onClick={() => setDealerFiltersOpen(!dealerFiltersOpen)}><IconFilters />Filter</button>
-          <label>Sort<select value={sortOrder} onChange={e => setSortOrder(e.target.value)}><option value="newest">Newest first</option><option value="lowest">Lowest price</option><option value="highest">Highest price</option></select></label>
+          <div className={styles.browseChoice}><span>Sort</span>
+            <MarketplaceFilterSelect ariaLabel="Sort" value={sortOrder} options={[{ value: 'newest', label: 'Newest first' }, { value: 'lowest', label: 'Lowest price' }, { value: 'highest', label: 'Highest price' }]} onChange={setSortOrder} />
+          </div>
           <span role="status">{isLoadingListings ? 'Loading listings…' : listingLoadError || `${visible.length} ${visible.length === 1 ? 'listing' : 'listings'}`}</span>
         </div>
         {dealerFiltersOpen && <div className={styles.browseFilters} id="browse-filters">
-          <label>Category<select value={sectorFilter} onChange={e => selectSector(e.target.value as SectorKey | '')}><option value="">All categories</option>{SECTOR_OPTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}</select></label>
-          <label>Province<select value={locationFilter} onChange={e => { setLocationFilter(e.target.value); setDistanceFilter('all'); }}><option value="south-africa">South Africa</option>{availableProvinces.map(p => <option key={p}>{p}</option>)}</select></label>
+          <div className={styles.browseChoice}><span>Category</span>
+            <MarketplaceFilterSelect ariaLabel="Category" value={sectorFilter} options={[{ value: '' as const, label: 'All categories' }, ...SECTOR_OPTIONS.map(s => ({ value: s.key, label: s.label }))]} onChange={selectSector} />
+          </div>
+          <div className={styles.browseChoice}><span>Province</span>
+            <MarketplaceFilterSelect ariaLabel="Province" value={locationFilter} options={[{ value: 'south-africa', label: 'South Africa' }, ...availableProvinces.map(value => ({ value, label: value }))]} onChange={value => { setLocationFilter(value); setDistanceFilter('all'); }} />
+          </div>
           <label>Minimum price (R)<input type="number" min="0" value={minPrice} placeholder="Any" onChange={e => setMinPrice(e.target.value)} /></label>
           <label>Maximum price (R)<input type="number" min="0" value={maxPrice} placeholder="Any" onChange={e => setMaxPrice(e.target.value)} /></label>
-          {selectedSector && <label>Family<select value={familyFilter} onChange={e => setFamilyFilter(e.target.value)}><option value="">All families</option>{familiesBySector[selectedSector.key].map(f => <option value={f.familyKey} key={f.familyKey}>{f.familyLabel}</option>)}</select></label>}
-          <label>Condition<select value={conditionFilter} onChange={e => setConditionFilter(e.target.value as ConditionFilterValue)}>{CONDITION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
-          <label>Price rating<select value={dealRatingFilter} onChange={e => setDealRatingFilter(e.target.value as DealRatingFilterValue)}><option value="any">Any rating</option>{DEAL_RATING_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
-          {locationFilter !== 'south-africa' && <label>Distance<select value={distanceFilter} onChange={e => setDistanceFilter(e.target.value as DistanceFilterValue)}>{DISTANCE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>}
+          {selectedSector && <div className={styles.browseChoice}><span>Family</span>
+            <MarketplaceFilterSelect ariaLabel="Family" value={familyFilter} options={[{ value: '', label: 'All families' }, ...familiesBySector[selectedSector.key].map(f => ({ value: f.familyKey, label: f.familyLabel }))]} onChange={setFamilyFilter} />
+          </div>}
+          <div className={styles.browseChoice}><span>Condition</span>
+            <MarketplaceFilterSelect ariaLabel="Condition" value={conditionFilter} options={CONDITION_OPTIONS} onChange={setConditionFilter} />
+          </div>
+          <div className={styles.browseChoice}><span>Price rating</span>
+            <MarketplaceFilterSelect ariaLabel="Price rating" value={dealRatingFilter} options={[{ value: 'any' as const, label: 'Any rating' }, ...DEAL_RATING_OPTIONS]} onChange={setDealRatingFilter} />
+          </div>
+          {locationFilter !== 'south-africa' && <div className={styles.browseChoice}><span>Distance</span>
+            <MarketplaceFilterSelect ariaLabel="Distance" value={distanceFilter} options={DISTANCE_OPTIONS} onChange={setDistanceFilter} />
+          </div>}
           {activeFilterChips.length > 0 && <button onClick={clearFilters}>Clear filters</button>}
           {minPrice && maxPrice && Number(minPrice) > Number(maxPrice) && <p role="status">Maximum price must be at least the minimum price.</p>}
         </div>}

@@ -4075,9 +4075,11 @@
 .browseFilters { display: grid; gap: .85rem; grid-template-columns: repeat(auto-fit,minmax(min(12rem,100%),1fr)); align-items: end; }
 .browseTools label, .browseFilters label { font-weight: 650; }
 .browseFilters label { display: grid; gap: .3rem; }
-.browseTools select { margin-inline-start: .4rem; }
-.browseActions a, .browseActions button, .browseTools button, .browseTools select,
-.browseFilters input, .browseFilters select, .browseFilters button, .vatControls button {
+.browseChoice { display: grid; gap: .3rem; font-weight: 650; }
+.browseChoice .filterSelect { margin: 0; }
+.browseTools .browseChoice { display: flex; align-items: center; gap: .5rem; }
+.browseActions a, .browseActions button, .browseTools > button,
+.browseFilters input, .browseFilters > button, .vatControls button {
   display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
   min-height: 2.55rem; padding: .4rem .85rem; min-width: 0;
   border: 1px solid var(--app-line, #cadbd3); border-radius: .7rem;
@@ -4099,7 +4101,7 @@
 .listingModal[role="dialog"]::-webkit-scrollbar { display: none; }
 .listingModal .modalDetails, .listingModalNoMedia .modalDetails { height: auto; max-height: none; margin: 0; overflow: visible; scrollbar-gutter: auto; }
 .listingModal .modalGallery { grid-template-rows: minmax(12rem,1fr) auto; }
-.listingModal .modalImageFrame { min-height: min(24rem,45dvh); }
+.listingModal .modalImageFrame { min-height: min(24rem,calc(var(--website-design-vh,1dvh) * 45)); }
 .listingModal .thumbnailRail { flex-wrap: wrap; overflow: visible; }
 .modalTitleArea .modalPrice { margin-top: .65rem; font-size: 2.45rem; }
 .modalActionRow { align-items: center; flex-wrap: wrap; }
