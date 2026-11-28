@@ -30,16 +30,3 @@ test('stale realistic assessment falls back to ideal without showing stale salea
  assert.match(html,/Fair value/);assert.match(html,/At ideal selling price/);
  assert.match(html,/aria-checked="true"/);assert.doesNotMatch(html,/70\/100/);
 });
-
-test('last service date sharing requires an explicit seller selection', () => {
-  assert.doesNotMatch(render({}), /type="checkbox"[^>]*checked/);
-  assert.match(render({draft: {...draft, shareLastService: true}}), /type="checkbox"[^>]*checked/);
-  const store = fs.readFileSync('lib/marketplace-db.ts', 'utf8');
-  const field = store.match(/sharedServiceDate: ([\s\S]+?),\n    showDealRating:/)[1];
-  const publicDate = new Function('specs', 'return ' + field);
-  const snapshot = {marketplaceSharedServiceDate: '2026-11-28'};
-  assert.equal(publicDate(snapshot), undefined);
-  assert.equal(publicDate({...snapshot, marketplaceShareLastService: false}), undefined);
-  assert.equal(publicDate({...snapshot, marketplaceShareLastService: true}), '2026-11-28');
-  assert.equal(publicDate({marketplaceShareLastService: true, marketplaceSharedServiceDate: 'private notes'}), undefined);
-});

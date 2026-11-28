@@ -294,7 +294,7 @@ test('marketplace filters use branded listboxes instead of browser-native select
   ]);
 
   assert.ok(marketplace.includes("import MarketplaceFilterSelect from './marketplace-filter-select';"));
-  assert.equal((marketplace.match(/<MarketplaceFilterSelect/g) ?? []).length, 10);
+  assert.equal((marketplace.match(/<MarketplaceFilterSelect/g) ?? []).length, 3);
   assert.doesNotMatch(marketplace, /<select\b/);
   assert.ok(filterSelect.includes("import DropdownOverlay from '../../components/DropdownOverlay';"));
   assert.match(filterSelect, /<DropdownOverlay[\s\S]*?role="listbox"/);

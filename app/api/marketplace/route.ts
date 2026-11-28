@@ -162,7 +162,6 @@ export async function POST(request: NextRequest) {
     replacePhotos?: unknown;
     brandKitId?: unknown;
     showDealRating?: unknown;
-    shareLastService?: unknown;
   };
   const assetId = String(body.assetId ?? '').trim();
 
@@ -212,7 +211,6 @@ export async function POST(request: NextRequest) {
       replacePhotos: body.replacePhotos === true,
       brandKitId: accountType === 'dealer' ? brandKitId || null : null,
       allowBrandKit: accountType === 'dealer',
-      shareLastService: typeof body.shareLastService === 'boolean' ? body.shareLastService : undefined,
       showDealRating: body.showDealRating !== false,
       requireValuationSource: isMiddlemanAccountSubtype(profile.accountSubtype),
     });

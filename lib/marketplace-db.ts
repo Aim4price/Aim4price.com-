@@ -915,8 +915,6 @@ function buildMarketplaceListing(
     sellingPriceAssessedAt: assessment?.assessedAt,
     dealRating: dealRating.rating,
     dealRatingPercentDiff: dealRating.percentDiff,
-    sharedServiceDate: specs.marketplaceShareLastService === true && typeof specs.marketplaceSharedServiceDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(specs.marketplaceSharedServiceDate)
-      ? specs.marketplaceSharedServiceDate : undefined,
     showDealRating: (pick(row, ['marketplace_show_deal_rating']) ?? specs.showDealRating) !== false,
     imageSrc: imageUrls[0] ?? '',
     imageUrls,
@@ -1040,7 +1038,6 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   replacePhotos?: boolean;
   brandKitId?: string | null;
   allowBrandKit?: boolean;
-  shareLastService?: boolean;
   showDealRating?: boolean;
   requireValuationSource?: boolean;
 }): Promise<MarketplaceListing> {
@@ -1161,22 +1158,6 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     "marketplace_province = nullif($9, '')",
     "marketplace_area = nullif($10, '')",
   ];
-  if (input.shareLastService !== undefined) {
-    let serviceDate: string | null = null;
-    if (input.shareLastService) {
-      await (await import('./asset-maintenance')).ensureAssetMaintenanceTables();
-      const result = await db.query<{ service_date: string | null }>(
-        `select to_char(max(completed_at) at time zone 'Africa/Johannesburg', 'YYYY-MM-DD') as service_date
-         from public.asset_maintenance_records
-         where user_id = $1 and asset_register_item_id = $2::uuid and maintenance_type = 'service' and status = 'done'`,
-        [input.userId, input.assetId],
-      );
-      serviceDate = result.rows[0]?.service_date ?? null;
-    }
-    updateValues.push(JSON.stringify({ marketplaceShareLastService: input.shareLastService, marketplaceSharedServiceDate: serviceDate }));
-    updateAssignments.push(`specs_json = coalesce(specs_json, '{}'::jsonb) || $${updateValues.length}::jsonb`);
-  }
-
   if (marketplaceTitle !== undefined) {
     updateValues.push(marketplaceTitle);
     updateAssignments.push(`marketplace_title = $${updateValues.length}`);
