@@ -9,18 +9,20 @@
 .copy.copy strong { white-space: normal; }
 .copy.copy small { white-space: nowrap; font-weight: 650; color: var(--app-text, #29483e); }
 .dialog > header p:empty { display: none; }
-.actions, .pager { display: flex; align-items: center; gap: .65rem; }
-.actions { width: 100%; justify-content: flex-end; }
-.actions:has(.pager) { justify-content: space-between; }
-.actions button { padding: .65rem 1.2rem; border-radius: .8rem; border: 1px solid var(--app-line, #aecbbd); background: var(--app-surface-soft, #edf5ef); color: var(--app-text, #173c32); font: inherit; font-weight: 750; cursor: pointer; }
-.actions button:disabled { opacity: .5; cursor: default; }
-.pager span { white-space: nowrap; font-weight: 650; }
-@media (max-width: 640px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .actions button { padding: .55rem .8rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .pager { gap: .4rem; }
+.dialog > footer { display: flex; justify-content: flex-end; }
+.back {
+  min-height: 2.85rem;
+  min-width: 8.5rem;
+  padding: .65rem 1.2rem;
+  border: 1px solid var(--app-info-line, #85b0dc);
+  border-radius: 1rem;
+  background: var(--app-info-soft, #e5eef7);
+  color: var(--app-text, #173c32);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
 }
-
-
+.back:disabled { opacity: .5; cursor: default; }
 /* Let short choices share a row and reserve room for each card's longest line. */
 .dialog .allOptions {
   display: flex;

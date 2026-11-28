@@ -6395,6 +6395,7 @@ export default function AssetRegisterClient({
   const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
   const [isAddAssetDestinationModalOpen, setIsAddAssetDestinationModalOpen] = useState(false);
   const [addAssetTargetRegisterId, setAddAssetTargetRegisterId] = useState('');
+  const [resumeSingleAsset, setResumeSingleAsset] = useState(false);
   const [addAssetEntry, setAddAssetEntry] = useState<AssetSheetEntry>('choose');
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
   const [acquisitionStep, setAcquisitionStep] = useState<'choice' | 'details' | null>(null);
@@ -9808,6 +9809,10 @@ export default function AssetRegisterClient({
       return;
     }
 
+    assetModalReturnRef.current = null;
+    resetEditor();
+    setNewAssetAcquisitionDraft(createAcquisitionDraft());
+    setResumeSingleAsset(false);
     setAddAssetTargetRegisterId(registerId);
     setNotice(null);
     setIsAddAssetDestinationModalOpen(false);
@@ -9818,16 +9823,8 @@ export default function AssetRegisterClient({
     setIsAddChoiceModalOpen(false);
   }
 
-  function openCreateModal() {
-    assetModalReturnRef.current = null;
-    resetEditor();
-    setManualAssetStep(1);
-    setIsAssetModalOpen(true);
-  }
-
   function openManualEntryFromChoice() {
     closeAddAssetChoiceModal();
-    setNewAssetAcquisitionDraft(createAcquisitionDraft());
     setAcquisitionStep('choice');
   }
 
@@ -9837,7 +9834,8 @@ export default function AssetRegisterClient({
       return;
     }
     setAcquisitionStep(null);
-    openCreateModal();
+    setManualAssetStep(1);
+    setIsAssetModalOpen(true);
   }
 
   function rememberAssetModalReturn(
@@ -18219,7 +18217,7 @@ export default function AssetRegisterClient({
         />
       ) : null}
 
-      {isAddChoiceModalOpen && <AssetSheetDialog initialStage={addAssetEntry} registerId={addAssetTargetRegisterId} registerName={addAssetTargetRegisterName}
+      {isAddChoiceModalOpen && <AssetSheetDialog initialStage={addAssetEntry} resumeSingle={resumeSingleAsset} registerId={addAssetTargetRegisterId} registerName={addAssetTargetRegisterName}
         savedColumns={Array.from(new Set(assets.filter(asset => asset.registerId === addAssetTargetRegisterId)
           .flatMap(asset => savedSheetDetails(asset.specsJson).map(detail => `custom:${detail.name}` as CustomColumn))))}
         valuationHref={addAssetValuationHref} request={ownerFetch} onManual={openManualEntryFromChoice} onClose={closeAddAssetChoiceModal}
@@ -18281,8 +18279,15 @@ export default function AssetRegisterClient({
               )}
             </div>
             <div className={`${styles.assetSettingsActions} ${styles.newAcquisitionChoiceActions}`}>
-              <button type="button" className={accountStyles.ghostButton} onClick={() => setAcquisitionStep(acquisitionStep === 'details' ? 'choice' : null)}>
-                {acquisitionStep === 'details' ? 'Back' : 'Cancel'}
+              <button type="button" className={accountStyles.ghostButton} onClick={() => {
+                if (acquisitionStep === 'details') setAcquisitionStep('choice');
+                else {
+                  setAcquisitionStep(null);
+                  setResumeSingleAsset(true);
+                  setIsAddChoiceModalOpen(true);
+                }
+              }}>
+                Back
               </button>
               <button type="button" className={accountStyles.primaryButton} onClick={event => {
                 if (acquisitionStep === 'choice' && newAssetAcquisitionDraft.newlyAcquired) {
@@ -18317,12 +18322,8 @@ export default function AssetRegisterClient({
           busy={assetFlow.pending}
           onClose={navigateBackFromAssetForm}
           onBack={() => {
-            if (hasManualAssetKindSelection) {
-              setManualAssetStep(2);
-            } else {
-              setIsAssetModalOpen(false);
-              setAcquisitionStep(newAssetAcquisitionDraft.newlyAcquired ? 'details' : 'choice');
-            }
+            setIsAssetModalOpen(false);
+            setAcquisitionStep(newAssetAcquisitionDraft.newlyAcquired ? 'details' : 'choice');
           }}
           onSelect={(kind, trigger) => assetFlow.start(trigger, kindLabel(kind), () => selectManualAssetKind(kind, true))}
         />
@@ -18459,7 +18460,7 @@ export default function AssetRegisterClient({
 
                 {manualAssetStep === 2 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
-                    <div className={updateStyles.classificationBar}>
+                    {editingAsset && <div className={updateStyles.classificationBar}>
                         <dl className={updateStyles.classificationSummary}>
                           <div><dt>Asset type</dt><dd>{selectedManualAssetType.label}</dd></div>
                           {editingAsset?.equipmentFamilyLabel?.trim() ? (
@@ -18469,21 +18470,19 @@ export default function AssetRegisterClient({
                       <button
                         type="button"
                         className={updateStyles.advancedSettingsButton}
-                        onClick={editingAsset ? openAssetSettingsModal : () => setManualAssetStep(1)}
-                        data-access-restricted={desktopAccess ? 'true' : undefined} aria-label={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
-                        title={editingAsset ? 'Advanced asset settings' : 'Change asset type'}
+                        onClick={openAssetSettingsModal}
+                        data-access-restricted={desktopAccess ? 'true' : undefined} aria-label="Advanced asset settings"
+                        title="Advanced asset settings"
                       >
-                        {editingAsset ? (
                           <span className={updateStyles.settingsIcon} aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M5 3v8m0 4v6M12 3v3m0 4v11M19 3v12m0 4v2" />
                               <circle cx="5" cy="13" r="2" /><circle cx="12" cy="8" r="2" /><circle cx="19" cy="17" r="2" />
                             </svg>
                           </span>
-                        ) : <ManageIcon className={styles.buttonIcon} />}
-                        <span>{editingAsset ? 'Advanced settings' : 'Change type'}</span>
+                        <span>Advanced settings</span>
                       </button>
-                    </div>
+                    </div>}
 
                     {hasLowerUsageDraft && isSavedAim4priceAsset(editingAsset) ? (
                       <section className={styles.assetSettingsSection} aria-label="Review lower usage reading">
@@ -18790,7 +18789,7 @@ export default function AssetRegisterClient({
                           </label>
 
                           {showConditionField ? (
-                            <AssetDetailChoiceField<AssetConditionValue>
+                            <AssetDetailChoiceField<AssetConditionValue> addingAsset={!editingAsset}
                               disabled={Boolean(desktopAccess && !desktopAccess.data.permissions.editDetails)} label="Condition"
                               value={assetDraft.condition}
                               options={CONDITION_OPTIONS}
@@ -18864,7 +18863,7 @@ export default function AssetRegisterClient({
                               )}
                             </label>}
                           </div>}
-                          conditionControl={<AssetDetailChoiceField<AssetConditionValue>
+                          conditionControl={<AssetDetailChoiceField<AssetConditionValue> addingAsset={!editingAsset}
                               disabled={Boolean(desktopAccess && !desktopAccess.data.permissions.editDetails)} label="Condition"
                               value={assetDraft.condition}
                               options={CONDITION_OPTIONS}
@@ -20133,7 +20132,7 @@ export default function AssetRegisterClient({
         </AssetAccessSettingsDialog>
       ) : null}
 
-      {usageTypeDialogOpen && isAssetModalOpen && <AssetUsageTypeDialog value={assetDraft.usageMetric} assetTitle={assetDraft.title || 'Asset usage'} onClose={() => setUsageTypeDialogOpen(false)} onConfirm={(usageMetric, reading) => {
+      {usageTypeDialogOpen && isAssetModalOpen && <AssetUsageTypeDialog addingAsset={!editingAsset} value={assetDraft.usageMetric} assetTitle={assetDraft.title || 'Asset usage'} onClose={() => setUsageTypeDialogOpen(false)} onConfirm={(usageMetric, reading) => {
         setUsageTypeChangeConfirmed(true);
         setAssetDraft(current => ({...current, usageMetric, hours: usageMetric === 'hours' || usageMetric === 'km' ? reading : '', lifeWorkedPercent: usageMetric === 'percentage' ? reading : ''}));
       }}/>}

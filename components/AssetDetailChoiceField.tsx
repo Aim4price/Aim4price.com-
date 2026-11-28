@@ -1,5 +1,6 @@
 'use client';
 
+import { AssetChoiceDialog } from './asset-register/AssetChoiceCards';
 import { useId, useState } from 'react';
 import { createPortal } from './WebsitePortal';
 import LeadActionDialog from './leads/LeadActionDialog';
@@ -17,8 +18,9 @@ const conditionAppearance: Record<string, { description: string; tone: string; p
 };
 
 export default function AssetDetailChoiceField<T extends string>({
-  disabled = false, label, value, options, onChange, className = '', assetDetailEditTarget, onRequestOpen,
+  disabled = false, label, value, options, onChange, className = '', assetDetailEditTarget, onRequestOpen, addingAsset = false,
 }: {
+  addingAsset?: boolean;
   disabled?: boolean;
   label: string;
   value: T | '';
@@ -42,7 +44,14 @@ export default function AssetDetailChoiceField<T extends string>({
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z M8 12l3 3 5-6" /></svg>
       )}
     </button>
-    {open && createPortal(<LeadActionDialog title={`Choose ${label.toLowerCase()}`}
+    {open && addingAsset && <AssetChoiceDialog title={`Choose ${label.toLowerCase()}`} value={value}
+      options={displayOptions.map(option => ({
+        ...option, label: option.value ? option.label : 'Not specified',
+        description: conditionAppearance[option.value]?.description || option.description,
+      }))}
+      onClose={() => setOpen(false)} onBack={() => setOpen(false)}
+      onSelect={next => { onChange(next); setOpen(false); }} />}
+    {open && !addingAsset && createPortal(<LeadActionDialog title={`Choose ${label.toLowerCase()}`}
       assetTitle={isCondition ? 'Select the condition that best describes this asset.' : 'Choose how usage is measured for this asset.'}
       className={`${styles.dialog} ${isCondition ? styles.conditionDialog : ''}`} closeLabel={`Close ${label.toLowerCase()} choices`} onClose={() => setOpen(false)}>
       <div className={`${styles.choices} ${isCondition ? styles.conditionChoices : styles.usageChoices}`} role="group" aria-label={label}>

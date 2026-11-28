@@ -20,12 +20,16 @@ const paths = {
   chair: 'M6 12V5h12v7M4 11v5h16v-5M6 16v5m12-5v5M6 12h12',
   phone: 'M7 2h10v20H7zM11 18h2',
   cold: 'M12 2v20M3 7l18 10M3 17L21 7M9 4l3 3 3-3M9 20l3-3 3 3',
+  clock: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0zM12 6v6l4 2',
+  percent: 'M5 19 19 5M8 5a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM16 13a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
   yes: 'm4 12 5 5L20 6',
   no: 'm5 5 14 14M19 5 5 19',
   question: 'M8 8a4 4 0 1 1 7 3c-2 2-3 2-3 5m0 3h.01',
 } as const;
 
 const groups: Record<string, keyof typeof paths> = {
+  hours: 'clock', km: 'car', percentage: 'percent', not_applicable: 'question',
+  excellent: 'yes', good: 'yes', fair: 'tag', used: 'machine', serious: 'wrench', '': 'question',
   equipment: 'machine', vehicle: 'car', property: 'home', tools: 'wrench', stock: 'box', manual: 'screen',
   furniture_contents: 'chair', appliances: 'machine', computers_it: 'screen', portable_electronics: 'phone',
   commercial_refrigeration: 'cold', kitchen_catering: 'machine', security_systems: 'key', power_energy: 'battery',
