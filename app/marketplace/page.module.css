@@ -3204,6 +3204,16 @@
   margin-inline: auto;
 }
 
+/* Anchor Browse to the left edge and align its last card with the standard page. */
+:global([data-website-canvas]) .page:has(> .topBand):not(.showroomPage) > .marketplaceShell {
+  width: auto;
+  margin-inline: 0 calc((100% - var(--website-page-width)) / 2);
+}
+
+:global([data-website-canvas]) .page:has(> .topBand):not(.showroomPage) .resultsArea {
+  padding-inline-end: 0;
+}
+
 :global([data-website-canvas]) .showroomShell {
   padding-inline: 0;
 }
