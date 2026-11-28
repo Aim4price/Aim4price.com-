@@ -1106,7 +1106,6 @@ type PricingRevaluePreview = {
 
 type MarketplacePublishDraft = {
   showDealRating: boolean;
-  shareLastService: boolean;
   title: string;
   photos: string[];
   sellerName: string;
@@ -4899,7 +4898,6 @@ function createMarketplaceDraft(asset: RegisterAsset, profile: AccountProfile | 
   const savedListingNotes = asset.marketplaceNotes?.trim() || getManualAssetNote(asset.note);
 
   return {
-    shareLastService: asset.specsJson?.marketplaceShareLastService === true,
     showDealRating: asset.marketplaceShowDealRating !== false,
     title: asset.marketplaceTitle?.trim() || buildMarketplaceListingTitle(asset, true),
     sellerName:
@@ -13223,7 +13221,6 @@ export default function AssetRegisterClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assetId: marketplaceAsset.id,
-          shareLastService: marketplaceDraft.shareLastService,
           showDealRating: marketplaceDraft.showDealRating,
           marketplaceTitle: marketplaceDraft.title.trim(),
           photos: marketplaceDraft.photos,
@@ -13257,7 +13254,6 @@ export default function AssetRegisterClient({
         marketplaceSellerEmail: marketplaceDraft.sellerEmail.trim(),
         marketplaceProvince: marketplaceDraft.province.trim(),
         marketplaceArea: marketplaceDraft.area.trim(),
-        specsJson: { ...marketplaceAsset.specsJson, marketplaceShareLastService: marketplaceDraft.shareLastService },
         marketplaceShowDealRating: marketplaceDraft.showDealRating,
         openPartnerNote: data.note ?? marketplaceAsset.openPartnerNote ?? null,
         updatedAtIso: new Date().toISOString(),
@@ -21653,7 +21649,7 @@ export default function AssetRegisterClient({
 
             <div data-marketplace-scroll className={`${styles.modalScrollBody} ${styles.marketplaceModalScrollBody}`}>
               <form className={styles.marketplaceForm} onSubmit={handleConfirmMarketplacePublish}>
-                {marketplaceReview ? <MarketplacePublishReview onCalculate={() => { pricingReturnAssetRef.current = null; setSaleabilityAsset(marketplaceAsset); }} draft={marketplaceDraft} price={parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0} vatIncluded={marketplaceVatIncluded} idealValue={marketplaceAsset.aim4priceValueExVat} assessment={realisticSellingAssessment(marketplaceAsset, savedSaleability[marketplaceAsset.id])} saved={savedSaleability[marketplaceAsset.id]} stale={!!savedSaleability[marketplaceAsset.id] && savedSaleability[marketplaceAsset.id].basis !== saleabilityBasis(marketplaceAsset)} loading={saleabilityLoading} loadError={saleabilityLoadError} busy={isPublishingMarketplace} onServiceChange={shareLastService => setMarketplaceDraft(current => current ? {...current, shareLastService} : current)} onRatingChange={showDealRating => setMarketplaceDraft(current => current ? {...current, showDealRating} : current)} /> : <>
+                {marketplaceReview ? <MarketplacePublishReview onCalculate={() => { pricingReturnAssetRef.current = null; setSaleabilityAsset(marketplaceAsset); }} draft={marketplaceDraft} price={parseMoneyInput(marketplaceDraft.askingPriceExVat) ?? 0} vatIncluded={marketplaceVatIncluded} idealValue={marketplaceAsset.aim4priceValueExVat} assessment={realisticSellingAssessment(marketplaceAsset, savedSaleability[marketplaceAsset.id])} saved={savedSaleability[marketplaceAsset.id]} stale={!!savedSaleability[marketplaceAsset.id] && savedSaleability[marketplaceAsset.id].basis !== saleabilityBasis(marketplaceAsset)} loading={saleabilityLoading} loadError={saleabilityLoadError} busy={isPublishingMarketplace} onRatingChange={showDealRating => setMarketplaceDraft(current => current ? {...current, showDealRating} : current)} /> : <>
                 <section className={styles.marketplaceAssetSummary}>
                   <label className={styles.marketplaceTitlePreview}>
                     <span>Listing title</span>
