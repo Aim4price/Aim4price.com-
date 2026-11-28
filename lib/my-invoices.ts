@@ -1734,7 +1734,9 @@ export async function updateMyInvoice(
 
   const draft = normalizeInvoiceDraft({ ...input, costCategory: input.costCategory ?? existing.costCategory, assetId: input.assetId ?? existing.assetId });
   await verifyAssetBelongsToUser(userId, draft.assetId);
-  await verifyInvoiceDocument({ userId, assetId: draft.assetId, invoiceDocumentId: draft.invoiceDocumentId, actor });
+  const relinkAttachment = draft.assetId !== existing.assetId && draft.invoiceDocumentId !== null
+    && draft.invoiceDocumentId === existing.invoiceDocumentId;
+  if (!relinkAttachment) await verifyInvoiceDocument({ userId, assetId: draft.assetId, invoiceDocumentId: draft.invoiceDocumentId, actor });
   const duplicateWarnings = await findDuplicateInvoiceWarnings(userId, { ...input, assetId: draft.assetId }, invoiceId);
   const blocks = buildBlocksFromDraft(draft);
   const client = await getDb().connect();
@@ -1742,6 +1744,26 @@ export async function updateMyInvoice(
   try {
     await client.query('begin');
     await guard.before?.(client);
+    let documentId = draft.invoiceDocumentId;
+    if (relinkAttachment) {
+      // Multiple costs can reference the same upload. Give the moved cost its own asset-scoped reference.
+      const attachment = await client.query<{ id: string }>(`
+        insert into public.asset_invoice_documents (
+          user_id, asset_register_item_id, created_by_dealer_user_id, created_by_dealer_staff_id, created_by_display_name,
+          upload_id, upload_url, file_name, content_type, byte_size, source, raw_extracted_text, extraction_status, extraction_warnings, created_at
+        )
+        select d.user_id, $3::uuid, d.created_by_dealer_user_id, d.created_by_dealer_staff_id, d.created_by_display_name,
+          d.upload_id, d.upload_url, d.file_name, d.content_type, d.byte_size, d.source, d.raw_extracted_text, d.extraction_status, d.extraction_warnings, d.created_at
+        from public.asset_invoices i join public.asset_invoice_documents d
+          on d.id = i.invoice_document_id and d.user_id = i.user_id and d.asset_register_item_id = i.asset_register_item_id
+        where i.id = $1::uuid and i.user_id = $2 and d.id = $4::uuid and i.asset_register_item_id = $5::uuid
+          and ($6 = '' or i.created_by_dealer_user_id = $6 and d.created_by_dealer_user_id = $6)
+        for update of i
+        returning id
+      `, [invoiceId, userId, draft.assetId, documentId, existing.assetId, asText(actor.dealerUserId)]);
+      if (!attachment.rows[0]) throw new Error('INVOICE_DOCUMENT_NOT_FOUND');
+      documentId = attachment.rows[0].id;
+    }
     const result = await client.query<{ id: string }>(
       `
         update public.asset_invoices
@@ -1777,7 +1799,7 @@ export async function updateMyInvoice(
         invoiceId,
         userId,
         draft.assetId,
-        draft.invoiceDocumentId,
+        documentId,
         draft.supplierName || null,
         draft.invoiceNumber || null,
         draft.invoiceDate,

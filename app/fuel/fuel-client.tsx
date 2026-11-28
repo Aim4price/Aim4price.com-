@@ -1672,7 +1672,7 @@ export default function FuelClient({
   costLedgerEntry,
 }: {
   addedByLabel: string;
-  costLedgerEntry?: { invoiceId: string; onClose: () => void; onSaved: () => void };
+  costLedgerEntry?: { invoiceId: string; assetId?: string; onClose: () => void; onSaved: () => void };
 
   initialAssetId?: string;
   initialOpenAdd?: boolean;
@@ -2386,7 +2386,11 @@ export default function FuelClient({
     if (!desktop.allow('editFuel')) return;
     resetFuelSlipValidationState();
     setFuelSlipReturnToManager(true);
-    setFuelSlipDraft(buildFuelSlipDraftFromRecord(slip));
+    const draft = buildFuelSlipDraftFromRecord(slip);
+    if (costLedgerEntry?.assetId && costLedgerEntry.assetId !== slip.assetId) {
+      draft.targetKey = `asset:${costLedgerEntry.assetId}`;
+    }
+    setFuelSlipDraft(draft);
     setFuelSlipFlow('review');
     setFuelSlipFormPage('details');
     setFuelSlipPickerSearch('');

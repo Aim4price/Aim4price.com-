@@ -127,7 +127,7 @@ test('dealer cost page reuses manual and Aim4price-assisted entry without owner-
 });
 
 test('dealer cost page uses the shared workspace title without an unused toolbar column', () => {
-  assert.match(costClient, /<WorkspaceTitlePanel[\s\S]*title="CLIENT ASSET COSTS"/);
+  assert.match(costClient, /<WorkspaceTitlePanel[\s\S]*title="CLIENT COST LEDGER"/);
   assert.doesNotMatch(costClient, /Find a shared client asset and add an invoice or cost\./);
   assert.match(costClient, /dealerMode \? styles\.dealerToolbarButtons : ''/);
   assert.match(costStyles, /\.toolbarButtons\.dealerToolbarButtons[\s\S]*grid-template-columns: repeat\(2,/);
@@ -146,7 +146,7 @@ test('dealer shared asset query orders by the selected DISTINCT expression', () 
 
 test('dealer cost pages remain available alongside the permission-scoped Manage dialog', () => {
   assert.doesNotMatch(appHeader, /\{ key: 'cost', href: '\/dealer-costs', label: 'Costs' \}/);
-  assert.match(appHeader, /\{ href: '\/dealer-costs', label: 'Client Costs', accountTypes: \['dealer'\] \}/);
+  assert.match(appHeader, /\{ href: '\/dealer-costs', label: 'Cost Ledger', accountTypes: \['dealer'\] \}/);
   assert.match(standardDealerPage, /getDealerCostRequestContext\(\)/);
   assert.match(standardDealerPage, /dealerMode[\s\S]*showAppHeader/);
   assert.match(leads, /<SharedAssetContributionDialog/);
