@@ -33149,7 +33149,7 @@ button.documentOpenLink {
   height: 2.15rem;
   border: 1px solid var(--app-line, rgba(181, 207, 195, 0.86));
   border-radius: 0.72rem;
-  color: var(--app-accent, #34715b);
+  color: var(--app-text, #173c32);
   background: var(--app-surface-soft, #eef6f2);
   font-size: 0.69rem;
   font-weight: 820;
@@ -33201,9 +33201,9 @@ button.documentOpenLink {
 }
 
 .assetFormSectionTabActive .assetFormSectionTabNumber {
-  color: #ffffff;
+  color: #174a37;
   border-color: var(--app-accent, rgba(255, 255, 255, 0.28));
-  background: var(--app-surface-soft, rgba(255, 255, 255, 0.13));
+  background: #e1f2e9;
 }
 
 .assetFormSectionTabActive .assetFormSectionTabCopy small {
@@ -33667,7 +33667,7 @@ button.documentOpenLink {
   width: 2.15rem !important;
   height: 2.15rem !important;
   border-radius: 0.68rem !important;
-  font-size: 0.7rem !important;
+  font-size: 0.88rem !important;
 }
 
 .assetUpdateModal .assetFormSectionTabCopy strong {

@@ -2,11 +2,11 @@
 .field > span { font-size: .88rem; line-height: 1.25; font-weight: 750; color: var(--app-text, #173c32); }
 .field > button { min-height: 3rem; }
 .field > button svg { width: 1rem; height: 1rem; }
-.dialog .grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: .65rem; }
+.dialog .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
 .dialog .grid button { min-height: 4.25rem; }
 .dialog .grid button[aria-pressed="true"] { background: color-mix(in srgb, #65bf91 24%, var(--app-surface, white)); color: var(--app-text, #173c32); border-color: #438661; }
 .dialog .grid button[aria-pressed="true"] small { color: var(--app-text, #173c32); }
-.copy.copy strong { white-space: normal; }
+.copy.copy strong { white-space: nowrap; }
 .copy.copy small { white-space: nowrap; font-weight: 650; color: var(--app-text, #29483e); }
 .dialog > header p:empty { display: none; }
 .dialog > footer { display: flex; justify-content: flex-end; }
@@ -23,32 +23,14 @@
   cursor: pointer;
 }
 .back:disabled { opacity: .5; cursor: default; }
-/* Let short choices share a row and reserve room for each card's longest line. */
-.dialog .allOptions {
-  display: flex;
-  flex-wrap: wrap;
-}
-.dialog .allOptions > button {
-  flex: 1 0 max-content;
-  min-width: min(100%, calc((100% - 1.95rem) / 4));
-  max-width: 100%;
-}
-.allOptions .copy strong,
-.allOptions .copy small {
-  white-space: nowrap;
-}
-@container (max-width: 36rem) {
-  .dialog .allOptions > button { flex-basis: 100%; }
-}
 
-.dialog .equalColumns {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+.dialog .grid:has(> button:only-child) { grid-template-columns: 1fr; }
+.dialog .grid:has(> button:nth-child(2):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@container (max-width: 65rem) {
+  .dialog .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
-.equalColumns .copy strong { white-space: nowrap; }
-@container (max-width: 52rem) {
-  .dialog .equalColumns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@container (max-width: 35rem) {
-  .dialog .equalColumns { grid-template-columns: minmax(0, 1fr); }
+@container (max-width: 45rem) {
+  .dialog .grid,
+  .dialog .grid:has(> button:nth-child(2):last-child) { grid-template-columns: minmax(0, 1fr); }
 }

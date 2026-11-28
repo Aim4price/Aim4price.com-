@@ -18324,7 +18324,6 @@ export default function AssetRegisterClient({
       {historyAsset&&<SharedAssetWorkDialog endpoint={`/api/asset-register/${historyAsset.id}`} action="history" assetTitle={historyAsset.title} assetSubtitle={historyAsset.details} onClose={()=>setHistoryAsset(null)}/>}
       {isAssetModalOpen && manualAssetStep === 1 && !editingAsset ? (
         <AssetChoiceDialog<AssetKind | 'livestock'>
-          equalColumns
           title="What are you adding?"
           subtitle={`Adding to ${addAssetTargetRegisterName}`}
           value={hasManualAssetKindSelection ? selectedManualAssetType.value : ''}
