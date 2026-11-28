@@ -1,12 +1,11 @@
 .page {
   --marketplace-header-height: 7.35rem;
   --marketplace-sidebar-width: 340px;
-  font-weight: 550;
 
   min-height: calc(var(--website-design-vh, 1vh) * 100);
   background: var(--app-info-soft, #f3f6f8);
   color: var(--app-text, #17362c);
-  font-family: var(--font-body, 'Montserrat'), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .topBand {
@@ -48,7 +47,7 @@
 .shareHeader span {
   display: block;
   color: var(--app-muted, #65676b);
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -279,7 +278,7 @@
   border-radius: 999px;
   background: var(--app-info-soft, #e4e6eb);
   color: var(--app-text, #050505);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
   transition: background 160ms ease, color 160ms ease;
 }
@@ -301,9 +300,8 @@
 .categoryText small {
   display: block;
   margin-top: 0.08rem;
-  color: var(--app-text, #17362c);
-  font-weight: 600;
-  font-size: 0.95rem;
+  color: var(--app-muted, #65676b);
+  font-size: 0.8rem;
   line-height: 1.12;
 }
 
@@ -311,7 +309,7 @@
   min-height: 2.35rem;
   padding: 0.48rem 0.7rem;
   border-radius: 0.64rem;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
@@ -358,7 +356,7 @@
   border-radius: 0.18rem;
   background: var(--app-surface, #ffffff);
   color: #ffffff;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 850;
   line-height: 1;
 }
@@ -395,7 +393,7 @@
 .ratingFilterPill {
   min-height: 1.48rem;
   padding: 0.3rem 0.44rem;
-  font-size: 0.95rem;
+  font-size: 0.82rem;
 }
 
 .ratingFilterCount {
@@ -404,7 +402,7 @@
   border-radius: 999px;
   background: var(--app-info-soft, #f1f5ff);
   color: var(--app-info, #0066d9);
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-weight: 800;
   line-height: 1;
   text-align: center;
@@ -560,7 +558,7 @@
   color: var(--app-text, #1d2925);
   background: transparent;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 0.93rem;
   font-weight: 600;
   line-height: 1.2;
   text-align: left;
@@ -623,7 +621,7 @@
   border-radius: 0.55rem;
   background: var(--app-info-soft, #f0f2f5);
   color: var(--app-text, #165340);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 650;
   text-align: center;
 }
@@ -678,7 +676,7 @@
   border-radius: 999px;
   background: var(--app-surface-soft, #edf6f1);
   color: var(--app-text, #165340);
-  font-size: 0.95rem;
+  font-size: 0.86rem;
   font-weight: 600;
 }
 
@@ -765,7 +763,7 @@
   background: var(--app-info-soft, #eef2f8);
   border: 1px solid var(--app-info-line, #dde4ee);
   box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(16, 31, 28, 0.04));
-  font-size: 0.95rem;
+  font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.075em;
   line-height: 1.25;
@@ -785,13 +783,13 @@
 .modalPlaceholder .placeholderPill {
   min-height: 3.2rem;
   padding-inline: 1.25rem;
-  font-size: 0.95rem;
+  font-size: 0.88rem;
 }
 
 .listingModalNoMedia .modalPlaceholder .placeholderPill {
   min-height: 2.9rem;
   padding-inline: 1rem;
-  font-size: 0.95rem;
+  font-size: 0.78rem;
 }
 
 .sharePlaceholder {
@@ -803,9 +801,8 @@
   min-height: 2.05rem;
   max-width: 92%;
   padding-inline: 0.7rem;
-  font-size: 0.95rem;
-  text-align: center;
-  overflow-wrap: anywhere;
+  font-size: 0.58rem;
+  white-space: nowrap;
 }
 
 .sharePreviewCardNoMedia .sharePlaceholder {
@@ -820,7 +817,7 @@
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.62);
   color: #ffffff;
-  font-size: 0.95rem;
+  font-size: 0.74rem;
   font-weight: 600;
 }
 
@@ -864,6 +861,7 @@
   font-style: normal;
   font-weight: 650;
   letter-spacing: -0.02em;
+  opacity: 0.84;
   white-space: nowrap;
 }
 
@@ -892,9 +890,8 @@
 .cardMeta {
   margin: 0.28rem 0 0;
   overflow: hidden;
-  color: var(--app-text, #17362c);
-  font-weight: 600;
-  font-size: 0.95rem;
+  color: var(--app-muted, #65676b);
+  font-size: 0.91rem;
   line-height: 1.38;
   text-overflow: ellipsis;
 }
@@ -953,7 +950,7 @@
 .paginationSummary {
   margin: 0;
   color: var(--app-muted, #65676b);
-  font-size: 0.95rem;
+  font-size: 0.91rem;
   font-weight: 650;
   text-align: center;
 }
@@ -978,7 +975,7 @@
   border-radius: 999px;
   background: var(--app-surface, #ffffff);
   color: var(--app-text, #17362c);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 700;
   box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(16, 31, 28, 0.045));
   transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
@@ -1184,7 +1181,7 @@
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.62);
   color: #ffffff;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
@@ -1265,7 +1262,7 @@
   background: rgba(7, 18, 27, 0.76);
   color: #fff;
   padding: 0.45rem 0.65rem;
-  font-size: 0.95rem;
+  font-size: 0.76rem;
   font-weight: 850;
 }
 
@@ -1452,7 +1449,7 @@
 .shareLinkField span {
   display: block;
   color: var(--app-muted, #65676b);
-  font-size: 0.95rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.055em;
   text-transform: uppercase;
@@ -1491,7 +1488,7 @@
   display: block;
   margin-top: 0.58rem;
   color: var(--app-muted, #65676b);
-  font-size: 0.95rem;
+  font-size: 0.86rem;
   font-weight: 600;
 }
 
@@ -1560,7 +1557,7 @@
 
 .contactBlurOverlay strong {
   color: var(--app-text, #050505);
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   line-height: 1.2;
 }
 
@@ -1568,7 +1565,7 @@
   max-width: none;
   margin: 0;
   color: var(--app-muted, #65676b);
-  font-size: 0.95rem;
+  font-size: 0.84rem;
   line-height: 1.35;
   white-space: nowrap;
 }
@@ -1957,7 +1954,7 @@
   :global(:where(html:not(:has([data-website-canvas])))) .cardBody h3,
   :global(:where(html:not(:has([data-website-canvas])))) .cardLocation,
   :global(:where(html:not(:has([data-website-canvas])))) .cardMeta {
-    font-size: 0.95rem;
+    font-size: 0.8rem;
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .modalOverlay,
@@ -2120,7 +2117,7 @@
 
 .marketplaceManageSummary span {
   color: var(--app-muted, #68798b);
-  font-size: 0.95rem;
+  font-size: 0.76rem;
   font-weight: 820;
   letter-spacing: 0;
 }
@@ -2134,7 +2131,7 @@
 
 .marketplaceManageSummary small {
   color: var(--app-info, #5d7283);
-  font-size: 0.95rem;
+  font-size: 0.94rem;
   font-weight: 620;
   line-height: 1.35;
 }
@@ -2190,7 +2187,7 @@
 
 .marketplaceManageChoiceCopy small {
   color: var(--app-muted, #63776f);
-  font-size: 0.95rem;
+  font-size: 0.76rem;
   font-weight: 580;
   line-height: 1.45;
 }
@@ -2243,7 +2240,7 @@
   padding: 0.72rem 0.8rem;
   color: var(--app-text, #315e4f);
   background: var(--app-surface-soft, #f3f9f6);
-  font-size: 0.95rem;
+  font-size: 0.74rem;
   font-weight: 650;
   line-height: 1.45;
 }
@@ -2344,7 +2341,7 @@
 
 .marketplaceDeleteSelected span {
   color: var(--app-muted, #68798b);
-  font-size: 0.95rem;
+  font-size: 0.78rem;
   font-weight: 820;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -3553,7 +3550,7 @@
     color: var(--app-text, #173d32);
     background: transparent;
     font: inherit;
-    font-size: 0.95rem;
+    font-size: 0.78rem;
     outline: 0;
   }
 
@@ -3580,7 +3577,7 @@
     color: var(--app-text, #165e48);
     background: var(--app-surface-soft, #edf6f2);
     font: inherit;
-    font-size: 0.95rem;
+    font-size: 0.72rem;
     font-weight: 800;
     cursor: pointer;
   }
@@ -3791,7 +3788,7 @@
 .accountManageModal .marketplaceManageSummary strong,
 .accountManageModal .marketplaceManageChoiceCopy strong { font-size: 0.95rem; font-weight: 800; line-height: 1.35; }
 .accountManageModal .marketplaceManageSummary small,
-.accountManageModal .marketplaceManageChoiceCopy small { color: var(--app-muted, #64746a); font-size: 0.95rem; font-weight: 650; line-height: 1.5; }
+.accountManageModal .marketplaceManageChoiceCopy small { color: var(--app-muted, #64746a); font-size: 0.88rem; font-weight: 650; line-height: 1.5; }
 .accountManageModal .marketplaceManageChoiceCard { min-height: 5rem; padding: 1rem 1.1rem; border-radius: 1rem; }
 
 /* Create listing follows the shared Change Password modal design. */
@@ -3838,7 +3835,7 @@
 .accountCreateListingDialog .createListingHeader p,
 .accountCreateListingDialog .createListingGuestPanel span {
   color: var(--app-muted, #64746a);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 650;
   line-height: 1.5;
   white-space: normal;
@@ -3884,7 +3881,7 @@
 }
 .accountCreateListingDialog .createListingActionRow a {
   border-radius: 0.95rem;
-  font-size: 0.95rem;
+  font-size: 0.94rem;
 }
 
 .accountCreateListingDialog .createListingChoiceCard .createListingChoiceCopy {
@@ -3894,7 +3891,7 @@
 }
 .accountCreateListingDialog .createListingChoiceCopy small {
   color: var(--app-muted, #64746a);
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   font-weight: 650;
   line-height: 1.45;
 }
@@ -3992,7 +3989,7 @@
   box-shadow: none;
   white-space: normal;
   line-height: 1.4;
-  font-size: 0.95rem;
+  font-size: .85rem;
   text-align: left;
   justify-content: flex-start;
 }
@@ -4009,7 +4006,7 @@
 .listingCard .cardMeta { min-height: 2.76em; margin-top: .35rem; }
 .cardComparisonFooter { margin: .5rem .08rem 0; padding-top: .65rem; border-top: 1px solid var(--app-line, #dce5e0); }
 .cardComparisonFooter[aria-hidden="true"] { visibility: hidden; min-height: 4.2rem; }
-.cardComparisonFooter .dealRatingBadge.cardDealRatingBadge { min-height: 4.2rem; box-sizing: border-box; margin: 0; padding: .65rem .8rem; gap: .65rem; font-size: 0.95rem; font-weight: 700; align-items: center; }
+.cardComparisonFooter .dealRatingBadge.cardDealRatingBadge { min-height: 4.2rem; box-sizing: border-box; margin: 0; padding: .65rem .8rem; gap: .65rem; font-size: .8rem; font-weight: 700; align-items: center; }
 .cardComparisonFooter .cardDealRatingBadge svg { width: 1.25rem; height: 1.25rem; flex: 0 0 auto; }
 .cardComparisonFooter .dealRatingBadge.cardComparisonUnavailable { background: var(--app-info-soft, #f0f2f5); color: var(--app-muted, #656b76); border-color: var(--app-info-line, #e0e4e9); }
 
@@ -4040,7 +4037,7 @@
 }
 .dealRatingContent { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; min-width: 0; }
 .dealRatingTitle { color: inherit; font-size: .95rem; font-weight: 800; line-height: 1.3; }
-.dealRatingExplanation { color: var(--rating-ink, inherit); font-size: 0.95rem; font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.dealRatingExplanation { color: var(--rating-detail, inherit); font-size: .78rem; font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
 
 /* App surfaces use the same hues with enough contrast in dark mode. */
 :global(html[data-app-theme='dark']) .dealRatingBadgeLow {
