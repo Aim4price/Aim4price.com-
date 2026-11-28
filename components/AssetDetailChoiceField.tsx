@@ -37,7 +37,7 @@ export default function AssetDetailChoiceField<T extends string>({
   const displayOptions = isCondition ? [...options.filter(option => option.value !== ''), ...options.filter(option => option.value === '')] : options;
   return <div className={`${fieldStyles.field} ${styles.field} ${className}`} data-asset-detail-edit-target={assetDetailEditTarget} data-access-restricted={disabled ? "true" : undefined}>
     <span id={labelId}>{label}</span>
-    <button type="button" disabled={disabled} className={styles.trigger} aria-labelledby={labelId}
+    <button type="button" disabled={disabled} data-answered={Boolean(value)} className={styles.trigger} aria-labelledby={labelId}
       aria-haspopup="dialog" aria-expanded={open} onClick={() => onRequestOpen ? onRequestOpen() : setOpen(true)}>
       <span>{selected?.label || `Choose ${label.toLowerCase()}`}</span>
       {isCondition && (
