@@ -4,6 +4,7 @@ import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asse
 import { createPortal } from '../../components/WebsitePortal';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import registerStyles from './page.module.css';
+import documentStyles from '../documents/page.module.css';
 import sharedStyles from '../leads/shared-assets.module.css';
 import styles from './asset-register-overview.module.css';
 
@@ -754,7 +755,7 @@ export default function AssetRegisterOverview() {
                       <div className={sharedStyles.actions}>
                         <button
                           type="button"
-                          className={`${registerStyles.expandButton} ${registerStyles.cardViewDetailsButton} ${registerStyles.controlTooltip}`}
+                          className={`${documentStyles.disclosureAction} ${registerStyles.controlTooltip}`}
                           aria-label={`${expanded ? 'Close' : 'Open'} ${item.headline} for ${item.assetTitle}`}
                           aria-expanded={expanded}
                           aria-controls={`overview-details-${item.id}`}
@@ -762,8 +763,8 @@ export default function AssetRegisterOverview() {
                           data-tooltip={expanded ? 'Close update' : 'Open update'}
                           onClick={toggle}
                         >
-                          <svg className={`${registerStyles.buttonIcon} ${registerStyles.assetDetailsChevron}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                            <path d={expanded ? 'm18 15-6-6-6 6' : 'm6 9 6 6 6-6'} />
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <path d="m6 9 6 6 6-6" />
                           </svg>
                           <span>{expanded ? 'Close' : 'Open'}</span>
                         </button>
