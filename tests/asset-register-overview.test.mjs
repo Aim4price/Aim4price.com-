@@ -110,7 +110,7 @@ test('overview uses the Shared Assets card, icon, typography and Open control', 
   }
   assert.match(overview, /<h2>\{item.assetTitle\}<\/h2>/);
   assert.match(overview, /aria-expanded=\{expanded\}/);
-  assert.match(overview, /registerStyles\.cardViewDetailsButton/);
+  assert.match(overview, /documentStyles\.disclosureAction/);
   assertNoWebsiteReflow(styles);
   assert.match(overview, /Checking the register/);
   assert.match(overview, /Overview unavailable/);
