@@ -7977,7 +7977,7 @@
   padding: 1.4rem 1.5rem;
   border: 1px solid var(--app-line, #cbded5);
   border-radius: 1.4rem;
-  background: var(--app-surface-soft, #f1f8f4);
+  background: var(--app-surface, #fff);
   color: var(--app-text, #173e32);
   font: inherit;
   text-align: center;
@@ -8004,7 +8004,7 @@
 .exclusionChoiceCount { color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; }
 @media (max-width: 720px) {
   :global(:where(html:not(:has([data-website-canvas])))) .exclusionChoiceGrid { grid-template-columns: 1fr; }
-  :global(:where(html:not(:has([data-website-canvas])))) .exclusionChoiceCard { min-height: 12rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .exclusionChoiceCard { min-height: 12.5rem; }
 }
 
 .fuelSlipTypeSelect { margin-top: .45rem; }
@@ -8106,4 +8106,15 @@
 }
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .slipLedgerCard.slipLedgerCard .slipLedgerActions > :is(a, button) { min-width: 0; }
+}
+
+/* Keep the choice surface neutral, including the footer controls. */
+.exclusionsModal.accountFuelModal[data-asset-choice-surface]:has(.exclusionChoiceGrid),
+.exclusionsModal.accountFuelModal[data-asset-choice-surface][data-asset-choice-modal]:has(.exclusionChoiceGrid) :is(.exclusionChoiceCard, .secondaryButton, .accountFuelClose) {
+  background: var(--app-surface, #fff) !important;
+}
+
+.exclusionsModal.accountFuelModal[data-asset-choice-surface]:has(.exclusionChoiceGrid) [data-asset-choice-footer] .secondaryButton {
+  min-width: 5rem !important;
+  padding-inline: .65rem !important;
 }
