@@ -907,18 +907,15 @@ export default function DocumentsClient({ businessVault = false, initialAssetId 
     }));
   }
 
-  function selectAllFilteredAssets() {
+  function toggleAllFilteredAssets() {
     if (busyRef.current || !filteredAssets.length) return;
     const matchingAssetIds = filteredAssets.map((asset) => asset.id);
     setDraft((current) => ({
       ...current,
-      assetIds: Array.from(new Set([...current.assetIds, ...matchingAssetIds])),
+      assetIds: matchingAssetIds.every(id => current.assetIds.includes(id))
+        ? current.assetIds.filter(id => !matchingAssetIds.includes(id))
+        : Array.from(new Set([...current.assetIds, ...matchingAssetIds])),
     }));
-  }
-
-  function clearSelectedAssets() {
-    if (busyRef.current) return;
-    setDraft((current) => ({ ...current, assetIds: [] }));
   }
 
   function scrollSummary(direction: -1 | 1) {
@@ -1816,10 +1813,10 @@ export default function DocumentsClient({ businessVault = false, initialAssetId 
                   data-modal-initial-focus="true"
                 />
                 {!choosingClient && <div className={styles.assetSelectionToolbarActions}>
-                  <button type="button" className={styles.cancelButton} onClick={selectAllFilteredAssets} disabled={busy || !filteredAssets.length || allFilteredAssetsSelected}>
-                    {assetSearch.trim() ? `Select all ${filteredAssets.length} matches` : `Select all ${assets.length}`}
+                  <button type="button" className={styles.cancelButton} onClick={toggleAllFilteredAssets} disabled={busy || !filteredAssets.length} aria-pressed={allFilteredAssetsSelected}>
+                    {allFilteredAssetsSelected ? `Unselect shown (${filteredAssets.length})` : `Select all shown (${filteredAssets.length})`}
                   </button>
-                  <button type="button" className={styles.cancelButton} onClick={clearSelectedAssets} disabled={busy || !draft.assetIds.length}>
+                  <button type="button" className={styles.cancelButton} onClick={() => setAssetSearch('')} disabled={busy}>
                     Clear
                   </button>
                 </div>}
@@ -1856,7 +1853,10 @@ export default function DocumentsClient({ businessVault = false, initialAssetId 
                           <AssetSerialNumber value={asset.serialNumber} />
                         </span>
                         <span className={styles.assetSelectionValue} data-asset-choice-value="true">
-                          <AssetChooseIcon selected={checked} />
+                          <span className={`${pickerStyles.select} ${pickerStyles.multi}`}>
+                            <i aria-hidden="true">{checked ? '✓' : ''}</i>
+                            <strong>{checked ? 'Selected' : 'Select'}</strong>
+                          </span>
                         </span>
                       </label>
                     );
@@ -1872,12 +1872,12 @@ export default function DocumentsClient({ businessVault = false, initialAssetId 
               <span role="status" aria-live="polite">
                 {choosingClient ? '' : draft.assetIds.length
                   ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset selected' : 'assets selected'}`
-                  : 'Account-level document'}
+                  : 'Select one or more assets'}
               </span>
               <button type="button" className={styles.cancelButton} disabled={busy} onClick={returnToPreviousUploadStep}>
                 {modalMode === 'upload' && desktop.workspace ? 'Cancel' : <><Icon name="chevron-left" /> Back</>}
               </button>
-              {!choosingClient && <button type="submit" className={styles.uploadButton} data-asset-choice-action="primary" disabled={busy}>
+              {!choosingClient && <button type="submit" className={styles.uploadButton} data-asset-choice-action="primary" disabled={busy || !draft.assetIds.length}>
                 {documentActionLabel()}
               </button>}
             </footer>

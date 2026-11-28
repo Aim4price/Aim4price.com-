@@ -82,6 +82,16 @@ export default function Page(){const [open,setOpen]=useState(true),[saved,setSav
   assert.ok(await page.$('[aria-label="Open Saved title"]'));
   assert.ok(await page.$('[aria-label="Open Standalone"]'));
   await click('Filter');await click('Related to an asset');await page.waitForSelector(row);
+  assert.equal(await page.$eval('[data-asset-choice-action="primary"]', button => button.disabled), true);
+  assert.deepEqual(await page.$$eval(row+' [data-asset-choice-secondary] > span', lines =>
+    [...new Set(lines.map(line => getComputedStyle(line).fontWeight))]
+  ), ['400']);
+  await page.type(search,'SN-23');
+  await click('Select all shown (1)');
+  assert.equal(await page.$eval(row+' [data-asset-choice-value]', el=>el.textContent.trim()),'✓Selected');
+  await click('Unselect shown (1)');
+  await click('Clear');
+  assert.equal(await page.$$eval(row, els=>els.length),assets.length);
   await page.click(row);await click('Next');await click('Insurance');await click('Policy');
   await page.waitForSelector('[aria-label="Open Saved title"]');
   assert.equal(await page.$('[aria-label="Open Standalone"]'),null);
