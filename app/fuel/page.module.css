@@ -7977,7 +7977,7 @@
   padding: 1.4rem 1.5rem;
   border: 1px solid var(--app-line, #cbded5);
   border-radius: 1.4rem;
-  background: var(--app-surface-soft, #f1f8f4);
+  background: var(--app-surface, #fff);
   color: var(--app-text, #173e32);
   font: inherit;
   text-align: center;
@@ -8106,4 +8106,10 @@
 }
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .slipLedgerCard.slipLedgerCard .slipLedgerActions > :is(a, button) { min-width: 0; }
+}
+
+/* Keep the choice surface neutral, including the footer controls. */
+.exclusionsModal.accountFuelModal[data-asset-choice-surface]:has(.exclusionChoiceGrid),
+.exclusionsModal.accountFuelModal[data-asset-choice-surface]:has(.exclusionChoiceGrid) :is(.exclusionChoiceCard, .secondaryButton, .accountFuelClose) {
+  background: var(--app-surface, #fff) !important;
 }
