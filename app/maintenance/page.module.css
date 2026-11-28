@@ -5507,7 +5507,7 @@
 .schedulingDialog:has(.maintenanceChoiceGrid) {
   --choice-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
   --choice-edge: 1.75rem;
-  width: min(var(--website-dialog-reference-width, 100%), 58rem);
+  width: min(var(--website-dialog-reference-width, 100%), 58rem, calc(var(--website-visible-width, 100vw) - 3rem));
   background: var(--app-surface, #fff);
 }
 .schedulingDialog:has(.maintenanceChoiceGrid) .modalHeader {
@@ -5542,14 +5542,14 @@
 }
 .schedulingDialog:has(.maintenanceChoiceGrid) .modalFooter button {
   flex: 0 0 auto;
-  min-width: 0;
-  padding: .75rem 1.05rem;
+  min-width: 5rem;
+  padding: .75rem .65rem;
   line-height: 1.35;
 }
 @media (max-width: 720px) {
   :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog .maintenanceChoiceGrid { grid-template-columns: 1fr; }
-  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog .maintenanceChoiceCard { min-height: 12rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog .maintenanceChoiceCard { min-height: 12.5rem; }
 }
 @media (max-width: 600px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog:has(.maintenanceChoiceGrid) { --choice-edge: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog:has(.maintenanceChoiceGrid) { --choice-edge: 1rem; width: calc(100vw - 1.5rem); }
 }
