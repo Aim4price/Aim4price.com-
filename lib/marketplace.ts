@@ -75,6 +75,7 @@ export type MarketplaceListing = {
   sellingPriceAssessedAt?: string;
   dealRating?: MarketplaceDealRating;
   dealRatingPercentDiff?: number | null;
+  sharedServiceDate?: string;
   showDealRating?: boolean;
   imageSrc: string;
   imageUrls: string[];
@@ -429,6 +430,7 @@ function normalizeStoredListing(value: unknown): MarketplaceListing | null {
     realisticSellingPriceExVat: cleanUnknownNumber(value.realisticSellingPriceExVat, 0) || undefined,
     sellingPriceNeedsReview: value.sellingPriceNeedsReview === true,
     sellingPriceAssessedAt: cleanUnknownText(value.sellingPriceAssessedAt) || undefined,
+    sharedServiceDate: typeof value.sharedServiceDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value.sharedServiceDate) ? value.sharedServiceDate : undefined,
     showDealRating: value.showDealRating !== false,
     imageSrc,
     imageUrls: normalizeImageUrls(value.imageUrls, imageSrc),

@@ -437,21 +437,15 @@ function ListingImage({
   return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
 }
 
-function PriceWithVat({
-  value,
-  className = '',
-  included = false,
-}: {
-  included?: boolean;
-  value: number;
-  className?: string;
-}) {
-  return (
-    <span className={`${styles.priceWithVat} ${className}`.trim()}>
-      <span>{money(value * (included ? 1.15 : 1))}</span>
-      <em>{included ? 'incl. VAT' : '+ VAT'}</em>
-    </span>
-  );
+function displayedPrice(listing: MarketplaceListing, included: boolean) {
+  return listing.askingPriceExVat * (included && listing.adBrand?.vatLabel !== 'no-vat' ? 1.15 : 1);
+}
+
+function PriceWithVat({ listing, included, className }: { listing: MarketplaceListing; included: boolean; className: string }) {
+  return <span className={`${styles.priceWithVat} ${className}`}>
+    <span>{money(displayedPrice(listing, included))}</span>
+    <em>{listing.adBrand?.vatLabel === 'no-vat' ? 'No VAT' : included ? 'Incl. VAT' : 'Excl. VAT'}</em>
+  </span>;
 }
 
 function isListingTitleMetaPart(value: string): boolean {
@@ -560,7 +554,8 @@ function formatPublishedDate(value: string): string {
 }
 
 function formatLocation(listing: MarketplaceListing): string {
-  const area = String(listing.area ?? '').trim();
+  const rawArea = String(listing.area ?? '').trim();
+  const area = /^undisclosed$/i.test(rawArea) ? '' : rawArea;
   const province = String(listing.province ?? '').trim();
 
   if (area && province) {
@@ -783,32 +778,43 @@ function getDealRatingToneClass(value: MarketplaceDealRating): string {
 function DealRatingBadge({
   listing,
   variant = 'card',
+  vatIncluded = false,
 }: {
   listing: MarketplaceListing;
   variant?: 'card' | 'modal';
+  vatIncluded?: boolean;
 }) {
   if (listing.showDealRating === false) return null;
 
   const rating = getListingDealRating(listing);
   const comparison = marketplaceDealComparison(listing);
-  if (!comparison && variant === 'modal') return null;
-
-  return (
-    <span
-      className={`${styles.dealRatingBadge} ${getDealRatingToneClass(rating)} ${
-        variant === 'modal' ? styles.modalDealRatingBadge : styles.cardDealRatingBadge
-      } ${!comparison ? styles.cardComparisonUnavailable : ''}`}
-    >
-      {variant === 'card' ? <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20V13h5v7M9 20V8h5v12M14 20V3h5v17M3 20h18" /></svg> : null}
-      <span className={styles.dealRatingContent}>
-        <strong className={styles.dealRatingTitle}>{comparison?.label ?? 'No rating'}</strong>
-        <span className={styles.dealRatingExplanation}>{comparison?.difference ?? 'Price comparison unavailable'}</span>
-      </span>
-    </span>
-  );
+  if (!comparison) return null;
+  const percent = Math.round(Math.abs(comparison.percent));
+  const position = percent ? `${percent}% ${comparison.percent < 0 ? 'below' : 'above'}` : 'At';
+  const summary = `${position} Aim4price estimate`;
+  const badge = <span className={`${styles.estimateLine} ${getDealRatingToneClass(rating)}`}>{summary}</span>;
+  if (variant === 'card') return badge;
+  const realistic = comparison.basis === 'realistic';
+  const benchmark = realistic ? listing.realisticSellingPriceExVat : listing.aim4priceValueExVat;
+  return <details className={styles.estimateDetails}>
+    <summary>{badge}</summary>
+    <p>{realistic ? 'Realistic selling price from the saved selling assessment' : 'Ideal selling price from the asset valuation'} · {money(Number(benchmark) * (vatIncluded && listing.adBrand?.vatLabel !== 'no-vat' ? 1.15 : 1))} {listing.adBrand?.vatLabel === 'no-vat' ? '(no VAT)' : vatIncluded ? '(incl. VAT)' : '(excl. VAT)'}</p>
+  </details>;
 }
 
 export { DealRatingBadge, getDealRatingToneClass };
+
+function listingFacts(listing: MarketplaceListing): string[] {
+  const year = listing.yearModel;
+  const titleWords = listingDisplayTitle(listing).split(/[^a-zA-Z0-9]+/);
+  const usage = formatUsage(listing);
+  const condition = getListingConditionKey(listing);
+  return [
+    year > 0 && !titleWords.includes(String(year)) ? String(year) : '',
+    usage.endsWith('not set') ? '' : usage,
+    condition !== 'not-set' ? formatConditionLabel(condition) : '',
+  ].filter(Boolean);
+}
 
 function buildListingSpecLine(listing: MarketplaceListing): string {
   const familyLabel = getListingPrimaryFamilyLabel(listing);
@@ -2147,6 +2153,14 @@ export default function MarketplaceClient({
   const [isLoadingListings, setIsLoadingListings] = useState(!initialListings);
   const [listingLoadError, setListingLoadError] = useState('');
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
+  const browseMode = !compactAppMode && !showroomMode;
+  const [sortOrder, setSortOrder] = useState('newest');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const lastSwipe = useRef(0);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const galleryButton = useRef<HTMLButtonElement>(null);
+  const listingTrigger = useRef<HTMLElement | null>(null);
   const [vatIncluded, setVatIncluded] = useState(false);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
   const [manageListingTarget, setManageListingTarget] = useState<MarketplaceListing | null>(null);
@@ -2369,6 +2383,8 @@ export default function MarketplaceClient({
     const search = normalize(query);
 
     return items.filter((listing) => {
+      const price = displayedPrice(listing, vatIncluded);
+      if ((minPrice && price < Number(minPrice)) || (maxPrice && price > Number(maxPrice))) return false;
       if (compactAppMode && dealerListingView === 'mine' && !listing.canManage) {
         return false;
       }
@@ -2399,9 +2415,14 @@ export default function MarketplaceClient({
 
       return buildSearchText(listing).includes(search);
     });
-  }, [conditionFilter, dealRatingFilter, compactAppMode, dealerListingView, distanceFilter, familyFilter, items, locationFilter, query, sectorFilter]);
+  }, [conditionFilter, dealRatingFilter, compactAppMode, dealerListingView, distanceFilter, familyFilter, items, locationFilter, query, sectorFilter, minPrice, maxPrice, vatIncluded]);
 
-  const visible = useMemo(() => sortListings(filtered), [filtered]);
+  const visible = useMemo(() => {
+    const sorted = sortListings(filtered);
+    if (sortOrder === 'newest') return sorted;
+    const direction = sortOrder === 'lowest' ? 1 : -1;
+    return sorted.sort((a, b) => direction * (displayedPrice(a, vatIncluded) - displayedPrice(b, vatIncluded)));
+  }, [filtered, sortOrder, vatIncluded]);
   const totalPages = Math.max(1, Math.ceil(visible.length / LISTINGS_PER_PAGE));
   const normalizedCurrentPage = Math.min(currentPage, totalPages);
   const firstVisibleListingIndex = visible.length ? (normalizedCurrentPage - 1) * LISTINGS_PER_PAGE : 0;
@@ -2424,6 +2445,8 @@ export default function MarketplaceClient({
     : null;
 
   const activeFilterChips: ActiveFilterChip[] = [
+    minPrice ? { id: 'min-price', label: `From ${money(Number(minPrice))}`, onRemove: () => setMinPrice('') } : null,
+    maxPrice ? { id: 'max-price', label: `Up to ${money(Number(maxPrice))}`, onRemove: () => setMaxPrice('') } : null,
     query.trim()
       ? {
           id: 'query',
@@ -2483,7 +2506,7 @@ export default function MarketplaceClient({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [conditionFilter, dealRatingFilter, dealerListingView, distanceFilter, familyFilter, locationFilter, query, sectorFilter]);
+  }, [conditionFilter, dealRatingFilter, dealerListingView, distanceFilter, familyFilter, locationFilter, query, sectorFilter, minPrice, maxPrice, sortOrder, vatIncluded]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -2506,8 +2529,8 @@ export default function MarketplaceClient({
     const nextListing = getListingForCurrentViewer(matchedListing, canExposeSellerContact);
 
     setActiveListing(nextListing);
-    setActiveImageIndex(0);
     if (deepLinkViewRef.current !== matchedListing.id) {
+      setActiveImageIndex(0);
       deepLinkViewRef.current = matchedListing.id;
       trackListingOpen(matchedListing);
     }
@@ -2542,7 +2565,7 @@ export default function MarketplaceClient({
 
       if (event.key === 'Escape') {
         if (photoViewerOpen) {
-          setPhotoViewerOpen(false);
+          closePhotoViewer();
           return;
         }
         closeListing();
@@ -2639,6 +2662,8 @@ export default function MarketplaceClient({
   }
 
   function clearFilters() {
+    setMinPrice('');
+    setMaxPrice('');
     setQuery('');
     setSectorFilter('');
     setFamilyFilter('');
@@ -2699,7 +2724,8 @@ export default function MarketplaceClient({
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [createListingModalOpen]);
 
-  function openListing(listing: MarketplaceListing) {
+  function openListing(listing: MarketplaceListing, trigger: HTMLElement) {
+    listingTrigger.current = trigger;
     deepLinkViewRef.current = listing.id;
     trackListingOpen(listing);
     setActiveListing(getListingForCurrentViewer(listing, canExposeSellerContact));
@@ -2719,6 +2745,7 @@ export default function MarketplaceClient({
     setActiveImageIndex(0);
     setPhotoViewerOpen(false);
     updateListingUrl(null);
+    requestAnimationFrame(() => listingTrigger.current?.focus({ preventScroll: true }));
   }
 
   function openShareSheet(listing: MarketplaceListing) {
@@ -2731,6 +2758,29 @@ export default function MarketplaceClient({
     setShareFeedback('');
     setIsCreatingJpegAd(false);
   }
+
+  function closePhotoViewer() {
+    setPhotoViewerOpen(false);
+    requestAnimationFrame(() => galleryButton.current?.focus({ preventScroll: true }));
+  }
+
+  const photoGestures = {
+    onTouchStart(event: React.TouchEvent) {
+      const point = event.touches[0];
+      touchStart.current = event.touches.length === 1 ? { x: point.clientX, y: point.clientY } : null;
+    },
+    onTouchCancel() { touchStart.current = null; },
+    onTouchEnd(event: React.TouchEvent) {
+      const start = touchStart.current;
+      touchStart.current = null;
+      if (!start || activeImages.length < 2) return;
+      const dx = event.changedTouches[0].clientX - start.x;
+      const dy = event.changedTouches[0].clientY - start.y;
+      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+      lastSwipe.current = Date.now();
+      if (dx < 0) showNextImage(); else showPreviousImage();
+    },
+  };
 
   function showPreviousImage() {
     if (!activeImages.length) {
@@ -2752,7 +2802,7 @@ export default function MarketplaceClient({
     if (event.target !== event.currentTarget) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      openListing(listing);
+      openListing(listing, event.currentTarget);
     }
   }
 
@@ -3086,10 +3136,35 @@ export default function MarketplaceClient({
         </div>
       ) : null}
 
+      {browseMode && <section className={styles.browseToolbar} aria-label="Marketplace controls">
+        <div className={styles.browseHeading}>
+          <div className={styles.pageHelpTitle}><h1>Marketplace</h1><PageHelp topic="marketplace" /></div>
+          <div className={styles.browseActions}><button onClick={handleCreateListingClick}><IconPlus />Create listing</button>{isSignedIn && <a href="/my-showroom">My showroom</a>}</div>
+        </div>
+        <div className={styles.browseTools}>
+          <label className={styles.searchBox}><span className={styles.searchIcon}><IconSearch /></span><input type="search" value={query} onChange={e => setQuery(e.target.value)} aria-label="Search Marketplace" placeholder="Search make, model or equipment" /></label>
+          <button type="button" aria-expanded={dealerFiltersOpen} aria-controls="browse-filters" onClick={() => setDealerFiltersOpen(!dealerFiltersOpen)}><IconFilters />Filter</button>
+          <label>Sort<select value={sortOrder} onChange={e => setSortOrder(e.target.value)}><option value="newest">Newest first</option><option value="lowest">Lowest price</option><option value="highest">Highest price</option></select></label>
+          <span role="status">{isLoadingListings ? 'Loading listings…' : listingLoadError || `${visible.length} ${visible.length === 1 ? 'listing' : 'listings'}`}</span>
+        </div>
+        {dealerFiltersOpen && <div className={styles.browseFilters} id="browse-filters">
+          <label>Category<select value={sectorFilter} onChange={e => selectSector(e.target.value as SectorKey | '')}><option value="">All categories</option>{SECTOR_OPTIONS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}</select></label>
+          <label>Province<select value={locationFilter} onChange={e => { setLocationFilter(e.target.value); setDistanceFilter('all'); }}><option value="south-africa">South Africa</option>{availableProvinces.map(p => <option key={p}>{p}</option>)}</select></label>
+          <label>Minimum price (R)<input type="number" min="0" value={minPrice} placeholder="Any" onChange={e => setMinPrice(e.target.value)} /></label>
+          <label>Maximum price (R)<input type="number" min="0" value={maxPrice} placeholder="Any" onChange={e => setMaxPrice(e.target.value)} /></label>
+          {selectedSector && <label>Family<select value={familyFilter} onChange={e => setFamilyFilter(e.target.value)}><option value="">All families</option>{familiesBySector[selectedSector.key].map(f => <option value={f.familyKey} key={f.familyKey}>{f.familyLabel}</option>)}</select></label>}
+          <label>Condition<select value={conditionFilter} onChange={e => setConditionFilter(e.target.value as ConditionFilterValue)}>{CONDITION_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+          <label>Price rating<select value={dealRatingFilter} onChange={e => setDealRatingFilter(e.target.value as DealRatingFilterValue)}><option value="any">Any rating</option>{DEAL_RATING_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>
+          {locationFilter !== 'south-africa' && <label>Distance<select value={distanceFilter} onChange={e => setDistanceFilter(e.target.value as DistanceFilterValue)}>{DISTANCE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label>}
+          {activeFilterChips.length > 0 && <button onClick={clearFilters}>Clear filters</button>}
+          {minPrice && maxPrice && Number(minPrice) > Number(maxPrice) && <p role="status">Maximum price must be at least the minimum price.</p>}
+        </div>}
+      </section>}
+
       <div
-        className={`${styles.marketplaceShell} ${showroomMode ? styles.showroomShell : ''} ${showroomHasNoInventory ? styles.showroomEmptyShell : ''}`}
+        className={`${styles.marketplaceShell} ${browseMode ? styles.browseShell : ''} ${showroomMode ? styles.showroomShell : ''} ${showroomHasNoInventory ? styles.showroomEmptyShell : ''}`}
       >
-        {!showroomHasNoInventory ? (
+        {!browseMode && !showroomHasNoInventory ? (
           <aside
             id={showroomMode ? 'showroom-marketplace-filters' : compactAppMode ? 'mobile-marketplace-filters' : undefined}
             className={`${styles.sidebar} ${showroomMode ? styles.showroomSidebar : ''} ${showroomMode && dealerFiltersOpen ? styles.showroomSidebarOpen : ''} ${compactAppMode ? dealerStyles.dealerMarketplaceSidebar : ''} ${dealerFiltersOpen ? dealerStyles.dealerMarketplaceSidebarOpen : ''}`}
@@ -3309,6 +3384,9 @@ export default function MarketplaceClient({
           ref={resultsAreaRef}
           className={`${styles.resultsArea} ${showroomMode ? styles.showroomResults : ''}`}
         >
+          {!showroomHasNoInventory && <div className={styles.vatControls} role="group" aria-label="Display prices">
+            {[false, true].map(included => <button type="button" key={String(included)} aria-pressed={vatIncluded === included} onClick={() => setVatIncluded(included)}>{included ? 'Incl. VAT' : 'Excl. VAT'}</button>)}
+          </div>}
           {!showroomHasNoInventory && activeFilterChips.length ? (
             <div className={styles.activeFilters}>
               {activeFilterChips.map((chip) => (
@@ -3324,7 +3402,8 @@ export default function MarketplaceClient({
             <div className={styles.listingGrid}>
               {visibleListings.map((listing) => {
                 const images = getListingImages(listing);
-                const conditionKey = getListingConditionKey(listing);
+                const title = listingDisplayTitle(listing);
+                const facts = listingFacts(listing);
 
                 return (
                   <article
@@ -3332,7 +3411,7 @@ export default function MarketplaceClient({
                     className={styles.listingCard}
                     role="button"
                     tabIndex={0}
-                    onClick={() => openListing(listing)}
+                    onClick={event => openListing(listing, event.currentTarget)}
                     onKeyDown={(event) => handleCardKeyDown(event, listing)}
                   >
                     <div className={styles.cardImageFrame}>
@@ -3352,12 +3431,6 @@ export default function MarketplaceClient({
                           <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L21 6a2.12 2.12 0 0 0-3-3L5 16l-1 4Z" /><path d="M13 20h8" /></svg>
                         </button>
                       ) : null}
-                      <button type="button" className={`${styles.cardShareButton} ${styles.cardVatButton}`}
-                        aria-label={vatIncluded ? 'Show prices excluding VAT' : 'Show prices including VAT'}
-                        data-tooltip={vatIncluded ? 'Show excl. VAT' : 'Show incl. VAT'} aria-pressed={vatIncluded}
-                        onClick={event => { event.stopPropagation(); setVatIncluded(current => !current); }}>
-                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m6 18 12-12" /><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /></svg>
-                      </button>
                       <button
                         type="button"
                         className={styles.cardShareButton}
@@ -3373,15 +3446,10 @@ export default function MarketplaceClient({
                     </div>
 
                     <div className={styles.cardBody}>
-                      <PriceWithVat included={vatIncluded} value={listing.askingPriceExVat} className={styles.cardPrice} />
-                      <h3>{listingDisplayTitle(listing)}</h3>
+                      <h3>{title}</h3>
+                      <PriceWithVat included={vatIncluded} listing={listing} className={styles.cardPrice} />
                       <p className={styles.cardLocation}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 11-8 11S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg><span>{formatLocation(listing)}</span></p>
-                      <p className={styles.cardMeta}>
-                        {listing.yearModel || 'Year not saved'} · {formatUsage(listing)} ·{' '}
-                        {formatConditionLabel(conditionKey)}
-                      </p>
-                    </div>
-                    <div className={styles.cardComparisonFooter} aria-hidden={listing.showDealRating === false ? true : undefined}>
+                      {facts.length > 0 && <p className={styles.cardMeta}>{facts.join(' · ')}</p>}
                       <DealRatingBadge listing={listing} />
                     </div>
                   </article>
@@ -3495,17 +3563,18 @@ export default function MarketplaceClient({
             aria-labelledby="marketplace-listing-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <button type="button" className={styles.modalCloseButton} onClick={closeListing} aria-label="Close listing" data-tooltip="Close listing" data-modal-close="true">
+            <button type="button" autoFocus className={styles.modalCloseButton} onClick={closeListing} aria-label="Close listing" data-tooltip="Close listing" data-modal-close="true">
               <IconClose />
             </button>
 
             <div className={styles.modalGallery}>
-              <div className={styles.modalImageFrame}>
+              <div className={styles.modalImageFrame} {...photoGestures}>
                 {activeImages.length ? (
                   <button
                     type="button"
+                    ref={galleryButton}
                     className={styles.modalImageOpenButton}
-                    onClick={() => setPhotoViewerOpen(true)}
+                    onClick={() => { if (Date.now() - lastSwipe.current > 350) setPhotoViewerOpen(true); }}
                     aria-label={`Open ${listingDisplayTitle(activeListing)} photo full screen`}
                   >
                     <ListingImage
@@ -3565,25 +3634,24 @@ export default function MarketplaceClient({
                   ))}
                 </div>
               ) : null}
-              <DealRatingBadge listing={activeListing} variant="modal" />
+
             </div>
 
-            <aside className={styles.modalDetails} tabIndex={0} aria-label="Listing details">
+            <aside className={styles.modalDetails} aria-label="Listing details">
               <div className={styles.modalTitleArea}>
-                <PriceWithVat included={vatIncluded} value={activeListing.askingPriceExVat} className={styles.modalPrice} />
                 <h2 id="marketplace-listing-title">{listingDisplayTitle(activeListing)}</h2>
-                <p>{formatLocation(activeListing)}</p>
+                <p>{[canExposeSellerContact && (activeListing.sellerCompany || activeListing.sellerName), formatLocation(activeListing)].filter(Boolean).join(' · ')}</p>
+                <PriceWithVat included={vatIncluded} listing={activeListing} className={styles.modalPrice} />
+                <DealRatingBadge listing={activeListing} variant="modal" vatIncluded={vatIncluded} />
               </div>
 
               <div className={styles.modalActionRow}>
+                {canExposeSellerContact ? (
+                  activeSellerWhatsAppHref ? <MarketplaceWhatsAppAction href={activeSellerWhatsAppHref} sellerName={activeListing.sellerName} /> : null
+                ) : <a className={styles.modalSourceButton} href={`/auth?returnTo=${encodeURIComponent('/marketplace/browse?listing=' + activeListing.id)}`}>Sign in to contact seller</a>}
                 <button type="button" className={styles.modalShareButton} data-tooltip={normalizedAccountType === 'owner' ? 'Share this marketplace listing.' : 'Share'} data-tooltip-style={normalizedAccountType === 'owner' ? 'description' : undefined} onClick={() => openShareSheet(activeListing)}>
                   <IconShare />
                   Share
-                </button>
-                <button type="button" className={styles.modalShareButton} aria-pressed={vatIncluded}
-                  data-tooltip={vatIncluded ? 'Show excl. VAT' : 'Show incl. VAT'} onClick={() => setVatIncluded(current => !current)}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m6 18 12-12" /><circle cx="7" cy="7" r="2.5" /><circle cx="17" cy="17" r="2.5" /></svg>
-                  {vatIncluded ? 'Incl. VAT' : 'Excl. VAT'}
                 </button>
                 {activeListing.sourceUrl ? (
                   <a
@@ -3597,34 +3665,18 @@ export default function MarketplaceClient({
                 ) : null}
               </div>
 
-              <div className={styles.detailGrid}>
-                <div className={styles.detailItem}>
-                  <span>Year</span>
-                  <strong>{activeListing.yearModel || 'N/A'}</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>{listingUsageLabel(activeListing)}</span>
-                  <strong>{formatUsage(activeListing)}</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>Condition</span>
-                  <strong>{formatConditionLabel(getListingConditionKey(activeListing))}</strong>
-                </div>
-                <div className={styles.detailItem}>
-                  <span>Family</span>
-                  <strong>{getListingPrimaryFamilyLabel(activeListing)}</strong>
-                </div>
+              <div className={styles.buyingFacts}>
+                {[...listingFacts(activeListing), buildListingSpecLine(activeListing)].filter(Boolean).map(fact => <span key={fact}>{fact}</span>)}
+                {activeListing.sharedServiceDate && <span>Last service · {formatPublishedDate(activeListing.sharedServiceDate)}</span>}
               </div>
 
               <section className={styles.modalSection}>
-                <h3>Details</h3>
-                <p>{buildListingSpecLine(activeListing)}</p>
                 {getListingNote(activeListing) ? <p>{getListingNote(activeListing)}</p> : null}
                 <small>Listed {formatPublishedDate(activeListing.dateAdvertised || activeListing.publishedAtIso)}</small>
               </section>
 
-              <section className={styles.modalSection}>
-                <h3>Seller information</h3>
+              <details className={styles.modalSection}>
+                <summary>Seller information</summary>
 
                 {canExposeSellerContact ? (
                   <>
@@ -3662,12 +3714,6 @@ export default function MarketplaceClient({
                       ) : null}
                     </div>
 
-                    {activeSellerWhatsAppHref ? (
-                      <MarketplaceWhatsAppAction
-                        href={activeSellerWhatsAppHref}
-                        sellerName={activeListing.sellerName}
-                      />
-                    ) : null}
                   </>
                 ) : (
                   <div className={styles.blurredContactCard}>
@@ -3702,7 +3748,7 @@ export default function MarketplaceClient({
                     </div>
                   </div>
                 )}
-              </section>
+              </details>
 
               {canManageActiveListing ? (
                 <section className={styles.ownerActions}>
@@ -3723,10 +3769,10 @@ export default function MarketplaceClient({
       ) : null}
 
       {photoViewerOpen && activeListing && activeImages.length ? (
-        <div className={styles.marketplacePhotoViewer} role="dialog" aria-modal="true" aria-label={`${listingDisplayTitle(activeListing)} photo viewer`}>
-          <button type="button" className={styles.marketplacePhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-tooltip="Close photo viewer" />
-          <div className={styles.marketplacePhotoViewerCard}>
-            <button type="button" className={styles.marketplacePhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" data-tooltip="Close photo viewer" data-modal-close="true">
+        <div className={styles.marketplacePhotoViewer} data-website-overlay role="dialog" aria-modal="true" aria-label={`${listingDisplayTitle(activeListing)} photo viewer`}>
+          <button type="button" className={styles.marketplacePhotoViewerBackdrop} onClick={closePhotoViewer} aria-label="Close photo viewer" data-tooltip="Close photo viewer" />
+          <div className={styles.marketplacePhotoViewerCard} {...photoGestures}>
+            <button type="button" autoFocus className={styles.marketplacePhotoViewerClose} onClick={closePhotoViewer} aria-label="Close photo viewer" data-tooltip="Close photo viewer" data-modal-close="true">
               <IconClose />
             </button>
             <ListingImage
@@ -3938,7 +3984,7 @@ export default function MarketplaceClient({
                 />
                 <div className={styles.sharePreviewMeta}>
                   <strong>{listingDisplayTitle(shareListing)}</strong>
-                  <PriceWithVat value={shareListing.askingPriceExVat} className={styles.sharePrice} />
+                  <PriceWithVat listing={shareListing} included={vatIncluded} className={styles.sharePrice} />
                   <small>{formatLocation(shareListing)}</small>
                 </div>
               </div>

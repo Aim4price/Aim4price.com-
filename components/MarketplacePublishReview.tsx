@@ -5,11 +5,12 @@ import { marketplaceDealComparison } from '../lib/selling-price';
 import StudioIcon from './StudioIcon';
 import styles from './MarketplacePublishReview.module.css';
 
-type Draft = { title: string; photos: string[]; description: string; sellerName: string; sellerCompany: string; sellerPhone: string; sellerEmail: string; province: string; area: string; showDealRating: boolean };
-export default function MarketplacePublishReview({ draft, price, vatIncluded, idealValue, assessment, saved, stale, loading, loadError, busy, onRatingChange, onCalculate }: {
+type Draft = { title: string; photos: string[]; description: string; sellerName: string; sellerCompany: string; sellerPhone: string; sellerEmail: string; province: string; area: string; showDealRating: boolean; shareLastService: boolean };
+export default function MarketplacePublishReview({ draft, price, vatIncluded, idealValue, assessment, saved, stale, loading, loadError, busy, onRatingChange, onServiceChange, onCalculate }: {
   draft: Draft; price: number; vatIncluded: boolean; idealValue?: number | null;
   assessment?: { priceExVat: number; needsReview: boolean } | null;
   saved?: SavedSaleability; stale: boolean; loading: boolean; loadError: boolean; busy: boolean;
+  onServiceChange: (show: boolean) => void;
   onRatingChange: (show: boolean) => void; onCalculate: () => void;
 }) {
   const comparison = loading || loadError ? null : marketplaceDealComparison({ askingPriceExVat: price, aim4priceValueExVat: idealValue, realisticSellingPriceExVat: assessment?.priceExVat, sellingPriceNeedsReview: assessment?.needsReview });
@@ -34,6 +35,10 @@ export default function MarketplacePublishReview({ draft, price, vatIncluded, id
         <div className={styles.switchRow}><span id="marketplace-rating-label">Show value rating</span><button type="button" role="switch" aria-labelledby="marketplace-rating-label" aria-describedby="marketplace-rating-help" aria-checked={draft.showDealRating && !!comparison} disabled={busy || !comparison} className={styles.switch} onClick={() => onRatingChange(!draft.showDealRating)}><span /></button></div>
         <p id="marketplace-rating-help">{loading ? 'Loading your saved assessment…' : loadError ? 'Assessment unavailable. You can publish without a rating.' : comparison ? 'Compare your asking price with the estimate.' : 'No current estimate. Publish without a rating.'}</p>
         {comparison ? <small>{comparison.basis === 'realistic' ? 'Based on your saved realistic selling price.' : 'Based on the ideal selling price, not a market assessment.'}</small> : null}
+      </section>
+      <section className={styles.panel}>
+        <label className={styles.switchRow}>Show last service date<input type="checkbox" checked={draft.shareLastService} disabled={busy} onChange={event => onServiceChange(event.target.checked)} /></label>
+        <small>Publishes the latest completed service date. Service notes stay private.</small>
       </section>
       <section className={styles.panel} aria-labelledby="marketplace-saleability-heading">
         <div className={styles.heading}><span className={`${styles.icon} ${styles.saleIcon}`}><StudioIcon name="review" /></span><h4 id="marketplace-saleability-heading">How easy is it to sell?</h4></div>

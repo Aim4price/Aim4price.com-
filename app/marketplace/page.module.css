@@ -4045,3 +4045,67 @@
 
 .pageHelpTitle { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-bottom: .9rem; }
 .pageHelpTitle h1 { margin: 0; color: var(--app-text, #123d31); font-size: 1.2rem; font-weight: 800; letter-spacing: -.035em; }
+
+/* Browse controls share the width of the results, including when filters expand. */
+.marketplaceShell.browseShell { display: block; min-height: 0; background: transparent; }
+.browseToolbar, .browseShell .resultsArea {
+  width: min(100%, 90rem);
+  box-sizing: border-box;
+  margin-inline: auto;
+  padding: 1.25rem;
+}
+.browseToolbar {
+  display: grid;
+  gap: 1rem;
+  background: var(--app-surface, white);
+  border: 1px solid var(--app-line, #d3e1db);
+  border-radius: 1rem;
+}
+.browseHeading, .browseActions, .browseTools, .vatControls, .buyingFacts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
+.browseHeading { justify-content: space-between; }
+.browseHeading .pageHelpTitle { margin: 0; }
+.browseHeading h1 { font-size: 1.7rem; }
+.browseTools .searchBox { min-width: 0; flex: 1 1 19rem; margin: 0; }
+.browseTools .searchBox input { min-width: 0; width: 100%; }
+.browseFilters { display: grid; gap: .85rem; grid-template-columns: repeat(auto-fit,minmax(min(12rem,100%),1fr)); align-items: end; }
+.browseTools label, .browseFilters label { font-weight: 650; }
+.browseFilters label { display: grid; gap: .3rem; }
+.browseTools select { margin-inline-start: .4rem; }
+.browseActions a, .browseActions button, .browseTools button, .browseTools select,
+.browseFilters input, .browseFilters select, .browseFilters button, .vatControls button {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  min-height: 2.55rem; padding: .4rem .85rem; min-width: 0;
+  border: 1px solid var(--app-line, #cadbd3); border-radius: .7rem;
+  background: var(--app-surface, white); color: var(--app-text, #173f31);
+  font: inherit; text-decoration: none;
+}
+.browseActions svg, .browseTools button svg { width: 1.1rem; height: 1.1rem; }
+.browseActions button, .vatControls button[aria-pressed="true"] { background: #155b46; color: white; border-color: #155b46; }
+.vatControls { justify-content: flex-end; margin-bottom: .75rem; gap: .25rem; }
+.vatControls button { font-size: .88rem; font-weight: 700; }
+.browseShell .listingGrid { grid-template-columns: repeat(auto-fit,minmax(min(100%,19rem),1fr)); grid-auto-rows: auto; }
+.browseShell .listingGrid:has(> :only-child) { grid-template-columns: minmax(0,26rem); }
+.listingCard .cardBody h3, .listingCard .cardMeta { min-height: 0; }
+.listingCard .cardBody h3 { margin: .35rem 0; }
+.estimateLine { display: inline-block; padding: .35rem .6rem; margin-top: .55rem; border-radius: .55rem; color: var(--rating-ink); background: var(--rating-surface); font-size: .84rem; font-weight: 700; }
+.estimateDetails summary, .modalSection summary { cursor: pointer; font-weight: 700; }
+.estimateDetails p { font-size: .9rem; }
+.listingModal[role="dialog"] { height: auto; max-height: calc(var(--website-visible-height,100dvh) - 2rem); overflow: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.listingModal[role="dialog"]::-webkit-scrollbar { display: none; }
+.listingModal .modalDetails, .listingModalNoMedia .modalDetails { height: auto; max-height: none; margin: 0; overflow: visible; scrollbar-gutter: auto; }
+.listingModal .modalGallery { grid-template-rows: minmax(12rem,1fr) auto; }
+.listingModal .modalImageFrame { min-height: min(24rem,45dvh); }
+.listingModal .thumbnailRail { flex-wrap: wrap; overflow: visible; }
+.modalTitleArea .modalPrice { margin-top: .65rem; font-size: 2.45rem; }
+.modalActionRow { align-items: center; flex-wrap: wrap; }
+.buyingFacts { margin-top: 1rem; }
+.buyingFacts span { background: var(--app-info-soft,#edf3f4); border-radius: .5rem; padding: .45rem .65rem; }
+.marketplacePhotoViewerCard { width: 100%; height: 100%; max-height: 100%; border: 0; border-radius: 0; }
+.marketplacePhotoViewer[role="dialog"] { padding: 0; }
+.marketplacePhotoViewerCard .marketplacePhotoViewerImage { height: 100%; max-height: var(--website-visible-height,100dvh); }
+.listingModal .modalCloseButton { z-index: 3; }

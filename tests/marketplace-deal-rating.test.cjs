@@ -57,17 +57,17 @@ test('visible badges and filter ratings agree; hidden ratings stay unclassified'
   const functions = ast.statements.filter(n => ts.isFunctionDeclaration(n) && names.has(n.name?.text)).map(n => n.getText(ast)).join('\n');
   const code = ts.transpileModule(functions, { compilerOptions: { jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2022 } }).outputText;
   const styles = new Proxy({}, { get: (_, key) => key });
-  const ui = new Function('React', 'styles', 'marketplaceDealComparison', 'calculateMarketplaceDealRating', 'isManualMarketplaceListing', `${code}; return { DealRatingBadge, getListingDealRating };`)(React, styles, marketplaceDealComparison, calculateMarketplaceDealRating, () => false);
-  const render = listing => renderToStaticMarkup(React.createElement(ui.DealRatingBadge, { listing }));
+  const ui = new Function('React', 'styles', 'marketplaceDealComparison', 'calculateMarketplaceDealRating', 'isManualMarketplaceListing', 'money', `${code}; return { DealRatingBadge, getListingDealRating };`)(React, styles, marketplaceDealComparison, calculateMarketplaceDealRating, () => false, String);
+  const render = (listing, variant) => renderToStaticMarkup(React.createElement(ui.DealRatingBadge, { listing, variant }));
   for (const [price, rating, label, tone] of [[70000, 'low', 'Low price', 'Low'], [90000, 'great', 'Good value', 'Great'], [100000, 'fair', 'Fair value', 'Fair'], [110000, 'high', 'Above estimate', 'High']]) {
     const listing = { askingPriceExVat: price, aim4priceValueExVat: 100000, dealRating: 'none' };
     const html = render(listing);
     assert.equal(ui.getListingDealRating(listing), rating);
-    assert.match(html, new RegExp(`dealRatingBadge dealRatingBadge${tone}`));
-    assert.match(html, new RegExp(`<strong class="dealRatingTitle">${label}</strong>`));
-    assert.match(html, /ideal selling price/);
+    assert.match(html, new RegExp(`estimateLine dealRatingBadge${tone}`));
+    assert.match(html, new RegExp(price === 100000 ? 'At Aim4price estimate' : `${Math.abs(price / 1000 - 100)}% ${price < 100000 ? "below" : "above"} Aim4price estimate`));
+    assert.match(render(listing, "modal"), /Ideal selling price/);
     assert.equal(render({ ...listing, showDealRating: false }), '');
     assert.equal(ui.getListingDealRating({ ...listing, showDealRating: false }), 'none');
   }
-  assert.match(render({ askingPriceExVat: 100000 }), /No rating/);
+  assert.equal(render({ askingPriceExVat: 100000 }), "");
 });
