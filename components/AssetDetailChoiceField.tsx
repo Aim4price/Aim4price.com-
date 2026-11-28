@@ -9,12 +9,12 @@ import fieldStyles from '../app/asset-register/page.module.css';
 import styles from './AssetDetailChoiceField.module.css';
 
 const conditionAppearance: Record<string, { description: string; tone: string; path: string }> = {
-  excellent: { description: 'Very little wear.', tone: 'green', path: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z' },
-  good: { description: 'Well maintained. Light wear.', tone: 'teal', path: 'm5 12 4 4L19 6' },
-  fair: { description: 'Visible wear from use.', tone: 'amber', path: 'M5 8h14M5 12h14M5 16h9' },
-  used: { description: 'Previously used equipment.', tone: 'blue', path: 'M4 7h16v13H4ZM8 7V4h8v3M8 12h8' },
-  serious: { description: 'Needs inspection or repairs.', tone: 'red', path: 'm12 3 10 18H2ZM12 9v5M12 17v1' },
-  '': { description: 'No condition recorded.', tone: 'grey', path: 'M5 12h14' },
+  excellent: { description: 'Minimal wear', tone: 'green', path: 'm12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9Z' },
+  good: { description: 'Light wear', tone: 'teal', path: 'm5 12 4 4L19 6' },
+  fair: { description: 'Visible wear', tone: 'amber', path: 'M5 8h14M5 12h14M5 16h9' },
+  used: { description: 'Previously used', tone: 'blue', path: 'M4 7h16v13H4ZM8 7V4h8v3M8 12h8' },
+  serious: { description: 'Inspect or repair', tone: 'red', path: 'm12 3 10 18H2ZM12 9v5M12 17v1' },
+  '': { description: 'Condition unrecorded', tone: 'grey', path: 'M5 12h14' },
 };
 
 export default function AssetDetailChoiceField<T extends string>({
@@ -44,7 +44,7 @@ export default function AssetDetailChoiceField<T extends string>({
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z M8 12l3 3 5-6" /></svg>
       )}
     </button>
-    {open && addingAsset && <AssetChoiceDialog title={`Choose ${label.toLowerCase()}`} value={value}
+    {open && addingAsset && <AssetChoiceDialog equalColumns={isCondition} title={`Choose ${label.toLowerCase()}`} value={value}
       options={displayOptions.map(option => ({
         ...option, label: option.value ? option.label : 'Not specified',
         description: conditionAppearance[option.value]?.description || option.description,
