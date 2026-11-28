@@ -40,12 +40,11 @@ export default function AssetChoiceCards<T extends string>({ label, value, optio
   </div>;
 }
 
-export function AssetChoiceDialog<T extends string>({ title, subtitle = '', value, options, equalColumns = false, busy = false, onClose, onBack, onSelect }: {
+export function AssetChoiceDialog<T extends string>({ title, subtitle = '', value, options, busy = false, onClose, onBack, onSelect }: {
   title: string;
   subtitle?: string;
   value: T | '';
   options: ModalSelectOption<T>[];
-  equalColumns?: boolean;
   busy?: boolean;
   onClose: () => void;
   onBack: () => void;
@@ -54,7 +53,7 @@ export function AssetChoiceDialog<T extends string>({ title, subtitle = '', valu
   return createPortal(<LeadActionDialog title={title} assetTitle={subtitle} busy={busy} className={`${cards.categoryDialog} ${styles.dialog}`}
       closeLabel={`Close ${title} choices`} onClose={onClose}
       footer={<button type="button" className={styles.back} disabled={busy} onClick={onBack}>Back</button>}>
-      <div className={`${cards.cards} ${styles.grid} ${equalColumns ? styles.equalColumns : styles.allOptions}`} role="group" aria-label={title}>
+      <div className={`${cards.cards} ${styles.grid}`} role="group" aria-label={title}>
         {options.map((option, index) => <button type="button" key={option.value} className={cards.card}
           data-category={['storage', 'rental', 'insurance', 'service'][index % 4]} aria-pressed={value === option.value}
           disabled={busy} onClick={event => onSelect(option.value, event.currentTarget)}>
