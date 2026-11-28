@@ -1518,6 +1518,9 @@ export default function DocumentsClient({ businessVault = false, initialAssetId 
             <header className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
                 <h2 id="document-modal-title">{uploadStep === 'destination' ? 'Upload document' : uploadStep === 'scope' ? (modalMode === 'filter' ? 'Filter documents' : modalMode === 'edit' ? 'Edit document' : 'Upload document') : uploadStep === 'assets' ? 'Linked asset' : uploadStep === 'files' ? 'Choose files' : 'Extra details'}</h2>
+                {uploadStep === 'destination' && <p>Choose where to save this document.</p>}
+                {uploadStep === 'scope' && modalMode === 'upload' && <p>Link this document to an asset or keep it as a general document.</p>}
+                {uploadStep === 'scope' && modalMode === 'edit' && <p>Review the asset link and update the document details.</p>}
                 {(uploadStep === 'files' || uploadStep === 'details' || (uploadStep === 'scope' && modalMode === 'edit')) && assetSubheader}
                 {modalMode === 'edit' && uploadStep === 'scope' && !draft.assetIds.length && <p>General document</p>}
               </div>
