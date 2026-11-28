@@ -109,7 +109,7 @@ export default function CreateAssetRegisterModal({ draft, onChange, onSubmit, on
                     onChange={(event) =>
                       onChange({ ...draft, addressLine1: event.target.value })
                     }
-                    placeholder="Farm, town, province"
+                    placeholder="Site, town or province"
                   />
                 </span>
               </label>

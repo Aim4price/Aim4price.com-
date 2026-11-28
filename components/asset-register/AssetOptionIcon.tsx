@@ -35,6 +35,7 @@ const groups: Record<string, keyof typeof paths> = {
   commercial_refrigeration: 'cold', kitchen_catering: 'machine', security_systems: 'key', power_energy: 'battery',
   fixtures_improvements: 'wrench', high_value_items: 'tag', land: 'plant', building_structure: 'home',
   fixed_improvement: 'wrench', tenant_improvement: 'wrench', raw_materials: 'box', finished_goods: 'box',
+  resale_goods: 'tag', work_in_progress: 'machine',
   parts_spares: 'wrench', agricultural_inputs: 'plant', produce: 'plant', livestock: 'livestock', third_party_stock: 'box',
   purchase_cost: 'receipt', replacement_cost: 'replace', selling_price: 'tag', market_value: 'market',
   business: 'briefcase', mixed: 'briefcase', premises: 'place', portable: 'briefcase', moves_between_locations: 'car',

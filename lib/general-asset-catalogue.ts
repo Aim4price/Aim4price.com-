@@ -7,7 +7,7 @@ export const GENERAL_ASSET_CATEGORIES = [
   {
     value: 'appliances',
     label: 'Appliances',
-    description: 'Home appliances',
+    description: 'Household or commercial',
   },
   {
     value: 'computers_it',
@@ -60,12 +60,12 @@ export const PROPERTY_ASSET_SUBTYPES = [
   {
     value: 'land',
     label: 'Land',
-    description: 'Vacant or farm land',
+    description: 'Plots and farmland',
   },
   {
     value: 'building_structure',
     label: 'Building or structure',
-    description: 'Homes and sheds',
+    description: 'Homes, offices and sheds',
   },
   {
     value: 'fixed_improvement',
@@ -88,12 +88,22 @@ export const STOCK_ASSET_SUBTYPES = [
   {
     value: 'raw_materials',
     label: 'Raw materials',
-    description: 'Production supplies',
+    description: 'Materials for production',
   },
   {
     value: 'finished_goods',
     label: 'Finished goods',
-    description: 'Ready for sale',
+    description: 'Completed products',
+  },
+  {
+    value: 'resale_goods',
+    label: 'Goods for resale',
+    description: 'Bought to sell on',
+  },
+  {
+    value: 'work_in_progress',
+    label: 'Work in progress',
+    description: 'Partly made goods',
   },
   {
     value: 'parts_spares',
