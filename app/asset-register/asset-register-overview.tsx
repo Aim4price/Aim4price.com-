@@ -1,6 +1,4 @@
 'use client';
-import LeadActionDialog from '../../components/leads/LeadActionDialog';
-import messageStyles from '../../components/asset-register/AssetMessageReader.module.css';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 
 import { createPortal } from '../../components/WebsitePortal';
@@ -409,13 +407,6 @@ function buildAssetHref(assetId: string): string {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
-function assetMeta(item: OverviewItem): string {
-  return [
-    item.registerName,
-    item.assetIdentifier ? `Serial / VIN · ${item.assetIdentifier}` : '',
-  ].filter(Boolean).join(' • ');
-}
-
 function restoreManagedAssetViewElement(element: HTMLElement) {
   if (element.dataset.assetRegisterOverviewManaged !== 'true') return;
 
@@ -478,7 +469,7 @@ export default function AssetRegisterOverview() {
   const [groups, setGroups] = useState<OverviewGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [openItem, setOpenItem] = useState<OverviewItem | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const [clearingId, setClearingId] = useState<string | null>(null);
   const clearingRef = useRef(false);
   const [clearError, setClearError] = useState('');
@@ -617,7 +608,7 @@ export default function AssetRegisterOverview() {
       // Refresh from the server so older outstanding notes can surface as well.
       overviewRequest.current?.abort();
       setClearMessage(`${item.headline} noted for ${item.assetTitle}.`);
-      setOpenItem(null);
+      setOpenId(null);
       window.dispatchEvent(new Event('aim4price:asset-register-updated'));
     } catch (clearFailure) {
       setClearError(clearFailure instanceof Error ? clearFailure.message : 'This update could not be cleared.');
@@ -720,6 +711,12 @@ export default function AssetRegisterOverview() {
                 // Upcoming alerts and licence reminders already describe the due date or readings in the message.
                 const context = [item.registerName, item.section !== 'coming_up' && item.category !== 'licence' ? item.meta : '']
                   .filter(Boolean).join(' · ');
+                const expanded = openId === item.id;
+                const toggle = () => {
+                  if (clearingId !== null) return;
+                  setClearError('');
+                  setOpenId(current => current === item.id ? null : item.id);
+                };
                 const tone = categoryClassName(item.category);
                 return (
                   <div key={item.id} className={sharedStyles.frame}>
@@ -730,11 +727,10 @@ export default function AssetRegisterOverview() {
                         if ((event.target as Element).closest('button, a, input, select, textarea')) return;
                         if (window.getSelection()?.toString()) return;
                         event.currentTarget.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
-                        setClearError('');
-                        setOpenItem(item);
+                        toggle();
                       }}
                     >
-                      <span aria-hidden="true" data-tooltip="Open update" className={`${registerStyles.controlTooltip} ${registerStyles.cardToggleHint}`} />
+                      <span aria-hidden="true" data-tooltip={expanded ? 'Close update' : 'Open update'} className={`${registerStyles.controlTooltip} ${registerStyles.cardToggleHint}`} />
                       <span aria-hidden="true" className={`${sharedStyles.icon} ${styles.categoryIcon} ${tone}`}>
                         {categoryIcon(item.category)}
                       </span>
@@ -758,16 +754,44 @@ export default function AssetRegisterOverview() {
                       <div className={sharedStyles.actions}>
                         <button
                           type="button"
-                          className={sharedStyles.toggle}
-                          aria-label={`Open ${item.headline} for ${item.assetTitle}`}
-                          aria-haspopup="dialog"
-                          data-tooltip="Open update"
-                          onClick={() => { setClearError(''); setOpenItem(item); }}
+                          className={`${registerStyles.expandButton} ${registerStyles.cardViewDetailsButton} ${registerStyles.controlTooltip}`}
+                          aria-label={`${expanded ? 'Close' : 'Open'} ${item.headline} for ${item.assetTitle}`}
+                          aria-expanded={expanded}
+                          aria-controls={`overview-details-${item.id}`}
+                          disabled={clearingId !== null}
+                          data-tooltip={expanded ? 'Close update' : 'Open update'}
+                          onClick={toggle}
                         >
-                          Open
+                          <svg className={`${registerStyles.buttonIcon} ${registerStyles.assetDetailsChevron}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <path d={expanded ? 'm18 15-6-6-6 6' : 'm6 9 6 6 6-6'} />
+                          </svg>
+                          <span>{expanded ? 'Close' : 'Open'}</span>
                         </button>
                       </div>
                     </article>
+                    <div id={`overview-details-${item.id}`} hidden={!expanded}>
+                      {expanded && <div className={styles.messagePanel}>
+                        <div className={styles.messageContext}>
+                          <span className={styles.messageCategory}>{categoryLabel(item.category)}</span>
+                          <span className={styles.messageStatus}>{item.status}</span>
+                        </div>
+                        <p>{item.detail}</p>
+                        {item.meta ? <small>{item.meta}</small> : null}
+                        <p className={styles.messageHint}>Noted removes this update from Overview and keeps its history. Scheduled work stays open.</p>
+                        <div className={styles.messageActions}>
+                          <a className={styles.messageAssetLink} href={buildAssetHref(item.assetId)}
+                            aria-disabled={clearingId !== null}
+                            onClick={event => {
+                              if (clearingId !== null) { event.preventDefault(); return; }
+                              setOpenId(null); selectView('assets');
+                            }}>Go to asset</a>
+                          <button type="button" className={styles.messageNotedButton}
+                            disabled={clearingId !== null} onClick={() => void handleClear(item)}>
+                            {clearingId === item.id ? 'Saving…' : 'Noted'}
+                          </button>
+                        </div>
+                      </div>}
+                    </div>
                   </div>
                 );
               })}
@@ -775,40 +799,6 @@ export default function AssetRegisterOverview() {
           )}
         </section>
       ) : null}
-      {openItem && createPortal(
-        <LeadActionDialog
-          title={openItem.assetTitle}
-          assetTitle={openItem.headline}
-          assetSubtitle={assetMeta(openItem)}
-          className={`${messageStyles.dialog} ${styles.overviewDialog}`}
-          busy={clearingId !== null}
-          onClose={() => setOpenItem(null)}
-          closeLabel="Close overview message"
-          footer={<div className={styles.messageActions}>
-            <a className={styles.messageAssetLink} href={buildAssetHref(openItem.assetId)}
-              aria-disabled={clearingId !== null}
-              onClick={event => {
-                if (clearingId !== null) { event.preventDefault(); return; }
-                setOpenItem(null); selectView('assets');
-              }}>Go to asset</a>
-            <button type="button" className={styles.messageNotedButton}
-              disabled={clearingId !== null} onClick={() => void handleClear(openItem)}>
-              {clearingId === openItem.id ? 'Saving…' : 'Noted'}
-            </button>
-          </div>}
-        >
-          <div className={styles.messagePanel}>
-            <div className={styles.messageContext}>
-              <span className={styles.messageCategory}>{categoryLabel(openItem.category)}</span>
-              <span className={styles.messageStatus}>{openItem.status}</span>
-            </div>
-            <p>{openItem.detail}</p>
-            {openItem.meta ? <small>{openItem.meta}</small> : null}
-          </div>
-          <p className={styles.messageHint}>Noted removes this update from Overview and keeps its history. Scheduled work stays open.</p>
-          {clearError ? <p className={styles.actionError} role="alert">{clearError}</p> : null}
-        </LeadActionDialog>, document.body
-      )}
     </div>,
     portalHost,
   );

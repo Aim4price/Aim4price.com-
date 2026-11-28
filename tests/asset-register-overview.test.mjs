@@ -105,11 +105,12 @@ test('Overview hides the asset workspace and uses the Assets tab for navigation'
 
 test('overview uses the Shared Assets card, icon, typography and Open control', () => {
   assert.match(overview, /import sharedStyles from '\.\.\/leads\/shared-assets\.module\.css'/);
-  for (const name of ['frame', 'card', 'icon', 'body', 'heading', 'metadata', 'preview', 'actions', 'toggle']) {
+  for (const name of ['frame', 'card', 'icon', 'body', 'heading', 'metadata', 'preview', 'actions']) {
     assert.ok(overview.includes(`sharedStyles.${name}`), `Overview should use the Shared Assets ${name} style`);
   }
   assert.match(overview, /<h2>\{item.assetTitle\}<\/h2>/);
-  assert.match(overview, /aria-haspopup="dialog"/);
+  assert.match(overview, /aria-expanded=\{expanded\}/);
+  assert.match(overview, /registerStyles\.cardViewDetailsButton/);
   assertNoWebsiteReflow(styles);
   assert.match(overview, /Checking the register/);
   assert.match(overview, /Overview unavailable/);
