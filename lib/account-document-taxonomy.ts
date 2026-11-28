@@ -35,6 +35,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'asset',
     label: 'Licence disc',
     category: 'licence',
+    description: 'Annual renewal',
     keywords: ['vehicle licence', 'renewal'],
   },
   {
@@ -42,6 +43,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'asset',
     label: 'Registration certificate / NaTIS',
     category: 'licence',
+    description: 'NaTIS records',
     keywords: ['registration', 'natis', 'rc1'],
   },
   {
@@ -49,6 +51,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'asset',
     label: 'Roadworthy / certificate of fitness',
     category: 'licence',
+    description: 'Road safety',
     keywords: ['roadworthy', 'cof', 'fitness'],
   },
   {
@@ -56,6 +59,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'both',
     label: 'Operating permit',
     category: 'licence',
+    description: 'Operating rights',
     keywords: ['permit', 'licence'],
   },
   {
@@ -63,6 +67,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'both',
     label: 'Insurance policy',
     category: 'insurance',
+    description: 'Cover terms',
     keywords: ['policy', 'cover'],
   },
   {
@@ -70,6 +75,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'both',
     label: 'Insurance schedule / certificate',
     category: 'insurance',
+    description: 'Insured items',
     keywords: ['schedule', 'certificate of insurance'],
   },
   {
@@ -77,6 +83,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'both',
     label: 'Insurance claim document',
     category: 'insurance',
+    description: 'Loss or damage',
     keywords: ['claim', 'loss', 'damage'],
   },
   {
@@ -84,6 +91,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'both',
     label: 'Finance agreement',
     category: 'finance',
+    description: 'Loan terms',
     keywords: ['credit agreement', 'loan'],
   },
   {
@@ -91,6 +99,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'both',
     label: 'Finance statement',
     category: 'finance',
+    description: 'Loan balance',
     keywords: ['statement', 'balance'],
   },
   {
@@ -98,6 +107,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'both',
     label: 'Settlement letter',
     category: 'finance',
+    description: 'Settlement amount',
     keywords: ['settlement', 'paid up'],
   },
   {
@@ -105,6 +115,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'asset',
     label: 'Invoice / proof of purchase',
     category: 'ownership',
+    description: 'Invoices and receipts',
     keywords: ['invoice', 'purchase', 'receipt'],
   },
   {
@@ -112,6 +123,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'asset',
     label: 'Ownership certificate',
     category: 'ownership',
+    description: 'Registered owner',
     keywords: ['ownership', 'title'],
   },
   {
@@ -119,6 +131,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'asset',
     label: 'Service invoice / service record',
     category: 'other',
+    description: 'Work carried out',
     keywords: ['service', 'maintenance', 'repair'],
   },
   {
@@ -126,6 +139,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'asset',
     label: 'Inspection report',
     category: 'other',
+    description: 'Condition checks',
     keywords: ['inspection', 'assessment'],
   },
   {
@@ -133,6 +147,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'asset',
     label: 'Valuation report',
     category: 'other',
+    description: 'Assessed value',
     keywords: ['valuation', 'appraisal'],
   },
   {
@@ -140,6 +155,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'asset',
     label: 'Warranty certificate',
     category: 'warranty',
+    description: 'Warranty cover',
     keywords: ['warranty', 'guarantee'],
   },
   {
@@ -147,6 +163,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'both',
     label: 'Contract / agreement',
     category: 'contract',
+    description: 'Agreed terms',
     keywords: ['contract', 'agreement'],
   },
   {
@@ -154,6 +171,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'general',
     label: 'Company registration document',
     category: 'business',
+    description: 'CIPC records',
     keywords: ['company', 'registration', 'cipc'],
   },
   {
@@ -161,6 +179,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'general',
     label: 'Tax document',
     category: 'tax-accounting',
+    description: 'SARS and VAT',
     keywords: ['tax', 'sars', 'vat'],
   },
   {
@@ -168,6 +187,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'general',
     label: 'Accounting record / report',
     category: 'tax-accounting',
+    description: 'Financial records',
     keywords: ['accounting', 'financial report'],
   },
   {
@@ -175,6 +195,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
     scope: 'both',
     label: 'Other document',
     category: 'other',
+    description: 'Unlisted documents',
     keywords: ['other'],
   },
 ] as const satisfies ReadonlyArray<{
@@ -182,6 +203,7 @@ export const ACCOUNT_DOCUMENT_TYPES = [
   scope: 'general' | 'asset' | 'both';
   label: string;
   category: AccountDocumentCategory;
+  description: string;
   keywords: readonly string[];
 }>;
 
