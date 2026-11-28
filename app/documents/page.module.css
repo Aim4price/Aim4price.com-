@@ -3723,8 +3723,7 @@
   overflow-wrap: anywhere;
 }
 
-.assetSelectionCopy span,
-.assetSelectionCopy small {
+.assetSelectionCopy > small {
   color: #647587;
   font-size: 0.93rem;
   font-weight: 660;
