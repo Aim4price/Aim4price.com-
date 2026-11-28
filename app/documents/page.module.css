@@ -4361,21 +4361,47 @@
 .categoryGroup > summary::-webkit-details-marker { display: none; }
 .categoryHeader .categoryCount { margin-inline-start: auto; }
 .disclosureAction {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .45rem;
-  flex: none;
-  padding: .65rem 1rem;
-  border: 1px solid var(--app-border, #93b7d5);
-  border-radius: .85rem;
-  background: var(--app-surface-soft, #eef5fa);
-  color: var(--app-text, #173e53);
+  flex: 0 1 auto;
+  width: calc((32rem - 1.5rem) / 3);
+  max-width: 100%;
+  height: 3.2rem;
+  gap: .46rem;
+  padding: 0 .75rem;
+  border: 1.5px solid var(--app-info-line, #7eb4df);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-info-soft, #eaf5ff) 100%);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(15,59,100,.085)), inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.98));
+  color: var(--app-info, #0f3b64);
   font: inherit;
+  font-size: .95rem;
   font-weight: 750;
+  line-height: normal;
+  white-space: nowrap;
   cursor: pointer;
 }
-.disclosureAction svg { width: 1.2rem; height: 1.2rem; padding: .12rem; border: 1px solid currentColor; border-radius: 50%; }
+.disclosureAction:hover,
+.categoryGroup > summary:hover .disclosureAction {
+  border-color: var(--app-info-line, #558fc6);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-info-soft, #daecff) 100%);
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(15,59,100,.115)), inset 0 1px 0 var(--app-shadow-colour, #fff);
+}
+.disclosureAction svg {
+  box-sizing: border-box;
+  width: 1.28rem;
+  height: 1.28rem;
+  flex: 0 0 1.28rem;
+  padding: .2rem;
+  border: 1px solid var(--app-info-line, rgba(46,132,211,.22));
+  border-radius: 999px;
+  background: var(--app-info-soft, rgba(222,240,255,.84));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.94));
+  stroke-width: 2.6;
+  transition: transform 150ms ease;
+}
 .disclosureAction[aria-expanded='true'] svg,
 .categoryGroup[open] > summary .disclosureAction svg { transform: rotate(180deg); }
 .categoryGroup:not([open]) > summary .whenOpen,
