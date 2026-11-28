@@ -59,12 +59,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Skimmelkrans Boerdery Pty Ltd');assert.equal(await page.evaluate(()=>window.selected),'');
  assert.equal(await page.$$eval('button[aria-pressed=true]',els=>els.length),1);
  for(const width of [1280,390,320]){await page.setViewport({width,height:900});assert(await page.$eval('[role=dialog]',e=>e.getBoundingClientRect().right<=innerWidth+1));assert(await page.$eval('[role=dialog]',e=>e.scrollWidth<=e.clientWidth));assert(await page.$$eval('button[aria-pressed]',els=>els.every(e=>e.scrollHeight<=e.clientHeight+2)));await page.screenshot({path:'/tmp/register-choose-'+width+'.png'});}
- assert(await page.evaluate(()=>document.body.textContent.includes('Register value · incl. VAT')));
+ assert(await page.evaluate(()=>document.body.textContent.includes('Register value · including VAT')));
  await click('Continue');await page.waitForFunction(()=>window.selected==='a');
  await page.type('input[type=search]','Empty');assert.equal(await page.$$eval('button[aria-pressed]',els=>els.length),1);
  await page.evaluate(()=>window.renderPicker('move'));await page.waitForFunction(()=>document.body.textContent.includes('Asset Register'));await click('Asset Register');await page.waitForSelector('input[type=search]');
  await click('Empty register');assert.equal(await page.evaluate(()=>window.moves),0);await click('Move asset');assert.equal(await page.evaluate(()=>window.moves),1);
- assert(await page.evaluate(()=>document.body.textContent.includes('Register value · incl. VAT')));
+ assert(await page.evaluate(()=>document.body.textContent.includes('Register value · including VAT')));
  for(const width of [1280,390,320]){await page.setViewport({width,height:900});assert(await page.$eval('[role=dialog]',e=>e.scrollWidth<=e.clientWidth));await page.screenshot({path:'/tmp/register-move-'+width+'.png'});}
  await click('Back');assert.equal(await page.$('input[type=search]'),null);
  assert.deepEqual(errors,[]);console.log('PASS register selection, confirmation, search, zero totals, long names and desktop/mobile layouts');

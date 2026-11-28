@@ -4,8 +4,8 @@
 .field > button svg { width: 1rem; height: 1rem; }
 .dialog .grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: .65rem; }
 .dialog .grid button { min-height: 4.25rem; }
-.dialog .grid button[aria-pressed="true"] { background: #15533e; color: white; border-color: #15533e; }
-.dialog .grid button[aria-pressed="true"] small { color: white; }
+.dialog .grid button[aria-pressed="true"] { background: color-mix(in srgb, #65bf91 24%, var(--app-surface, white)); color: var(--app-text, #173c32); border-color: #438661; }
+.dialog .grid button[aria-pressed="true"] small { color: var(--app-text, #173c32); }
 .copy.copy strong { white-space: normal; }
 .copy.copy small { white-space: nowrap; font-weight: 650; color: var(--app-text, #29483e); }
 .dialog > header p:empty { display: none; }

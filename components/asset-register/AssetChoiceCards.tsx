@@ -21,19 +21,21 @@ type Props<T extends string> = {
 
 export default function AssetChoiceCards<T extends string>({ label, value, options, onChange, placeholder, className, hideLabel }: Props<T>) {
   const [open, setOpen] = useState(false);
+  const [confirmedValue, setConfirmedValue] = useState<T | null>(null);
+  const answered = Boolean(value && (confirmedValue === value || !['unknown', 'included', 'excluded'].includes(value)));
   const question = label.replace(/\s*\*$/, '');
   const selected = options.find(option => option.value === value);
   const display = selected?.label || placeholder || 'Choose an option';
 
   return <div className={className || styles.field}>
     {!hideLabel && <span>{label}</span>}
-    <button type="button" className={field.trigger} aria-label={`${question} — ${display}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+    <button type="button" className={field.trigger} data-answered={answered} aria-label={`${question} — ${display}`} aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
       <span>{display}</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg>
     </button>
     {open && <AssetChoiceDialog title={question} value={value} options={options}
       onClose={() => setOpen(false)} onBack={() => setOpen(false)}
-      onSelect={next => { onChange(next); setOpen(false); }} />}
+      onSelect={next => { setConfirmedValue(next); onChange(next); setOpen(false); }} />}
   </div>;
 }
 

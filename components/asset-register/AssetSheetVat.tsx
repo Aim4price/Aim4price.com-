@@ -9,7 +9,7 @@ function VatChoices({ label, field, value, onChange }: {
   return <div className={css.vatChoices} role="group" aria-label={label} data-vat-field={field}>
     {(['excluded', 'included'] as const).map(option =>
       <button key={option} type="button" aria-pressed={value === option} onClick={() => onChange(option)}>
-        {option === 'included' ? 'Incl. VAT' : 'Excl. VAT'}
+        {option === 'included' ? 'Including VAT' : 'Excluding VAT'}
       </button>)}
   </div>;
 }

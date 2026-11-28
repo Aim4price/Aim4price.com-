@@ -330,3 +330,12 @@
 .pagedDialog [data-details-page]:focus { outline: none; }
 .pagedDialog .compactGrid.compactGrid > label,
 .pagedDialog .compactGrid.compactGrid > div { padding: .7rem !important; }
+
+/* Keep completion visible when keyboard focus moves to the next question. */
+.addEntry input[placeholder]:not(:placeholder-shown),
+.addEntry textarea[placeholder]:not(:placeholder-shown),
+.addEntry[data-add-entry] button[data-answered="true"],
+:global([data-add-entry]) .currencyControl:has(input:not(:placeholder-shown)) {
+  background: color-mix(in srgb, #65bf91 20%, var(--app-surface, white)) !important;
+  border-color: color-mix(in srgb, #389265 60%, var(--app-surface, white)) !important;
+}

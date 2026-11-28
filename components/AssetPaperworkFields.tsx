@@ -172,7 +172,7 @@ function PaperworkEditor({
         <ModalSelect className={ui.field} label="Finance status" buttonLabel="Finance status" value={draft.financeStatus}
           options={QUICK_FINANCE_STATUS_OPTIONS} onChange={setAssetFinanceStatus} showDescriptions={false} usePortal />
         {date('financeBoughtWhen', 'Acquisition date')}
-        {field('financeBoughtForExVat', 'Acquisition amount excl. VAT', { kind: 'amount' })}
+        {field('financeBoughtForExVat', 'Acquisition amount excluding VAT', { kind: 'amount' })}
       </>,
     });
     showNotes = draft.financeStatus === 'yes' || draft.financeStatus === 'paid';
@@ -183,7 +183,7 @@ function PaperworkEditor({
           <ModalSelect className={ui.field} label="Finance type" buttonLabel="Finance type" value={draft.financeType}
             options={FINANCE_TYPE_OPTIONS} onChange={setAssetFinanceType} placeholder="Select finance type" showDescriptions={false} usePortal />
           {field('financierName', 'Financier', { placeholder: 'Bank or finance house' })}
-          {draft.financeStatus === 'yes' && field('financeCurrentOutstandingExVat', 'Outstanding balance excl. VAT', { kind: 'amount' })}
+          {draft.financeStatus === 'yes' && field('financeCurrentOutstandingExVat', 'Outstanding balance excluding VAT', { kind: 'amount' })}
           {bulkFinanceControl}
           <label className={ui.advanced}>
             <input type="checkbox" checked={includeTerms} onChange={event => setIncludeTerms(event.target.checked)} />
@@ -195,7 +195,7 @@ function PaperworkEditor({
         pages.push({
           title: 'Payment details',
           fields: <>
-            {field('financeOriginalAmountExVat', 'Original financed amount excl. VAT', { kind: 'amount' })}
+            {field('financeOriginalAmountExVat', 'Original financed amount excluding VAT', { kind: 'amount' })}
             {field('financeMonthlyPaymentExVat', 'Monthly payment', { kind: 'amount' })}
             {field('financeInterestRatePercent', 'Interest rate %', { kind: 'percent' })}
           </>,
@@ -203,7 +203,7 @@ function PaperworkEditor({
           title: 'Agreement terms',
           fields: <>
             {field('financeTermMonths', 'Finance term months', { kind: 'months' })}
-            {field('financeBalloonPaymentExVat', 'Balloon / residual amount excl. VAT', { kind: 'amount' })}
+            {field('financeBalloonPaymentExVat', 'Balloon / residual amount excluding VAT', { kind: 'amount' })}
             {date('financeSettlementDate', 'Settlement / expiry date')}
             {field('financeReferenceNumber', 'Agreement / reference number')}
           </>,
@@ -218,7 +218,7 @@ function PaperworkEditor({
         <ModalSelect className={ui.field} label="Insurance status" buttonLabel="Insurance status" value={draft.insuranceStatus}
           options={QUICK_INSURANCE_STATUS_OPTIONS} onChange={setAssetInsuranceStatus} showDescriptions={false} usePortal />
         {showNotes && <>
-          {field('insuredValueExVat', 'Insured amount excl. VAT', { kind: 'amount' })}
+          {field('insuredValueExVat', 'Insured amount excluding VAT', { kind: 'amount' })}
           {field('insuranceInsurerName', 'Insurer name')}
         </>}
       </>,

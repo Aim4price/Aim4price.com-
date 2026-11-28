@@ -619,8 +619,8 @@ async function check(browser, url) {
   await page.waitForSelector('[aria-label="Assets to add"]');
   await page.click('[aria-label="Review pages"] button:last-child');
   const reviewed = await page.$eval('[aria-label="Assets to add"] tbody tr:nth-child(19)', tr => tr.textContent.replace(/[^a-zA-Z0-9]/g,''));
-  assert.match(reviewed, /50000exclVAT/);
-  assert.match(reviewed, /115000inclVATR100000exclVATtosave/);
+  assert.match(reviewed, /50000excludingVAT/);
+  assert.match(reviewed, /115000includingVATR100000excludingVATtosave/);
   await page.click('[aria-label="Close add asset options"]');
   // Set the intended 150% scenario directly; repeated steps depend on the
   // current automatic scale and no longer stop at the former 150% maximum.

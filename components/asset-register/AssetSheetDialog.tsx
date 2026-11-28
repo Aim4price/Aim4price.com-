@@ -431,9 +431,9 @@ export default function AssetSheetDialog({ registerId, registerName, initialStag
                   if (saved === null) return <td key={field}>{field === 'value' ? 'Awaiting valuation' : '—'}</td>;
                   const included = basisForColumn(basis, field) === 'included';
                   return <td key={field}>
-                    {sheetRand.format(parseAmount(r[field]))} {included ? 'incl. VAT' : 'excl. VAT'}
+                    {sheetRand.format(parseAmount(r[field]))} {included ? 'including VAT' : 'excluding VAT'}
                     {(included || saved !== parseAmount(r[field])) && <small className={css.savedValue}>
-                      {sheetRand.format(saved)} excl. VAT to save
+                      {sheetRand.format(saved)} excluding VAT to save
                     </small>}
                   </td>;
                 })}

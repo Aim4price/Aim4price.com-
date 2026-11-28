@@ -2579,7 +2579,7 @@ function AssetVatValueField({ label, value, onChange, initialVatMode, className,
           hideLabel
           className={updateStyles.vatValueSelect}
           value={vatMode}
-          options={[{ value: 'excluded', label: 'Excl. VAT' }, { value: 'included', label: 'Incl. VAT' }]}
+          options={[{ value: 'excluded', label: 'Excluding VAT' }, { value: 'included', label: 'Including VAT' }]}
           onChange={(mode) => { setVatMode(mode); setEntry(null); }}
         />
         {onOpen ? (
@@ -3575,7 +3575,7 @@ function financeStatusSummary(draft: AssetStatusDraft): string {
   const parts = ['Financed'];
   const outstanding = parseRegisterValueInput(draft.financeCurrentOutstandingExVat);
   if (draft.financeCurrentOutstandingExVat.trim() && Number.isFinite(outstanding)) {
-    parts.push(`${money(outstanding)} outstanding excl. VAT`);
+    parts.push(`${money(outstanding)} outstanding excluding VAT`);
   }
   if (draft.financierName.trim()) parts.push(draft.financierName.trim());
   return parts.join(' · ');
@@ -3593,7 +3593,7 @@ function insuranceStatusSummary(draft: AssetStatusDraft): string {
 
   const insuredValue = parseRegisterValueInput(draft.insuredValueExVat);
   if (draft.insuredValueExVat.trim() && insuredValue > 0) {
-    return `Insured for ${money(insuredValue)} excl. VAT`;
+    return `Insured for ${money(insuredValue)} excluding VAT`;
   }
 
   return 'Insured';
@@ -18242,7 +18242,7 @@ export default function AssetRegisterClient({
       {isAcquisitionChoiceOpen ? (
         <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => setAcquisitionStep(null)} />
-          <div className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.newAcquisitionChoiceModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
+          <div className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.newAcquisitionChoiceModal} ${styles.assetEntryModal} ${updateStyles.addEntry} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
             <div className={`${styles.modalHeader} ${styles.newAcquisitionChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="new-acquisition-title">{acquisitionStep === 'details' ? 'Acquisition details' : 'Newly acquired asset?'}</h3>
@@ -18260,7 +18260,7 @@ export default function AssetRegisterClient({
                     <DateInput value={newAssetAcquisitionDraft.acquisitionDate} onValueChange={(value) => setNewAssetAcquisitionDraft((current) => ({ ...current, acquisitionDate: value }))} required />
                   </label>
                   <label className={accountStyles.modalField}>
-                    <span>Purchase or acquisition amount <small>Optional, excl. VAT</small></span>
+                    <span>Purchase or acquisition amount <small>Optional, excluding VAT</small></span>
                     <input inputMode="decimal" value={newAssetAcquisitionDraft.acquisitionAmountExVat} onChange={(event) => setNewAssetAcquisitionDraft((current) => ({ ...current, acquisitionAmountExVat: event.target.value }))} placeholder="R 0" />
                   </label>
                   <label className={accountStyles.modalField}>
@@ -18346,9 +18346,10 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetFormModal} ${useCompactAssetDialog ? updateStyles.pagedDialog : ''} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''} ${manualAssetStep === 3 && assetStatusEditView === 'hub' && !showAssetUpdateMenu ? styles.paperworkOverviewModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetFormModal} ${editingAsset ? '' : updateStyles.addEntry} ${useCompactAssetDialog ? updateStyles.pagedDialog : ''} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''} ${manualAssetStep === 3 && assetStatusEditView === 'hub' && !showAssetUpdateMenu ? styles.paperworkOverviewModal : ''}`}
             role="dialog"
             aria-modal="true"
+            data-add-entry={editingAsset ? undefined : true}
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
           >
             <div className={`${styles.modalHeader} ${styles.assetFormModalHeader} ${styles.manualWizardHeader} ${styles.assetFormModalChromeHeader}`}>
