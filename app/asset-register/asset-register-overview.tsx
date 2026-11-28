@@ -6,6 +6,7 @@ import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asse
 import { createPortal } from '../../components/WebsitePortal';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import registerStyles from './page.module.css';
+import documentStyles from '../documents/page.module.css';
 import sharedStyles from '../leads/shared-assets.module.css';
 import styles from './asset-register-overview.module.css';
 
@@ -758,12 +759,13 @@ export default function AssetRegisterOverview() {
                       <div className={sharedStyles.actions}>
                         <button
                           type="button"
-                          className={sharedStyles.toggle}
+                          className={documentStyles.disclosureAction}
                           aria-label={`Open ${item.headline} for ${item.assetTitle}`}
                           aria-haspopup="dialog"
                           data-tooltip="Open update"
                           onClick={() => { setClearError(''); setOpenItem(item); }}
                         >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
                           Open
                         </button>
                       </div>
@@ -785,6 +787,10 @@ export default function AssetRegisterOverview() {
           onClose={() => setOpenItem(null)}
           closeLabel="Close overview message"
           footer={<div className={styles.messageActions}>
+            <button type="button" className={documentStyles.disclosureAction} disabled={clearingId !== null} onClick={() => setOpenItem(null)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>
+              Close
+            </button>
             <a className={styles.messageAssetLink} href={buildAssetHref(openItem.assetId)}
               aria-disabled={clearingId !== null}
               onClick={event => {
