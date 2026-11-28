@@ -1356,27 +1356,27 @@ const STOCK_ASSET_SUBTYPE_OPTIONS: Array<{
 
 const INSURANCE_USE_CONTEXT_OPTIONS: Array<{ value: InsuranceUseContext; label: string; description: string }> = [
   { value: 'business', label: 'Business use', description: 'Work or trade' },
-  { value: 'home', label: 'Home / personal use', description: 'Private use' },
-  { value: 'mixed', label: 'Both business and personal', description: 'Work and home' },
+  { value: 'home', label: 'Personal use', description: 'Private use' },
+  { value: 'mixed', label: 'Mixed use', description: 'Work and home' },
 ];
 
 const INSURANCE_MOBILITY_OPTIONS: Array<{ value: InsuranceMobility; label: string; description: string }> = [
-  { value: 'premises', label: 'Usually stays at one site', description: 'One address' },
-  { value: 'portable', label: 'Portable / carried around', description: 'Carried with you' },
+  { value: 'premises', label: 'One site', description: 'One address' },
+  { value: 'portable', label: 'Portable', description: 'Carried with you' },
   { value: 'moves_between_locations', label: 'Moves between sites', description: 'Across sites' },
-  { value: 'fixed', label: 'Fixed or built in', description: 'Attached in place' },
+  { value: 'fixed', label: 'Fixed', description: 'Attached in place' },
 ];
 
 const PROPERTY_INTEREST_OPTIONS: Array<{ value: PropertyInterest; label: string; description: string }> = [
-  { value: 'owned_occupied', label: 'Owned and occupied', description: 'Your own premises' },
-  { value: 'owned_let', label: 'Owned and let to others', description: 'Rented to others' },
-  { value: 'leased_occupied', label: 'Leased or rented', description: 'Rented from others' },
-  { value: 'tenant_improvement', label: 'Tenant improvement only', description: 'Tenant-funded work' },
+  { value: 'owned_occupied', label: 'Owner-occupied', description: 'Your own premises' },
+  { value: 'owned_let', label: 'Let to tenants', description: 'Rented to others' },
+  { value: 'leased_occupied', label: 'Rented', description: 'Rented from others' },
+  { value: 'tenant_improvement', label: 'Improvements only', description: 'Tenant-funded work' },
   { value: 'unknown', label: 'Not sure', description: 'Confirm later' },
 ];
 
 const STOCK_VALUATION_BASIS_OPTIONS: Array<{ value: StockValuationBasis; label: string; description: string }> = [
-  { value: 'purchase_cost', label: 'Purchase or landed cost', description: 'Cost to acquire' },
+  { value: 'purchase_cost', label: 'Acquisition cost', description: 'Purchase or landed' },
   { value: 'replacement_cost', label: 'Replacement cost', description: 'Cost to replace' },
   { value: 'selling_price', label: 'Selling price', description: 'Expected sale price' },
   { value: 'market_value', label: 'Market value', description: 'Current market price' },
@@ -1385,9 +1385,9 @@ const STOCK_VALUATION_BASIS_OPTIONS: Array<{ value: StockValuationBasis; label: 
 ];
 
 const STOCK_MOVEMENT_OPTIONS: Array<{ value: StockMovement; label: string; description: string }> = [
-  { value: 'one_location', label: 'Usually at one location', description: 'One site' },
-  { value: 'multiple_locations', label: 'Held at multiple locations', description: 'Several sites' },
-  { value: 'regular_transit', label: 'Regularly transported', description: 'In transit' },
+  { value: 'one_location', label: 'One location', description: 'One site' },
+  { value: 'multiple_locations', label: 'Multiple locations', description: 'Several sites' },
+  { value: 'regular_transit', label: 'Often in transit', description: 'In transit' },
   { value: 'seasonal_locations', label: 'Moves seasonally', description: 'Varies by season' },
   { value: 'unknown', label: 'Not sure', description: 'Confirm later' },
 ];
@@ -1399,8 +1399,8 @@ const INSURANCE_CRITICALITY_OPTIONS: Array<{ value: InsuranceFactAnswer; label: 
 ];
 
 const TEMPERATURE_SENSITIVE_STOCK_OPTIONS: Array<{ value: InsuranceFactAnswer; label: string; description: string }> = [
-  { value: 'yes', label: 'Yes', description: 'Temperature control needed' },
-  { value: 'no', label: 'No', description: 'Ambient storage is fine' },
+  { value: 'yes', label: 'Yes', description: 'Controlled storage' },
+  { value: 'no', label: 'No', description: 'Ambient storage' },
   { value: 'unknown', label: 'Not sure', description: 'Confirm later' },
 ];
 
