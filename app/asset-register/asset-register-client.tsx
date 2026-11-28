@@ -44,7 +44,7 @@ import LeadActionDialog from '../../components/leads/LeadActionDialog';
 const SharedAssetWorkDialog = dynamic(() => import('../../components/leads/SharedAssetWorkDialog'));
 import AssetDetailsFields from '../../components/AssetDetailsFields';
 import AssetOptionIcon from '../../components/asset-register/AssetOptionIcon';
-import AssetChoiceCards from '../../components/asset-register/AssetChoiceCards';
+import AssetChoiceCards, { AssetChoiceDialog } from '../../components/asset-register/AssetChoiceCards';
 import AssetDetailChoiceField from '../../components/AssetDetailChoiceField';
 import AssetRegisterGuide from '../../components/asset-register/AssetRegisterGuide';
 import cardLayout from '../../components/asset-register/AssetCardDetails.module.css';
@@ -18308,7 +18308,25 @@ export default function AssetRegisterClient({
       />}
       {resolveIssue&&<LeadActionDialog title="Resolve problem" assetTitle={resolveIssue.title} busy={Boolean(busyIssueNoteStatusId)} onClose={()=>setResolveIssue(null)} footer={<><button className={styles.secondaryButton} disabled={Boolean(busyIssueNoteStatusId)} onClick={()=>setResolveIssue(null)}>Cancel</button><button className={styles.primaryButton} disabled={Boolean(busyIssueNoteStatusId)} onClick={()=>void handleMarkIssueNoteStatusNoted(resolveIssue.id,resolveIssue.assetId)}>{busyIssueNoteStatusId?'Saving…':'Yes, resolved'}</button></>}><p>Are you sure this problem is resolved?</p><p>{resolveIssue.note}</p></LeadActionDialog>}
       {historyAsset&&<SharedAssetWorkDialog endpoint={`/api/asset-register/${historyAsset.id}`} action="history" assetTitle={historyAsset.title} assetSubtitle={historyAsset.details} onClose={()=>setHistoryAsset(null)}/>}
-      {isAssetModalOpen ? (
+      {isAssetModalOpen && manualAssetStep === 1 && !editingAsset ? (
+        <AssetChoiceDialog<AssetKind>
+          title="What are you adding?"
+          subtitle={`Adding to ${addAssetTargetRegisterName}`}
+          value={hasManualAssetKindSelection ? assetFormKind : ''}
+          options={MANUAL_ASSET_TYPE_OPTIONS}
+          busy={assetFlow.pending}
+          onClose={navigateBackFromAssetForm}
+          onBack={() => {
+            if (hasManualAssetKindSelection) {
+              setManualAssetStep(2);
+            } else {
+              setIsAssetModalOpen(false);
+              setAcquisitionStep(newAssetAcquisitionDraft.newlyAcquired ? 'details' : 'choice');
+            }
+          }}
+          onSelect={(kind, trigger) => assetFlow.start(trigger, kindLabel(kind), () => selectManualAssetKind(kind, true))}
+        />
+      ) : isAssetModalOpen ? (
         <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
 
