@@ -40,3 +40,15 @@
 @container (max-width: 36rem) {
   .dialog .allOptions > button { flex-basis: 100%; }
 }
+
+.dialog .equalColumns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.equalColumns .copy strong { white-space: nowrap; }
+@container (max-width: 52rem) {
+  .dialog .equalColumns { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@container (max-width: 35rem) {
+  .dialog .equalColumns { grid-template-columns: minmax(0, 1fr); }
+}

@@ -1285,7 +1285,7 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   {
     value: 'vehicle',
     label: 'Vehicle',
-    description: 'Cars & trucks',
+    description: 'Road vehicles & trailers',
     titlePlaceholder: 'Example: Toyota Hilux farm bakkie',
   },
   {
@@ -1297,25 +1297,25 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
   {
     value: 'property',
     label: PROPERTY_ASSET_LABEL,
-    description: 'Land & homes',
+    description: 'Land & structures',
     titlePlaceholder: PROPERTY_ASSET_TITLE_PLACEHOLDER,
   },
   {
     value: 'tools',
     label: 'Tools',
-    description: 'Workshop tools',
+    description: 'Hand & power tools',
     titlePlaceholder: 'Example: Workshop tool set',
   },
   {
     value: 'stock',
     label: 'Stock',
-    description: 'Goods & herds',
-    titlePlaceholder: 'Example: Parts inventory, fertiliser stock or livestock',
+    description: 'Goods & produce',
+    titlePlaceholder: 'Example: Parts inventory or fertiliser stock',
   },
   {
     value: 'manual',
     label: 'Contents & electronics',
-    description: 'Home & tech',
+    description: 'Furnishings & devices',
     titlePlaceholder: 'Example: Samsung fridge, office desks or MacBook Pro',
   },
   {
@@ -1325,6 +1325,16 @@ const MANUAL_ASSET_TYPE_OPTIONS: Array<{
     titlePlaceholder: 'Enter the name of your asset',
   },
 ];
+
+const LIVESTOCK_ENTRY = {
+  value: 'livestock' as const,
+  label: 'Livestock',
+  description: 'Animals & herds',
+  titlePlaceholder: 'Example: Breeding cattle herd',
+};
+const ADD_ASSET_TYPE_OPTIONS = MANUAL_ASSET_TYPE_OPTIONS.flatMap(option =>
+  option.value === 'other' ? [LIVESTOCK_ENTRY, option] : [option]
+);
 
 const GENERAL_ASSET_CATEGORY_OPTIONS: Array<{
   value: GeneralAssetCategoryKey;
@@ -10450,7 +10460,8 @@ export default function AssetRegisterClient({
     }
   }
 
-  function selectManualAssetKind(nextKind: AssetKind, shouldAdvance = false) {
+  function selectManualAssetKind(choice: AssetKind | 'livestock', shouldAdvance = false) {
+    const nextKind = choice === 'livestock' ? 'stock' : choice;
     const supportsLicensing = assetKindSupportsLicensing(nextKind);
     setHasManualAssetKindSelection(true);
 
@@ -10460,7 +10471,8 @@ export default function AssetRegisterClient({
       generalAssetCategory: nextKind === 'manual' ? current.generalAssetCategory : '',
       propertyAssetSubtype: nextKind === 'property' ? current.propertyAssetSubtype : '',
       propertyInterest: nextKind === 'property' ? current.propertyInterest : '',
-      stockAssetSubtype: nextKind === 'stock' ? current.stockAssetSubtype : '',
+      stockAssetSubtype: choice === 'livestock' ? 'livestock'
+        : nextKind === 'stock' && current.stockAssetSubtype !== 'livestock' ? current.stockAssetSubtype : '',
       stockValuationBasis: nextKind === 'stock' ? current.stockValuationBasis : '',
       stockMovement: nextKind === 'stock' ? current.stockMovement : '',
       stockPeakValue: nextKind === 'stock' ? current.stockPeakValue : '',
@@ -10471,7 +10483,7 @@ export default function AssetRegisterClient({
       insuranceMobility: nextKind === 'manual' ? current.insuranceMobility : '',
       insuranceCriticalToOperations: nextKind === 'manual' ? current.insuranceCriticalToOperations : 'unknown',
       insuranceTemperatureSensitiveStock:
-        nextKind === 'manual' || nextKind === 'stock' ? current.insuranceTemperatureSensitiveStock : 'unknown',
+        nextKind === 'manual' || (nextKind === 'stock' && choice !== 'livestock') ? current.insuranceTemperatureSensitiveStock : 'unknown',
       hours: nextKind === 'property' || nextKind === 'stock' ? '' : current.hours,
       usageMetric: nextKind === 'vehicle'
         ? 'km'
@@ -15899,7 +15911,8 @@ export default function AssetRegisterClient({
       ? ['No assets match the current search or filter.']
       : ['No saved assets yet.'];
   const registerRangeDescription = registerRangeItems.join(' · ');
-  const selectedManualAssetType = getManualAssetOption(assetFormKind);
+  const isLivestockEntry = !editingAsset && assetFormKind === 'stock' && assetDraft.stockAssetSubtype === 'livestock';
+  const selectedManualAssetType = isLivestockEntry ? LIVESTOCK_ENTRY : getManualAssetOption(assetFormKind);
   const isLandPropertyDraft = assetFormKind === 'property' && assetDraft.propertyAssetSubtype === 'land';
   const assetFormSummary = [
     !isLandPropertyDraft && assetFormKind !== 'stock' && assetDraft.yearModel.trim() && `${yearFieldLabel}: ${assetDraft.yearModel}`,
@@ -18314,18 +18327,19 @@ export default function AssetRegisterClient({
       {resolveIssue&&<LeadActionDialog title="Resolve problem" assetTitle={resolveIssue.title} busy={Boolean(busyIssueNoteStatusId)} onClose={()=>setResolveIssue(null)} footer={<><button className={styles.secondaryButton} disabled={Boolean(busyIssueNoteStatusId)} onClick={()=>setResolveIssue(null)}>Cancel</button><button className={styles.primaryButton} disabled={Boolean(busyIssueNoteStatusId)} onClick={()=>void handleMarkIssueNoteStatusNoted(resolveIssue.id,resolveIssue.assetId)}>{busyIssueNoteStatusId?'Saving…':'Yes, resolved'}</button></>}><p>Are you sure this problem is resolved?</p><p>{resolveIssue.note}</p></LeadActionDialog>}
       {historyAsset&&<SharedAssetWorkDialog endpoint={`/api/asset-register/${historyAsset.id}`} action="history" assetTitle={historyAsset.title} assetSubtitle={historyAsset.details} onClose={()=>setHistoryAsset(null)}/>}
       {isAssetModalOpen && manualAssetStep === 1 && !editingAsset ? (
-        <AssetChoiceDialog<AssetKind>
+        <AssetChoiceDialog<AssetKind | 'livestock'>
+          equalColumns
           title="What are you adding?"
           subtitle={`Adding to ${addAssetTargetRegisterName}`}
-          value={hasManualAssetKindSelection ? assetFormKind : ''}
-          options={MANUAL_ASSET_TYPE_OPTIONS}
+          value={hasManualAssetKindSelection ? selectedManualAssetType.value : ''}
+          options={ADD_ASSET_TYPE_OPTIONS}
           busy={assetFlow.pending}
           onClose={navigateBackFromAssetForm}
           onBack={() => {
             setIsAssetModalOpen(false);
             setAcquisitionStep(newAssetAcquisitionDraft.newlyAcquired ? 'details' : 'choice');
           }}
-          onSelect={(kind, trigger) => assetFlow.start(trigger, kindLabel(kind), () => selectManualAssetKind(kind, true))}
+          onSelect={(kind, trigger) => assetFlow.start(trigger, kind === 'livestock' ? LIVESTOCK_ENTRY.label : kindLabel(kind), () => selectManualAssetKind(kind, true))}
         />
       ) : isAssetModalOpen ? (
         <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
