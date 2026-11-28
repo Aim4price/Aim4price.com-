@@ -19,3 +19,22 @@
   :global(:where(html:not(:has([data-website-canvas])))) .actions button { padding: .55rem .8rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .pager { gap: .4rem; }
 }
+
+
+/* Let short choices share a row and reserve room for each card's longest line. */
+.dialog .allOptions {
+  display: flex;
+  flex-wrap: wrap;
+}
+.dialog .allOptions > button {
+  flex: 1 0 max-content;
+  min-width: min(100%, calc((100% - 1.95rem) / 4));
+  max-width: 100%;
+}
+.allOptions .copy strong,
+.allOptions .copy small {
+  white-space: nowrap;
+}
+@container (max-width: 36rem) {
+  .dialog .allOptions > button { flex-basis: 100%; }
+}
