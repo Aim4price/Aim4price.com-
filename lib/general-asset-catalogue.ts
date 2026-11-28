@@ -2,56 +2,56 @@ export const GENERAL_ASSET_CATEGORIES = [
   {
     value: 'furniture_contents',
     label: 'Furniture & contents',
-    description: 'Desks and chairs',
+    description: 'Desks & chairs',
   },
   {
     value: 'appliances',
     label: 'Appliances',
-    description: 'Household or commercial',
+    description: 'Home & business',
   },
   {
     value: 'computers_it',
     label: 'Computers & IT',
-    description: 'Computing equipment',
+    description: 'PCs & servers',
   },
   {
     value: 'portable_electronics',
-    label: 'Phones, cameras & portable electronics',
-    description: 'Handheld devices',
+    label: 'Portable electronics',
+    description: 'Phones & cameras',
   },
   {
     value: 'commercial_refrigeration',
-    label: 'Commercial refrigeration & cold storage',
-    description: 'Cold rooms and tanks',
+    label: 'Refrigeration',
+    description: 'Cold rooms & tanks',
   },
   {
     value: 'kitchen_catering',
-    label: 'Kitchen & catering equipment',
+    label: 'Kitchen & catering',
     description: 'Food preparation',
   },
   {
     value: 'security_systems',
-    label: 'Security & access systems',
-    description: 'Alarms and cameras',
+    label: 'Security & access',
+    description: 'Alarms & cameras',
   },
   {
     value: 'power_energy',
-    label: 'Generators, inverters, batteries & solar',
-    description: 'Solar and backup power',
+    label: 'Power systems',
+    description: 'Solar & backup power',
   },
   {
     value: 'fixtures_improvements',
-    label: 'Fixed fixtures & improvements',
-    description: 'Built-in fittings',
+    label: 'Fixtures',
+    description: 'Fittings & upgrades',
   },
   {
     value: 'high_value_items',
-    label: 'High-value or specialist items',
-    description: 'Art and valuables',
+    label: 'Specialist items',
+    description: 'Art & valuables',
   },
   {
     value: 'other_general',
-    label: 'Something else',
+    label: 'Other contents',
     description: 'Unlisted contents',
   },
 ] as const;
@@ -65,7 +65,7 @@ export const PROPERTY_ASSET_SUBTYPES = [
   {
     value: 'building_structure',
     label: 'Building or structure',
-    description: 'Homes, offices and sheds',
+    description: 'Homes, offices & sheds',
   },
   {
     value: 'fixed_improvement',
@@ -88,7 +88,7 @@ export const STOCK_ASSET_SUBTYPES = [
   {
     value: 'raw_materials',
     label: 'Raw materials',
-    description: 'Materials for production',
+    description: 'Production inputs',
   },
   {
     value: 'finished_goods',
@@ -127,8 +127,8 @@ export const STOCK_ASSET_SUBTYPES = [
   },
   {
     value: 'third_party_stock',
-    label: 'Third-party or consignment stock',
-    description: 'Held for others',
+    label: 'Third-party stock',
+    description: 'Includes consignment',
   },
   {
     value: 'other_stock',
