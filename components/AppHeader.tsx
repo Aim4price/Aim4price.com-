@@ -215,7 +215,7 @@ const BASE_NAV_ITEMS: NavItem[] = [
 
 const PUBLIC_NAV_ITEMS: NavItem[] = [
   ...BASE_NAV_ITEMS,
-  { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+  { key: 'marketplace', href: '/marketplace/browse', label: 'Marketplace' },
 ];
 
 const DEFAULT_NAV_ITEMS: NavItem[] = [
