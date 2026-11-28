@@ -59,6 +59,10 @@ const shortTypeLabels: Partial<Record<DocumentType, string>> = {
 const assetTypeGroups: Partial<Record<DocumentCategory, string>> = {
   licence: 'Licensing', insurance: 'Insurance', finance: 'Finance', ownership: 'Ownership',
 };
+const groupDescriptions: Partial<Record<DocumentCategory, string>> = {
+  licence: 'Permits and renewals', insurance: 'Policies and claims',
+  finance: 'Loans and balances', ownership: 'Purchase and title',
+};
 const groupedTypeLabels: Partial<Record<DocumentType, string>> = {
   'insurance-policy': 'Policy', 'insurance-schedule': 'Schedule', 'insurance-claim': 'Claim',
   'finance-agreement': 'Agreement', 'finance-statement': 'Statement',
@@ -664,7 +668,7 @@ export default function DocumentsClient({ businessVault = false, initialAssetId 
     const currentEditType = option.value === retainedEditType;
     if (!currentEditType && option.scope !== 'both' && option.scope !== typeScope) return false;
     if (typeGroup && option.category !== typeGroup) return false;
-    return !typeQuery || [shortTypeLabels[option.value], option.label, option.value,
+    return !typeQuery || [shortTypeLabels[option.value], option.label, option.value, option.description,
       assetTypeGroups[option.category], ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category], ...option.keywords]
       .some(label => label?.toLowerCase().includes(typeQuery));
   });
@@ -1733,7 +1737,7 @@ export default function DocumentsClient({ businessVault = false, initialAssetId 
           <section ref={documentTypeModalRef} className={`${downloadStyles.dialog} ${categoryStyles.dialog}`} data-download-dialog="true" role="dialog" aria-modal="true" aria-labelledby="document-type-title">
             <header data-download-header="true">
               <div>
-                <h2 id="document-type-title">{typeGroup ? assetTypeGroups[typeGroup] : 'Document type'}</h2>
+                <h2 id="document-type-title">{typeGroup ? assetTypeGroups[typeGroup] : 'Choose a document type'}</h2>
                 {assetSubheader}
               </div>
               <button type="button" onClick={closeModal} aria-label="Close document type chooser" data-modal-close="true">×</button>
@@ -1746,7 +1750,7 @@ export default function DocumentsClient({ businessVault = false, initialAssetId 
                   documentTypeModalRef.current?.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
                 }}>
                   <span className={categoryStyles.icon}><CategoryIcon kind={documentIcons[group]} /></span>
-                  <span className={categoryStyles.copy}><strong>{assetTypeGroups[group]}</strong></span>
+                  <span className={categoryStyles.copy}><strong>{assetTypeGroups[group]}</strong><small>{groupDescriptions[group]}</small></span>
                 </button>
               ))}
               {visibleTypes.map((option) => {
@@ -1754,7 +1758,7 @@ export default function DocumentsClient({ businessVault = false, initialAssetId 
                 const label = (typeGroup && groupedTypeLabels[option.value]) || shortTypeLabels[option.value] || option.label;
                 return <button key={option.value} type="button" className={`${categoryStyles.card} ${styles.documentTile}`} data-category={icon} title={option.label} aria-pressed={draft.documentType === option.value} onClick={() => selectDocumentType(option.value)}>
                   <span className={categoryStyles.icon}><CategoryIcon kind={icon} /></span>
-                  <span className={categoryStyles.copy}><strong>{label}</strong></span>
+                  <span className={categoryStyles.copy}><strong>{label}</strong><small>{option.description}</small></span>
                 </button>;
               })}
             </div>
